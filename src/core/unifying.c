@@ -130,8 +130,6 @@ void unifying_mouse_handle(void) {
 }
 
 
-#if !SDCC
-
 // Note: Assumes all other relevant settings are in place
 void set_pairing_address(const uint8_t *target_addr, uint8_t addr_lsb) {
     // Use first two pipes
@@ -243,5 +241,3 @@ void unifying_pairing_poll(void) {
         pipe_num = nrf24_get_rx_pipe_num();
     }
 }
-
-#endif
