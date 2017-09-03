@@ -1,0 +1,285 @@
+// Copyright 2017 jem@seethis.link
+// Licensed under the MIT license (http://opensource.org/licenses/MIT)
+
+#include "core/usb_commands.h"
+
+#include <string.h>
+#include <stddef.h>
+
+#include "core/bootloader.h"
+#include "core/flash.h"
+#include "core/hardware.h"
+#include "core/layout.h"
+#include "core/led.h"
+#include "core/matrix_interpret.h"
+
+#include "core/keyboard_report.h"
+#include "core/media_report.h"
+#include "core/mouse_report.h"
+#include "core/vendor_report.h"
+
+/* TODO: abstract mcu specifi usb code */
+
+static bit_t passthrough_mode_on;
+
+static uint8_t vendor_state = STATE_WAIT_CMD;
+
+bit_t is_passthrough_enabled(void) {
+    return passthrough_mode_on;
+}
+
+// TODO: probably move this elsewhere
+void reset_usb_reports(void) {
+    passthrough_mode_on = false;
+    reset_media_report();
+    reset_vendor_report();
+    reset_mouse_report();
+    reset_keyboard_reports();
+}
+
+XRAM struct {
+    // TODO: clean up most of the code related to this
+    // TODO: must change to 16bit, need to check flashing software first
+    uint8_t num_packets;
+    uint8_t counter;
+    uint16_t addr;
+} flash_layout;
+
+void cmd_error(uint8_t code) {
+    g_vendor_report_in.data[0] = CMD_ERROR_CODE;
+    g_vendor_report_in.data[1] = code; // no error
+    g_vendor_report_in.len = 2;
+    send_vendor_report();
+}
+
+void cmd_ok(void) {
+    cmd_error(ERROR_CODE_NONE);
+}
+
+
+/* TODO: abstract */
+void cmd_reset(void) {
+    reset_mcu();
+    while (1);
+}
+
+// send data to the host for debugging purposes
+void usb_print(uint8_t *data, uint8_t len) {
+    g_vendor_report_in.data[0] = CMD_PRINT;
+    g_vendor_report_in.data[1] = len;
+    if (len > VENDOR_REPORT_LEN-2) {
+        len = VENDOR_REPORT_LEN-2;
+    }
+    /* copy(vendor_report.data+1, data, len); */
+    memcpy(g_vendor_report_in.data+2, data, len);
+    g_vendor_report_in.len = len+2;
+    send_vendor_report();
+}
+
+void usb_blocking_print(uint8_t *data, uint8_t len) {
+    while (!is_ready_vendor_out_report()) { send_vendor_report(); }
+    usb_print(data, len);
+    while (!is_ready_vendor_out_report()) { send_vendor_report(); }
+}
+
+void cmd_send_layer(uint8_t kb_slot_id) {
+    if (!is_keyboard_active(kb_slot_id)) {
+        cmd_error(ERROR_KEYBOARD_INACTIVE);
+        return;
+    }
+
+    g_vendor_report_in.data[0] = CMD_LAYER_STATE;
+    g_vendor_report_in.data[1] = kb_slot_id;
+    memcpy(g_vendor_report_in.data + 2, (uint8_t*)&g_keyboard_slots[kb_slot_id].active_layers, 2),
+    memcpy(g_vendor_report_in.data + 4, (uint8_t*)&g_keyboard_slots[kb_slot_id].sticky_layers, 2),
+    memcpy(g_vendor_report_in.data + 6, (uint8_t*)&g_keyboard_slots[kb_slot_id].default_layers, 2),
+    g_vendor_report_in.len = 8;
+    send_vendor_report();
+}
+
+/// Resets into the Logitech unifying receiver bootloader.
+void cmd_logitech_bootloader(void) {
+    bootloader_jmp_2();
+}
+
+static void cmd_custom_bootloader(void) {
+    bootloader_jmp();
+}
+
+static void erase_page_range(uint16_t start_page, uint16_t page_count) {
+    uint16_t i;
+    wdt_kick();
+
+    // erase all the pages for the layout
+    flash_modify_enable();
+    for (i = 0; i < page_count; ++i) {
+        flash_erase_page(start_page + i);
+    }
+    flash_modify_disable();
+}
+
+static void cmd_get_device_settings(void) {
+    uint8_t info_type = g_vendor_report_out.data[1];
+
+    g_vendor_report_in.data[0] = CMD_GET_DEVICE_SETTINGS;
+
+#undef SETTINGS_ADDR
+#define SETTINGS_ADDR ((flash_ptr_t)(&g_settings))
+
+    g_vendor_report_in.data[1] = info_type;
+
+    if (info_type == INFO_MAIN_0) {
+        flash_read(
+            g_vendor_report_in.data+2,
+            SETTINGS_ADDR,
+            EP_SIZE_VENDOR-2
+        );
+    } else if (info_type == INFO_MAIN_1) {
+        flash_read(
+            g_vendor_report_in.data+2,
+            SETTINGS_ADDR + (EP_SIZE_VENDOR-2),
+            MAIN_INFO_SIZE - (EP_SIZE_VENDOR-2)
+        );
+    } else if (info_type == INFO_LAYOUT) {
+        flash_read(
+            g_vendor_report_in.data+2,
+            SETTINGS_ADDR + LAYOUT_INFO_OFFSET,
+            LAYOUT_INFO_SIZE
+        );
+    } else if (info_type == INFO_RF) {
+        flash_read(
+            g_vendor_report_in.data+2,
+            SETTINGS_ADDR + RF_INFO_OFFSET,
+            RF_INFO_SIZE
+        );
+    } else if (info_type == INFO_FIRMWARE) {
+        flash_read(
+            g_vendor_report_in.data+2,
+            (flash_ptr_t)(&g_firmware_build_settings),
+            sizeof(firmware_build_settings_t)
+        );
+    } else {
+        g_vendor_report_in.data[1] = INFO_UNSUPPORTED;
+    }
+
+    g_vendor_report_in.len = VENDOR_REPORT_LEN;
+    send_vendor_report();
+}
+
+void parse_cmd(void) {
+    uint8_t cmd = g_vendor_report_out.data[0];
+    switch (cmd) {
+        case CMD_BOOTLOADER: {
+            cmd_custom_bootloader();
+        } break;
+        case CMD_GET_DEVICE_SETTINGS: {
+            cmd_get_device_settings();
+        } break;
+        case CMD_RESET: {
+            cmd_reset();
+        } break;
+        case CMD_LED_CONTROL: {
+            const uint8_t led_on = g_vendor_report_out.data[1];
+            led_testing_set(led_on);
+        } break;
+        case CMD_FLASH_LAYOUT: {
+            uint16_t number_pages;
+            flash_layout.num_packets = g_vendor_report_out.data[1];
+            flash_layout.counter = 0;
+            flash_layout.addr = LAYOUT_ADDR;
+
+            number_pages = (flash_layout.num_packets+(CHUNKS_PER_PAGE-1))/CHUNKS_PER_PAGE;
+            if (number_pages > LAYOUT_PAGE_COUNT) {
+                cmd_error(ERROR_CODE_TOO_MUCH_DATA);
+                return;
+            }
+
+            // TODO: instead of using this global, just run everything in a loop?
+            g_input_disabled = true;
+
+            vendor_state = STATE_WRITE_FLASH;
+
+            erase_page_range(LAYOUT_PAGE_NUM, number_pages);
+
+            cmd_ok();
+        } break;
+        case CMD_LAYER_STATE: {
+            cmd_send_layer(g_vendor_report_out.data[1]);
+        } break;
+        case CMD_LOGITECH_BOOTLOADER: {
+            cmd_logitech_bootloader();
+        } break;
+        case CMD_SET_PASSTHROUGH_MODE: {
+            passthrough_mode_on = g_vendor_report_out.data[1];
+            cmd_ok();
+        } break;
+
+        // TODO: before using this command on XMEGA, need to fix flash locations
+        case CMD_UPDATE_SETTINGS_ALL: {
+            flash_layout.num_packets = (SETTINGS_SIZE) / EP_SIZE_VENDOR;
+            flash_layout.counter = 0;
+            flash_layout.addr = SETTINGS_ADDR;
+
+            // TODO: instead of using this global, just run everything in a loop?
+            g_input_disabled = true;
+
+            vendor_state = STATE_WRITE_FLASH;
+
+            erase_page_range(SETTINGS_PAGE_NUM, SETTINGS_PAGE_COUNT);
+
+            cmd_ok();
+        } break;
+        default: {
+            cmd_error(ERROR_UNKNOWN_CMD);
+        } break;
+#if 0 // TODO
+        case CMD_UPDATE_SETTINGS_RF: {
+            passthrough_mode_on = g_vendor_report_out.data[1];
+            cmd_ok();
+        } break;
+        case CMD_UPDATE_SETTINGS_LAYOUT: {
+            passthrough_mode_on = g_vendor_report_out.data[1];
+            cmd_ok();
+        } break;
+#endif
+    }
+}
+
+// TODO: might change how flashing layouts works. Make it so we need to request
+// each block individually?
+
+void handle_vendor_out_reports(void) {
+    if (!is_ready_vendor_out_report()) {
+        return;
+    }
+
+    g_vendor_report_out.len = read_vendor_report(g_vendor_report_out.data);
+
+    if (vendor_state == STATE_WAIT_CMD) {
+        parse_cmd();
+    } else if (vendor_state == STATE_WRITE_FLASH) {
+        /* const uint8_t page = LAYOUT_PAGE_NUM + flash_layout.counter/CHUNKS_PER_PAGE; */
+        const uint8_t size = g_vendor_report_out.len;
+        const uint16_t addr = flash_layout.addr + (uint16_t)flash_layout.counter * EP_SIZE_VENDOR;
+
+        wdt_kick();
+
+        // at this stage all the necessary pages have been erased, so all we
+        // need to do is write to them.
+        flash_modify_enable();
+        flash_write(g_vendor_report_out.data, addr, size);
+        flash_modify_disable();
+
+        // zero report incase it contained encryption key data, etc.
+        memset(g_vendor_report_out.data, 0, EP_SIZE_VENDOR);
+
+        cmd_ok();
+
+        flash_layout.counter += 1;
+        if (flash_layout.counter >= flash_layout.num_packets) {
+            vendor_state = STATE_WAIT_CMD;
+            dynamic_delay_ms(100);
+            cmd_reset();
+        }
+    }
+}

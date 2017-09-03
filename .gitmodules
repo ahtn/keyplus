@@ -1,0 +1,6 @@
+[submodule "xmega/xusb-boot"]
+	path = xmega/xusb-boot
+	url = https://github.com/ahtn/xusb-boot
+[submodule "nrf24lu1/nrf24lu1p-512-bootloader"]
+	path = nrf24lu1/nrf24lu1p-512-bootloader
+	url = https://github.com/ahtn/nrf24lu1p-512-bootloader

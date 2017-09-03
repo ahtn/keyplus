@@ -1,0 +1,686 @@
+   1               	# 1 "wireless/aes/aes_dec-asm_faster.S"
+   1               	/* aes_dec-asm.S */
+   0               	
+   0               	
+   2               	/*
+   3               	    This file is part of the AVR-Crypto-Lib.
+   4               	    Copyright (C) 2006-2015 Daniel Otte (bg@nerilex.org)
+   5               	
+   6               	    This program is free software: you can redistribute it and/or modify
+   7               	    it under the terms of the GNU General Public License as published by
+   8               	    the Free Software Foundation, either version 3 of the License, or
+   9               	    (at your option) any later version.
+  10               	
+  11               	    This program is distributed in the hope that it will be useful,
+  12               	    but WITHOUT ANY WARRANTY; without even the implied warranty of
+  13               		    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  14               	    GNU General Public License for more details.
+  15               	
+  16               	    You should have received a copy of the GNU General Public License
+  17               	    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  18               	*/
+  19               	/**
+  20               	 * \file     aes_dec-asm.S
+  21               	 * \email    bg@nerilex.org
+  22               	 * \author   Daniel Otte 
+  23               	 * \date     2009-01-10
+  24               	 * \license  GPLv3 or later
+  25               	 * 
+  26               	 */
+  27               	
+  28               	#include "avr-asm-macros.S"
+   1               	/* avr-asm-macros.S */
+  33               	.list
+  34               	/*******************************************************************************
+  35               	*  MACRO SECTION                                                               *
+  36               	*******************************************************************************/
+  37               	
+  38               	.macro push_ p1:req, p2:vararg
+  39               		push \p1
+  40               	.ifnb \p2
+  41               		push_ \p2
+  42               	.endif
+  43               	.endm
+  44               	
+  45               	.macro pop_ p1:req, p2:vararg
+  46               		pop \p1
+  47               	.ifnb \p2
+  48               		pop_ \p2
+  49               	.endif
+  50               	.endm
+  51               	
+  52               	.macro push_range from:req, to:req
+  53               		push \from
+  54               	.if     \to-\from
+  55               		push_range "(\from+1)",\to
+  56               	.endif
+  57               	.endm
+  58               	
+  59               	.macro pop_range from:req, to:req
+  60               		pop \to
+  61               	.if     \to-\from
+  62               		pop_range \from,"(\to-1)"
+  63               	.endif
+  64               	.endm
+  65               	
+  66               	.macro stack_alloc size:req, reg1=r30, reg2=r31
+  67               		in r0, _SFR_IO_ADDR(SREG)
+  68               		in \reg1, _SFR_IO_ADDR(SPL)
+  69               		in \reg2, _SFR_IO_ADDR(SPH)
+  70               		sbiw \reg1, \size
+  71               		cli
+  72               		out _SFR_IO_ADDR(SPH), \reg2
+  73               		out _SFR_IO_ADDR(SREG), r0
+  74               		out _SFR_IO_ADDR(SPL), \reg1
+  75               	.endm
+  76               	
+  77               	.macro stack_free size:req, reg1=r30, reg2=r31
+  78               		in r0, _SFR_IO_ADDR(SREG)
+  79               		in \reg1, _SFR_IO_ADDR(SPL)
+  80               		in \reg2, _SFR_IO_ADDR(SPH)
+  81               		adiw \reg1, \size
+  82               		cli
+  83               		out _SFR_IO_ADDR(SPH), \reg2
+  84               		out _SFR_IO_ADDR(SREG), r0
+  85               		out _SFR_IO_ADDR(SPL), \reg1
+  86               	.endm
+  87               	
+  88               	
+  89               	.macro stack_alloc_large size:req, reg1=r30, reg2=r31
+  90               		in r0, _SFR_IO_ADDR(SREG)
+  91               		in \reg1, _SFR_IO_ADDR(SPL)
+  92               		in \reg2, _SFR_IO_ADDR(SPH)
+  93               		subi \reg1, lo8(\size)
+  94               		sbci \reg2, hi8(\size)
+  95               		cli
+  96               		out _SFR_IO_ADDR(SPH), \reg2
+  97               		out _SFR_IO_ADDR(SREG), r0
+  98               		out _SFR_IO_ADDR(SPL), \reg1
+  99               	.endm
+ 100               	
+ 101               	.macro stack_free_large size:req, reg1=r30, reg2=r31
+ 102               		in r0, _SFR_IO_ADDR(SREG)
+ 103               		in \reg1, _SFR_IO_ADDR(SPL)
+ 104               		in \reg2, _SFR_IO_ADDR(SPH)
+ 105               		adiw \reg1, 63
+ 106               		adiw \reg1, (\size-63)
+ 107               		cli
+ 108               		out _SFR_IO_ADDR(SPH), \reg2
+ 109               		out _SFR_IO_ADDR(SREG), r0
+ 110               		out _SFR_IO_ADDR(SPL), \reg1
+ 111               	.endm
+ 112               	
+ 113               	.macro stack_free_large2 size:req, reg1=r30, reg2=r31
+ 114               		in r0, _SFR_IO_ADDR(SREG)
+ 115               		in \reg1, _SFR_IO_ADDR(SPL)
+ 116               		in \reg2, _SFR_IO_ADDR(SPH)
+ 117               		adiw \reg1, 63
+ 118               		adiw \reg1, 63
+ 119               		adiw \reg1, (\size-63*2)
+ 120               		cli
+ 121               		out _SFR_IO_ADDR(SPH), \reg2
+ 122               		out _SFR_IO_ADDR(SREG), r0
+ 123               		out _SFR_IO_ADDR(SPL), \reg1
+ 124               	.endm
+ 125               	
+ 126               	.macro stack_free_large3 size:req, reg1=r30, reg2=r31
+ 127               		in r0, _SFR_IO_ADDR(SREG)
+ 128               		in \reg1, _SFR_IO_ADDR(SPL)
+ 129               		in \reg2, _SFR_IO_ADDR(SPH)
+ 130               		push r16
+ 131               		push r17
+ 132               		ldi r16, lo8(\size)
+ 133               		ldi r17, hi8(\size)
+ 134               		add \reg1, r16
+ 135               		adc \reg2, r17
+ 136               		pop r17
+ 137               		pop r16
+ 138               		cli
+ 139               		out _SFR_IO_ADDR(SPH), \reg2
+ 140               		out _SFR_IO_ADDR(SREG), r0
+ 141               		out _SFR_IO_ADDR(SPL), \reg1
+ 142               	.endm
+ 143               	
+  29               	A = 28
+  30               	B = 29
+  31               	P = 0
+  32               	xREDUCER = 25 
+  33               	
+  34               	.global aes256_dec
+  35               	aes256_dec:
+  36:wireless/aes/aes_dec-asm_faster.S **** 	ldi r20, 14
+  37:wireless/aes/aes_dec-asm_faster.S **** 	rjmp aes_decrypt_core
+  38               	
+  39               	.global aes192_dec
+  40               	aes192_dec:
+  41:wireless/aes/aes_dec-asm_faster.S **** 	ldi r20, 12
+  42:wireless/aes/aes_dec-asm_faster.S **** 	rjmp aes_decrypt_core
+  43               	
+  44               	.global aes128_dec
+  45               	aes128_dec:
+  46:wireless/aes/aes_dec-asm_faster.S **** 	ldi r20, 10
+  47               	
+  48               	
+  49               	/*
+  50               	  void aes_decrypt_core(aes_cipher_state_t *state, const aes_genctx_t *ks, uint8_t rounds)
+  51               	*/
+  52               	T0= 2
+  53               	T1= 3
+  54               	T2= 4
+  55               	T3= 5
+  56               	T4 = 6
+  57               	T5 = 7
+  58               	ST00 =  8
+  59               	ST01 =  9
+  60               	ST02 = 10
+  61               	ST03 = 11
+  62               	ST10 = 12
+  63               	ST11 = 13
+  64               	ST12 = 14
+  65               	ST13 = 15
+  66               	ST20 = 16
+  67               	ST21 = 17
+  68               	ST22 = 18
+  69               	ST23 = 19
+  70               	ST30 = 20
+  71               	ST31 = 21
+  72               	ST32 = 22
+  73               	ST33 = 23
+  74               	CTR = 24
+  75               	/*
+  76               	 * param state:  r24:r25
+  77               	 * param ks:     r22:r23
+  78               	 * param rounds: r20   
+  79               	 */
+  80               	.global aes_decrypt_core
+  81               	aes_decrypt_core:
+  82:wireless/aes/aes_dec-asm_faster.S **** 	push_range 2, 17
+  83:wireless/aes/aes_dec-asm_faster.S **** 	push r28
+  84:wireless/aes/aes_dec-asm_faster.S **** 	push r29
+  85:wireless/aes/aes_dec-asm_faster.S **** 	push r24
+  86:wireless/aes/aes_dec-asm_faster.S **** 	push r25
+  87:wireless/aes/aes_dec-asm_faster.S **** 	movw r26, r22
+  88:wireless/aes/aes_dec-asm_faster.S **** 	movw r30, r24
+  89:wireless/aes/aes_dec-asm_faster.S **** 	mov  CTR, r20
+  90:wireless/aes/aes_dec-asm_faster.S **** 	inc r20
+  91:wireless/aes/aes_dec-asm_faster.S **** 	swap r20 /* r20*16 */
+  92:wireless/aes/aes_dec-asm_faster.S **** 	add r26, r20
+  93:wireless/aes/aes_dec-asm_faster.S **** 	adc r27, r1
+  94:wireless/aes/aes_dec-asm_faster.S **** 	clt
+  95               		.irp param, ST00, ST01, ST02, ST03, ST10, ST11, ST12, ST13, ST20, ST21, ST22, ST23, ST30, ST31, ST
+  96:wireless/aes/aes_dec-asm_faster.S **** 		ld \param, Z+
+  97:wireless/aes/aes_dec-asm_faster.S **** 	.endr
+  98               		
+  99:wireless/aes/aes_dec-asm_faster.S **** 	ldi xREDUCER, 0x1b /* load reducer */
+ 100               		
+ 101               	
+ 102               		.irp param, ST33, ST32, ST31, ST30, ST23, ST22, ST21, ST20, ST13, ST12, ST11, ST10, ST03, ST02, ST
+ 103:wireless/aes/aes_dec-asm_faster.S **** 		ld r0, -X
+ 104:wireless/aes/aes_dec-asm_faster.S **** 		eor \param, r0
+ 105:wireless/aes/aes_dec-asm_faster.S **** 	.endr
+ 106               	1:
+ 107:wireless/aes/aes_dec-asm_faster.S **** 	dec CTR
+ 108:wireless/aes/aes_dec-asm_faster.S **** 	brne 2f
+ 109:wireless/aes/aes_dec-asm_faster.S **** 	set
+ 110               	2:	
+ 111:wireless/aes/aes_dec-asm_faster.S **** 	ldi r31, hi8(aes_invsbox)
+ 112               		/* substitute and invShift */
+ 113               		.irp param, ST00, ST10, ST20, ST30
+ 114:wireless/aes/aes_dec-asm_faster.S **** 		mov r30, \param
+ 115:wireless/aes/aes_dec-asm_faster.S **** 		lpm \param, Z
+ 116:wireless/aes/aes_dec-asm_faster.S **** 	.endr
+ 117:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST31
+ 118:wireless/aes/aes_dec-asm_faster.S **** 	lpm T0, Z
+ 119:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST21
+ 120:wireless/aes/aes_dec-asm_faster.S **** 	lpm ST31, Z
+ 121:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST11
+ 122:wireless/aes/aes_dec-asm_faster.S **** 	lpm ST21, Z
+ 123:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST01
+ 124:wireless/aes/aes_dec-asm_faster.S **** 	lpm ST11, Z
+ 125:wireless/aes/aes_dec-asm_faster.S **** 	mov ST01, T0
+ 126               		
+ 127:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST32
+ 128:wireless/aes/aes_dec-asm_faster.S **** 	lpm T0, Z
+ 129:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST22
+ 130:wireless/aes/aes_dec-asm_faster.S **** 	lpm T1,Z
+ 131:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST12
+ 132:wireless/aes/aes_dec-asm_faster.S **** 	lpm ST32, Z
+ 133:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST02
+ 134:wireless/aes/aes_dec-asm_faster.S **** 	lpm ST22, Z
+ 135:wireless/aes/aes_dec-asm_faster.S **** 	mov ST12, T0
+ 136:wireless/aes/aes_dec-asm_faster.S **** 	mov ST02, T1
+ 137               		
+ 138:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST03
+ 139:wireless/aes/aes_dec-asm_faster.S **** 	lpm T0, Z
+ 140:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST13
+ 141:wireless/aes/aes_dec-asm_faster.S **** 	lpm ST03, Z
+ 142:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST23
+ 143:wireless/aes/aes_dec-asm_faster.S **** 	lpm ST13, Z
+ 144:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST33
+ 145:wireless/aes/aes_dec-asm_faster.S **** 	lpm ST23, Z
+ 146:wireless/aes/aes_dec-asm_faster.S **** 	mov ST33, T0
+ 147               		
+ 148               		/* key addition */
+ 149               		.irp param, ST33, ST32, ST31, ST30, ST23, ST22, ST21, ST20, ST13, ST12, ST11, ST10, ST03, ST02, ST
+ 150:wireless/aes/aes_dec-asm_faster.S **** 		ld r0, -X
+ 151:wireless/aes/aes_dec-asm_faster.S **** 		eor \param, r0
+ 152:wireless/aes/aes_dec-asm_faster.S **** 	.endr
+ 153:wireless/aes/aes_dec-asm_faster.S **** 	brtc 2f
+ 154               	exit:
+ 155:wireless/aes/aes_dec-asm_faster.S **** 	pop r31
+ 156:wireless/aes/aes_dec-asm_faster.S **** 	pop r30
+ 157:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST00
+ 158:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST01
+ 159:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST02
+ 160:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST03
+ 161:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST10
+ 162:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST11
+ 163:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST12
+ 164:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST13
+ 165:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST20
+ 166:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST21
+ 167:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST22
+ 168:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST23
+ 169:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST30
+ 170:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST31
+ 171:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST32
+ 172:wireless/aes/aes_dec-asm_faster.S **** 	st Z+, ST33
+ 173:wireless/aes/aes_dec-asm_faster.S **** 	pop r29
+ 174:wireless/aes/aes_dec-asm_faster.S **** 	pop r28
+ 175:wireless/aes/aes_dec-asm_faster.S **** 	pop_range 2, 17
+ 176:wireless/aes/aes_dec-asm_faster.S **** 	ret
+ 177               	2:	
+ 178               		/* inv column (row) mixing*/
+ 179               		/* invMixCol (Row) 1 */
+ 180               			/* preparing */
+ 181:wireless/aes/aes_dec-asm_faster.S **** 	ldi r31, hi8(lut_gf256mul_0x09)
+ 182:wireless/aes/aes_dec-asm_faster.S **** 	mov T0, ST03
+ 183:wireless/aes/aes_dec-asm_faster.S **** 	eor T0, ST02 ; T0 = t
+ 184:wireless/aes/aes_dec-asm_faster.S **** 	mov T1, ST00
+ 185:wireless/aes/aes_dec-asm_faster.S **** 	eor T1, ST01 ; T1 = u
+ 186:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, T0
+ 187:wireless/aes/aes_dec-asm_faster.S **** 	eor r30, T1
+ 188:wireless/aes/aes_dec-asm_faster.S **** 	lpm T2, Z  ; T2 = v'
+ 189               		
+ 190:wireless/aes/aes_dec-asm_faster.S **** 	ldi r31, hi8(lut_gf256mul_0x04)
+ 191:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST02
+ 192:wireless/aes/aes_dec-asm_faster.S **** 	eor r30, ST00
+ 193:wireless/aes/aes_dec-asm_faster.S **** 	lpm T3, Z
+ 194:wireless/aes/aes_dec-asm_faster.S **** 	eor T3, T2;  T3 = w
+ 195               		
+ 196:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST03
+ 197:wireless/aes/aes_dec-asm_faster.S **** 	eor r30, ST01
+ 198:wireless/aes/aes_dec-asm_faster.S **** 	lpm P, Z  ; T2 = v
+ 199:wireless/aes/aes_dec-asm_faster.S **** 	eor T2, P 
+ 200               		 
+ 201               		   /* now the big move */
+ 202:wireless/aes/aes_dec-asm_faster.S **** 	mov T4, ST00
+ 203:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, ST03
+ 204:wireless/aes/aes_dec-asm_faster.S **** 	lsl T4
+ 205:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 206:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, xREDUCER
+ 207:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T4, T2
+ 208:wireless/aes/aes_dec-asm_faster.S **** 	eor ST03, T4	
+ 209               	
+ 210:wireless/aes/aes_dec-asm_faster.S **** 	mov T4, ST02
+ 211:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, ST01
+ 212:wireless/aes/aes_dec-asm_faster.S **** 	lsl T4
+ 213:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 214:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, xREDUCER
+ 215:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T4, T2
+ 216:wireless/aes/aes_dec-asm_faster.S **** 	eor ST01, T4
+ 217               		
+ 218:wireless/aes/aes_dec-asm_faster.S **** 	lsl T0
+ 219:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 220:wireless/aes/aes_dec-asm_faster.S **** 	eor T0, xREDUCER
+ 221:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T0, T3
+ 222:wireless/aes/aes_dec-asm_faster.S **** 	eor ST02, T0
+ 223               		
+ 224:wireless/aes/aes_dec-asm_faster.S **** 	lsl T1
+ 225:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 226:wireless/aes/aes_dec-asm_faster.S **** 	eor T1, xREDUCER
+ 227:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T1, T3
+ 228:wireless/aes/aes_dec-asm_faster.S **** 	eor ST00, T1
+ 229               		
+ 230               		/* invMixCol (Row) 2 */
+ 231               			/* preparing */
+ 232:wireless/aes/aes_dec-asm_faster.S **** 	ldi r31, hi8(lut_gf256mul_0x09)
+ 233:wireless/aes/aes_dec-asm_faster.S **** 	mov T0, ST13
+ 234:wireless/aes/aes_dec-asm_faster.S **** 	eor T0, ST12 ; T0 = t
+ 235:wireless/aes/aes_dec-asm_faster.S **** 	mov T1, ST10
+ 236:wireless/aes/aes_dec-asm_faster.S **** 	eor T1, ST11 ; T1 = u
+ 237:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, T0
+ 238:wireless/aes/aes_dec-asm_faster.S **** 	eor r30, T1
+ 239               	
+ 240:wireless/aes/aes_dec-asm_faster.S **** 	lpm T2, Z  ; T2 = v'
+ 241               		
+ 242:wireless/aes/aes_dec-asm_faster.S **** 	ldi r31, hi8(lut_gf256mul_0x04)
+ 243:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST12
+ 244:wireless/aes/aes_dec-asm_faster.S **** 	eor r30, ST10
+ 245:wireless/aes/aes_dec-asm_faster.S **** 	lpm T3, Z
+ 246:wireless/aes/aes_dec-asm_faster.S **** 	eor T3, T2;  T3 = w
+ 247               		
+ 248:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST13
+ 249:wireless/aes/aes_dec-asm_faster.S **** 	eor r30, ST11
+ 250:wireless/aes/aes_dec-asm_faster.S **** 	lpm P, Z
+ 251:wireless/aes/aes_dec-asm_faster.S **** 	eor T2, P ; T2 = v
+ 252               		 
+ 253               		   /* now the big move */
+ 254:wireless/aes/aes_dec-asm_faster.S **** 	mov T4, ST10
+ 255:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, ST13
+ 256:wireless/aes/aes_dec-asm_faster.S **** 	lsl T4
+ 257:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 258:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, xREDUCER
+ 259:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T4, T2
+ 260:wireless/aes/aes_dec-asm_faster.S **** 	eor ST13, T4	
+ 261               	
+ 262:wireless/aes/aes_dec-asm_faster.S **** 	mov T4, ST12
+ 263:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, ST11
+ 264:wireless/aes/aes_dec-asm_faster.S **** 	lsl T4
+ 265:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 266:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, xREDUCER
+ 267:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T4, T2
+ 268:wireless/aes/aes_dec-asm_faster.S **** 	eor ST11, T4
+ 269               		
+ 270:wireless/aes/aes_dec-asm_faster.S **** 	lsl T0
+ 271:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 272:wireless/aes/aes_dec-asm_faster.S **** 	eor T0, xREDUCER
+ 273:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T0, T3
+ 274:wireless/aes/aes_dec-asm_faster.S **** 	eor ST12, T0
+ 275               		
+ 276:wireless/aes/aes_dec-asm_faster.S **** 	lsl T1
+ 277:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 278:wireless/aes/aes_dec-asm_faster.S **** 	eor T1, xREDUCER
+ 279:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T1, T3
+ 280:wireless/aes/aes_dec-asm_faster.S **** 	eor ST10, T1
+ 281               		
+ 282               		/* invMixCol (Row) 2 */
+ 283               			/* preparing */
+ 284:wireless/aes/aes_dec-asm_faster.S **** 	ldi r31, hi8(lut_gf256mul_0x09)
+ 285:wireless/aes/aes_dec-asm_faster.S **** 	mov T0, ST23
+ 286:wireless/aes/aes_dec-asm_faster.S **** 	eor T0, ST22 ; T0 = t
+ 287:wireless/aes/aes_dec-asm_faster.S **** 	mov T1, ST20
+ 288:wireless/aes/aes_dec-asm_faster.S **** 	eor T1, ST21 ; T1 = u
+ 289:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, T0
+ 290:wireless/aes/aes_dec-asm_faster.S **** 	eor r30, T1
+ 291               	
+ 292:wireless/aes/aes_dec-asm_faster.S **** 	lpm T2, Z  ; T2 = v'
+ 293               		
+ 294:wireless/aes/aes_dec-asm_faster.S **** 	ldi r31, hi8(lut_gf256mul_0x04)
+ 295:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST22
+ 296:wireless/aes/aes_dec-asm_faster.S **** 	eor r30, ST20
+ 297:wireless/aes/aes_dec-asm_faster.S **** 	lpm T3, Z
+ 298:wireless/aes/aes_dec-asm_faster.S **** 	eor T3, T2;  T3 = w
+ 299               		
+ 300:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST23
+ 301:wireless/aes/aes_dec-asm_faster.S **** 	eor r30, ST21
+ 302:wireless/aes/aes_dec-asm_faster.S **** 	lpm P, Z
+ 303:wireless/aes/aes_dec-asm_faster.S **** 	eor T2, P ; T2 = v
+ 304               		 
+ 305               		   /* now the big move */
+ 306:wireless/aes/aes_dec-asm_faster.S **** 	mov T4, ST20
+ 307:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, ST23
+ 308:wireless/aes/aes_dec-asm_faster.S **** 	lsl T4
+ 309:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 310:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, xREDUCER
+ 311:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T4, T2
+ 312:wireless/aes/aes_dec-asm_faster.S **** 	eor ST23, T4	
+ 313               	
+ 314:wireless/aes/aes_dec-asm_faster.S **** 	mov T4, ST22
+ 315:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, ST21
+ 316:wireless/aes/aes_dec-asm_faster.S **** 	lsl T4
+ 317:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 318:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, xREDUCER
+ 319:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T4, T2
+ 320:wireless/aes/aes_dec-asm_faster.S **** 	eor ST21, T4
+ 321               		
+ 322:wireless/aes/aes_dec-asm_faster.S **** 	lsl T0
+ 323:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 324:wireless/aes/aes_dec-asm_faster.S **** 	eor T0, xREDUCER
+ 325:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T0, T3
+ 326:wireless/aes/aes_dec-asm_faster.S **** 	eor ST22, T0
+ 327               		
+ 328:wireless/aes/aes_dec-asm_faster.S **** 	lsl T1
+ 329:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 330:wireless/aes/aes_dec-asm_faster.S **** 	eor T1, xREDUCER
+ 331:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T1, T3
+ 332:wireless/aes/aes_dec-asm_faster.S **** 	eor ST20, T1
+ 333               		
+ 334               		/* invMixCol (Row) 3 */
+ 335               			/* preparing */
+ 336:wireless/aes/aes_dec-asm_faster.S **** 	ldi r31, hi8(lut_gf256mul_0x09)
+ 337:wireless/aes/aes_dec-asm_faster.S **** 	mov T0, ST33
+ 338:wireless/aes/aes_dec-asm_faster.S **** 	eor T0, ST32 ; T0 = t
+ 339:wireless/aes/aes_dec-asm_faster.S **** 	mov T1, ST30
+ 340:wireless/aes/aes_dec-asm_faster.S **** 	eor T1, ST31 ; T1 = u
+ 341:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, T0
+ 342:wireless/aes/aes_dec-asm_faster.S **** 	eor r30, T1
+ 343               	
+ 344:wireless/aes/aes_dec-asm_faster.S **** 	lpm T2, Z  ; T2 = v'
+ 345               		
+ 346:wireless/aes/aes_dec-asm_faster.S **** 	ldi r31, hi8(lut_gf256mul_0x04)
+ 347:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST32
+ 348:wireless/aes/aes_dec-asm_faster.S **** 	eor r30, ST30
+ 349:wireless/aes/aes_dec-asm_faster.S **** 	lpm T3, Z
+ 350:wireless/aes/aes_dec-asm_faster.S **** 	eor T3, T2;  T3 = w
+ 351               		
+ 352:wireless/aes/aes_dec-asm_faster.S **** 	mov r30, ST33
+ 353:wireless/aes/aes_dec-asm_faster.S **** 	eor r30, ST31
+ 354:wireless/aes/aes_dec-asm_faster.S **** 	lpm P, Z
+ 355:wireless/aes/aes_dec-asm_faster.S **** 	eor T2, P ; T2 = v
+ 356               		 
+ 357               		   /* now the big move */
+ 358:wireless/aes/aes_dec-asm_faster.S **** 	mov T4, ST30
+ 359:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, ST33
+ 360:wireless/aes/aes_dec-asm_faster.S **** 	lsl T4
+ 361:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 362:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, xREDUCER
+ 363:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T4, T2
+ 364:wireless/aes/aes_dec-asm_faster.S **** 	eor ST33, T4	
+ 365               	
+ 366:wireless/aes/aes_dec-asm_faster.S **** 	mov T4, ST32
+ 367:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, ST31
+ 368:wireless/aes/aes_dec-asm_faster.S **** 	lsl T4
+ 369:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 370:wireless/aes/aes_dec-asm_faster.S **** 	eor T4, xREDUCER
+ 371:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T4, T2
+ 372:wireless/aes/aes_dec-asm_faster.S **** 	eor ST31, T4
+ 373               		
+ 374:wireless/aes/aes_dec-asm_faster.S **** 	lsl T0
+ 375:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 376:wireless/aes/aes_dec-asm_faster.S **** 	eor T0, xREDUCER
+ 377:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T0, T3
+ 378:wireless/aes/aes_dec-asm_faster.S **** 	eor ST32, T0
+ 379               		
+ 380:wireless/aes/aes_dec-asm_faster.S **** 	lsl T1
+ 381:wireless/aes/aes_dec-asm_faster.S **** 	brcc 3f
+ 382:wireless/aes/aes_dec-asm_faster.S **** 	eor T1, xREDUCER
+ 383:wireless/aes/aes_dec-asm_faster.S **** 3:  eor T1, T3
+ 384:wireless/aes/aes_dec-asm_faster.S **** 	eor ST30, T1
+ 385               		
+ 386:wireless/aes/aes_dec-asm_faster.S **** 	rjmp 1b
+ 387               	
+ 388 02ca 0000 0000 	.balign 256
+ 388      0000 0000 
+ 388      0000 0000 
+ 388      0000 0000 
+ 388      0000 0000 
+ 388      0000 0000 
+ 388      0000 0000 
+ 388      0000 0000 
+ 388      0000 0000 
+ 388      0000 0000 
+ 388      0000 0000 
+ 388      0000 0000 
+ 388      0000 0000 
+ 388      0000 
+ 389               	
+ 390               	lut_gf256mul_0x09:
+ 391 0300 0009 121B 	.byte	0x00, 0x09, 0x12, 0x1B, 0x24, 0x2D, 0x36, 0x3F
+ 391      242D 363F 
+ 392 0308 4841 5A53 	.byte	0x48, 0x41, 0x5A, 0x53, 0x6C, 0x65, 0x7E, 0x77
+ 392      6C65 7E77 
+ 393 0310 9099 828B 	.byte	0x90, 0x99, 0x82, 0x8B, 0xB4, 0xBD, 0xA6, 0xAF
+ 393      B4BD A6AF 
+ 394 0318 D8D1 CAC3 	.byte	0xD8, 0xD1, 0xCA, 0xC3, 0xFC, 0xF5, 0xEE, 0xE7
+ 394      FCF5 EEE7 
+ 395 0320 3B32 2920 	.byte	0x3B, 0x32, 0x29, 0x20, 0x1F, 0x16, 0x0D, 0x04
+ 395      1F16 0D04 
+ 396 0328 737A 6168 	.byte	0x73, 0x7A, 0x61, 0x68, 0x57, 0x5E, 0x45, 0x4C
+ 396      575E 454C 
+ 397 0330 ABA2 B9B0 	.byte	0xAB, 0xA2, 0xB9, 0xB0, 0x8F, 0x86, 0x9D, 0x94
+ 397      8F86 9D94 
+ 398 0338 E3EA F1F8 	.byte	0xE3, 0xEA, 0xF1, 0xF8, 0xC7, 0xCE, 0xD5, 0xDC
+ 398      C7CE D5DC 
+ 399 0340 767F 646D 	.byte	0x76, 0x7F, 0x64, 0x6D, 0x52, 0x5B, 0x40, 0x49
+ 399      525B 4049 
+ 400 0348 3E37 2C25 	.byte	0x3E, 0x37, 0x2C, 0x25, 0x1A, 0x13, 0x08, 0x01
+ 400      1A13 0801 
+ 401 0350 E6EF F4FD 	.byte	0xE6, 0xEF, 0xF4, 0xFD, 0xC2, 0xCB, 0xD0, 0xD9
+ 401      C2CB D0D9 
+ 402 0358 AEA7 BCB5 	.byte	0xAE, 0xA7, 0xBC, 0xB5, 0x8A, 0x83, 0x98, 0x91
+ 402      8A83 9891 
+ 403 0360 4D44 5F56 	.byte	0x4D, 0x44, 0x5F, 0x56, 0x69, 0x60, 0x7B, 0x72
+ 403      6960 7B72 
+ 404 0368 050C 171E 	.byte	0x05, 0x0C, 0x17, 0x1E, 0x21, 0x28, 0x33, 0x3A
+ 404      2128 333A 
+ 405 0370 DDD4 CFC6 	.byte	0xDD, 0xD4, 0xCF, 0xC6, 0xF9, 0xF0, 0xEB, 0xE2
+ 405      F9F0 EBE2 
+ 406 0378 959C 878E 	.byte	0x95, 0x9C, 0x87, 0x8E, 0xB1, 0xB8, 0xA3, 0xAA
+ 406      B1B8 A3AA 
+ 407 0380 ECE5 FEF7 	.byte	0xEC, 0xE5, 0xFE, 0xF7, 0xC8, 0xC1, 0xDA, 0xD3
+ 407      C8C1 DAD3 
+ 408 0388 A4AD B6BF 	.byte	0xA4, 0xAD, 0xB6, 0xBF, 0x80, 0x89, 0x92, 0x9B
+ 408      8089 929B 
+ 409 0390 7C75 6E67 	.byte	0x7C, 0x75, 0x6E, 0x67, 0x58, 0x51, 0x4A, 0x43
+ 409      5851 4A43 
+ 410 0398 343D 262F 	.byte	0x34, 0x3D, 0x26, 0x2F, 0x10, 0x19, 0x02, 0x0B
+ 410      1019 020B 
+ 411 03a0 D7DE C5CC 	.byte	0xD7, 0xDE, 0xC5, 0xCC, 0xF3, 0xFA, 0xE1, 0xE8
+ 411      F3FA E1E8 
+ 412 03a8 9F96 8D84 	.byte	0x9F, 0x96, 0x8D, 0x84, 0xBB, 0xB2, 0xA9, 0xA0
+ 412      BBB2 A9A0 
+ 413 03b0 474E 555C 	.byte	0x47, 0x4E, 0x55, 0x5C, 0x63, 0x6A, 0x71, 0x78
+ 413      636A 7178 
+ 414 03b8 0F06 1D14 	.byte	0x0F, 0x06, 0x1D, 0x14, 0x2B, 0x22, 0x39, 0x30
+ 414      2B22 3930 
+ 415 03c0 9A93 8881 	.byte	0x9A, 0x93, 0x88, 0x81, 0xBE, 0xB7, 0xAC, 0xA5
+ 415      BEB7 ACA5 
+ 416 03c8 D2DB C0C9 	.byte	0xD2, 0xDB, 0xC0, 0xC9, 0xF6, 0xFF, 0xE4, 0xED
+ 416      F6FF E4ED 
+ 417 03d0 0A03 1811 	.byte	0x0A, 0x03, 0x18, 0x11, 0x2E, 0x27, 0x3C, 0x35
+ 417      2E27 3C35 
+ 418 03d8 424B 5059 	.byte	0x42, 0x4B, 0x50, 0x59, 0x66, 0x6F, 0x74, 0x7D
+ 418      666F 747D 
+ 419 03e0 A1A8 B3BA 	.byte	0xA1, 0xA8, 0xB3, 0xBA, 0x85, 0x8C, 0x97, 0x9E
+ 419      858C 979E 
+ 420 03e8 E9E0 FBF2 	.byte	0xE9, 0xE0, 0xFB, 0xF2, 0xCD, 0xC4, 0xDF, 0xD6
+ 420      CDC4 DFD6 
+ 421 03f0 3138 232A 	.byte	0x31, 0x38, 0x23, 0x2A, 0x15, 0x1C, 0x07, 0x0E
+ 421      151C 070E 
+ 422 03f8 7970 6B62 	.byte	0x79, 0x70, 0x6B, 0x62, 0x5D, 0x54, 0x4F, 0x46 
+ 422      5D54 4F46 
+ 423               	
+ 424               	lut_gf256mul_0x04:
+ 425 0400 0004 080C 	.byte	0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C
+ 425      1014 181C 
+ 426 0408 2024 282C 	.byte	0x20, 0x24, 0x28, 0x2C, 0x30, 0x34, 0x38, 0x3C
+ 426      3034 383C 
+ 427 0410 4044 484C 	.byte	0x40, 0x44, 0x48, 0x4C, 0x50, 0x54, 0x58, 0x5C
+ 427      5054 585C 
+ 428 0418 6064 686C 	.byte	0x60, 0x64, 0x68, 0x6C, 0x70, 0x74, 0x78, 0x7C
+ 428      7074 787C 
+ 429 0420 8084 888C 	.byte	0x80, 0x84, 0x88, 0x8C, 0x90, 0x94, 0x98, 0x9C
+ 429      9094 989C 
+ 430 0428 A0A4 A8AC 	.byte	0xA0, 0xA4, 0xA8, 0xAC, 0xB0, 0xB4, 0xB8, 0xBC
+ 430      B0B4 B8BC 
+ 431 0430 C0C4 C8CC 	.byte	0xC0, 0xC4, 0xC8, 0xCC, 0xD0, 0xD4, 0xD8, 0xDC
+ 431      D0D4 D8DC 
+ 432 0438 E0E4 E8EC 	.byte	0xE0, 0xE4, 0xE8, 0xEC, 0xF0, 0xF4, 0xF8, 0xFC
+ 432      F0F4 F8FC 
+ 433 0440 1B1F 1317 	.byte	0x1B, 0x1F, 0x13, 0x17, 0x0B, 0x0F, 0x03, 0x07
+ 433      0B0F 0307 
+ 434 0448 3B3F 3337 	.byte	0x3B, 0x3F, 0x33, 0x37, 0x2B, 0x2F, 0x23, 0x27
+ 434      2B2F 2327 
+ 435 0450 5B5F 5357 	.byte	0x5B, 0x5F, 0x53, 0x57, 0x4B, 0x4F, 0x43, 0x47
+ 435      4B4F 4347 
+ 436 0458 7B7F 7377 	.byte	0x7B, 0x7F, 0x73, 0x77, 0x6B, 0x6F, 0x63, 0x67
+ 436      6B6F 6367 
+ 437 0460 9B9F 9397 	.byte	0x9B, 0x9F, 0x93, 0x97, 0x8B, 0x8F, 0x83, 0x87
+ 437      8B8F 8387 
+ 438 0468 BBBF B3B7 	.byte	0xBB, 0xBF, 0xB3, 0xB7, 0xAB, 0xAF, 0xA3, 0xA7
+ 438      ABAF A3A7 
+ 439 0470 DBDF D3D7 	.byte	0xDB, 0xDF, 0xD3, 0xD7, 0xCB, 0xCF, 0xC3, 0xC7
+ 439      CBCF C3C7 
+ 440 0478 FBFF F3F7 	.byte	0xFB, 0xFF, 0xF3, 0xF7, 0xEB, 0xEF, 0xE3, 0xE7
+ 440      EBEF E3E7 
+ 441 0480 3632 3E3A 	.byte	0x36, 0x32, 0x3E, 0x3A, 0x26, 0x22, 0x2E, 0x2A
+ 441      2622 2E2A 
+ 442 0488 1612 1E1A 	.byte	0x16, 0x12, 0x1E, 0x1A, 0x06, 0x02, 0x0E, 0x0A
+ 442      0602 0E0A 
+ 443 0490 7672 7E7A 	.byte	0x76, 0x72, 0x7E, 0x7A, 0x66, 0x62, 0x6E, 0x6A
+ 443      6662 6E6A 
+ 444 0498 5652 5E5A 	.byte	0x56, 0x52, 0x5E, 0x5A, 0x46, 0x42, 0x4E, 0x4A
+ 444      4642 4E4A 
+ 445 04a0 B6B2 BEBA 	.byte	0xB6, 0xB2, 0xBE, 0xBA, 0xA6, 0xA2, 0xAE, 0xAA
+ 445      A6A2 AEAA 
+ 446 04a8 9692 9E9A 	.byte	0x96, 0x92, 0x9E, 0x9A, 0x86, 0x82, 0x8E, 0x8A
+ 446      8682 8E8A 
+ 447 04b0 F6F2 FEFA 	.byte	0xF6, 0xF2, 0xFE, 0xFA, 0xE6, 0xE2, 0xEE, 0xEA
+ 447      E6E2 EEEA 
+ 448 04b8 D6D2 DEDA 	.byte	0xD6, 0xD2, 0xDE, 0xDA, 0xC6, 0xC2, 0xCE, 0xCA
+ 448      C6C2 CECA 
+ 449 04c0 2D29 2521 	.byte	0x2D, 0x29, 0x25, 0x21, 0x3D, 0x39, 0x35, 0x31
+ 449      3D39 3531 
+ 450 04c8 0D09 0501 	.byte	0x0D, 0x09, 0x05, 0x01, 0x1D, 0x19, 0x15, 0x11
+ 450      1D19 1511 
+ 451 04d0 6D69 6561 	.byte	0x6D, 0x69, 0x65, 0x61, 0x7D, 0x79, 0x75, 0x71
+ 451      7D79 7571 
+ 452 04d8 4D49 4541 	.byte	0x4D, 0x49, 0x45, 0x41, 0x5D, 0x59, 0x55, 0x51
+ 452      5D59 5551 
+ 453 04e0 ADA9 A5A1 	.byte	0xAD, 0xA9, 0xA5, 0xA1, 0xBD, 0xB9, 0xB5, 0xB1
+ 453      BDB9 B5B1 
+ 454 04e8 8D89 8581 	.byte	0x8D, 0x89, 0x85, 0x81, 0x9D, 0x99, 0x95, 0x91
+ 454      9D99 9591 
+ 455 04f0 EDE9 E5E1 	.byte	0xED, 0xE9, 0xE5, 0xE1, 0xFD, 0xF9, 0xF5, 0xF1
+ 455      FDF9 F5F1 
+ 456 04f8 CDC9 C5C1 	.byte	0xCD, 0xC9, 0xC5, 0xC1, 0xDD, 0xD9, 0xD5, 0xD1
+ 456      DDD9 D5D1 
+DEFINED SYMBOLS
+wireless/aes/aes_dec-asm_faster.S:29     *ABS*:000000000000001c A
+wireless/aes/aes_dec-asm_faster.S:30     *ABS*:000000000000001d B
+wireless/aes/aes_dec-asm_faster.S:31     *ABS*:0000000000000000 P
+wireless/aes/aes_dec-asm_faster.S:32     *ABS*:0000000000000019 xREDUCER
+wireless/aes/aes_dec-asm_faster.S:35     .text:0000000000000000 aes256_dec
+wireless/aes/aes_dec-asm_faster.S:81     .text:000000000000000a aes_decrypt_core
+wireless/aes/aes_dec-asm_faster.S:40     .text:0000000000000004 aes192_dec
+wireless/aes/aes_dec-asm_faster.S:45     .text:0000000000000008 aes128_dec
+wireless/aes/aes_dec-asm_faster.S:52     *ABS*:0000000000000002 T0
+wireless/aes/aes_dec-asm_faster.S:53     *ABS*:0000000000000003 T1
+wireless/aes/aes_dec-asm_faster.S:54     *ABS*:0000000000000004 T2
+wireless/aes/aes_dec-asm_faster.S:55     *ABS*:0000000000000005 T3
+wireless/aes/aes_dec-asm_faster.S:56     *ABS*:0000000000000006 T4
+wireless/aes/aes_dec-asm_faster.S:57     *ABS*:0000000000000007 T5
+wireless/aes/aes_dec-asm_faster.S:58     *ABS*:0000000000000008 ST00
+wireless/aes/aes_dec-asm_faster.S:59     *ABS*:0000000000000009 ST01
+wireless/aes/aes_dec-asm_faster.S:60     *ABS*:000000000000000a ST02
+wireless/aes/aes_dec-asm_faster.S:61     *ABS*:000000000000000b ST03
+wireless/aes/aes_dec-asm_faster.S:62     *ABS*:000000000000000c ST10
+wireless/aes/aes_dec-asm_faster.S:63     *ABS*:000000000000000d ST11
+wireless/aes/aes_dec-asm_faster.S:64     *ABS*:000000000000000e ST12
+wireless/aes/aes_dec-asm_faster.S:65     *ABS*:000000000000000f ST13
+wireless/aes/aes_dec-asm_faster.S:66     *ABS*:0000000000000010 ST20
+wireless/aes/aes_dec-asm_faster.S:67     *ABS*:0000000000000011 ST21
+wireless/aes/aes_dec-asm_faster.S:68     *ABS*:0000000000000012 ST22
+wireless/aes/aes_dec-asm_faster.S:69     *ABS*:0000000000000013 ST23
+wireless/aes/aes_dec-asm_faster.S:70     *ABS*:0000000000000014 ST30
+wireless/aes/aes_dec-asm_faster.S:71     *ABS*:0000000000000015 ST31
+wireless/aes/aes_dec-asm_faster.S:72     *ABS*:0000000000000016 ST32
+wireless/aes/aes_dec-asm_faster.S:73     *ABS*:0000000000000017 ST33
+wireless/aes/aes_dec-asm_faster.S:74     *ABS*:0000000000000018 CTR
+wireless/aes/aes_dec-asm_faster.S:154    .text:0000000000000136 exit
+wireless/aes/aes_dec-asm_faster.S:390    .text:0000000000000300 lut_gf256mul_0x09
+wireless/aes/aes_dec-asm_faster.S:424    .text:0000000000000400 lut_gf256mul_0x04
+
+UNDEFINED SYMBOLS
+aes_invsbox
