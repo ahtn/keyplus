@@ -92,6 +92,11 @@ class GenericDeviceCommand(GenericCommand):
         )
 
         self.arg_parser.add_argument(
+            '-d', dest='vid_pid', type=str, default=None,
+            help='Open a device based on a vid_pid pair'
+        )
+
+        self.arg_parser.add_argument(
             '-n', dest='name', type=str, default=None,
             help='Name of the USB device to use. If there is no exact '
             'match, look for partial matches.'
@@ -126,11 +131,40 @@ class GenericDeviceCommand(GenericCommand):
     def find_matching_device(self, args):
         hid_list = easyhid.Enumeration()
 
+        target_vid = protocol.DEFAULT_VID
+        target_pid = None
+
+        if args.vid_pid:
+            matches = args.vid_pid.split(":")
+            if len(matches) == 1:
+                try:
+                    target_vid = int(matches[0], base=16)
+                    if target_vid > 0xffff: raise Exception
+                except:
+                    print("Bad VID/PID pair: " + args.vid_pid, file=sys.stderr)
+                    exit(2)
+            elif len(matches) == 2:
+                try:
+                    if matches[0] == '':
+                        target_vid = None
+                    else:
+                        target_vid = target_vid = int(matches[0], base=16)
+                    if matches[1] == '':
+                        target_pid = None
+                    else:
+                        target_pid = target_pid = int(matches[1], base=16)
+                    if target_vid and target_vid > 0xffff: raise Exception
+                    if target_pid and target_pid > 0xffff: raise Exception
+                except:
+                    print("Bad VID/PID pair: " + args.vid_pid, file=sys.stderr)
+                    exit(2)
+
         if args.serial != None:
             args.serial = self.get_similar_serial_number(hid_list, args.serial)
 
         matching_devices = hid_list.find(
-            vid=protocol.DEFAULT_VID,
+            vid=target_vid,
+            pid=target_pid,
             serial=args.serial,
             interface=3
         )

@@ -6,6 +6,6 @@ if [[ $# -ne 1 ]]; then
     echo "Usage: $0 hex_file"
 fi
 
-../host-software/keyer.py -d 6666:1111 bootloader
+../host-software/keyplus_cli.py bootloader
 sleep 1.5
 ./xusb-boot/scripts/flash.py -d 6666:b007 -f $1
