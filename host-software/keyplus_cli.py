@@ -210,7 +210,13 @@ class PassthroughCommand(GenericDeviceCommand):
         device = self.find_matching_device(args)
         device.open()
 
-        protocol.set_passthrough_mode(device, 1)
+        try:
+            protocol.set_passthrough_mode(device, 1)
+        except protocol.KBProtocolException as err:
+            if err.error_code == protocol.ProtocolError.ERROR_UNSUPPORTED_COMMAND:
+                print("Target device doesn't support matrix scanning", file=sys.stderr)
+                exit(3)
+            raise err
         passthrough_timeout = 10000
 
         response = device.read(timeout=passthrough_timeout)

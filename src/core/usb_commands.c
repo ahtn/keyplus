@@ -12,6 +12,7 @@
 #include "core/layout.h"
 #include "core/led.h"
 #include "core/matrix_interpret.h"
+#include "core/matrix_scanner.h"
 
 #include "core/keyboard_report.h"
 #include "core/media_report.h"
@@ -210,8 +211,12 @@ void parse_cmd(void) {
             cmd_logitech_bootloader();
         } break;
         case CMD_SET_PASSTHROUGH_MODE: {
-            passthrough_mode_on = g_vendor_report_out.data[1];
-            cmd_ok();
+            if (g_settings.scan_mode == MATRIX_SCANNER_MODE_NONE) {
+                cmd_error(ERROR_UNSUPPORTED_COMMAND);
+            } else {
+                passthrough_mode_on = g_vendor_report_out.data[1];
+                cmd_ok();
+            }
         } break;
 
         // TODO: before using this command on XMEGA, need to fix flash locations

@@ -57,6 +57,7 @@ class ProtocolError:
     ERROR_INVALID_VALUE = 2
     ERROR_KEYBOARD_INACTIVE = 3
     ERROR_UNKNOWN_CMD = 4
+    ERROR_UNSUPPORTED_COMMAND = 5
 
     def get_string(code):
         for (key, value) in ProtocolError.__dict__.items():
@@ -75,7 +76,7 @@ def raise_error_code(code):
     if code == ProtocolError.ERROR_CODE_NONE:
         pass
     else:
-        raise KBProtocolException(ProtocolError.get_string(code))
+        raise KBProtocolException(code=code)
 
 
 def simple_command(device, cmd_id, data=None, receive=True):

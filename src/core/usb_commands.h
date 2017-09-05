@@ -53,6 +53,7 @@ enum {
     ERROR_INVALID_VALUE = 2,
     ERROR_KEYBOARD_INACTIVE = 3,
     ERROR_UNKNOWN_CMD = 4,
+    ERROR_UNSUPPORTED_COMMAND = 5,
 };
 
 enum usb_vendor_state {
