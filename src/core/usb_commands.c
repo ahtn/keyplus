@@ -124,8 +124,7 @@ static void cmd_get_device_settings(void) {
 
     g_vendor_report_in.data[0] = CMD_GET_DEVICE_SETTINGS;
 
-#undef SETTINGS_ADDR
-#define SETTINGS_ADDR ((flash_ptr_t)(&g_settings))
+// #define SETTINGS_ADDR_REF ((flash_ptr_t)(&g_settings))
 
     g_vendor_report_in.data[1] = info_type;
 
@@ -283,8 +282,9 @@ void handle_vendor_out_reports(void) {
         flash_layout.counter += 1;
         if (flash_layout.counter >= flash_layout.num_packets) {
             vendor_state = STATE_WAIT_CMD;
-            dynamic_delay_ms(100);
-            cmd_reset();
+            g_input_disabled = false;
+            // dynamic_delay_ms(100);
+            // cmd_reset();
         }
     }
 }

@@ -73,7 +73,6 @@ class EKCMacroRepeatKey(EKCData):
 #             elif type(item) == str:
 
 
-
 class EKCDataMain(EKCData):
     def __init__(self, children=[]):
         self.children = children

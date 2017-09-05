@@ -113,7 +113,6 @@ def simple_command(device, cmd_id, data=None, receive=True):
                 packet_type = response[0]
 
 
-        # hexdump.hexdump(response)
         if response[0] == CMD_ERROR_CODE:
             raise_error_code(response[1])
         elif response[0] != cmd_id:
@@ -316,7 +315,6 @@ def update_layout_section(device, layout_data):
     for chunk in chunk_list:
         device.write(chunk)
         response = device.read(timeout=20)
-        hexdump.hexdump(response)
 
 REPORT_MODE_STR_MAP = {
     KEYBOARD_REPORT_MODE_AUTO: "Auto NKRO",

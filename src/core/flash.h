@@ -55,8 +55,8 @@ typedef uint16_t flash_size_t;
 // reprogramming when we update the layout. We want to reserve space for them,
 // and have them page aligned.
 #ifdef SDCC
-// #define AT__SETTINGS_ADDR AT(SETTINGS_ADDR)
-#define AT__SETTINGS_ADDR
+#define AT__SETTINGS_ADDR AT(SETTINGS_ADDR)
+// #define AT__SETTINGS_ADDR
 #else
 // #define AT__SETTINGS_ADDR __attribute__ ((section (".settings_storage")))
 #define AT__SETTINGS_ADDR

@@ -245,9 +245,6 @@ class SettingsGenerator:
         else:
             raise IndexError("Couldn't find device with id: {}".format(dev_id))
 
-
-# def todo():
-#     pass
     def parse_devices(self):
         self.device_data = {}
         self.device_name_map = {}
@@ -260,10 +257,15 @@ class SettingsGenerator:
 
             self.device_data[dev.id] = dev
             self.device_name_map[device_name] = dev.id
+            self.largest_device_id = max(self.largest_device_id, dev.id)
 
     def assert_validate_device(self, dev):
         if dev.scan_mode.mode == ScanMode.NO_MATRIX:
             return
+
+        if not dev.id < MAX_DEVICE_ID:
+            raise ParseError("Device id '{}' too large. Max allowed value is {}"
+                             .format(dev.id, MAX_DEVICE_ID))
 
         # check layout identifier
         if not dev.layout_name in self.layout_data:
