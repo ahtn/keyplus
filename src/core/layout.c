@@ -51,7 +51,7 @@ XRAM flash_size_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
 #define KC_ENT_SFT KC_EXTERNAL(58)
 
 #define EXTENDED_KEYCODES() \
-    _32(68ULL), \
+    _16(68ULL), \
     _16(KC_MACRO), \
     _16(KC_H), _16(KC_E), _16(KC_L), _16(KC_L), _16(KC_0), \
     _16(KC_H), _16(KC_E), _16(KC_L), _16(KC_L), _16(KC_0), \
@@ -392,8 +392,8 @@ void keyboard_layouts_init(void) {
 
     // extended keycode section
     {
-        flash_read((uint8_t*)&g_ekc_storage_size, storage_pos, sizeof(uint32_t));
-        storage_pos += sizeof(uint32_t);
+        flash_read((uint8_t*)&g_ekc_storage_size, storage_pos, sizeof(uint16_t));
+        storage_pos += sizeof(uint16_t);
 
         if (!is_valid_storage_pos(storage_pos + g_ekc_storage_size)) {
             // TODO: a warnning here would be nice, but it will just screw up the

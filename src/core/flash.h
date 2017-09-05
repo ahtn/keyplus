@@ -40,7 +40,8 @@ typedef uint16_t flash_size_t;
 #define BOOTLOADER_ADDR     (FLASH_SIZE - BOOTLOADER_SIZE)
 #define SETTINGS_ADDR       (BOOTLOADER_ADDR - SETTINGS_SIZE)
 // #define LAYOUT_ADDR         (SETTINGS_ADDR - LAYOUT_SIZE)
-#define LAYOUT_ADDR         ((flash_ptr_t)&g_layout_storage[0])
+// #define LAYOUT_ADDR         ((flash_ptr_t)&g_layout_storage[0])
+#define LAYOUT_ADDR         ((flash_ptr_t)0x6000)
 
 #define LAYOUT_PAGE_NUM     (LAYOUT_ADDR / PAGE_SIZE)
 #define SETTINGS_PAGE_NUM   (SETTINGS_ADDR / PAGE_SIZE)
@@ -62,8 +63,8 @@ typedef uint16_t flash_size_t;
 #endif
 
 #ifdef SDCC
-// #define AT__LAYOUT_ADDR AT(LAYOUT_ADDR)
-#define AT__LAYOUT_ADDR
+#define AT__LAYOUT_ADDR AT(LAYOUT_ADDR)
+// #define AT__LAYOUT_ADDR
 #else
 // #define AT__LAYOUT_ADDR __attribute__ ((section (".layout_storage")))
 #define AT__LAYOUT_ADDR

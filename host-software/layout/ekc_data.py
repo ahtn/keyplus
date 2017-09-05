@@ -78,7 +78,7 @@ class EKCDataMain(EKCData):
     def __init__(self, children=[]):
         self.children = children
         self.children_addresses = []
-        self.current_size = 2
+        self.current_size = 0
 
     def add_child(self, child):
         child_id = len(self.children)
@@ -95,7 +95,7 @@ class EKCDataMain(EKCData):
         if total_size > 0xFFFF:
             raise ValueError("EKC data section too large: {} bytes".format(total_size))
 
-        result = bytearray(total_size)
+        result = bytearray(total_size + 2)
 
         # first byte is the total size of the data
         struct.pack_into('<H', result, 0, total_size)

@@ -4,6 +4,7 @@
 import collections
 import struct
 import hexdump
+import datetime
 
 DEFAULT_PID = 0x1111
 DEFAULT_VID = 0x6666
@@ -295,28 +296,73 @@ def reset_device(device):
     response = simple_command(device, CMD_RESET, receive=False)
     return response
 
+def get_chunks(data, chunk_size):
+    return [bytes(data[i*chunk_size:(i+1)*chunk_size]) for i in range(len(data)//chunk_size)]
+
+def update_settings_section(device, settings_data):
+    simple_command(device, CMD_UPDATE_SETTINGS_ALL)
+
+    chunk_list = get_chunks(settings_data, EP_VENDOR_SIZE)
+
+    for chunk in chunk_list:
+        device.write(chunk)
+        device.read()
+
+def update_layout_section(device, layout_data):
+    chunk_list = get_chunks(layout_data, EP_VENDOR_SIZE)
+
+    simple_command(device, CMD_FLASH_LAYOUT, [len(chunk_list)])
+
+    for chunk in chunk_list:
+        print(chunk)
+        device.write(chunk)
+        response = device.read(timeout=20)
+        hexdump.hexdump(response)
+
+REPORT_MODE_STR_MAP = {
+    KEYBOARD_REPORT_MODE_AUTO: "Auto NKRO",
+    KEYBOARD_REPORT_MODE_6KRO: "6KRO",
+    KEYBOARD_REPORT_MODE_NKRO: "NKRO",
+}
 def report_mode_to_str(mode):
-    return {
-        KEYBOARD_REPORT_MODE_AUTO: "Auto NKRO",
-        KEYBOARD_REPORT_MODE_6KRO: "6KRO",
-        KEYBOARD_REPORT_MODE_NKRO: "NKRO",
-    }[mode]
 
+    if mode in REPORT_MODE_STR_MAP:
+        return REPORT_MODE_STR_MAP[mode]
+    else:
+        return "Unknown({})".format(mode)
+
+SCAN_MODE_STR_MAP = {
+    MATRIX_SCANNER_MODE_NONE: "none",
+    MATRIX_SCANNER_MODE_COL_ROW: "diodes column to row",
+    MATRIX_SCANNER_MODE_ROW_COL: "diodes row to column",
+    MATRIX_SCANNER_MODE_PINS: "pins",
+}
 def scan_mode_to_str(mode):
-    return {
-        MATRIX_SCANNER_MODE_NONE: "none",
-        MATRIX_SCANNER_MODE_COL_ROW: "diodes column to row",
-        MATRIX_SCANNER_MODE_ROW_COL: "diodes row to column",
-        MATRIX_SCANNER_MODE_PINS: "pins",
-    }[mode]
+    if mode in SCAN_MODE_STR_MAP:
+        return SCAN_MODE_STR_MAP[mode]
+    else:
+        return "Unknown({})".format(mode)
 
-def power_to_str(power):
-    return {
-        PWR_NEG_18DB: "-18dB",
-        PWR_NEG_12DB: "-12dB",
-        PWR_NEG_6DB: "-6dB",
-        PWR_0DB: "0dB",
-    }[mode]
+POWER_STR_MAP = {
+    PWR_NEG_18DB: "-18dB",
+    PWR_NEG_12DB: "-12dB",
+    PWR_NEG_6DB: "-6dB",
+    PWR_0DB: "0dB",
+}
+def power_to_str(mode):
+    if mode in POWER_STR_MAP:
+        return POWER_STR_MAP[mode]
+    else:
+        return "Unknown({})".format(mode)
+
+def timestamp_to_str(timestamp_raw):
+    if timestamp_raw == 0:
+        return '<Unavailable>'
+    else:
+        try:
+            return str(datetime.datetime.fromtimestamp(timestamp_raw))
+        except OSError:
+            return str(hex(timestamp_raw))
 
 SUPPORT_SCANNING_MASK = 0x01
 SUPPORT_SCANNING_COL_ROW_MASK = 0x02
@@ -403,6 +449,7 @@ def has_fw_support_usb(firmwareInfo):
     return (firmwareInfo.connectivity_support_flags & SUPPORT_USB) != 0
 def has_fw_support_bluetooth(firmwareInfo):
     return (firmwareInfo.connectivity_support_flags & SUPPORT_BT) != 0
+
 
 if __name__ == "__main__":
     import easyhid
