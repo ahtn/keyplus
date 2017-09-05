@@ -99,8 +99,11 @@ C_SRC += $(SRC_USB) \
 	power.c \
 	timer.c \
 	usb_reports.c \
-	wired.c \
 	ws2812.c \
+
+ifeq ($(USE_I2C), 1)
+	C_SRC += wired.c
+endif
 
 # TODO: enable/disable nrf24 and i2c at run time using flash settings
 ifeq ($(USE_NRF24), 1)

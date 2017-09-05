@@ -299,11 +299,15 @@ void usb_mode_main_loop(void) {
             uint8_t *matrix_data = i2c_packet+1;
             const uint8_t use_deltas = true;
 
+#if USE_I2C
             i2c_packet[0] = (i2c_get_active_address() << 1) | 0x01;
+#endif
+
             const uint8_t data_size = get_matrix_data(matrix_data, use_deltas);
-            i2c_packet[data_size+1] = i2c_calculate_checksum(i2c_packet, data_size+1);
 
 #if USE_I2C
+            i2c_packet[data_size+1] = i2c_calculate_checksum(i2c_packet, data_size+1);
+
             // TODO: important
             // TODO: don't block here, add buffer for queued messages
             while (!i2c_broadcast(i2c_packet, data_size+2));
@@ -360,7 +364,10 @@ void usb_mode_main_loop(void) {
         sticky_key_task();
         hold_key_task();
 
+#if !(USE_NRF24 && !RF_POLLING)
+        // Don't have RF irq pin, so need to scan 
         enter_sleep_mode(SLEEP_MODE_IDLE);
+#endif
         wdt_kick();
 
     }
