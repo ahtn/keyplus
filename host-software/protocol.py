@@ -314,7 +314,6 @@ def update_layout_section(device, layout_data):
     simple_command(device, CMD_FLASH_LAYOUT, [len(chunk_list)])
 
     for chunk in chunk_list:
-        print(chunk)
         device.write(chunk)
         response = device.read(timeout=20)
         hexdump.hexdump(response)
