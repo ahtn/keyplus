@@ -66,6 +66,8 @@ else
 	$(error Invalid size for flash='$(FLASH_SIZE)')
 endif
 
+CDEFS += -DSETTINGS_ADDR=0x5E00
+CDEFS += -DLAYOUT_ADDR=0x6000
 
 AS = /usr/local/bin/sdas8051
 CC = /usr/local/bin/sdcc

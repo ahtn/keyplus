@@ -139,7 +139,7 @@ typedef struct firmware_build_settings_t {
 } firmware_build_settings_t;
 
 #define GET_SETTING(x) (\
-    ((__flash const settings_t *)SETTINGS_ADDR)->x \
+    ((ROM const settings_t *)SETTINGS_ADDR)->x \
 )
 
 AT__SETTINGS_ADDR extern const settings_t g_settings;
