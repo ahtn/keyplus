@@ -21,7 +21,7 @@
 
 // TODO: should probably use 2 pages to store this value
 // session id defines
-#define SID_PAGE 62
+#define SID_PAGE 61
 #define SID_ADDR (SID_PAGE * PAGE_SIZE)
 #define SID_MAGIC_VALUE (0x268e8728UL)
 

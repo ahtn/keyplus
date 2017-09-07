@@ -37,7 +37,7 @@ static void TWIE_SlaveProcessData(void);
 static uint8_t our_i2c_address;
 
 void i2c_init(void) {
-    our_i2c_address = device_id_to_i2c_address(g_settings.device_id);
+    our_i2c_address = device_id_to_i2c_address(GET_SETTING(device_id));
     i2c_buffer_ptr = 0;
     i2c_buffer_ptr_oldest = 0;
 

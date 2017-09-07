@@ -313,7 +313,7 @@ void usb_mode_main_loop(void) {
             while (!i2c_broadcast(i2c_packet, data_size+2));
 #endif
 
-            keyboard_update_device_matrix(g_settings.device_id, matrix_data);
+            keyboard_update_device_matrix(GET_SETTING(device_id), matrix_data);
 
             if (is_passthrough_enabled()) {
                 g_vendor_report_in.data[0] = CMD_PASSTHROUGH_MATRIX;

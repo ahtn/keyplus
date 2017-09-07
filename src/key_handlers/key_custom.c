@@ -61,7 +61,7 @@ static void handler(keycode_t keycode, key_event_t event) REENT {
     // TODO: move this to extended keycode type
     if (is_dongle_key(keycode) && event == EVENT_PRESSED) {
         const uint8_t id = keycode - KC_DONGLE_0;
-        if (id == g_settings.device_id) {
+        if (id == GET_SETTING(device_id)) {
             rf_auto_ack(true);
         } else {
             rf_auto_ack(false);

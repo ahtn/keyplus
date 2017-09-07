@@ -26,9 +26,7 @@
 
 #define KEY_NUMBER_MAP_STORAGE_POS (g_layout_storage + 0)
 
-AT__LAYOUT_ADDR
-// extern ROM const keycode_t layout_storage[LAYOUT_SIZE/sizeof(keycode_t)];
-extern ROM const uint8_t g_layout_storage[];
+AT__LAYOUT_ADDR extern const uint8_t g_layout_storage[];
 extern XRAM flash_ptr_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
 
 

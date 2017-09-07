@@ -10,6 +10,8 @@
 #include "core/packet.h"
 #include "core/nrf24.h"
 
+#include "core/flash.h"
+
 #define NUM_KEYBOARD_PIPES 4
 
 #define NRF_ADDR_LEN 5
@@ -136,10 +138,12 @@ typedef struct firmware_build_settings_t {
     uint8_t reserved[30]; // pad to 62 bytes
 } firmware_build_settings_t;
 
-#include "flash.h"
+#define GET_SETTING(x) (\
+    ((__flash const settings_t *)SETTINGS_ADDR)->x \
+)
 
-AT__SETTINGS_ADDR
-extern const ROM settings_t g_settings;
+AT__SETTINGS_ADDR extern const settings_t g_settings;
+
 extern XRAM rf_settings_t g_rf_settings;
 
 extern const ROM firmware_build_settings_t g_firmware_build_settings;

@@ -31,7 +31,7 @@ void nrf_registers_common(void) {
     // When ack payloads > 15bytes are used @2Mbps, need ARD >=500µs.
     // maybe increase the auto matic retransmit delay?
     // The ARD is given by `(ard + 1) * 250µs` with a maximum delay of 4ms.
-    const uint8_t rf_ard = device_id_to_pipe_num(g_settings.device_id) + 1;
+    const uint8_t rf_ard = device_id_to_pipe_num(GET_SETTING(device_id)) + 1;
 
     nrf24_write_reg(CONFIG, NRF24_IRQ_MASKS); // need to power down before settings these registers
     nrf24_write_reg(RF_SETUP, RF_DR_2MBPS | PWR_0DB);
@@ -50,7 +50,7 @@ void nrf_registers_common(void) {
 
 /* TODO: move settings */
 static void nrf_registers_init_sender(void) {
-    const uint8_t pipe_num = g_settings.device_id % NUM_KEYBOARD_PIPES;
+    const uint8_t pipe_num = GET_SETTING(device_id) % NUM_KEYBOARD_PIPES;
     // radio settings
     nrf_registers_common();
 
@@ -100,7 +100,7 @@ void rf_send_matrix_packet(void) {
     }
 
     // TODO: make a function that does this for us
-    packet.device_id = g_settings.device_id;
+    packet.device_id = GET_SETTING(device_id);
     packet.packet_id = uid_generate();
 
     aes_encrypt((uint8_t*)&packet);
@@ -123,7 +123,7 @@ void rf_handle_ack_payloads(void) {
                     is_buffer_zeroed(packet->sync.salt, PACKET_SYNC_SALT_LENGTH)) {
                 set_packet_type(packet, PACKET_TYPE_SESSION_UPDATE);
                 packet->sync.nonce = packet->sync.nonce;
-                packet->sync.device_id = g_settings.device_id;
+                packet->sync.device_id = GET_SETTING(device_id);
                 packet->sync.packet_id = uid_generate();
                 memset(packet->sync.salt, 0, PACKET_SYNC_SALT_LENGTH);
 
@@ -352,7 +352,7 @@ bit_t is_valid_packet(const packet_t *packet, uint8_t pipe_num) {
         return false;
     }
 
-    if (device_id > g_settings.layout.number_devices) {
+    if (device_id > GET_SETTING(layout.number_devices)) {
         return false;
     }
 

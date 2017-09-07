@@ -30,7 +30,6 @@ typedef uint16_t flash_size_t;
 
 #define BOOTLOADER_SIZE     (1*PAGE_SIZE)
 #define SETTINGS_SIZE       (1*PAGE_SIZE)
-// #define LAYOUT_SIZE         (2*PAGE_SIZE)
 #define LAYOUT_SIZE         (5*PAGE_SIZE)
 
 #define SETTINGS_PAGE_COUNT     (SETTINGS_SIZE / PAGE_SIZE)
@@ -38,10 +37,14 @@ typedef uint16_t flash_size_t;
 #define BOOTLOADER_PAGE_COUNT   (BOOTLOADER_SIZE / PAGE_SIZE)
 
 #define BOOTLOADER_ADDR     (FLASH_SIZE - BOOTLOADER_SIZE)
-#define SETTINGS_ADDR       (BOOTLOADER_ADDR - SETTINGS_SIZE)
-// #define LAYOUT_ADDR         (SETTINGS_ADDR - LAYOUT_SIZE)
-// #define LAYOUT_ADDR         ((flash_ptr_t)&g_layout_storage[0])
-#define LAYOUT_ADDR         ((flash_ptr_t)0x6000)
+
+#ifndef SETTINGS_ADDR
+#define SETTINGS_ADDR         ((flash_ptr_t)&g_settings)
+#endif
+
+#ifndef LAYOUT_ADDR
+#define LAYOUT_ADDR         ((flash_ptr_t)&g_layout_storage[0])
+#endif
 
 #define LAYOUT_PAGE_NUM     (LAYOUT_ADDR / PAGE_SIZE)
 #define SETTINGS_PAGE_NUM   (SETTINGS_ADDR / PAGE_SIZE)
@@ -49,25 +52,19 @@ typedef uint16_t flash_size_t;
 
 #define LOGITECH_BOOTLOADER_ADDR    0x7400
 
-
-// TODO: link scripts for xmega
 // NOTE: We want to fix the locations of these structures because we will be
 // reprogramming when we update the layout. We want to reserve space for them,
 // and have them page aligned.
 #ifdef SDCC
-#define AT__SETTINGS_ADDR AT(SETTINGS_ADDR)
-// #define AT__SETTINGS_ADDR
+#define ROM AT__SETTINGS_ADDR AT(SETTINGS_ADDR)
 #else
-// #define AT__SETTINGS_ADDR __attribute__ ((section (".settings_storage")))
-#define AT__SETTINGS_ADDR
+#define AT__SETTINGS_ADDR __attribute__ ((section (".key_settings_block")))
 #endif
 
 #ifdef SDCC
-#define AT__LAYOUT_ADDR AT(LAYOUT_ADDR)
-// #define AT__LAYOUT_ADDR
+#define ROM AT__LAYOUT_ADDR AT(LAYOUT_ADDR)
 #else
-// #define AT__LAYOUT_ADDR __attribute__ ((section (".layout_storage")))
-#define AT__LAYOUT_ADDR
+#define AT__LAYOUT_ADDR __attribute__ ((section (".key_layout_block")))
 #endif
 
 void flash_modify_enable(void);

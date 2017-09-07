@@ -41,7 +41,7 @@ void dongle_init(void) {
 
     hardware_init();
     settings_load_from_flash();
-    aes_key_init(g_settings.rf.ekey, g_settings.rf.dkey);
+    aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
     timer_init();
     led_init();
     usb_init();

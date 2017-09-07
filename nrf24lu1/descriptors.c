@@ -133,7 +133,7 @@ void usb_get_descriptor(const usb_request_t *request) {
                         packetizer_data_ptr = string_desc_buffer;
                     } break;
                     case STRING_DESC_PRODUCT: {
-                        make_string_desc(g_settings.device_name);
+                        make_string_desc(GET_SETTING(device_name));
                         packetizer_data_ptr = string_desc_buffer;
                     } break;
                     case STRING_DESC_SERIAL_NUMBER: {

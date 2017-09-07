@@ -32,7 +32,8 @@ uint8_t get_matrix_compressed_size(void) {
 }
 
 static inline uint8_t get_key_number(uint8_t row, uint8_t col) {
-    return g_layout_storage[row*g_scan_plan.cols + col];
+    // return g_layout_storage[row*g_scan_plan.cols + col];
+    return flash_read_byte(LAYOUT_ADDR + row*g_scan_plan.cols + col);
 }
 
 

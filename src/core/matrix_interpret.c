@@ -257,7 +257,7 @@ static void fill_keyboard_slot(uint8_t kb_slot_id, uint8_t kb_id) {
     g_keyboard_slots[kb_slot_id].kb_id = kb_id;
     g_keyboard_slots[kb_slot_id].layout = g_layout_storage_pos[kb_id];
 
-    g_keyboard_slots[kb_slot_id].matrix_size = g_settings.layout.layouts[kb_id].matrix_size;
+    g_keyboard_slots[kb_slot_id].matrix_size = GET_SETTING(layout.layouts[kb_id].matrix_size);
     g_keyboard_slots[kb_slot_id].input_disabled = false;
     reset_layer_state(kb_slot_id);
 }
@@ -327,9 +327,9 @@ void keyboard_update_device_matrix(uint8_t device_id, const uint8_t *matrix_pack
     const uint8_t packet_type = matrix_packet[0] >> PACKET_MATRIX_TYPE_BIT_POS;
     const uint8_t packet_data_size = matrix_packet[0] & PACKET_MATRIX_SIZE_MASK;
 
-    const uint8_t kb_id = g_settings.layout.devices[device_id].layout_id;
-    const uint8_t device_matrix_offset = g_settings.layout.devices[device_id].matrix_offset;
-    const uint8_t device_matrix_size = g_settings.layout.devices[device_id].matrix_size;
+    const uint8_t kb_id = GET_SETTING(layout.devices[device_id].layout_id);
+    const uint8_t device_matrix_offset = GET_SETTING(layout.devices[device_id].matrix_offset);
+    const uint8_t device_matrix_size = GET_SETTING(layout.devices[device_id].matrix_size);
 
     // matrix_data now points to the start of the key list
     const uint8_t* matrix_data = &matrix_packet[1];

@@ -18,8 +18,7 @@
 // settings loaded into ram
 XRAM rf_settings_t g_rf_settings;
 
-AT__SETTINGS_ADDR
-const ROM settings_t g_settings = {
+AT__SETTINGS_ADDR const settings_t g_settings = {
 
     .device_id = DEVICE_ID,
 
@@ -93,11 +92,11 @@ uint8_t device_id_to_pipe_num(const uint8_t device_id) {
 
 void settings_load_from_flash(void) {
 #ifndef CONFIG_NO_MATRIX
-    g_scan_plan.mode = g_settings.scan_mode;
-    g_scan_plan.rows = g_settings.row_count;
-    g_scan_plan.cols = g_settings.col_count;
+    g_scan_plan.mode = GET_SETTING(scan_mode);
+    g_scan_plan.rows = GET_SETTING(row_count);
+    g_scan_plan.cols = GET_SETTING(col_count);
 #endif
 
     // load rf setings into ram
-    flash_read((uint8_t*)&g_rf_settings, (flash_ptr_t)&g_settings.rf, sizeof(rf_settings_t));
+    flash_read((uint8_t*)&g_rf_settings, (flash_ptr_t)&(GET_SETTING(rf)), sizeof(rf_settings_t));
 }

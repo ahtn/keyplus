@@ -126,6 +126,50 @@ FUSE_SECTION_START=0x08F0020
 # Compiler flag to set the C Standard level.
 CSTANDARD = -std=gnu99
 
+# see avr-gcc for information on avrxmega2, avrxmega4, etc
+# NOTE: haven't tested on all these chips
+ifeq ($(MCU), atxmega16a4u)
+  BOOT_SECTION_START = 0x004000
+  BOOTLOADER_SIZE = 0x1000
+  AVRDUDE_PART = x16a4
+  LD_SCRIPT = avrxmega2.xn
+  MCU_STRING = "ATxmega16a4u"
+else ifeq ($(MCU), atxmega32a4u)
+  BOOT_SECTION_START = 0x008000
+  BOOTLOADER_SIZE = 0x1000
+  AVRDUDE_PART = x32a4
+  LD_SCRIPT = avrxmega2.xn
+  MCU_STRING = "ATxmega32a4u"
+else ifeq ($(MCU), atxmega64a4u)
+  BOOT_SECTION_START = 0x010000
+  BOOTLOADER_SIZE = 0x1000
+  AVRDUDE_PART = x64a4
+  LD_SCRIPT = avrxmega4.xn
+  MCU_STRING = "ATxmega64a4u"
+else ifeq ($(MCU), atxmega128a4u)
+  BOOT_SECTION_START = 0x020000
+  BOOTLOADER_SIZE = 0x2000
+  AVRDUDE_PART = x128a4
+  MCU_STRING = "ATxmega128a4u"
+  # NOTE: avr-gcc says atxmega128a4u -> avrxmega7, but it also says avrxmega7
+  # is for devices with more than 128KiB program memory and more than 64KiB
+  # of RAM. So avrxmega7 is probably used with external RAM
+  # LD_SCRIPT = avrxmega7.xn
+  LD_SCRIPT = avrxmega6.xn
+else
+  $(error No part matches MCU='$(MCU)')
+endif
+
+# LD_SCRIPT_DIR = /usr/lib/ldscripts
+LD_SCRIPT_DIR = ./ld-scripts
+
+LDFLAGS += -T $(LD_SCRIPT_DIR)/$(LD_SCRIPT)
+LDFLAGS += -Wl,--section-start=.key_settings_block=0x006800
+LDFLAGS += -Wl,--section-start=.key_layout_block=0x007000
+
+CDEFS += -DSETTINGS_ADDR=0x006800
+CDEFS += -DLAYOUT_ADDR=0x007000
+
 # Place -D or -U options here for C sources
 CDEFS += -DCLOCK_SPEED_SLOW=$(CLOCK_SPEED_SLOW)UL
 CDEFS += -DF_CPU=$(F_CPU)UL

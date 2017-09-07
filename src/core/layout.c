@@ -220,9 +220,7 @@ XRAM flash_size_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
 // is determined by the g_settings.layout[].
 //
 
-AT__LAYOUT_ADDR
-// ROM const keycode_t layout_storage[LAYOUT_SIZE/sizeof(keycode_t)] = {
-ROM const uint8_t g_layout_storage[] = {
+AT__LAYOUT_ADDR const uint8_t g_layout_storage[] = {
 // key number map section
     KEY_NUMBER_MAP()
 // extended keycode section
@@ -377,7 +375,7 @@ ROM const uint8_t g_layout_storage[] = {
 void keyboard_layouts_init(void) {
     uint8_t i;
 
-    flash_ptr_t storage_pos = (flash_ptr_t)&g_layout_storage[0];
+    flash_ptr_t storage_pos = LAYOUT_ADDR;
 
     // TODO: clean up this handling and make it more robust
     /* g_keyboard_slots[0].layout = (const ROM uint16_t*) LAYOUT_ADDR; */
@@ -386,7 +384,7 @@ void keyboard_layouts_init(void) {
     {
         // skip the key num map section, since it is in a known location at compile
         // time.
-        flash_size_t key_num_map_size = g_settings.row_count * g_settings.col_count;
+        flash_size_t key_num_map_size = GET_SETTING(row_count) * GET_SETTING(col_count);
         storage_pos += key_num_map_size;
     }
 
@@ -410,10 +408,10 @@ void keyboard_layouts_init(void) {
     g_layout_storage_pos[0] = storage_pos;
 
     // calculate the start of the keyload positions and save them for later
-    for (i = 1; i < g_settings.layout.number_layouts; ++i) {
-        const uint8_t matrix_size = g_settings.layout.layouts[i-1].matrix_size;
-        const uint8_t layer_count = g_settings.layout.layouts[i-1].layer_count;
-        const flash_size_t this_layout_size = g_settings.layout.layouts[i].matrix_size;
+    for (i = 1; i < GET_SETTING(layout.number_layouts); ++i) {
+        const uint8_t matrix_size = GET_SETTING(layout.layouts[i-1].matrix_size);
+        const uint8_t layer_count = GET_SETTING(layout.layouts[i-1].layer_count);
+        const flash_size_t this_layout_size = GET_SETTING(layout.layouts[i].matrix_size);
 
         storage_pos += 8*sizeof(keycode_t) * matrix_size * layer_count;
 

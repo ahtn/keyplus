@@ -162,7 +162,7 @@ void usb_cb_get_descriptor(uint8_t type, uint8_t index, uint8_t interface, fat_p
                     ptr->type = PTR_DATA;
                     flash_read(
                         (uint8_t*) string_copy_buf,
-                        (flash_ptr_t)&(g_settings.device_name),
+                        (flash_ptr_t)&(GET_SETTING(device_name)),
                         MAX_STRING_LEN
                     );
                     make_string_desc(string_copy_buf);
