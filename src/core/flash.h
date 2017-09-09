@@ -7,36 +7,14 @@
 
 #include "core/util.h"
 
+#include "hardware_user_impl.h"
+
 #ifndef NO_FLASH_MODULE
 
 // TODO: move this to a project specific location
 
-/* TODO: change this */
-#if   defined(FLASH_16)
-#define FLASH_SIZE              0x4000
-#elif defined(FLASH_32)
-#define FLASH_SIZE              0x8000
-#else
-#error "need to define flash size (use FLASH_16 or FLASH_32)"
-#endif
-
-
 typedef uint16_t flash_ptr_t;
 typedef uint16_t flash_size_t;
-
-// TODO: this is nrf24lu1+ specific ATM, adapt to other architectures
-
-#define PAGE_SIZE           0x0200
-
-#define BOOTLOADER_SIZE     (1*PAGE_SIZE)
-#define SETTINGS_SIZE       (1*PAGE_SIZE)
-#define LAYOUT_SIZE         (5*PAGE_SIZE)
-
-#define SETTINGS_PAGE_COUNT     (SETTINGS_SIZE / PAGE_SIZE)
-#define LAYOUT_PAGE_COUNT       (LAYOUT_SIZE / PAGE_SIZE)
-#define BOOTLOADER_PAGE_COUNT   (BOOTLOADER_SIZE / PAGE_SIZE)
-
-#define BOOTLOADER_ADDR     (FLASH_SIZE - BOOTLOADER_SIZE)
 
 #ifndef SETTINGS_ADDR
 #define SETTINGS_ADDR         ((flash_ptr_t)&g_settings)
@@ -45,12 +23,6 @@ typedef uint16_t flash_size_t;
 #ifndef LAYOUT_ADDR
 #define LAYOUT_ADDR         ((flash_ptr_t)&g_layout_storage[0])
 #endif
-
-#define LAYOUT_PAGE_NUM     (LAYOUT_ADDR / PAGE_SIZE)
-#define SETTINGS_PAGE_NUM   (SETTINGS_ADDR / PAGE_SIZE)
-#define BOOTLOAEDR_PAGE_NUM (BOOTLOADER_ADDR / PAGE_SIZE)
-
-#define LOGITECH_BOOTLOADER_ADDR    0x7400
 
 // NOTE: We want to fix the locations of these structures because we will be
 // reprogramming when we update the layout. We want to reserve space for them,

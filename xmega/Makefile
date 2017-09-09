@@ -60,7 +60,6 @@ CFLAGS += -DCHECK_PORT=PORTE
 CFLAGS += -DVBUS_PIN_INT0_VECT=PORTE_INT0_vect
 CFLAGS += -DTESTING_PIN_TGL=0
 
-
 CFLAGS += -DNRF24_CE_PORT=PORTR
 CFLAGS += -DNRF24_CE_PIN=PIN0_bm
 
@@ -163,12 +162,15 @@ endif
 # LD_SCRIPT_DIR = /usr/lib/ldscripts
 LD_SCRIPT_DIR = ./ld-scripts
 
-LDFLAGS += -T $(LD_SCRIPT_DIR)/$(LD_SCRIPT)
-LDFLAGS += -Wl,--section-start=.key_settings_block=0x006800
-LDFLAGS += -Wl,--section-start=.key_layout_block=0x007000
+SETTING_ADDR := 0x6E00
+LAYOUT_ADDR := 0x7000
 
-CDEFS += -DSETTINGS_ADDR=0x006800
-CDEFS += -DLAYOUT_ADDR=0x007000
+LDFLAGS += -T $(LD_SCRIPT_DIR)/$(LD_SCRIPT)
+LDFLAGS += -Wl,--section-start=.key_settings_block=$(SETTING_ADDR)
+LDFLAGS += -Wl,--section-start=.key_layout_block=$(LAYOUT_ADDR)
+
+CDEFS += -DSETTINGS_ADDR=$(SETTING_ADDR)
+CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
 
 # Place -D or -U options here for C sources
 CDEFS += -DCLOCK_SPEED_SLOW=$(CLOCK_SPEED_SLOW)UL

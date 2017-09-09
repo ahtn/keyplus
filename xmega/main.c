@@ -33,6 +33,8 @@
 
 #include "xmega_hardware.h"
 
+#include "xusb-boot/spm_interface.h"
+
 USB_ENDPOINTS(5);
 
 void wdt_disable(void) {
@@ -82,6 +84,9 @@ void battery_mode_setup(void) {
 
     // battery mode uses the ULP RTC timer
     rtc_ulp_init();
+
+    // Disable spm instruction while running from battery power
+    SP_LockSPM();
 
     battery_mode_clock_init();
     xmega_common_init();
