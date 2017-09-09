@@ -295,8 +295,14 @@ def reset_device(device):
     response = simple_command(device, CMD_RESET, receive=False)
     return response
 
-def get_chunks(data, chunk_size):
-    return [bytes(data[i*chunk_size:(i+1)*chunk_size]) for i in range(len(data)//chunk_size)]
+def get_chunks(data, chunk_size, pad=0xff):
+    chunk_data = None
+    remainder = len(data) % chunk_size
+    if remainder != 0:
+        chunk_data = data[:] + bytearray([pad] * (chunk_size - remainder))
+    else:
+        chunk_data = data
+    return [bytes(chunk_data[i*chunk_size:(i+1)*chunk_size]) for i in range(len(chunk_data)//chunk_size)]
 
 def update_settings_section(device, settings_data):
     simple_command(device, CMD_UPDATE_SETTINGS_ALL)
@@ -314,7 +320,7 @@ def update_layout_section(device, layout_data):
 
     for chunk in chunk_list:
         device.write(chunk)
-        response = device.read(timeout=20)
+        response = device.read()
 
 REPORT_MODE_STR_MAP = {
     KEYBOARD_REPORT_MODE_AUTO: "Auto NKRO",
