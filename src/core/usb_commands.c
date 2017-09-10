@@ -23,7 +23,8 @@
 
 static bit_t passthrough_mode_on;
 
-static uint8_t vendor_state = STATE_WAIT_CMD;
+static uint8_t s_vendor_state = STATE_WAIT_CMD;
+static bool s_restore_rf_settings;
 
 bit_t is_passthrough_enabled(void) {
     return passthrough_mode_on;
@@ -31,6 +32,9 @@ bit_t is_passthrough_enabled(void) {
 
 // TODO: probably move this elsewhere
 void reset_usb_reports(void) {
+    s_vendor_state = STATE_WAIT_CMD;
+    s_restore_rf_settings = false;
+
     passthrough_mode_on = false;
     reset_media_report();
     reset_vendor_report();
@@ -182,27 +186,6 @@ void parse_cmd(void) {
             const uint8_t led_on = g_vendor_report_out.data[1];
             led_testing_set(led_on);
         } break;
-        case CMD_FLASH_LAYOUT: {
-            uint16_t number_pages;
-            flash_layout.num_packets = g_vendor_report_out.data[1];
-            flash_layout.counter = 0;
-            flash_layout.addr = LAYOUT_ADDR;
-
-            number_pages = (flash_layout.num_packets+(CHUNKS_PER_PAGE-1))/CHUNKS_PER_PAGE;
-            if (number_pages > LAYOUT_PAGE_COUNT) {
-                cmd_error(ERROR_CODE_TOO_MUCH_DATA);
-                return;
-            }
-
-            // TODO: instead of using this global, just run everything in a loop?
-            g_input_disabled = true;
-
-            vendor_state = STATE_WRITE_FLASH;
-
-            erase_page_range(LAYOUT_PAGE_NUM, number_pages);
-
-            cmd_ok();
-        } break;
         case CMD_LAYER_STATE: {
             cmd_send_layer(g_vendor_report_out.data[1]);
         } break;
@@ -219,33 +202,66 @@ void parse_cmd(void) {
         } break;
 
         // TODO: before using this command on XMEGA, need to fix flash locations
-        case CMD_UPDATE_SETTINGS_ALL: {
-            flash_layout.num_packets = (SETTINGS_SIZE) / EP_SIZE_VENDOR;
+        case CMD_UPDATE_SETTINGS: {
+            uint8_t update_type = g_vendor_report_out.data[1];
+
             flash_layout.counter = 0;
             flash_layout.addr = SETTINGS_ADDR;
+
+            if (update_type == SETTING_UPDATE_ALL) {
+                flash_layout.num_packets = (SETTINGS_SIZE) / EP_SIZE_VENDOR;
+            } else if (update_type == SETTING_UPDATE_KEEP_RF) {
+                flash_layout.num_packets = (SETTINGS_SIZE - RF_INFO_SIZE) / EP_SIZE_VENDOR;
+            } else {
+                cmd_error(ERROR_INVALID_VALUE);
+                return;
+            }
+
+
 
             // TODO: instead of using this global, just run everything in a loop?
             g_input_disabled = true;
 
-            vendor_state = STATE_WRITE_FLASH;
+            s_vendor_state = STATE_WRITE_FLASH;
 
             erase_page_range(SETTINGS_PAGE_NUM, SETTINGS_PAGE_COUNT);
+
+            if (update_type == SETTING_UPDATE_KEEP_RF) {
+                flash_modify_enable();
+                flash_write(
+                    (uint8_t*)&g_rf_settings,
+                    SETTINGS_ADDR + RF_INFO_OFFSET,
+                    RF_INFO_SIZE
+                );
+                flash_modify_disable();
+            }
+
+            cmd_ok();
+        } break;
+        case CMD_UPDATE_LAYOUT: {
+            uint16_t number_pages;
+            flash_layout.num_packets = g_vendor_report_out.data[1];
+            flash_layout.counter = 0;
+            flash_layout.addr = LAYOUT_ADDR;
+
+            number_pages = (flash_layout.num_packets+(CHUNKS_PER_PAGE-1))/CHUNKS_PER_PAGE;
+            if (number_pages > LAYOUT_PAGE_COUNT) {
+                cmd_error(ERROR_CODE_TOO_MUCH_DATA);
+                return;
+            }
+
+            // TODO: instead of using this global, just run everything in a loop?
+            g_input_disabled = true;
+
+            s_vendor_state = STATE_WRITE_FLASH;
+
+            erase_page_range(LAYOUT_PAGE_NUM, number_pages);
 
             cmd_ok();
         } break;
         default: {
             cmd_error(ERROR_UNKNOWN_CMD);
         } break;
-#if 0 // TODO
-        case CMD_UPDATE_SETTINGS_RF: {
-            passthrough_mode_on = g_vendor_report_out.data[1];
-            cmd_ok();
-        } break;
-        case CMD_UPDATE_SETTINGS_LAYOUT: {
-            passthrough_mode_on = g_vendor_report_out.data[1];
-            cmd_ok();
-        } break;
-#endif
     }
 }
 
@@ -259,9 +275,9 @@ void handle_vendor_out_reports(void) {
 
     g_vendor_report_out.len = read_vendor_report(g_vendor_report_out.data);
 
-    if (vendor_state == STATE_WAIT_CMD) {
+    if (s_vendor_state == STATE_WAIT_CMD) {
         parse_cmd();
-    } else if (vendor_state == STATE_WRITE_FLASH) {
+    } else if (s_vendor_state == STATE_WRITE_FLASH) {
         /* const uint8_t page = LAYOUT_PAGE_NUM + flash_layout.counter/CHUNKS_PER_PAGE; */
         const uint8_t size = g_vendor_report_out.len;
         const uint16_t addr = flash_layout.addr + (uint16_t)flash_layout.counter * EP_SIZE_VENDOR;
@@ -281,8 +297,9 @@ void handle_vendor_out_reports(void) {
 
         flash_layout.counter += 1;
         if (flash_layout.counter >= flash_layout.num_packets) {
-            vendor_state = STATE_WAIT_CMD;
+            s_vendor_state = STATE_WAIT_CMD;
             g_input_disabled = false;
+
             // dynamic_delay_ms(100);
             // cmd_reset();
         }

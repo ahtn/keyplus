@@ -51,9 +51,9 @@ typedef struct {
     device_info_t devices[MAX_NUM_DEVICES];
 } layout_settings_t;
 
-#define RF_INFO_SIZE 32
+#define RF_INFO_SIZE 64
 #define RF_INFO_OFFSET (offsetof(settings_t, rf))
-typedef struct rf_settings_t {
+typedef struct rf_settings_t { // 64 bytes
     uint8_t pipe_addr_0[NRF_ADDR_LEN];
     uint8_t pipe_addr_1[NRF_ADDR_LEN];
     uint8_t pipe_addr_2;
@@ -65,7 +65,7 @@ typedef struct rf_settings_t {
     uint8_t arc;
     uint8_t data_rate;
     uint8_t power;
-    uint8_t _reserved[14]; // pad to 32 bytes
+    uint8_t _reserved[14]; // padding
     uint8_t ekey[AES_KEY_LEN];
     uint8_t dkey[AES_KEY_LEN];
 } rf_settings_t;
@@ -79,9 +79,9 @@ typedef struct settings_t { // 512 bytes
     uint8_t scan_mode;
     uint8_t row_count;
     uint8_t col_count;
-    uint8_t _reserved[51]; // total size == 96
-    rf_settings_t rf; // total size == 64
-    layout_settings_t layout; // total size == 352
+    uint8_t _reserved[51]; // size == 96
+    layout_settings_t layout; // size == 352
+    rf_settings_t rf; // size == 64
 } settings_t;
 
 /*********************************************************************

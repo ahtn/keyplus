@@ -141,19 +141,7 @@ XRAM flash_size_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
     _16(MACRO_CMD_REPEAT_JMP), _16((uint16_t)-64), \
     _16(MACRO_CMD_FINISH),
 
-#if 0
-#endif
-
-
 #if DEVICE_ID == 0
-#if KEYPLUS_MINI_TESTING
-
-#define KEY_NUMBER_MAP() \
-     0,  1,  2,  3,  4,  5, \
-     6,  7,  8,  9, 10, 11, \
-    12, 13, 14, 15, 16, 17, \
-    23, 22, 21, 18, 19, 20,
-#else
 // r3c3: 0  | r3c2: 1  | r2c3: 2  | r2c2: 3  | r1c3: 4  | r1c2: 5
 // r3c5: 6  | r3c0: 7  | r2c5: 8  | r2c0: 9  | r1c0: 10 | r1c5: 11
 // r3c4: 12 | r3c1: 13 | r2c4: 14 | r2c1: 15 | r1c4: 16 | r1c1: 17
@@ -163,24 +151,13 @@ XRAM flash_size_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
    10, 17,  5,  4, 16, 11, \
     9, 15,  3,  2, 14,  8, \
     7, 13,  1,  0, 12,  6,
-
-#endif
-
 #elif DEVICE_ID == 1
-#if KEYPLUS_MINI_TESTING
-#define KEY_NUMBER_MAP() \
-     0,  1,  2,  3,  4,  5, \
-     6,  7,  8,  9, 10, 11, \
-    12, 13, 14, 15, 16, 17, \
-    20, 21, 22, 19, 18, 23,
-#else
 // 0: r3c0 1: r3c4 2: r1c0 3: r1c4 4: r0c0 5: r0c4 6: r3c2 7: r3c5 8: r1c2 9: r1c5 10:r0c2 11:r0c5 12:r3c1 13:r3c3 14:r1c1 15:r1c3 16:r0c1 17:r0c3 18:r2c1 19:r2c3 20:r2c2 21:r2c5
 #define KEY_NUMBER_MAP() \
      4, 16, 10, 17,  5, 11, \
      2, 14,  8, 15,  3,  9, \
     99, 18, 20, 19, 99, 21, \
      0, 12,  6, 13,  1,  7,
-#endif
 #elif DEVICE_ID == 2 || DEVICE_ID == 8 || DEVICE_ID == 9
 #define KEY_NUMBER_MAP() \
      0,  1,  2,  3,  4,  5, \
@@ -194,6 +171,18 @@ XRAM flash_size_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
     12, 13, 14, 15, 16, 17, \
     23, 22, 21, 18, 19, 20,
 #elif DEVICE_ID == 5
+#define KEY_NUMBER_MAP() \
+     0,  1,  2,  3,  4,  5, \
+     6,  7,  8,  9, 10, 11, \
+    12, 13, 14, 15, 16, 17, \
+    20, 21, 22, 19, 18, 23,
+#elif DEVICE_ID == 10
+#define KEY_NUMBER_MAP() \
+     0,  1,  2,  3,  4,  5, \
+     6,  7,  8,  9, 10, 11, \
+    12, 13, 14, 15, 16, 17, \
+    23, 22, 21, 18, 19, 20,
+#elif DEVICE_ID == 11
 #define KEY_NUMBER_MAP() \
      0,  1,  2,  3,  4,  5, \
      6,  7,  8,  9, 10, 11, \

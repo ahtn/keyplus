@@ -22,10 +22,8 @@ CMD_LOGITECH_BOOTLOADER = 0x06
 CMD_PRINT = 0x07
 CMD_SET_PASSTHROUGH_MODE = 0x08
 CMD_PASSTHROUGH_MATRIX = 0x09
-CMD_UPDATE_SETTINGS_ALL = 0x0A
-CMD_UPDATE_SETTINGS_LAYOUT = 0x0B
-CMD_UPDATE_SETTINGS_RF = 0x0C
-CMD_FLASH_LAYOUT = 0x0D
+CMD_UPDATE_SETTINGS = 0x0A
+CMD_UPDATE_LAYOUT = 0x0B
 
 INFO_MAIN_0 = 0
 INFO_MAIN_1 = 1
@@ -304,10 +302,16 @@ def get_chunks(data, chunk_size, pad=0xff):
         chunk_data = data
     return [bytes(chunk_data[i*chunk_size:(i+1)*chunk_size]) for i in range(len(chunk_data)//chunk_size)]
 
-def update_settings_section(device, settings_data):
-    simple_command(device, CMD_UPDATE_SETTINGS_ALL)
+RF_INFO_SIZE = 64
+SETTINGS_SIZE = 512
 
-    chunk_list = get_chunks(settings_data, EP_VENDOR_SIZE)
+def update_settings_section(device, settings_data, keep_rf=0):
+    simple_command(device, CMD_UPDATE_SETTINGS, [keep_rf])
+
+    size = SETTINGS_SIZE
+    if (keep_rf):
+        size = SETTINGS_SIZE - RF_INFO_SIZE
+    chunk_list = get_chunks(settings_data[0:size], EP_VENDOR_SIZE)
 
     for chunk in chunk_list:
         device.write(chunk)
@@ -316,7 +320,7 @@ def update_settings_section(device, settings_data):
 def update_layout_section(device, layout_data):
     chunk_list = get_chunks(layout_data, EP_VENDOR_SIZE)
 
-    simple_command(device, CMD_FLASH_LAYOUT, [len(chunk_list)])
+    simple_command(device, CMD_UPDATE_LAYOUT, [len(chunk_list)])
 
     for chunk in chunk_list:
         device.write(chunk)

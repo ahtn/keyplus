@@ -15,6 +15,10 @@
 .device_name = "atmega8 - 3d 1 - left",
 #elif DEVICE_ID == 9
 .device_name = "atmega8 - 3d 2 - right",
+#elif DEVICE_ID == 10
+.device_name = "xmega test board - left",
+#elif DEVICE_ID == 11
+.device_name = "xmega test board - right",
 #elif DEVICE_ID == 0x30
 .device_name = "nRF24LU1+ dongle - 1",
 #endif

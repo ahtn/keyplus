@@ -22,6 +22,8 @@ from layout.rf_settings import *
 from layout.device import *
 from layout.ekc_data import EKCDataMain
 
+RF_INFO_SIZE = 64
+
 class Layout:
     def __init__(self, layout, layout_id, layout_name):
         self.id = layout_id
@@ -174,11 +176,11 @@ class SettingsGenerator:
 
         return result
 
-    def gen_all_settings(self, device_id):
+    def gen_settings_section(self, device_id):
         result = bytearray(0);
         result += self.gen_global_settings(device_id)
-        result += self.gen_rf_settings()
         result += self.gen_layout_settings()
+        result += self.gen_rf_settings()
         return result
 
     def gen_global_settings(self, device_id):
@@ -352,9 +354,11 @@ class SettingsGenerator:
         return result
 
     def gen_rf_settings(self):
-        rf_settings = RFSettings.from_json_obj(self.rf)
-
-        return rf_settings.to_bytes()
+        if self.rf == None:
+            return bytearray([0xff] * RF_INFO_SIZE)
+        else:
+            rf_settings = RFSettings.from_json_obj(self.rf)
+            return rf_settings.to_bytes()
 
     def get_report_mode(self):
         mode = try_get(self.layout, 'report_mode')
@@ -409,7 +413,7 @@ if __name__ == "__main__":
 
     print("settings:")
     try:
-        hexdump.hexdump(bytes(settings.gen_all_settings(target_layout_id)))
+        hexdump.hexdump(bytes(settings.gen_settings_section(target_layout_id)))
     except ParseError as e:
         print(e)
         # print(e.with_traceback())

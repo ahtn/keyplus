@@ -1,7 +1,7 @@
 // layout settings
 .layout = {
     .number_layouts = 1,
-    .number_devices = 10,
+    .number_devices = 48,
     .layouts = {
         [0] = { // keyboard 0
             .matrix_size = 6,
@@ -58,6 +58,16 @@
         [9] = { // device 9
             .layout_id = 4,
             .matrix_offset = 0,
+            .matrix_size = 3,
+        },
+        [10] = { // device 10
+            .layout_id = 0,
+            .matrix_offset = 0,
+            .matrix_size = 3,
+        },
+        [11] = { // device 11
+            .layout_id = 0,
+            .matrix_offset = 3,
             .matrix_size = 3,
         },
     },

@@ -41,10 +41,8 @@ enum usb_vendor_cmd_t {
     CMD_PRINT = 0x07, // send debug data
     CMD_SET_PASSTHROUGH_MODE = 0x08, // set passthrough mode
     CMD_PASSTHROUGH_MATRIX = 0x09, // raw matrix data sent to the host without interpretting it
-    CMD_UPDATE_SETTINGS_ALL = 0x0A,
-    CMD_UPDATE_SETTINGS_LAYOUT = 0x0B,
-    CMD_UPDATE_SETTINGS_RF = 0x0C,
-    CMD_FLASH_LAYOUT = 0x0D, // flash keyboard layout
+    CMD_UPDATE_SETTINGS = 0x0A,
+    CMD_UPDATE_LAYOUT = 0x0B, // flash keyboard layout
 };
 
 enum {
@@ -60,6 +58,11 @@ enum usb_vendor_state {
     STATE_WAIT_CMD, // wait for next cmd
     STATE_SCAN,
     STATE_WRITE_FLASH,
+};
+
+enum {
+    SETTING_UPDATE_ALL = 0,
+    SETTING_UPDATE_KEEP_RF = 1,
 };
 
 enum {

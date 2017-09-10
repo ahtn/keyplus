@@ -27,10 +27,9 @@ AT__SETTINGS_ADDR const settings_t g_settings = {
 // TODO: handle custom settings when build from source better
 #include "settings/dev_global_settings.c"
 
-#include "settings/dev_rf_settings.c"
-
 #include "settings/dev_layout_settings.c"
 
+#include "settings/dev_rf_settings.c"
 };
 
 

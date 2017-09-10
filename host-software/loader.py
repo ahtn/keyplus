@@ -32,10 +32,10 @@ def error_msg_box(msg, title="Error"):
     errorBox.setText(msg)
     errorBox.exec_()
 
-def msg_box(msg, title=""):
+def msg_box(description="", title="Message"):
     msgBox = QMessageBox()
     msgBox.setWindowTitle(title)
-    msgBox.setText(msg)
+    msgBox.setText(description)
     msgBox.exec_()
 
 class DeviceWidget(QGroupBox):
@@ -643,12 +643,19 @@ class Loader(QMainWindow):
 
             layout_json_obj = None
             with open(layout_file) as file_obj:
-                layout_json_obj = yaml.safe_load(file_obj.read())
+                try:
+                    layout_json_obj = yaml.safe_load(file_obj.read())
+                except Exception as err:
+                    error_msg_box("Syntax error in yaml file: " + str(err))
+                    target_device.close()
+                    return
 
             settings_gen = layout.parser.SettingsGenerator(layout_json_obj, None)
             layout_data = settings_gen.gen_layout_section(device_info.id)
+            rf_data = settings_gen.gen_settings_section(device_info.id)
 
             protocol.update_layout_section(target_device, layout_data)
+            protocol.update_settings_section(target_device, rf_data, keep_rf=True)
             protocol.reset_device(target_device)
         elif programmingMode == FileSelector.ScopeDevice:
             layout_file = self.fileSelectorWidget.getRFLayoutFile()
@@ -671,9 +678,19 @@ class Loader(QMainWindow):
             layout_json_obj = None
             rf_json_obj = None
             with open(layout_file) as file_obj:
-                layout_json_obj = yaml.safe_load(file_obj.read())
+                try:
+                    layout_json_obj = yaml.safe_load(file_obj.read())
+                except Exception as err:
+                    error_msg_box("Syntax error in yaml file: " + str(err))
+                    target_device.close()
+                    return
             with open(rf_file) as file_obj:
-                rf_json_obj = yaml.safe_load(file_obj.read())
+                try:
+                    rf_json_obj = yaml.safe_load(file_obj.read())
+                except Exception as err:
+                    error_msg_box("Syntax error in yaml file: " + str(err))
+                    target_device.close()
+                    return
 
             try:
                 settings_gen = layout.parser.SettingsGenerator(layout_json_obj, rf_json_obj)
@@ -682,9 +699,13 @@ class Loader(QMainWindow):
                               .format(device_id))
                 target_device.close()
                 return
+            except Exception as err:
+                error_msg_box("Error Generating RF settings data: " + str(err))
+                target_device.close()
+                return
 
-            settings_data = settings_gen.gen_all_settings(device_id)
             layout_data = settings_gen.gen_layout_section(device_id)
+            settings_data = settings_gen.gen_settings_section(device_id)
 
             protocol.update_settings_section(target_device, settings_data)
             protocol.update_layout_section(target_device, layout_data)
@@ -763,11 +784,12 @@ class Loader(QMainWindow):
             device = easyhid.Enumeration().find(path=device_path)[0]
             device.open()
         except:
-            errorBox = QMessageBox()
-            errorBox.setWindowTitle("USB Device write error")
-            errorBox.setText("Failed to open device! Check it is still present "
-                             "and you have permission to write to it.")
-            errorBox._exec()
+            msg_box(
+                    description="Failed to open device! Check it is still present "
+                    "and you have permission to write to it.",
+                    title="USB Device write error"
+            )
+
             return
 
         settingsInfo = protocol.get_device_info(device)
