@@ -26,7 +26,7 @@ class ScanMode:
         self.parse_header(scan_mode_dict, debug_hint)
 
         if 'matrix_map' in scan_mode_dict:
-            self.matrix_map = self.parse_matrix_map(scan_mode_dict['matrix_map'], debug_hint)
+            self.parse_matrix_map(scan_mode_dict['matrix_map'], debug_hint)
         else:
             self.matrix_map = None
 
@@ -68,7 +68,8 @@ class ScanMode:
                     "got {} but expected at most {} (={}*{})".format(
                     kb_name, len(mmap_raw), self.rows*self.cols, self.rows, self.cols))
         matrix_map = []
-        for map_key in mmap_raw:
+        inverse_map = [0xff] * self.rows * self.cols
+        for (key_pos, map_key) in enumerate(mmap_raw):
             # these values can be used as spaces and are ignored
             if map_key in ['none', '_'*4, '_'*5, '_'*6, '-'*4, '-'*5, '-'*6]:
                 continue
@@ -92,8 +93,7 @@ class ScanMode:
                 raise ParseError("The key '{}' appears twice in the matrix_map "
                 "of '{}'".format(map_key, kb_name))
             matrix_map.append(key_num)
+            inverse_map[key_num] = key_pos
 
         self.matrix_map = matrix_map
-        return matrix_map
-
-
+        self.inverse_map = inverse_map

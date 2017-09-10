@@ -159,12 +159,8 @@ class SettingsGenerator:
 
         if dev_data.scan_mode.mode != ScanMode.NO_MATRIX:
             # Add matrix map to the layout section
-            for key_num in dev_data.scan_mode.matrix_map:
+            for key_num in dev_data.scan_mode.inverse_map:
                 result += struct.pack('<B', key_num)
-
-            # # Align to two byte boundary
-            # if len(dev_data.scan_mode.matrix_map) % 2 != 0:
-            #     result += struct.pack('<B', 0)
 
         # Add ekc data to the layout section
         result += self.ekc_data.to_bytes()
