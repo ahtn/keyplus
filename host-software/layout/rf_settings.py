@@ -57,12 +57,13 @@ class RFSettings:
         self.data_rate = RF_DR_2MBPS
         self.power = PWR_0DB
 
+    @staticmethod
     def from_rand():
         result = RFSettings()
-        result.ekey = os.urandom(16)
+        result.ekey = bytearray(os.urandom(16))
         x = MAX_CHANNEL+1
         while not x <= MAX_CHANNEL:
-            n = int(os.urandom(1)[0])
+            n = int((bytearray(os.urandom(1))[0]))
             x = 3*n+2
         result.channel = x
 
@@ -70,8 +71,8 @@ class RFSettings:
             # least significant bytes of address can't match
             pipeBytes = []
 
-            result.pipe0 = os.urandom(5)
-            result.pipe1 = os.urandom(5)
+            result.pipe0 = bytearray(os.urandom(5))
+            result.pipe1 = bytearray(os.urandom(5))
             if result.pipe0 == result.pipe1: continue
             if int(result.pipe0[4]) in [0x55, 0xAA]: continue
             if int(result.pipe1[4]) in [0x55, 0xAA]: continue
@@ -79,9 +80,9 @@ class RFSettings:
             pipeBytes.append(int(result.pipe0[0]))
             pipeBytes.append(int(result.pipe1[0]))
 
-            result.pipe2 = int(os.urandom(1)[0])
-            result.pipe3 = int(os.urandom(1)[0])
-            result.pipe4 = int(os.urandom(1)[0])
+            result.pipe2 = int(bytearray(os.urandom(1))[0])
+            result.pipe3 = int(bytearray(os.urandom(1))[0])
+            result.pipe4 = int(bytearray(os.urandom(1))[0])
             result.pipe5 = 0
 
             valid = True
@@ -98,8 +99,7 @@ class RFSettings:
 
         return result
 
-
-
+    @staticmethod
     def from_json_obj(json_obj):
         result = RFSettings()
 
@@ -155,7 +155,8 @@ class RFSettings:
 
         return result
 
-    def frombytes(data):
+    @staticmethod
+    def from_bytes(data):
         # uint8_t pipe_addr_0[NRF_ADDR_LEN];
         # uint8_t pipe_addr_1[NRF_ADDR_LEN];
         # uint8_t pipe_addr_2;
@@ -247,17 +248,24 @@ class RFSettings:
 
         return result
 
+    @staticmethod
     def data_rate_to_str(x):
         for (key, value) in RFSettings.DataRateStrMap.items():
             if x == value:
                 return key
         return None
 
+    @staticmethod
     def power_to_str(x):
         for (key, value) in RFSettings.PowerStrMap.items():
             if x == value:
                 return key
         return None
+
+    @staticmethod
+    def bytearray_to_hex(array):
+        return "".join(["{:02x}".format(byte) for byte in array])
+
 
     def to_json_obj(self):
         error_msgs = self.checkSettings()
@@ -268,13 +276,13 @@ class RFSettings:
 
         return {
             'rf_settings': {
-                'pipe0': self.pipe0.hex(),
-                'pipe1': self.pipe1.hex(),
+                'pipe0': RFSettings.bytearray_to_hex(self.pipe0),
+                'pipe1': RFSettings.bytearray_to_hex(self.pipe1),
                 'pipe2': "{:02x}".format(self.pipe2),
                 'pipe3': "{:02x}".format(self.pipe3),
                 'pipe4': "{:02x}".format(self.pipe4),
                 'pipe5': "{:02x}".format(self.pipe5),
-                'aes_encryption_key': self.ekey.hex(),
+                'aes_encryption_key': RFSettings.bytearray_to_hex(self.ekey),
                 'rf_channel': self.channel,
                 'data_rate': RFSettings.data_rate_to_str(self.data_rate),
                 'power': RFSettings.power_to_str(self.power),

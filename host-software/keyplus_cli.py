@@ -60,7 +60,7 @@ def print_all_info(device):
     print_firmware_info(device)
 
 # Generic Command
-class GenericCommand:
+class GenericCommand(object):
     def __init__(self, description):
         self.arg_parser = argparse.ArgumentParser(
             description=description

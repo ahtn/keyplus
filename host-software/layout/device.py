@@ -17,6 +17,7 @@ class Device:
         self.layout_name = layout_name
         self.layout_offset = layout_offset
 
+    @staticmethod
     def from_json_obj(dev, device_name):
 
         dev_id = try_get(dev, 'id', device_name, val_type=int)
