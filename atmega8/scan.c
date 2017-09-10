@@ -12,7 +12,7 @@
 #include "scan.h"
 #include "clock.h"
 
-#ifdef HARDWARE_SPECIFIC_SCAN
+#if USE_HARDWARE_SPECIFIC_SCAN
 typedef uint8_t matrix_row_t;
 
 static matrix_row_t matrix_debouncing[ROWS_PER_HAND];

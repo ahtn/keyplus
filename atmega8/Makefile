@@ -29,9 +29,11 @@ OBJ_DIR = obj
 BASE_PATH = ../src
 VPATH += $(BASE_PATH)
 
-USE_KEYBOARD_REPORTS = 0
-USE_SCANNER = 1
+USE_USB := 0
+USE_SCANNER := 1
 USE_NRF24 := 1
+USE_I2C := 0
+USE_HARDWARE_SPECIFIC_SCAN := 1
 include $(BASE_PATH)/core/core.mk
 
 # options: avr-crypto-lib, tiny-aes128, aes-min

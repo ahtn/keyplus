@@ -36,27 +36,27 @@ AT__SETTINGS_ADDR const settings_t g_settings = {
 // TODO: correct the values used here
 const ROM firmware_build_settings_t g_firmware_build_settings = {
     .version_major = 0,
-    .version_minor = 1,
-    .version_patch = 2,
+    .version_minor = 2,
+    .version_patch = 0,
 
     .layout_flash_size = 1UL << 16, // TODO, set this value properly
     .timestamp = { BUILD_TIME_STAMP },
     .git_hash = { GIT_HASH },
 
     // connectivity
-    .wireless_support = 1,
-    .i2c_support = 1,
-    .unifying_support = 1,
-    .usb_support = 1,
-    .bt_support = 0,
+    .wireless_support = USE_NRF24,
+    .i2c_support = USE_I2C,
+    .unifying_support = USE_UNIFYING,
+    .usb_support = USE_USB,
+    .bt_support = USE_BLUETOOTH,
 
     // matrix scanning
-    .scan_support = 1,
-    .scan_col_row = 1,
-    .scan_row_col = 0,
-    .scan_pins = 0,
-    .scan_arbitrary = 0,
-    .scan_built_in = 0,
+    .scan_support = USE_SCANNER,
+    .scan_col_row = (1) && USE_SCANNER && !USE_HARDWARE_SPECIFIC_SCAN,
+    .scan_row_col = 0 && USE_SCANNER && !USE_HARDWARE_SPECIFIC_SCAN,
+    .scan_pins = 0 && USE_SCANNER && !USE_HARDWARE_SPECIFIC_SCAN,
+    .scan_arbitrary = 0 && USE_SCANNER && !USE_HARDWARE_SPECIFIC_SCAN,
+    .scan_built_in = USE_HARDWARE_SPECIFIC_SCAN && USE_SCANNER,
 
     // generic keyboard features
     .kro_n_support = 1,

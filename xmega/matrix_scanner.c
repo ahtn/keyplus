@@ -45,7 +45,7 @@ static uint8_t s_debounce_type[MAX_NUM_ROWS][(MAX_NUM_COLS+7)/8];
 static uint8_t s_matrix_number_keys_down;
 static uint8_t s_matrix_number_keys_debouncing;
 
-#ifndef HARDWARE_SPECIFIC_SCAN
+#if !USE_HARDWARE_SPECIFIC_SCAN
 
 // col pin mapping:
 // C0-C7: A0-A7
@@ -458,7 +458,7 @@ bool matrix_scan(void) {
 
 // 2 key
 // TODO: improve the build system for building for different hardware
-#ifdef HARDWARE_SPECIFIC_SCAN
+#if USE_HARDWARE_SPECIFIC_SCAN
 
 static uint8_t bytes_per_row;
 

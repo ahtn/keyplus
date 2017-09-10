@@ -33,13 +33,13 @@ F_USB = 48000000
 
 FLASH_SIZE = FLASH_16
 
-USE_KEYBOARD_REPORTS := 1
+USE_USB := 1
 USE_SCANNER := 1
 USE_NRF24 := 1
 USE_CHECK_PIN := 1
 USE_I2C := 1
+USE_HARDWARE_SPECIFIC_SCAN := 0
 
-# CFLAGS += -DHARDWARE_SPECIFIC_SCAN=1
 # CFLAGS += -DKEYPLUS_MINI_TESTING
 
 ifeq ($(USE_CHECK_PIN), 1)
@@ -48,17 +48,11 @@ else
 CFLAGS += -DUSE_CHECK_PIN=0
 endif
 
-# Values used in my early prototypes
-# CFLAGS += -DCHECK_PIN=PIN1_bm
-# CFLAGS += -DCHECK_PORT=PORTR
-# CFLAGS += -DVBUS_PIN_INT0_VECT=PORTR_INT0_vect
-# CFLAGS += -DTESTING_PIN_TGL=0
-
 # Pin E2 is used on keyplus mini
-CFLAGS += -DCHECK_PIN=PIN2_bm
-CFLAGS += -DCHECK_PORT=PORTE
-CFLAGS += -DVBUS_PIN_INT0_VECT=PORTE_INT0_vect
-CFLAGS += -DTESTING_PIN_TGL=0
+# CFLAGS += -DCHECK_PIN=PIN2_bm
+# CFLAGS += -DCHECK_PORT=PORTE
+# CFLAGS += -DVBUS_PIN_INT0_VECT=PORTE_INT0_vect
+# CFLAGS += -DTESTING_PIN_TGL=0
 
 CFLAGS += -DNRF24_CE_PORT=PORTR
 CFLAGS += -DNRF24_CE_PIN=PIN0_bm
@@ -203,9 +197,29 @@ build-2: clean
 build-2: CDEFS += -DDEVICE_ID=2
 build-2: hex
 
+
+build-10: clean
+build-10: CDEFS += -DDEVICE_ID=10 \
+	-DCHECK_PIN=PIN1_bm \
+	-DCHECK_PORT=PORTR \
+	-DVBUS_PIN_INT0_VECT=PORTR_INT0_vect \
+	-DTESTING_PIN_TGL=0
+build-10: hex
+
+build-11: clean
+build-11: CDEFS += -DDEVICE_ID=11 \
+	-DCHECK_PIN=PIN1_bm \
+	-DCHECK_PORT=PORTR \
+	-DVBUS_PIN_INT0_VECT=PORTR_INT0_vect \
+	-DTESTING_PIN_TGL=0
+build-11: hex
+
 program-0: build-0 program-boot
 program-1: build-1 program-boot
 program-2: build-2 program-boot
+
+program-10: build-10 program-boot
+program-11: build-11 program-boot
 
 program: hex program-boot
 

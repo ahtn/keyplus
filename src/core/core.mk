@@ -31,46 +31,74 @@ C_SRC += \
 	$(CORE_PATH)/settings.c \
 	$(CORE_PATH)/util.c \
 
-
+# NRF24 module, defaults to 0
 ifeq ($(USE_NRF24), 1)
-C_SRC += \
-	$(CORE_PATH)/nrf24.c \
-	$(CORE_PATH)/unifying.c \
-	$(CORE_PATH)/rf.c
-CDEFS += -DUSE_NRF24=1
+    C_SRC += \
+        $(CORE_PATH)/nrf24.c \
+        $(CORE_PATH)/rf.c
+    CDEFS += -DUSE_NRF24=1
+
+    ifeq ($(USE_UNIFYING), 0)
+        CDEFS += -DUSE_UNIFYING=0
+    else
+        C_SRC += $(CORE_PATH)/unifying.c
+        CDEFS += -DUSE_UNIFYING=1
+    endif
 else
-CDEFS += -DUSE_NRF24=0
+    CDEFS += -DUSE_NRF24=0
+    CDEFS += -DUSE_UNIFYING=0
 endif
 
+# I2C module, defaults to 0
 ifeq ($(USE_I2C), 1)
-CFLAGS += -DUSE_I2C=1
+    CDEFS += -DUSE_I2C=1
 else
-CFLAGS += -DUSE_I2C=0
+    CDEFS += -DUSE_I2C=0
 endif
 
-ifeq ($(USE_SCANNER), 1)
-C_SRC += \
-	$(CORE_PATH)/matrix_scanner.c
-CDEFS += -DUSE_SCANNER
+# Scanner module, defaults to 1
+ifeq ($(USE_SCANNER), 0)
+    CDEFS += -DUSE_SCANNER=0
+else
+    C_SRC += \
+        $(CORE_PATH)/matrix_scanner.c
+    CDEFS += -DUSE_SCANNER=1
+endif
+
+# Hardware specific scan, defaults to 0
+ifeq ($(USE_HARDWARE_SPECIFIC_SCAN), 1)
+    CDEFS += -DUSE_HARDWARE_SPECIFIC_SCAN=1
+else
+    CDEFS += -DUSE_HARDWARE_SPECIFIC_SCAN=0
 endif
 
 # TODO: add compile time option to flag to enable/disable mouse support
-ifeq ($(USE_KEYBOARD_REPORTS), 1)
-C_SRC += \
-	$(CORE_PATH)/mouse_report.c \
+ifeq ($(USE_USB), 1)
+    C_SRC += \
+        $(CORE_PATH)/mouse_report.c \
 
-CDEFS += -DHAS_MOUSE_SUPPORT
+    CDEFS += -DHAS_MOUSE_SUPPORT
 endif
 
-ifeq ($(USE_KEYBOARD_REPORTS), 1)
-C_SRC += \
-	$(CORE_PATH)/keyboard_report.c \
-	$(CORE_PATH)/media_report.c \
-	$(CORE_PATH)/vendor_report.c \
-	$(CORE_PATH)/matrix_interpret.c \
-	$(CORE_PATH)/mods.c \
-	$(CORE_PATH)/usb_commands.c \
-	$(CORE_PATH)/macro.c \
-	$(CORE_PATH)/keycode.c \
-	# end
+# USB Keyboard module, defaults to 1
+ifeq ($(USE_USB), 0)
+    CDEFS += -DUSE_USB=0
+else
+    C_SRC += \
+        $(CORE_PATH)/keyboard_report.c \
+        $(CORE_PATH)/media_report.c \
+        $(CORE_PATH)/vendor_report.c \
+        $(CORE_PATH)/matrix_interpret.c \
+        $(CORE_PATH)/mods.c \
+        $(CORE_PATH)/usb_commands.c \
+        $(CORE_PATH)/macro.c \
+        $(CORE_PATH)/keycode.c
+    CDEFS += -DUSE_USB=1
+endif
+
+# Bluetooth module, defaults to 0
+ifeq ($(USE_BLUETOOTH), 1)
+    CDEFS += -DUSE_BLUETOOTH=1
+else
+    CDEFS += -DUSE_BLUETOOTH=0
 endif

@@ -13,7 +13,8 @@ void flash_load_rom(XRAM uint8_t* dest, const ROM uint8_t* src, flash_ptr_t len)
     }
 }
 
+#if USE_USB
 bit_t is_valid_storage_pos(flash_ptr_t ptr) {
     return (ptr >= LAYOUT_ADDR) && (ptr < ((uint32_t)LAYOUT_ADDR + (uint32_t)LAYOUT_SIZE) );
 }
-
+#endif

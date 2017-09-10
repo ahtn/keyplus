@@ -135,6 +135,15 @@ void aes_decrypt(uint8_t *block) {
 }
 #endif
 
+#include "core/flash.h"
+
+uint8_t flash_read_byte(flash_ptr_t addr) {
+    return pgm_read_byte(addr);
+}
+
+uint16_t flash_read_word(flash_ptr_t addr) {
+    return pgm_read_word(addr);
+}
 
 void flash_read(uint8_t* dest, uint16_t addr, uint16_t len) {
     memcpy_P(dest, (uint8_t*)(addr), len);
