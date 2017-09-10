@@ -72,6 +72,7 @@ void idle_sleep(void) {
 /*********************************************************************
  *                       bootloader functions                        *
  *********************************************************************/
+
 static ROM const char bootloader_reset_string[] = "Enter ICP\0";
 
 void bootloader_jmp(void) {
