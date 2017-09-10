@@ -1,0 +1,35 @@
+# top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.{c,cpp,h}]
+indent_style = space
+indent_size = 4
+
+# 2 space indentation
+[*.yaml]
+indent_style = space
+indent_size = 2
+
+# 4 space indentation
+[*.{py,sh}]
+indent_style = space
+indent_size = 4
+
+# 8 tab indent
+[*.S]
+indent_style = tab
+indent_size = 8
+
+# Tab indentation (no size specified)
+[{Makefile, *.mk}]
+indent_style = tab
+indent_size = 4
