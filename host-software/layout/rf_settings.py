@@ -290,7 +290,7 @@ class RFSettings:
         }
 
     def to_yaml(self):
-        return yaml.dump(self.to_json_obj(), default_flow_style=False)
+        return yaml.safe_dump(self.to_json_obj(), default_flow_style=False)
 
 
     def checkSettings(self):
