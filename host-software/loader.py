@@ -44,8 +44,8 @@ def is_keyplus_device(device):
     return (device.vendor_id, device.product_id) in [(0x6666, 0x1111*i) for i in range(16)]
 
 def is_xusb_bootloader_device(device):
-    if device.interface_number != xusb_boot.DEFAULT_INTERFACE:
-        return False
+    # if device.interface_number != xusb_boot.DEFAULT_INTERFACE:
+    #     return False
     return (device.vendor_id, device.product_id) == (xusb_boot.DEFAULT_VID, xusb_boot.DEFAULT_PID)
 
 def is_nrf24lu1p_bootloader_device(device):
@@ -834,7 +834,7 @@ class Loader(QMainWindow):
                         boot_vid, boot_pid = protocol.enter_bootloader(target_device)
 
                         self.bootloaderProgramTimer = QTimer()
-                        self.bootloaderProgramTimer.setInterval(500)
+                        self.bootloaderProgramTimer.setInterval(3000)
                         self.bootloaderProgramTimer.setSingleShot(True)
                         self.bootloaderProgramTimer.timeout.connect( lambda:
                             self.programFirmwareHex(boot_vid, boot_pid, serial_num, fw_file)
@@ -881,7 +881,7 @@ class Loader(QMainWindow):
             error_msg_box("Couldn't connect to the device's bootloader")
             return
         else:
-            if tryOpenDevice(device): return
+            if self.tryOpenDevice(device): return
 
             self.program_xusb_boot_firmware_hex(device, file_name)
 
