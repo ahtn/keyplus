@@ -1,0 +1,14 @@
+# Generated on 2017-22-11 at 23:22
+rf_settings:
+  aes_encryption_key: 9febeb27209e131ceaf812f73feed577
+  rf_channel: 0x08
+  auto_retransmit_count: 8 # options: 0-15
+  # TODO: should include retransmit delay option
+  data_rate:  2mbps # options: 2mbps, 1mbps, 250kbps
+  transmit_power: 0dB # options: 0dB, -6dB, -12dB, -18dB
+  pipe0: '2aef63473c'
+  pipe1: '168d715956'
+  pipe2: 'c1'
+  pipe3: 'fc'
+  pipe4: '63'
+  pipe5: '00'

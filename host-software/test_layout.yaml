@@ -1,0 +1,228 @@
+# Written in 2017 by jem@seethis.link
+# This file is released into the public domain as per the CC0 Public Domain
+# Dedication (http://creativecommons.org/publicdomain/zero/1.0/)
+---
+# test keyboard layout
+
+name: "test-layout"
+version: 0
+report_mode: auto_nkro # options: auto_nkro, 6kro, nkro
+
+# NOTE: rf settings and encryption key are stored in a separate file
+
+# TODO: add more settings to control global configuration
+# TODO: add USB/I2C/RF settings on a per device bases
+# TODO: add LED configuration settings
+# TODO: add mouse configuration
+
+devices:
+
+  left_split:
+    id: 0
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: 4
+      cols: 6
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+        ____, r3c3, r3c4, r3c5, r3c2, r3c1,
+      ]
+    layout: split_layout
+    layout_offset: 0
+
+  right_split:
+    id: 1
+    scan_mode:
+      mode: col_row # options: col_row, pins, no_matrix
+      rows: 4
+      cols: 6
+      matrix_map: [
+        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+        r3c4, r3c3, r3c0, r3c1, r3c2, ____,
+      ]
+    layout: split_layout
+    layout_offset: 1
+
+  # separate numpad
+  numpad:
+    id: 2
+    scan_mode:
+      mode: col_row # options: col_row, pins, no_matrix
+      rows: 5
+      cols: 4
+      matrix_map: [
+        r0c0, r0c1, r0c2, r0c3,
+        r1c0, r1c1, r1c2, r1c3,
+        r2c0, r2c1, r2c2, ____,
+        r3c0, r3c1, r3c2, r3c3,
+        r4c0, ____, r4c2, ____,
+      ]
+    layout: numpad_layout
+    layout_offset: 0
+
+  "XMEGA test board left":
+    id: 10
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: 4
+      cols: 6
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+        r3c3, r3c4, r3c5, r3c2, r3c1
+      ]
+    layout: split_layout
+    layout_offset: 0
+
+  "XMEGA test board right":
+    id: 11
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: 4
+      cols: 6
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+        r3c3, r3c4, r3c5, r3c2, r3c1
+      ]
+    layout: split_layout
+    layout_offset: 0
+
+  # rf dongle
+  nrf_dongle:
+    id: 48
+    scan_mode: # rf dongle, so don't need a matrix
+      mode: no_matrix # options: col_row, pins, no_matrix
+
+layouts:
+  split_layout:
+    default_layer: 0
+    layers: [
+      [ # layer 0 (colemak)
+        [ # left hand
+          tab , q   , w   , f   , p   , g   ,
+          ent , a   , r   , s   , t   , d   ,
+          lalt, z   , x   , c   , v   , b   ,
+          esc , L6  , lctl, spc , L5  ,
+        ],
+        [ # right hand
+          j   , l   , u   , y   , ";" , "-" ,
+          h   , n   , e   , i   , o   , "'" ,
+          k   , m   , "," , "." , "/" , "`" ,
+          bspc, sticky_lshift, sticky_L4, lgui, esc ,
+        ],
+      ],
+      [ # layer 1 (dvorak)
+        [ # left hand
+          ____, "'" , "," , "." , p   , y   ,
+          ____, a   , o   , e   , u   , i   ,
+          ____, ";" , q   , j   , k   , x   ,
+          ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          f   , g   , c   , r   , l   , "/" ,
+          d   , h   , t   , n   , s   , "-" ,
+          b   , m   , w   , v   , z   , "`" ,
+          ____, ____, ____, ____, ____,
+        ],
+      ],
+      [ # layer 2 (qwerty)
+        [ # left hand
+          ____, q   , w   , e   , r   , t   ,
+          ____, a   , s   , d   , f   , g   ,
+          ____, z   , x   , c   , v   , b   ,
+          ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          y   , u   , i   , o   , p   , "-" ,
+          h   , j   , k   , l   , ";" , "'" ,
+          m   , n   , "," , "." , "/" , "`" ,
+          ____, ____, ____, ____, ____,
+        ],
+      ],
+      [ # layer 6 (qwerty arrows)
+        [ # left hand
+          ____, q   , w   , e   , r   , t   ,
+          ____, a   , s   , d   , f   , g   ,
+          ____, z   , x   , c   , v   , b   ,
+          ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          y   , u   , up  , o   , p   , "-" ,
+          h   , left, down, rght, ";" , "'" ,
+          m   , n   , "," , "." , "/" , "`" ,
+          ____, ____, ____, ____, ____,
+        ],
+      ],
+      [ # layer 3 (symbol)
+        [ # left hand
+          ____, "|" , "2" , "3" , "4" , "5" ,
+          ____, "1" , "\\", "(" , "[" , "{" ,
+          ____, "!" , "@" , "#" , "$" , "%" ,
+          ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          "6" , "7" , "8" , "9" , "+" , "-" ,
+          "}" , "]" , ")" , "=" , "0" , "*" ,
+          "^" , "&" , "," , "." , "/" , "~" ,
+          ____, ____, ____, ____, ____,
+        ],
+      ],
+      [ # layer 4 (fn)
+        [ # left hand
+          ins , del , home, up  , end , pgup,
+          ____, esc , left, down, rght, pgdn,
+          ____, F1  , F2  , F3  , F4  , F5  ,
+          ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          C-pgup, C-home, C-up  , C-end , C-del , F12 ,
+          C-pgdn, C-left, C-down, C-rght, C-bspc, F11 ,
+          F6    , F7    , F8    , F9    , F10   , CA-none ,
+          ____  , ____  , ____  , ____  , ____  ,
+        ],
+      ],
+      [ # layer 5 (media)
+        [ # left hand
+          slck, pscr, mply, volu, mstp, F11 ,
+          bspc, mute, mprv, vold, mnxt, app ,
+          ____, C-y , CS-z , C-i , C-. , C-; ,
+          ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          wh_u, btn1, ms_u, btn2, RS-c, dongle_0 ,
+          wh_d, ms_l, ms_d, ms_r, btn3, dongle_1 ,
+          fn3 , fn0 , fn1 , fn2 , NONE, test_2 ,
+          ____, ____, ____, ____, ____,
+        ],
+      ],
+    ]
+  numpad_layout:
+    default_layer: 0
+    layers: [
+      [ # layer 0
+        # [ # numpad (no matrix_map)
+        #   nlck, kp_/, kp_*, kp_-  ,
+        #   kp_7, kp_8, kp_9, kp_a  ,
+        #   kp_4, kp_5, kp_6, none  ,
+        #   kp_1, kp_2, kp_3, kp_ent,
+        #   kp_0, none, kp_., none  ,
+        # ]
+        [ # numpad (with matrix_map)
+          nlck, kp_/, kp_*, kp_-  ,
+          kp_7, kp_8, kp_9, kp_a  ,
+          kp_4, kp_5, kp_6,
+          kp_1, kp_2, kp_3, kp_ent,
+          kp_0,       kp_.
+        ]
+      ]
+    ]
