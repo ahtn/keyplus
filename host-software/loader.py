@@ -38,6 +38,33 @@ def msg_box(description="", title="Message"):
     msgBox.setText(description)
     msgBox.exec_()
 
+def is_keyplus_device(device):
+    if device.interface_number != protocol.DEFAULT_INTERFACE:
+        return False
+    return (device.vendor_id, device.product_id) in [(0x6666, 0x1111*i) for i in range(16)]
+
+def is_xusb_bootloader_device(device):
+    if device.interface_number != xusb_boot.DEFAULT_INTERFACE:
+        return False
+    return (device.vendor_id, device.product_id) == (xusb_boot.DEFAULT_VID, xusb_boot.DEFAULT_PID)
+
+def is_nrf24lu1p_bootloader_device(device):
+    ID_VENDOR = 0x1915
+    ID_PRODUCT = 0x0101
+    return (device.vendor_id, device.product_id) == (ID_VENDOR, ID_PRODUCT)
+
+def is_unifying_bootloader_device(device):
+    return False
+
+def is_supported_device(device):
+    return is_keyplus_device(device) or is_xusb_bootloader_device(device) or \
+        is_nrf24lu1p_bootloader_device(device) or is_unifying_bootloader_device(device)
+
+def is_bootloader_device(device):
+    return is_xusb_bootloader_device(device) or \
+        is_nrf24lu1p_bootloader_device(device) or \
+        is_unifying_bootloader_device(device)
+
 class DeviceWidget(QGroupBox):
 
     PROGRAM_SIGNAL = 0
@@ -45,6 +72,7 @@ class DeviceWidget(QGroupBox):
 
     program = Signal(str)
     show_info = Signal(str)
+    reset = Signal(str)
 
     def __init__(self, device):
         super(DeviceWidget, self).__init__(None)
@@ -54,11 +82,8 @@ class DeviceWidget(QGroupBox):
 
         self.initUI()
 
-    def initUI(self):
-        programIcon = QIcon('img/download.png')
-        infoIcon = QIcon('img/info.png')
-
-        info = self.device
+    # label for generic keyplus device
+    def setup_keyplus_label(self):
         try:
             self.device.open()
             settingsInfo = protocol.get_device_info(self.device)
@@ -66,7 +91,7 @@ class DeviceWidget(QGroupBox):
             self.device.close()
         except TimeoutError as err:
             # Incase opening the device fails
-            print("Error Opening Device: {} | {}:{}"
+            raise Exception ("Error Opening Device: {} | {}:{}"
                     .format(
                         self.device.path,
                         self.device.vendor_id,
@@ -74,7 +99,6 @@ class DeviceWidget(QGroupBox):
                     ),
                   file=sys.stderr
             )
-            return
         self.valid = True
         build_time_str = protocol.timestamp_to_str(settingsInfo.timestamp)
         self.label = QLabel('{} | {} | Firmware v{}.{}.{}\n'
@@ -82,16 +106,92 @@ class DeviceWidget(QGroupBox):
                             'Serial number: {}\n'
                             'Last time updated: {}'
             .format(
-                info.manufacturer_string,
-                info.product_string,
+                self.device.manufacturer_string,
+                self.device.product_string,
                 firmwareInfo.version_major,
                 firmwareInfo.version_minor,
                 firmwareInfo.version_patch,
                 settingsInfo.id,
-                info.serial_number,
+                self.device.serial_number,
                 build_time_str
             )
         )
+
+    # xusb_boot bootloader device
+    def setup_xusb_bootloader_label(self):
+        try:
+            self.device.open()
+            bootloader_info = xusb_boot.get_boot_info(self.device)
+            self.device.close()
+        except TimeoutError as err:
+            # Incase opening the device fails
+            raise Exception ("Error Opening Device: {} | {}:{}"
+                    .format(
+                        self.device.path,
+                        self.device.vendor_id,
+                        self.device.product_id
+                    ),
+                  file=sys.stderr
+            )
+
+        self.valid = True
+        self.label = QLabel('{} | {} | Bootloader v{}.{}\n'
+                            'MCU: {}\n'
+                            'Flash size: {}\n'
+                            'Serial number: {}\n'
+            .format(
+                self.device.manufacturer_string,
+                self.device.product_string,
+                bootloader_info.version_major,
+                bootloader_info.version_minor,
+                bootloader_info.mcu_string,
+                bootloader_info.flash_size,
+                self.device.serial_number
+            )
+        )
+
+    # nrf24lu1p
+    def setup_nrf24lu1p_label(self):
+        # try:
+        #     self.device.open()
+        #     bootloader_info = xusb_boot.get_boot_info(self.device)
+        #     self.device.close()
+        # except TimeoutError as err:
+        #     # Incase opening the device fails
+        #     raise Exception ("Error Opening Device: {} | {}:{}"
+        #             .format(
+        #                 self.device.path,
+        #                 self.device.vendor_id,
+        #                 self.device.product_id
+        #             ),
+        #           file=sys.stderr
+        #     )
+
+        self.valid = True
+        self.label = QLabel('nRF24LU1+ Bootloader v{}.{}\n'
+                            'MCU: nRF24LU1+\n'
+            .format(
+                0,
+                0,
+                self.device.manufacturer_string,
+                self.device.product_string,
+            )
+        )
+
+    def initUI(self):
+        programIcon = QIcon('img/download.png')
+        infoIcon = QIcon('img/info.png')
+
+        if is_keyplus_device(self.device):
+            self.setup_keyplus_label()
+        elif is_xusb_bootloader_device(self.device):
+            self.setup_xusb_bootloader_label()
+        elif is_nrf24lu1p_bootloader_device(self.device):
+            self.setup_nrf24lu1p_label()
+        else:
+            raise Exception("Unsupported USB device {}:{}".format(
+                self.device.vendor_id, self.device.product_id))
+
         self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.label.setStyleSheet("""
         QLabel {
@@ -106,16 +206,20 @@ class DeviceWidget(QGroupBox):
 
         self.programButton = QPushButton(' Program')
         self.programButton.setIcon(programIcon)
-        self.programButton.clicked.connect(self.programDevice)
+        self.programButton.clicked.connect(self.programSignal)
 
-        self.infoButton = QPushButton('Info')
-        self.infoButton.setIcon(infoIcon)
-        self.infoButton.clicked.connect(self.showDeviceInfo)
+        if is_bootloader_device(self.device):
+            self.secondaryButton = QPushButton('Reset')
+            self.secondaryButton.clicked.connect(self.resetSignal)
+        else:
+            self.secondaryButton = QPushButton('Info')
+            self.secondaryButton.setIcon(infoIcon)
+            self.secondaryButton.clicked.connect(self.infoSignal)
 
         self.layout = QGridLayout()
         self.layout.addWidget(self.label, 0, 0, 2, 1)
         self.layout.addWidget(self.programButton, 0, 1)
-        self.layout.addWidget(self.infoButton, 1, 1)
+        self.layout.addWidget(self.secondaryButton, 1, 1)
         self.setLayout(self.layout)
 
         self.setMaximumHeight(150)
@@ -127,10 +231,13 @@ class DeviceWidget(QGroupBox):
             }
         """)
 
-    def showDeviceInfo(self):
+    def infoSignal(self):
         self.show_info.emit(self.device.path)
 
-    def programDevice(self):
+    def resetSignal(self):
+        self.reset.emit(self.device.path)
+
+    def programSignal(self):
         self.program.emit(self.device.path)
 
     def sizeHint(self):
@@ -191,12 +298,13 @@ class DeviceInformationTable(QAbstractTableModel):
         return None
 
 class DeviceList(QScrollArea):
-    def __init__(self, programming_handler, info_handler):
+    def __init__(self, programming_handler, info_handler, reset_handler):
         super(DeviceList, self).__init__()
 
         self.deviceWidgets = []
         self.programming_handler = programming_handler
         self.info_handler = info_handler
+        self.reset_handler = reset_handler
         self.updateCounter = 0
 
         self.initUI()
@@ -219,8 +327,7 @@ class DeviceList(QScrollArea):
     def updateList(self):
         self.updateCounter += 1
 
-        deviceInfoList = easyhid.Enumeration(
-        ).find(interface=protocol.DEFAULT_INTERFACE, manufacturer="keyplus")
+        deviceInfoList = list(filter(is_supported_device, easyhid.Enumeration().find()))
 
         deleteList = []
         deviceIds = [dev.path for dev in deviceInfoList]
@@ -253,6 +360,7 @@ class DeviceList(QScrollArea):
                 self.layout.addWidget(devWidget)
                 devWidget.program.connect(self.programming_handler)
                 devWidget.show_info.connect(self.info_handler)
+                devWidget.reset.connect(self.reset_handler)
 
         # if len(self.deviceWidgets) == 0:
         if len(oldDevices) == 0 and len(newDevices) == 0:
@@ -486,8 +594,6 @@ class FileBrowseWidget(QWidget):
 
         self.lineEdit = QLineEdit()
         self.browseButton = QPushButton("Browse")
-        # self.checkButton = QPushButton("Check")
-        self.infoButton = QPushButton("Info")
 
         hbox.addWidget(self.lineEdit, 0, 0, )
         hbox.addWidget(self.browseButton, 0, 1)
@@ -578,7 +684,11 @@ class Loader(QMainWindow):
         # toolbar.setMovable(False)
 
         # Add the main windows widgets
-        self.deviceListWidget = DeviceList(self.programDeviceHandler, self.infoDeviceHandler)
+        self.deviceListWidget = DeviceList(
+            self.programDeviceHandler,
+            self.infoDeviceHandler,
+            self.resetDeviceHandler
+        )
         self.fileSelectorWidget = FileSelector()
 
         self.setStyleSheet("""
@@ -617,17 +727,16 @@ class Loader(QMainWindow):
 
     @Slot(str)
     def programDeviceHandler(self, device_path):
-        target_device = None
-
-        try:
-            target_device = easyhid.Enumeration().find(path=device_path)[0]
-            target_device.open()
-        except:
-            error_msg_box("Failed to open device! Check it is still present "
-                             "and you have permission to write to it.")
-            return
+        target_device = self.tryOpenDevicePath(device_path)
+        if target_device == None: return
 
         programmingMode = self.fileSelectorWidget.getProgramingInfo()
+
+        if is_bootloader_device(target_device) and programmingMode != FileSelector.ScopeFirmware:
+            error_msg_box("Can only upload firmware while bootloader is running. "
+                          "Either reset it, or upload a firmware hex instead")
+            target_device.close()
+            return
 
         if programmingMode == FileSelector.ScopeLayout:
             layout_file = self.fileSelectorWidget.getLayoutFile()
@@ -716,19 +825,23 @@ class Loader(QMainWindow):
             if fw_file == '':
                 error_msg_box("No firmware file given.")
             else:
-                try:
-                    serial_num = target_device.serial_number
-                    boot_vid, boot_pid = protocol.enter_bootloader(target_device)
 
-                    self.bootloaderProgramTimer = QTimer()
-                    self.bootloaderProgramTimer.setInterval(1500)
-                    self.bootloaderProgramTimer.setSingleShot(True)
-                    self.bootloaderProgramTimer.timeout.connect( lambda:
-                        self.programFirmwareHex(boot_vid, boot_pid, serial_num, fw_file)
-                    )
-                    self.bootloaderProgramTimer.start()
-                except:
-                    error_msg_box("Programming hex file failed: '{}'".format(fw_file))
+                if is_xusb_bootloader_device(target_device):
+                    self.program_xusb_boot_firmware_hex(target_device, fw_file)
+                elif is_keyplus_device(target_device):
+                    try:
+                        serial_num = target_device.serial_number
+                        boot_vid, boot_pid = protocol.enter_bootloader(target_device)
+
+                        self.bootloaderProgramTimer = QTimer()
+                        self.bootloaderProgramTimer.setInterval(500)
+                        self.bootloaderProgramTimer.setSingleShot(True)
+                        self.bootloaderProgramTimer.timeout.connect( lambda:
+                            self.programFirmwareHex(boot_vid, boot_pid, serial_num, fw_file)
+                        )
+                        self.bootloaderProgramTimer.start()
+                    except (easyhid.HIDException, protocol.KBProtocolException):
+                        error_msg_box("Programming hex file failed: '{}'".format(fw_file))
         else:
             try:
                 target_device.close()
@@ -743,8 +856,8 @@ class Loader(QMainWindow):
 
         self.deviceListWidget.updateList()
 
-    def programFirmwareHex(self, boot_vid, boot_pid, serial_num, file_name):
 
+    def programFirmwareHex(self, boot_vid, boot_pid, serial_num, file_name):
         device = None
 
         for i in range(1):
@@ -766,31 +879,64 @@ class Loader(QMainWindow):
 
         if device == None:
             error_msg_box("Couldn't connect to the device's bootloader")
+            return
         else:
-            device.open()
-            try:
-                xusb_boot.write_hexfile(device, file_name)
-                msg_box("Programming completed successfully", title="Programming complete!")
-            except xusb_boot.BootloaderException as err:
-                error_msg_box("Error programming the bootloader to hex file: " + str(err))
-            finally:
-                device.close()
+            if tryOpenDevice(device): return
 
-    @Slot(str)
-    def infoDeviceHandler(self, device_path):
-        device = None
+            self.program_xusb_boot_firmware_hex(device, file_name)
 
+    def program_xusb_boot_firmware_hex(self, device, file_name):
+        try:
+            xusb_boot.write_hexfile(device, file_name)
+            msg_box("Programming completed successfully", title="Programming complete!")
+        except xusb_boot.BootloaderException as err:
+            error_msg_box("Error programming the bootloader to hex file: " + str(err))
+        finally:
+            device.close()
+
+    def tryOpenDevicePath(self, device_path):
         try:
             device = easyhid.Enumeration().find(path=device_path)[0]
             device.open()
+            return device
         except:
             msg_box(
                     description="Failed to open device! Check it is still present "
                     "and you have permission to write to it.",
                     title="USB Device write error"
             )
+            return None
 
-            return
+    def tryOpenDevice(self, device):
+        try:
+            device.open()
+            return False
+        except:
+            msg_box(
+                    description="Failed to open device! Check it is still present "
+                    "and you have permission to write to it.",
+                    title="USB Device write error"
+            )
+            return True
+
+    @Slot(str)
+    def resetDeviceHandler(self, device_path):
+        device = self.tryOpenDevicePath(device_path)
+        if device == None: return
+
+        if is_keyplus_device(device):
+            protocol.reset_device(device)
+        elif is_xusb_bootloader_device(device):
+            xusb_boot.reset(device)
+        elif is_nrf24lu1p_bootloader_device(device):
+            print("TODO: reset: ", device_path, file=sys.stderr)
+        else:
+            print("Can't reset device: ", device_path, file=sys.stderr)
+
+    @Slot(str)
+    def infoDeviceHandler(self, device_path):
+        device = self.tryOpenDevicePath(device_path)
+        if device == None: return
 
         settingsInfo = protocol.get_device_info(device)
         firmwareInfo = protocol.get_firmware_info(device)
