@@ -5,6 +5,7 @@
 
 import cffi
 import ctypes.util
+import platform
 
 ffi = cffi.FFI()
 ffi.cdef("""
@@ -43,11 +44,16 @@ int hid_get_indexed_string (hid_device *device, int string_index, wchar_t *strin
 const wchar_t* hid_error (hid_device *device);
 """)
 
-try:
-    hidapi = ffi.dlopen('hidapi-libusb')
-except:
-    hidapi = ffi.dlopen(ctypes.util.find_library('hidapi-libusb'))
-
+if "Windows" in platform.platform():
+    try:
+        hidapi = ffi.dlopen('hidapi.dll')
+    except:
+        hidapi = ffi.dlopen(ctypes.util.find_library('hidapi.dll'))
+else:
+    try:
+        hidapi = ffi.dlopen('hidapi-libusb')
+    except:
+        hidapi = ffi.dlopen(ctypes.util.find_library('hidapi-libusb'))
 
 def _c_to_py_str(val):
     if val == ffi.NULL:
