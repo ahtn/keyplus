@@ -56,8 +56,8 @@
 // FUSEBYTE5: BODACT, EESAVE, BODLEVEL
 #define FUSEBYTE5 ( \
     FUSE5_UNUSED | \
-    BODACT_CONTINUOUS_gc | \
-    (OFF * NVM_FUSES_EESAVE_bm) | \
+    BODACT_SAMPLED_gc | \
+    (ON * NVM_FUSES_EESAVE_bm) | \
     BODLVL_1V8_gc \
 )
 
@@ -79,7 +79,7 @@
     NVM_BLBB_WLOCK_gc | \
     NVM_BLBA_NOLOCK_gc | \
     NVM_BLBAT_NOLOCK_gc | \
-    NVM_LB_NOLOCK_gc \
+    NVM_LB_RWLOCK_gc \
 )
 
 const uint8_t fuses[] __attribute__ ((section (".fuse"))) = {

@@ -48,12 +48,6 @@ else
 CFLAGS += -DUSE_CHECK_PIN=0
 endif
 
-# Pin E2 is used on keyplus mini
-# CFLAGS += -DCHECK_PIN=PIN2_bm
-# CFLAGS += -DCHECK_PORT=PORTE
-# CFLAGS += -DVBUS_PIN_INT0_VECT=PORTE_INT0_vect
-# CFLAGS += -DTESTING_PIN_TGL=0
-
 CFLAGS += -DNRF24_CE_PORT=PORTR
 CFLAGS += -DNRF24_CE_PIN=PIN0_bm
 
@@ -185,34 +179,39 @@ all: hex fuse lock
 
 # program the device using the bootloader
 
+
+# Pin E2 is used on keyplus mini
+keyplus_mini: CFLAGS += -DCHECK_PIN=PIN2_bm
+keyplus_mini: CFLAGS += -DCHECK_PORT=PORTE
+keyplus_mini: CFLAGS += -DVBUS_PIN_INT0_VECT=PORTE_INT0_vect
+keyplus_mini: hex
+
+
 build-0: clean
 build-0: CDEFS += -DDEVICE_ID=0
-build-0: hex
+build-0: keyplus_mini
 
 build-1: clean
 build-1: CDEFS += -DDEVICE_ID=1
-build-1: hex
+build-1: keyplus_mini
 
 build-2: clean
 build-2: CDEFS += -DDEVICE_ID=2
-build-2: hex
+build-2: keyplus_mini
 
+xmega_test_board: CFLAGS += -DCHECK_PIN=PIN1_bm
+xmega_test_board: CFLAGS += -DCHECK_PORT=PORTR
+xmega_test_board: CFLAGS += -DVBUS_PIN_INT0_VECT=PORTR_INT0_vect
+xmega_test_board: CFLAGS += -DTESTING_PIN_TGL=0
+xmega_test_board: hex
 
 build-10: clean
-build-10: CDEFS += -DDEVICE_ID=10 \
-	-DCHECK_PIN=PIN1_bm \
-	-DCHECK_PORT=PORTR \
-	-DVBUS_PIN_INT0_VECT=PORTR_INT0_vect \
-	-DTESTING_PIN_TGL=0
-build-10: hex
+build-10: CDEFS += -DDEVICE_ID=10
+build-10: xmega_test_board
 
 build-11: clean
-build-11: CDEFS += -DDEVICE_ID=11 \
-	-DCHECK_PIN=PIN1_bm \
-	-DCHECK_PORT=PORTR \
-	-DVBUS_PIN_INT0_VECT=PORTR_INT0_vect \
-	-DTESTING_PIN_TGL=0
-build-11: hex
+build-11: CDEFS += -DDEVICE_ID=11
+build-11: xmega_test_board
 
 program-0: build-0 program-boot
 program-1: build-1 program-boot
@@ -240,12 +239,16 @@ program-hard: $(TARGET).hex
 $(TARGET).fuse: $(TARGET).elf
 	avr-objcopy -O $(FORMAT) -j .fuse --change-section-lma .fuse=$(FUSE_SECTION_START) $< $@
 
-# fuse options, see fuses.c
-FUSE0 = CC
-FUSE1 = 00
+# fuse options, see fuses.c (fuses values generated in $(TARGET).fuse)
+
+FUSE0 = CC # JTAG_UID
+FUSE1 = 00 # Watchdog settings
+# b6 = BOOTRST, b5 = TOSCSEL, b1:0 = BODPD
 FUSE2 = BD
+# b4 = RSTDISBL, b3:2 = STARTUPTIME, b1 = WDLOCK, b0 = JTAGEN
 FUSE4 = FF
-FUSE5 = EE
+# b5:4 = BODACT, b3 = EESAVE, b2:0 = BODLEVEL
+FUSE5 = D6
 
 program-fuses:
 	avrdude-pdi -C ~/local/etc/avrdude-pdi.conf -c usbasp -p x32a4 \
@@ -255,8 +258,10 @@ program-fuses:
 		-U fuse4:w:0x$(FUSE4):m \
 		-U fuse5:w:0x$(FUSE5):m
 
-# lock options, see fuses.c
-LOCKBITS = BF
+# lock options, see fuses.c (lock bit values generated in $(TARGET).lock)
+LOCKBITS_DEBUG := BF # RW enabled for external programmer
+LOCKBITS_RELEASE := BC # RW disabled for external programmer
+LOCKBITS = $(LOCKBITS_RELEASE)
 program-lock:
 	avrdude-pdi -C ~/local/etc/avrdude-pdi.conf -c usbasp -p x32a4 \
 		-U lock:w:0x$(LOCKBITS):m \
