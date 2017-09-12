@@ -152,6 +152,7 @@ LD_SCRIPT_DIR = ./ld-scripts
 
 SETTING_ADDR := 0x6E00
 LAYOUT_ADDR := 0x7000
+LAYOUT_SIZE := 0x1000
 
 LDFLAGS += -T $(LD_SCRIPT_DIR)/$(LD_SCRIPT)
 LDFLAGS += -Wl,--section-start=.key_settings_block=$(SETTING_ADDR)
@@ -159,6 +160,7 @@ LDFLAGS += -Wl,--section-start=.key_layout_block=$(LAYOUT_ADDR)
 
 CDEFS += -DSETTINGS_ADDR=$(SETTING_ADDR)
 CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
+CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
 
 # Place -D or -U options here for C sources
 CDEFS += -DCLOCK_SPEED_SLOW=$(CLOCK_SPEED_SLOW)UL

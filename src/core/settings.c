@@ -11,10 +11,6 @@
 #include "core/util.h"
 #include "core/matrix_scanner.h"
 
-/* ekey 792c72c23b3e78e446992d1b498c8c63 */
-/* dkey 3fb9f208e390fee70780122117e7e2c2 */
-/* addr_0 2aef63473c */
-/* addr_1 168d715956 */
 // settings loaded into ram
 XRAM rf_settings_t g_rf_settings;
 
@@ -39,7 +35,7 @@ const ROM firmware_build_settings_t g_firmware_build_settings = {
     .version_minor = 2,
     .version_patch = 0,
 
-    .layout_flash_size = 1UL << 16, // TODO, set this value properly
+    .layout_flash_size = LAYOUT_SIZE,
     .timestamp = { BUILD_TIME_STAMP },
     .git_hash = { GIT_HASH },
 

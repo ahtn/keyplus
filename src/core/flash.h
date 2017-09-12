@@ -16,6 +16,8 @@
 typedef uint16_t flash_ptr_t;
 typedef uint16_t flash_size_t;
 
+#define SETTINGS_SIZE       (0x0200)
+
 #ifndef SETTINGS_ADDR
 #define SETTINGS_ADDR         ((flash_ptr_t)&g_settings)
 #endif
@@ -28,16 +30,22 @@ typedef uint16_t flash_size_t;
 // reprogramming when we update the layout. We want to reserve space for them,
 // and have them page aligned.
 #ifdef SDCC
-#define AT__SETTINGS_ADDR AT(SETTINGS_ADDR) ROM 
+#define AT__SETTINGS_ADDR AT(SETTINGS_ADDR) ROM
 #else
 #define AT__SETTINGS_ADDR __attribute__ ((section (".key_settings_block")))
 #endif
 
 #ifdef SDCC
-#define AT__LAYOUT_ADDR AT(LAYOUT_ADDR) ROM 
+#define AT__LAYOUT_ADDR AT(LAYOUT_ADDR) ROM
 #else
 #define AT__LAYOUT_ADDR __attribute__ ((section (".key_layout_block")))
 #endif
+
+#define SETTINGS_PAGE_COUNT     (SETTINGS_SIZE / PAGE_SIZE)
+#define LAYOUT_PAGE_COUNT       (LAYOUT_SIZE / PAGE_SIZE)
+
+#define LAYOUT_PAGE_NUM     (LAYOUT_ADDR / PAGE_SIZE)
+#define SETTINGS_PAGE_NUM   (SETTINGS_ADDR / PAGE_SIZE)
 
 void flash_modify_enable(void);
 void flash_modify_disable(void);
