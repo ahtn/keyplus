@@ -85,35 +85,47 @@ static void setup_columns(void) {
 
     // Note: PORTCFG.MPCMASK lets us configure multiple PINnCTRL regs at once
     // It is cleared automatically after any PINnCTRL register is written
-    PORTA.DIRCLR = col_mask_a;
-    PORTCFG.MPCMASK = col_mask_a;
-    PORTA.PIN0CTRL = PORT_OPC_PULLUP_gc | PORT_ISC_BOTHEDGES_gc; // sense either edge for irq
-    PORTA.OUTSET = col_mask_a;
-    PORTA.INT0MASK |= col_mask_a;
+    // Note: If MPCMASK=0, then it's feature is disabled, so writing to PIN0CTRL
+    // would actually affect update PIN0CTRL instead of updating no pins.
+    if (col_mask_a) {
+        PORTA.DIRCLR = col_mask_a;
+        PORTCFG.MPCMASK = col_mask_a;
+        PORTA.PIN0CTRL = PORT_OPC_PULLUP_gc | PORT_ISC_BOTHEDGES_gc; // sense either edge for irq
+        PORTA.OUTSET = col_mask_a;
+        PORTA.INT0MASK |= col_mask_a;
+    }
 
-    PORTB.DIRCLR = col_mask_b;
-    PORTCFG.MPCMASK = col_mask_a;
-    PORTB.PIN0CTRL = PORT_OPC_PULLUP_gc | PORT_ISC_BOTHEDGES_gc;
-    PORTB.OUTSET = col_mask_b;
-    PORTB.INT0MASK |= col_mask_b;
+    if (col_mask_b) {
+        PORTB.DIRCLR = col_mask_b;
+        PORTCFG.MPCMASK = col_mask_b;
+        PORTB.PIN0CTRL = PORT_OPC_PULLUP_gc | PORT_ISC_BOTHEDGES_gc;
+        PORTB.OUTSET = col_mask_b;
+        PORTB.INT0MASK |= col_mask_b;
+    }
 
-    PORTC.DIRCLR = col_mask_c;
-    PORTCFG.MPCMASK = col_mask_a;
-    PORTC.PIN0CTRL = PORT_OPC_PULLUP_gc | PORT_ISC_BOTHEDGES_gc;
-    PORTC.OUTSET = col_mask_c;
-    PORTC.INT0MASK |= col_mask_c;
+    if (col_mask_c) {
+        PORTC.DIRCLR = col_mask_c;
+        PORTCFG.MPCMASK = col_mask_c;
+        PORTC.PIN0CTRL = PORT_OPC_PULLUP_gc | PORT_ISC_BOTHEDGES_gc;
+        PORTC.OUTSET = col_mask_c;
+        PORTC.INT0MASK |= col_mask_c;
+    }
 }
 
 // rows are floating inputs
 static void setup_rows(void) {
     // Note: DIR: 0 -> input, 1 -> output
-    PORTD.DIRCLR = row_mask_d;
-    PORTCFG.MPCMASK = row_mask_d;
-    PORTD.PIN0CTRL = PORT_OPC_TOTEM_gc;
+    if (row_mask_d) {
+        PORTD.DIRCLR = row_mask_d;
+        PORTCFG.MPCMASK = row_mask_d;
+        PORTD.PIN0CTRL = PORT_OPC_TOTEM_gc;
+    }
 
-    PORTC.DIRCLR = row_mask_c;
-    PORTCFG.MPCMASK = row_mask_c;
-    PORTC.PIN0CTRL = PORT_OPC_TOTEM_gc;
+    if (row_mask_c) {
+        PORTC.DIRCLR = row_mask_c;
+        PORTCFG.MPCMASK = row_mask_c;
+        PORTC.PIN0CTRL = PORT_OPC_TOTEM_gc;
+    }
 }
 
 //  makes all floating inputs
@@ -146,41 +158,49 @@ bool matrix_has_active_row(void) {
 
 // selecting a row makes it output 0
 static inline void select_row(uint8_t row) {
-    if (row < 6) {
+    if (row < 6) { // row 0-5
         PORTD.DIRSET = (1 << row);
         PORTD.OUTCLR = (1 << row);
-    } else if (row < 10) {
+    } else if (row >= 6 && row < 10) { // row 6-9
         const uint8_t pin_num = 3-(row-6);
-        PORTD.DIRSET = (1 << pin_num);
+        PORTC.DIRSET = (1 << pin_num);
         PORTC.OUTCLR = (1 << pin_num);
     }
 }
 
+// NOTE:
+// cols: A0-A7 -> Columns 0-7
+// cols: B0-A3 -> Columns 8-11
+// cols: C0-C3 -> Columns 12-15
+// rows: D0-D5 -> Rows 0-5
+// rows: C3-C0 -> Rows 6-9
 void matrix_scanner_init(void) {
-    const int8_t cols = g_scan_plan.cols;
-    const int8_t rows = g_scan_plan.rows;
+    int8_t cols = g_scan_plan.cols;
+    int8_t rows = g_scan_plan.rows;
 
-    if (cols + rows > 22) {
+    if (cols + rows > 22 || cols > 16 || rows > 10) {
         // TODO: add error message
-        return;
+        cols = 0;
+        rows = 0;
+        g_scan_plan.rows = 0;
+        g_scan_plan.cols = 0;
     }
 
     bytes_per_row = (g_scan_plan.cols+7)/8;
 
-    // NOTE:
     col_num_pins_a = (cols < 8) ? cols : 8;
-    col_num_pins_b = (cols < 12) ? MAX(cols - 8, 0) : 4;
-    col_num_pins_c = (cols < 16) ? MAX(cols - 12, 0) : 4;
+    col_num_pins_b = (cols < 12) ? MAX((int8_t)cols - 8, 0) : 4;
+    col_num_pins_c = (cols < 16) ? MAX((int8_t)cols - 12, 0) : 4;
 
     col_mask_a = ~(0xff << col_num_pins_a);
-    col_mask_b = ~(0x0f << col_num_pins_b) & 0x0f;
-    col_mask_c = ~(0x0f << col_num_pins_c) & 0x0f;
+    col_mask_b = ~(0xff << col_num_pins_b) & 0x0f;
+    col_mask_c = ~(0xff << col_num_pins_c) & 0x0f;
 
     row_num_pins_d = (rows < 6) ? rows : 6;
-    row_num_pins_c = (rows < 10) ? MAX(rows - 6, 0) : 4;
+    row_num_pins_c = (rows < 10) ? MAX((int8_t)rows - 6, 0) : 4;
 
     row_mask_d = ~(0xff << row_num_pins_d) & 0x3f;
-    row_mask_c =  (0xf0 >> row_num_pins_c) & 0x0f; // R6,R7,R8,R9 -> C3,C2,C1,C0
+    row_mask_c = ~(0x0f >> row_num_pins_c) & 0x0f; // R6,R7,R8,R9 <-> C3,C2,C1,C0
 
     memset(s_is_debouncing, 0, sizeof(s_is_debouncing));
     s_matrix_number_keys_down = 0;
