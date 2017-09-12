@@ -43,25 +43,9 @@ void wdt_disable(void) {
     WDT.CTRL = temp;
 }
 
-// NOTE: Pins that are left floating can cause the system to use more power, so
+// TODO: Pins that are left floating can cause the system to use more power, so
 // making them output low.
-// TODO: Can't use this implementation because which pins are being used is
-// set at run time. Should probably make them input low with pull down.
 void unused_pins_init(void) {
-#if SET_FLOATING_PINS_LOW
-    PORTA.DIRSET = PORTA_FLOATING_PINS;
-    PORTA.OUTCLR = PORTA_FLOATING_PINS;
-    PORTB.DIRSET = PORTB_FLOATING_PINS;
-    PORTB.OUTCLR = PORTB_FLOATING_PINS;
-    PORTC.DIRSET = PORTC_FLOATING_PINS;
-    PORTC.OUTCLR = PORTC_FLOATING_PINS;
-    PORTD.DIRSET = PORTD_FLOATING_PINS;
-    PORTD.OUTCLR = PORTD_FLOATING_PINS;
-    PORTE.DIRSET = PORTE_FLOATING_PINS;
-    PORTE.OUTCLR = PORTE_FLOATING_PINS;
-    PORTR.DIRSET = PORTR_FLOATING_PINS;
-    PORTR.OUTCLR = PORTR_FLOATING_PINS;
-#endif
 }
 
 void pin_init(void) {
@@ -109,12 +93,6 @@ void battery_mode_main_loop(void) {
     bool deep_sleep_resync_packet = false;
 
     while (1) {
-#if TESTING_PIN_TGL
-        // PORTC.OUTTGL = PIN0_bm;
-
-        PORTC.OUTTGL = PIN1_bm | PIN2_bm;
-#endif
-
 #if ADAPTIVE_SCAN
         scan_changed = false;
         if (matrix_needs_scanning) {
@@ -128,15 +106,7 @@ void battery_mode_main_loop(void) {
             scan_changed = matrix_scan();
         }
 
-#if TESTING_PIN_TGL
-        PORTC.OUTTGL = PIN1_bm | PIN2_bm;
-#endif
-
         uint8_t nrf_status = nrf24_read_status();
-
-#if TESTING_PIN_TGL
-        PORTC.OUTTGL = PIN2_bm;
-#endif
 
         // TODO: add queue of messages.
         // try process messages based on order in queue.
@@ -154,9 +124,6 @@ void battery_mode_main_loop(void) {
             if (err_count > MAX_RETRY_COUNT) {
                 nrf24_flush_tx();
                 err_count = 0;
-#if TESTING_PIN_TGL
-                PORTC.OUTTGL = PIN0_bm;
-#endif
             } else {
                 nrf24_send_one();
             }
@@ -172,10 +139,6 @@ void battery_mode_main_loop(void) {
             rf_handle_ack_payloads();
         }
 
-#if TESTING_PIN_TGL
-        PORTC.OUTTGL = PIN2_bm;
-#endif
-
         // TODO: We can combine getting the FIFO_STATUS and STATUS register
         // into one SPI transaction.
         uint8_t fifo_status = nrf24_read_reg(FIFO_STATUS);
@@ -188,27 +151,17 @@ void battery_mode_main_loop(void) {
             nrf24_send_one();
         }
 
-#if TESTING_PIN_TGL
-        PORTC.OUTTGL = PIN2_bm;
-#endif
-
         if (get_matrix_num_keys_down() == 0 &&
             (uint16_t)(timer_read16_ms() - idle_time_start) > DEEP_SLEEP_TIME &&
             get_matrix_num_keys_debouncing() == 0 &&
             !scan_changed &&
             (fifo_status & FIFO_TX_EMPTY_bm)
             ) {
-#if TESTING_PIN_TGL
-            PORTC.OUTTGL = PIN2_bm;
-#endif
             deep_sleep();
             idle_time_start = timer_read16_ms();
             matrix_needs_scanning = true;
             deep_sleep_resync_packet = true;
         } else {
-#if TESTING_PIN_TGL
-            PORTC.OUTTGL = PIN2_bm;
-#endif
 
 #if ADAPTIVE_SCAN
             uint8_t num_keys = get_matrix_num_keys_down();
@@ -370,7 +323,7 @@ void usb_mode_main_loop(void) {
         hold_key_task();
 
 #if !(USE_NRF24 && !RF_POLLING)
-        // Don't have RF irq pin, so need to scan 
+        // Don't have RF irq pin, so need to scan
         enter_sleep_mode(SLEEP_MODE_IDLE);
 #endif
         wdt_kick();
@@ -387,26 +340,15 @@ int main(void) {
     vbus_pin_init();
 #endif
 
-#if TESTING_PIN_TGL
-    PORTC.DIRSET = 0b1111;
-    PORTC.OUTCLR = 0b1111;
-#endif
-
-
 #if USE_NRF24 && USE_CHECK_PIN
-#if !TESTING_PIN_TGL
     if (has_vbus_power())
     {
         usb_mode_setup();
         usb_mode_main_loop();
     } else {
-#endif
         battery_mode_setup();
         battery_mode_main_loop();
-#if !TESTING_PIN_TGL
     }
-#endif
-
 #else
     usb_mode_setup();
     usb_mode_main_loop();
