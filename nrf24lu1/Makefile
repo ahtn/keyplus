@@ -68,6 +68,7 @@ endif
 
 CDEFS += -DSETTINGS_ADDR=0x5E00
 CDEFS += -DLAYOUT_ADDR=0x6000
+CDEFS += -DLAYOUT_SIZE=0x1400
 
 AS = /usr/local/bin/sdas8051
 CC = /usr/local/bin/sdcc

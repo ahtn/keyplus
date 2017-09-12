@@ -21,8 +21,7 @@
 
 // TODO: should probably use 2 pages to store this value
 // session id defines
-#define SID_PAGE 63
-#define SID_ADDR (SID_PAGE * PAGE_SIZE)
+#define NONCE_PAGE (NONCE_ADDR / PAGE_SIZE)
 #define SID_MAGIC_VALUE (0x268e8728UL)
 
 #define SID_VALUE_OFFSET 0
@@ -33,9 +32,9 @@
 // For each page write, we can increment the counter by 506*2 (==1012) per a
 // page write. So 1012*1000 writes per a page minimum.
 
-AT(SID_ADDR) ROM uint16_t sid_value;
-AT(SID_ADDR+SID_MAGIC_OFFSET) ROM uint32_t sid_magic;
-AT(SID_ADDR+SID_COUNTER_OFFSET) ROM uint8_t sid_counter[SID_COUNTER_LEN];
+AT(NONCE_ADDR) static ROM uint16_t s_sid_value;
+AT(NONCE_ADDR+SID_MAGIC_OFFSET) static ROM uint32_t s_sid_magic;
+AT(NONCE_ADDR+SID_COUNTER_OFFSET) static ROM uint8_t s_sid_counter[SID_COUNTER_LEN];
 
 // Since we can only write twice to a byte twice, use these values to represent
 // the 3 possible bytes values used for counting
@@ -47,21 +46,21 @@ AT(SID_ADDR+SID_COUNTER_OFFSET) ROM uint8_t sid_counter[SID_COUNTER_LEN];
 static void sid_write_value(uint16_t value) {
     const uint32_t magic = SID_MAGIC_VALUE;
     flash_modify_enable();
-    flash_erase_page(SID_PAGE);
-    flash_write(&value, (SID_ADDR+SID_VALUE_OFFSET), sizeof(uint16_t));
-    flash_write(&magic, (SID_ADDR+SID_MAGIC_OFFSET), sizeof(uint32_t));
+    flash_erase_page(NONCE_PAGE);
+    flash_write(&value, (NONCE_ADDR+SID_VALUE_OFFSET), sizeof(uint16_t));
+    flash_write(&magic, (NONCE_ADDR+SID_MAGIC_OFFSET), sizeof(uint32_t));
     flash_modify_disable();
 }
 
 uint16_t load_session_id(void) {
-    if (sid_magic != SID_MAGIC_VALUE) {
+    if (s_sid_magic != SID_MAGIC_VALUE) {
         sid_write_value(0);
         return 0;
     } else {
-        uint16_t result = sid_value;
+        uint16_t result = s_sid_value;
         uint16_t i;
         for (i = 0; i < SID_COUNTER_LEN; ++i) {
-            const uint8_t value = sid_counter[i];
+            const uint8_t value = s_sid_counter[i];
             switch (value) {
                 case SID_0_WRITES: {
                     return result+0;
@@ -90,34 +89,31 @@ uint16_t load_session_id(void) {
 
 uint16_t increment_session_id(void) {
     uint16_t i;
-    uint16_t nonce_value = sid_value;
+    uint16_t nonce_value = load_session_id();
+
     for (i = 0; i < SID_COUNTER_LEN; ++i) {
-        const uint8_t tally_value = sid_counter[i];
+        const uint8_t tally_value = s_sid_counter[i];
         if (tally_value == SID_2_WRITES) {
-            nonce_value += 2;
             continue;
         } else if (tally_value == SID_1_WRITES || tally_value == SID_0_WRITES) {
             uint8_t value_to_write;
             if (tally_value == SID_0_WRITES) {
-                // nonce_value += 0;
                 value_to_write = SID_1_WRITES;
             } else { // SID_1_WRITES
-                nonce_value += 1;
                 value_to_write = SID_2_WRITES;
             }
             flash_modify_enable();
-            flash_write(&value_to_write, (SID_ADDR+SID_COUNTER_OFFSET+i), 1);
+            flash_write(&value_to_write, (NONCE_ADDR+SID_COUNTER_OFFSET+i), 1);
             flash_modify_disable();
             return nonce_value + 1;
         } else {
             // TODO: PANIC
         }
     }
-    // if we got here that means the page is full, increment by
-    {
-        uint16_t sid_new_value = sid_value + SID_COUNTING_CAPACITY+1;
-        sid_write_value(sid_new_value);
-        return sid_new_value;
+
+    { // if we got here that means the page is full
+        sid_write_value(nonce_value + 1);
+        return nonce_value + 1;
     }
 
 }
