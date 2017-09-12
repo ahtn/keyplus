@@ -72,10 +72,15 @@ void idle_sleep(void) {
 /*********************************************************************
  *                       bootloader functions                        *
  *********************************************************************/
+#include "nrf24lu1_usb.h"
+#include "nrf24lu1_usb_regs.h"
 
 static ROM const char bootloader_reset_string[] = "Enter ICP\0";
 
 void bootloader_jmp(void) {
+    usbcs = USBCS_DISCON_bm;
+    static_delay_ms(100);
+
     __asm
         ljmp #BOOTLOADER_ADDR
     __endasm;
