@@ -95,7 +95,7 @@ devices:
         r3c3, r3c4, r3c5, r3c2, r3c1
       ]
     layout: split_layout
-    layout_offset: 0
+    layout_offset: 1
 
   # rf dongle
   nrf_dongle:
