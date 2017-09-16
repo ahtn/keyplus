@@ -108,7 +108,7 @@ key_symbols = {
     "kp_9": KC_KP_9,
     "kp_0": KC_KP_0,
     "kp_.": KC_KP_PERIOD,
-    "kp_\\": KC_ISO_BACK_SLASH,
+    "iso\\": KC_ISO_BACK_SLASH,
     "application": KC_APPLICATION, "app": KC_APPLICATION,
     "power": KC_POWER,
     "kp_=": KC_KP_EQUAL,
@@ -253,6 +253,9 @@ key_symbols = {
     "?": gen_modkey(KC_FORWARD_SLASH, shift=True),
     "~": gen_modkey(KC_GRAVE, shift=True),
 
+    "iso~": gen_modkey(KC_ISO_HASH, shift=True),
+    "iso|": gen_modkey(KC_ISO_BACK_SLASH, shift=True),
+
     # special keycodes
 
     "trans": KC_TRANSPARENT, "____": KC_TRANSPARENT,
@@ -307,41 +310,6 @@ key_symbols = {
     "www_stop": KC_WWW_STOP,
     "www_refresh": KC_WWW_REFRESH,
     "www_favorites": KC_WWW_FAVORITES,
-
-# TODO: probably changes these
-# fn keys
-    "fn0": KC_FN0,
-    "fn1": KC_FN1,
-    "fn2": KC_FN2,
-    "fn3": KC_FN3,
-    "fn4": KC_FN4,
-    "fn5": KC_FN5,
-    "fn6": KC_FN6,
-    "fn7": KC_FN7,
-    "fn8": KC_FN8,
-    "fn9": KC_FN9,
-    "fn10": KC_FN10,
-    "fn11": KC_FN11,
-    "fn12": KC_FN12,
-    "fn13": KC_FN13,
-    "fn14": KC_FN14,
-    "fn15": KC_FN15,
-    "fn16": KC_FN16,
-    "fn17": KC_FN17,
-    "fn18": KC_FN18,
-    "fn19": KC_FN19,
-    "fn20": KC_FN20,
-    "fn21": KC_FN21,
-    "fn22": KC_FN22,
-    "fn23": KC_FN23,
-    "fn24": KC_FN24,
-    "fn25": KC_FN25,
-    "fn26": KC_FN26,
-    "fn27": KC_FN27,
-    "fn28": KC_FN28,
-    "fn29": KC_FN29,
-    "fn30": KC_FN30,
-    "fn31": KC_FN31,
 
 # hardware control
     "dongle_0": KC_DONGLE_0,
@@ -453,6 +421,35 @@ key_symbols = {
     "": KC_LAYER_RESET,
 
 }
+
+def get_keycode_type(keycode):
+    if type(kc) != int:
+        raise TypeError("keycode must be an int")
+    if kc < 0 or kc > 0xffff:
+        raise ValueError("keycode must be a 16 bit integer")
+
+    if (keycode & EKC_TAG):
+        return KC_TYPE_EKC
+    elif (keycode & SPECIAL_KC_TAG):
+        return KC_TYPE_SPECIAL
+    else:
+        return KC_TYPE_MODKEY
+
+
+def keycode_from_binary(kc_raw):
+    assert(type(kc_raw) == int and kc_raw >= 0 and kc_raw <= 0xffff)
+
+    kc_type = get_keycode_type(keycode)
+
+    if kc_type == KC_TYPE_MODKEY:
+        pass
+    elif kc_type == KC_TYPE_SPECIAL:
+        pass
+    elif kc_type == KC_TYPE_EKC:
+        pass
+    else:
+        raise ValueError("Unknown keycode format")
+
 
 def interpret_keycode(kc_in):
     kc_str = str(kc_in).lower()

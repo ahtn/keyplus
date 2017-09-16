@@ -201,7 +201,7 @@ layouts:
         [ # right hand
           wh_u, btn1, ms_u, btn2, RS-c, dongle_0 ,
           wh_d, ms_l, ms_d, ms_r, btn3, dongle_1 ,
-          fn3 , fn0 , fn1 , fn2 , NONE, test_2 ,
+          set_l3 , set_l0 , set_l1 , set_l2 , NONE, test_2 ,
           ____, ____, ____, ____, ____,
         ],
       ],

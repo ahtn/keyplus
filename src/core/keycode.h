@@ -189,43 +189,6 @@ typedef enum special_keycode_t {
     KC_WWW_REFRESH             = KC_SPECIAL_START | 0xBB ,
     KC_WWW_FAVORITES           = KC_SPECIAL_START | 0xBC ,
 
-    // don't need these really
-    // TODO: probably changes these
-    // fn keys
-    KC_FN0                     = KC_SPECIAL_START | 0xC0,
-    KC_FN1                     = KC_SPECIAL_START | 0xC1,
-    KC_FN2                     = KC_SPECIAL_START | 0xC2,
-    KC_FN3                     = KC_SPECIAL_START | 0xC3,
-    KC_FN4                     = KC_SPECIAL_START | 0xC4,
-    KC_FN5                     = KC_SPECIAL_START | 0xC5,
-    KC_FN6                     = KC_SPECIAL_START | 0xC6,
-    KC_FN7                     = KC_SPECIAL_START | 0xC7,
-    KC_FN8                     = KC_SPECIAL_START | 0xC8,
-    KC_FN9                     = KC_SPECIAL_START | 0xC9,
-    KC_FN10                    = KC_SPECIAL_START | 0xCA,
-    KC_FN11                    = KC_SPECIAL_START | 0xCB,
-    KC_FN12                    = KC_SPECIAL_START | 0xCC,
-    KC_FN13                    = KC_SPECIAL_START | 0xCD,
-    KC_FN14                    = KC_SPECIAL_START | 0xCE,
-    KC_FN15                    = KC_SPECIAL_START | 0xCF,
-
-    KC_FN16                    = KC_SPECIAL_START | 0xD0,
-    KC_FN17                    = KC_SPECIAL_START | 0xD1,
-    KC_FN18                    = KC_SPECIAL_START | 0xD2,
-    KC_FN19                    = KC_SPECIAL_START | 0xD3,
-    KC_FN20                    = KC_SPECIAL_START | 0xD4,
-    KC_FN21                    = KC_SPECIAL_START | 0xD5,
-    KC_FN22                    = KC_SPECIAL_START | 0xD6,
-    KC_FN23                    = KC_SPECIAL_START | 0xD7,
-    KC_FN24                    = KC_SPECIAL_START | 0xD8,
-    KC_FN25                    = KC_SPECIAL_START | 0xD9,
-    KC_FN26                    = KC_SPECIAL_START | 0xDA,
-    KC_FN27                    = KC_SPECIAL_START | 0xDB,
-    KC_FN28                    = KC_SPECIAL_START | 0xDC,
-    KC_FN29                    = KC_SPECIAL_START | 0xDD,
-    KC_FN30                    = KC_SPECIAL_START | 0xDE,
-    KC_FN31                    = KC_SPECIAL_START | 0xDF,
-
     // hardware control
     KC_DONGLE_0                = KC_SPECIAL_START | 0xE0,
     KC_DONGLE_1                = KC_SPECIAL_START | 0xE1,
