@@ -26,6 +26,8 @@ import protocol
 import layout.parser
 import xusb_boot
 
+STATUS_BAR_TIMEOUT=4500
+
 def error_msg_box(msg, title="Error"):
     errorBox = QMessageBox()
     errorBox.setWindowTitle(title)
@@ -626,9 +628,9 @@ class Loader(QMainWindow):
         self.initUI()
 
     def updateDeviceList(self):
-        self.statusBar().showMessage("Device list updating...")
+        self.statusBar().showMessage("Device list updating...", timeout=STATUS_BAR_TIMEOUT)
         self.deviceListWidget.updateList()
-        self.statusBar().showMessage("Device list updated finished!")
+        self.statusBar().showMessage("Device list updated finished!", timeout=STATUS_BAR_TIMEOUT)
 
     def getFileName(self, ext):
         fname = QFileDialog.getOpenFileName(self, 'Open file', '/home')
@@ -739,6 +741,8 @@ class Loader(QMainWindow):
             return
 
         if programmingMode == FileSelector.ScopeLayout:
+            self.statusBar().showMessage("Started updating layout", timeout=STATUS_BAR_TIMEOUT)
+
             layout_file = self.fileSelectorWidget.getLayoutFile()
 
             if layout_file == '':
@@ -766,10 +770,14 @@ class Loader(QMainWindow):
             protocol.update_layout_section(target_device, layout_data)
             protocol.update_settings_section(target_device, rf_data, keep_rf=True)
             protocol.reset_device(target_device)
+
+            self.statusBar().showMessage("Finished updating layout", timeout=STATUS_BAR_TIMEOUT)
         elif programmingMode == FileSelector.ScopeDevice:
             layout_file = self.fileSelectorWidget.getRFLayoutFile()
             rf_file = self.fileSelectorWidget.getRFFile()
             device_id = self.fileSelectorWidget.getTargetID()
+
+            self.statusBar().showMessage("Started updating RF settings", timeout=STATUS_BAR_TIMEOUT)
 
             if layout_file == '':
                 error_msg_box("No layout file given.")
@@ -820,8 +828,13 @@ class Loader(QMainWindow):
             protocol.update_layout_section(target_device, layout_data)
             protocol.reset_device(target_device)
 
+            self.statusBar().showMessage("Finished updating RF settings", timeout=STATUS_BAR_TIMEOUT)
+
         elif programmingMode == FileSelector.ScopeFirmware:
             fw_file = self.fileSelectorWidget.getFirmwareFile()
+
+            self.statusBar().showMessage("Starting update firmware", timeout=STATUS_BAR_TIMEOUT)
+
             if fw_file == '':
                 error_msg_box("No firmware file given.")
             else:
@@ -884,11 +897,11 @@ class Loader(QMainWindow):
             if self.tryOpenDevice(device): return
 
             self.program_xusb_boot_firmware_hex(device, file_name)
+        self.statusBar().showMessage("Finished updating firmware", timeout=STATUS_BAR_TIMEOUT)
 
     def program_xusb_boot_firmware_hex(self, device, file_name):
         try:
             xusb_boot.write_hexfile(device, file_name)
-            msg_box("Programming completed successfully", title="Programming complete!")
         except xusb_boot.BootloaderException as err:
             error_msg_box("Error programming the bootloader to hex file: " + str(err))
         finally:
