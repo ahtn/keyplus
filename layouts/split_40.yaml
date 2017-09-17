@@ -1,0 +1,107 @@
+# Written in 2017 by jem@seethis.link
+# This file is released into the public domain as per the CC0 Public Domain
+# Dedication (http://creativecommons.org/publicdomain/zero/1.0/)
+---
+
+# Example 40 percent split layout
+
+name: "40 split"
+version: 0
+report_mode: auto_nkro # options: auto_nkro, 6kro, nkro
+
+devices:
+  split_40_left:
+    id: 0
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: 4
+      cols: 6
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+        r3c0, r3c1, r3c2, r3c3, r3c4, r3c5,
+      ]
+    layout: split_40
+    layout_offset: 0
+
+  split_40_right:
+    id: 1
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: 4
+      cols: 6
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+        r3c0, r3c1, r3c2, r3c3, r3c4, r3c5,
+      ]
+    layout: split_40
+    layout_offset: 1
+
+layouts:
+  split_40:
+    default_layer: 0
+    # This layout shows how layer keys can be chained together. If L1 and
+    # L2 are pressed on the base layer, then L3 is activated.
+    layers: [
+      [ # layer 0 (base)
+        [ # offset 0 (left)
+          tab , q   , w   , e   , r   , t   ,
+          esc , a   , s   , d   , f   , g   ,
+          lsft, z   , x   , c   , v   , b   ,
+          ____, lctl, lalt, lgui, L1  , SPC ,
+        ],
+        [ # offset 1 (right)
+          y   , u   , i   , o   , p   , bspc,
+          h   , j   , k   , l   , ";" , "'" ,
+          m   , n   , "," , "." , "/" , ent ,
+          SPC , L2  , left, down, up  , right,
+        ]
+      ],
+      [ # layer 1 (lower)
+        [ # offset 0 (left)
+          '~' , '!' , '@' , '#' , '$' , '%' ,
+          del , F1  , F2  , F3  , F4  , F5  ,
+          ____, F7  , F8  , F9  , F10 , F11 ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # offset 1 (right)
+          '^' , '&' , '*' , '(' , ')' , ____,
+          F6  , '_' , '+' , '{' , '}' , '|' ,
+          F12 , iso~, iso|, home, end , ____,
+          ____, L3  , ____, ____, ____, ____,
+        ]
+      ],
+      [ # layer 2 (raise)
+        [ # offset 0 (left)
+          '`' ,  1  ,  2  ,  3  ,  4  ,  5  ,
+          del , F1  , F2  , F3  , F4  , F5  ,
+          ____, F7  , F8  , F9  , F10 , F11 ,
+          ____, ____, ____, ____, L3  , ____,
+        ],
+        [ # offset 1 (right)
+           6  ,  7  ,  8  ,  9  ,  0  , ____,
+          F6  , '-' , '=' , '[' , ']' , '\' ,
+          F12 , iso#, iso|, pgup, pgdn, ____,
+          ____, ____, ____, ____, ____, ____,
+        ]
+      ],
+      [ # layer 3 (media 'lower+raise'), press L1+L2 on base layer
+        [ # offset 0 (left)
+          ____, pscr, mply, volu, mstp, ____,
+          ____, mute, mprv, vold, mnxt, app ,
+          ____, C-y , CS-z, C-i , ____, ____,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # offset 1 (right)
+          wh_u, btn1, ms_u, btn2, ____, nlck,
+          wh_d, ms_l, ms_d, ms_r, btn3, slck,
+          ____, ____, ____, ____, ____, caps,
+          ____, ____, ____, ____, ____, ____,
+        ]
+      ],
+    ]
