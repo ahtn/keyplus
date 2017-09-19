@@ -15,8 +15,13 @@
 #define USB_PID 0x3333
 #endif
 
+#if USE_UNIFYING_BOOTLOADER
+#define BOOTLOADER_VID 0x046d
+#define BOOTLOADER_PID 0xaaaa
+#else
 #define BOOTLOADER_VID 0x1915
 #define BOOTLOADER_PID 0x0101
+#endif
 
 #ifndef USB_DEVICE_VERSION
 #define USB_DEVICE_VERSION 0x0000

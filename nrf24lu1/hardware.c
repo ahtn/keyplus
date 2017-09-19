@@ -81,9 +81,13 @@ void bootloader_jmp(void) {
     usbcs = USBCS_DISCON_bm;
     static_delay_ms(100);
 
+#if USE_UNIFYING_BOOTLOADER == 1
+    bootloader_jmp_2();
+#else
     __asm
         ljmp #BOOTLOADER_ADDR
     __endasm;
+#endif
 }
 
 void bootloader_jmp_2(void) {
@@ -93,7 +97,7 @@ void bootloader_jmp_2(void) {
     // bootloader.
     AESIA1 = 0;
     while (i != 16) {
-        // intentional overflow, don't chare about what is outside, just
+        // intentional overflow, don't chare about what is outside
         AESIV = bootloader_reset_string[i];
         i++;
     }

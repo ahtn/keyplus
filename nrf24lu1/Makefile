@@ -66,10 +66,6 @@ else
 	$(error Invalid size for flash='$(FLASH_SIZE)')
 endif
 
-CDEFS += -DSETTINGS_ADDR=0x5E00
-CDEFS += -DLAYOUT_ADDR=0x6000
-CDEFS += -DLAYOUT_SIZE=0x1400
-
 AS = /usr/local/bin/sdas8051
 CC = /usr/local/bin/sdcc
 PP = /usr/local/bin/sdcpp
@@ -104,7 +100,24 @@ ASM_REL_FILES = $(patsubst %.S, $(OBJ_DIR)/%.rel, $(ASM_SRC))
 DEP_FILES = $(patsubst %.c, $(OBJ_DIR)/%.dep, $(C_SRC))
 REL_FILES = $(C_REL_FILES) $(ASM_REL_FILES)
 
-all: $(TARGET).hex size
+all: nrf24_dongle
+
+nrf24_dongle: CDEFS += -DSETTINGS_ADDR=0x5E00
+nrf24_dongle: CDEFS += -DLAYOUT_ADDR=0x6000
+nrf24_dongle: CDEFS += -DLAYOUT_SIZE=0x1400
+nrf24_dongle: CDEFS += -DUSE_UNIFYING_BOOTLOADER=0
+nrf24_dongle: $(TARGET).hex size
+
+nrf24_dongle_plain: clean nrf24_dongle
+
+unifying_hex: clean
+unifying_hex: CDEFS += -DLAYOUT_SIZE=0x0800
+unifying_hex: CDEFS += -DSETTINGS_ADDR=0x6800
+unifying_hex: CDEFS += -DLAYOUT_ADDR=0x6A00
+unifying_hex: CDEFS += -DNONCE_ADDR=0x7200
+unifying_hex: CDEFS += -DBOOTLOADER_ADDR=0x7400
+unifying_hex: CDEFS += -DUSE_UNIFYING_BOOTLOADER=1
+unifying_hex: $(TARGET)-uni.hex size
 
 $(TARGET).hex: $(REL_FILES) $(BOOTLOADER)
 	@echo "=== compiling target ==="
@@ -115,6 +128,14 @@ $(TARGET).hex: $(REL_FILES) $(BOOTLOADER)
 	@scripts/sort-intel-hex $@ > $@-temp
 	@mv $@-temp $@
 	@mv *.lk *.map *.mem -t $(OBJ_DIR)
+
+$(TARGET)-uni.hex: $(REL_FILES)
+	@echo "=== compiling target ==="
+	$(CC) $(CFLAGS) $(LFLAGS) $(REL_FILES) -o $@
+	@scripts/sort-intel-hex $@ > $@-temp
+	@mv $@-temp $@
+	@mv *.lk *.map *.mem -t $(OBJ_DIR)
+
 
 size: $(TARGET).hex
 	@echo "=== Size Information ($(TARGET))==="
@@ -140,6 +161,7 @@ $(OBJ_DIR)/%.dep: %.c
 
 clean:
 	rm -f $(TARGET).hex
+	rm -f $(TARGET)-uni.hex
 	rm -fr $(OBJ_DIR)
 	rm -fr nrfburn.txt
 
