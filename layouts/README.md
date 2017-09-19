@@ -24,14 +24,14 @@ the keyboards will generate
 
 | Field   | Description   |
 |---------|---------------|
-| name    | The name of your configuration. Currently doesn't do anything. |
 | report_mode | The default keyboard report_mode. Possible values: `auto_nkro`, `6kro`, `nkro`.  The `auto_nkro` mode will start the keyboard in `6kro` mode, and will automatically switch to `nkro` mode if more than 6 keys are pressed. This mode is useful as some BIOS's don't handle NKRO, so this mode allows you till still access your BIOS without having to worry about configuring NKRO. |
-| default_lang | TODO: |
+| default_lang | TODO |
+| name    | TODO |
 
 ### Devices section
 
 The `devices` section contains a list of keyboard devices. Each device is a
-name, followed by the properties describing describing the device, for exmaple:
+name, followed by the properties describing the device, for example:
 
 ```yaml
 devices:
@@ -108,7 +108,7 @@ matrix_map: [ # version 2
 With this implementation, you can reuse the same layout for multiple different
 boards even if they are wired differently. For example, if you wanted to use
 two boards with the `abc_layout` example, you could define two different
-devices each using one of the `matrix_map`'s given above for both set
+devices each using one of the `matrix_map`'s given above and for both set
 `layout: abc_layout`, and then they would both use the `abc_layout` without
 having to make a separate layout for each board.
 
