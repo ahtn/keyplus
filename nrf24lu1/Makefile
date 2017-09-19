@@ -112,8 +112,8 @@ nrf24_dongle_plain: clean nrf24_dongle
 
 unifying_hex: clean
 unifying_hex: CDEFS += -DLAYOUT_SIZE=0x0800
-unifying_hex: CDEFS += -DSETTINGS_ADDR=0x6800
-unifying_hex: CDEFS += -DLAYOUT_ADDR=0x6A00
+unifying_hex: CDEFS += -DSETTINGS_ADDR=0x6600
+unifying_hex: CDEFS += -DLAYOUT_ADDR=0x6800
 unifying_hex: CDEFS += -DNONCE_ADDR=0x7200
 unifying_hex: CDEFS += -DBOOTLOADER_ADDR=0x7400
 unifying_hex: CDEFS += -DUSE_UNIFYING_BOOTLOADER=1
