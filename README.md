@@ -1,5 +1,10 @@
 ![keyplus](https://rawgit.com/ahtn/keyplus/master/resources/keyplus_logo.svg)
 
+Keyplus aims to be an easy to use keyboard firmware with support for wireless
+and wired split keyboards.
+
+Currently in beta so lots of stuff still might change.
+
 ## Setup instructions
 
 TODO
