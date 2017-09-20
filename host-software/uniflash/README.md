@@ -1,6 +1,13 @@
 
 TODO: automate this this stuff
 
+## Dependencies
+
+The current python dependencies: `intelhex pyusb`
+
+## Flashing a unifying receiver
+
+
 ```sh
 
 sudo ./uniflash.py icp
