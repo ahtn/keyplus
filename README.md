@@ -4,6 +4,27 @@
 
 TODO
 
+## Building
+
+Currently building of the firmware has been tested on Linux.
+
+### xmega
+
+You will need the `avr-gcc` tool chain and `python`.
+
+```bash
+git submodule init
+git submodule update
+```
+
+Then from the `xmega` directory, run:
+
+```bash
+make keyplus_mini DEBUG_AES_KEY=1
+```
+
+TODO: improve build system
+
 ## Layout files
 
 For more information about layout file format [see here](https://github.com/ahtn/keyplus/tree/master/layouts/README.md).
