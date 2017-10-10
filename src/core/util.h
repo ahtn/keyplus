@@ -51,8 +51,13 @@
 
 #define SIGN(x) (x == 0 ? 0 : (x < 0 ? -1 : +1))
 
+#ifndef LSB
 #define LSB(x) (x & 0xff)
+#endif
+
+#ifndef MSB
 #define MSB(x) ((x >> 8) & 0xff)
+#endif
 
 #define MAX(x, y) ((x > y) ? x : y)
 

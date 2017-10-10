@@ -120,9 +120,9 @@ build: elf hex
 
 elf: $(TARGET).elf
 hex: $(TARGET).hex pretty_size
-fuse: $(TARGET).fuse
-lock: $(TARGET).lock
-eep: $(TARGET).eep
+fuse: $(TARGET).elf $(TARGET).fuse
+lock: $(TARGET).elf $(TARGET).lock
+eep: $(TARGET).elf $(TARGET).eep
 lss: $(TARGET).lss
 sym: $(TARGET).sym
 LIBNAME=lib$(TARGET).a

@@ -4,7 +4,7 @@
 # TODO: build system needs cleanup for building for different hardware
 
 MCU = atmega32u4
-ARCH = XMEGA
+ARCH = AVR
 BOOTLOADER = atmel_dfu
 # BOOTLOADER = lufa_dfu
 
@@ -42,6 +42,8 @@ include $(BASE_PATH)/key_handlers/key_handlers.mk
 C_SRC += \
 	example.c \
 	usb_keyboard.c \
+	fuses.c \
+	timer.c \
 
 # ifeq ($(USE_I2C), 1)
 # 	C_SRC += wired.c
@@ -68,7 +70,7 @@ FUSE_SECTION_START=0x08F0020
 # Compiler flag to set the C Standard level.
 CSTANDARD = -std=gnu99
 
-AVRDUDE_PART = 32u4
+AVRDUDE_PART = m32u4
 MCU_STRING = "ATmega32u4"
 # LD_SCRIPT = avrxmega2.xn
 
@@ -78,8 +80,8 @@ FLIP_USB_DFU_32u4=0x2FF
 # see avr-gcc for information on avrxmega2, avrxmega4, etc
 # NOTE: haven't tested on all these chips
 ifeq ($(BOOTLOADER), atmel_dfu)
-  BOOT_SECTION_START = 0x007800
-  BOOTLOADER_SIZE = 0x0800
+  BOOT_SECTION_START = 0x007000
+  BOOTLOADER_SIZE = 0x1000
   C_SRC += atmel_dfu/atmel_bootloader.c
   CFLAGS += -DBOOTLOADER_VID=$(ATMEL_VID)
   CFLAGS += -DBOOTLOADER_PID=$(FLIP_USB_DFU_32u4)
@@ -122,6 +124,7 @@ CDEFS += -DUSB_VID=$(VID)
 CDEFS += $(INC_PATHS)
 
 CFLAGS += -Wno-error=unused-variable
+CFLAGS += -Wno-error=unused-function
 CFLAGS += -Wno-error=unused-but-set-variable
 
 # workaround for bad code generation on avr-gcc on linux (as of version 6.2.0)
@@ -133,7 +136,11 @@ ADEFS += -DF_USB=$(F_USB)UL
 ADEFS += -DBOARD=BOARD_$(BOARD)
 ADEFS += $(USB_OPTS)
 
-all: hex fuse lock
+AVRDUDE = avrdude
+AVRDUDE_PROGRAMMER = usbasp
+AVRDUDE_CMD = $(AVRDUDE) -c $(AVRDUDE_PROGRAMMER) -p $(AVRDUDE_PART)
+
+all: hex lock fuse
 
 # program the device using the bootloader
 
@@ -147,38 +154,49 @@ program-boot: $(TARGET).hex
 program-boot-2: $(TARGET).hex
 	./xusb-boot/scripts/flash.py -f $<
 
+
 # program a board using an external programmer
 program-hard: $(TARGET).hex
-	avrdude-pdi -C ~/local/etc/avrdude-pdi.conf -c usbasp -p x32a4 -U flash:w:$<:i -E noreset
+	$(AVRDUDE_CMD) -U flash:w:$<:i -E noreset
 
 $(TARGET).fuse: $(TARGET).elf
 	avr-objcopy -O $(FORMAT) -j .fuse --change-section-lma .fuse=$(FUSE_SECTION_START) $< $@
 
 # fuse options, see fuses.c (fuses values generated in $(TARGET).fuse)
 
-FUSE0 = CC # JTAG_UID
-FUSE1 = 00 # Watchdog settings
-# b6 = BOOTRST, b5 = TOSCSEL, b1:0 = BODPD
-FUSE2 = BD
-# b4 = RSTDISBL, b3:2 = STARTUPTIME, b1 = WDLOCK, b0 = JTAGEN
-FUSE4 = FF
-# b5:4 = BODACT, b3 = EESAVE, b2:0 = BODLEVEL
-FUSE5 = D6
+LFUSE = 0x5E
+HFUSE = 0xD9
+# EFUSE = 0xF3
+EFUSE = 0xc3
 
 program-fuses:
-	avrdude-pdi -c usbasp -p $(MCU_STRING) \
-		-U fuse0:w:0x$(FUSE0):m \
-		-U fuse1:w:0x$(FUSE1):m \
-		-U fuse2:w:0x$(FUSE2):m \
-		-U fuse4:w:0x$(FUSE4):m \
-		-U fuse5:w:0x$(FUSE5):m
+	$(AVRDUDE_CMD) \
+		-U lfuse:w:$(LFUSE):m \
+		-U hfuse:w:$(HFUSE):m \
+		-U efuse:w:$(EFUSE):m \
 
-# lock options, see fuses.c (lock bit values generated in $(TARGET).lock)
-LOCKBITS_DEBUG := BF # RW enabled for external programmer
-LOCKBITS_RELEASE := BC # RW disabled for external programmer
-LOCKBITS = $(LOCKBITS_RELEASE)
+ATMEL_DFU = atmel_dfu/ATMega32U4-usbdevice_dfu-1_0_0.hex
+program-atmel-dfu:
+	$(AVRDUDE_CMD) -U flash:w:$(ATMEL_DFU):i
+
+program-dfu:
+	dfu-programmer $(MCU) erase
+	dfu-programmer $(MCU) flash $(TARGET).hex
+	dfu-programmer $(MCU) start
+
+# lock options, see fuses.c (lock bit values written to $(TARGET).lock)
+#
+# RW enabled for external programmer
+# LOCKBITS_DEBUG := 0xEF
+LOCKBITS_DEBUG := 0x2F
+# RW disabled for external programmer
+# LOCKBITS_RELEASE := 0xEC
+LOCKBITS_RELEASE := 0x2C
+NO_LOCK = 0xFF
+# LOCKBITS = $(LOCKBITS_DEBUG)
+LOCKBITS = NO_LOCK
 program-lock:
-	avrdude-pdi -c usbasp -p $(MCU_STRING) -U lock:w:0x$(LOCKBITS):m
+	$(AVRDUDE_CMD) -U lock:w:$(LOCKBITS):m
 
 -include ../xmega/avr.mk
 

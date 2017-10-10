@@ -7,6 +7,7 @@ void usb_init(void);			// initialize everything
 uint8_t usb_configured(void);		// is the USB port configured
 
 int8_t usb_keyboard_press(uint8_t key, uint8_t modifier);
+int8_t usb_keyboard_press_blocking(uint8_t key, uint8_t modifier);
 int8_t usb_keyboard_send(void);
 extern uint8_t keyboard_modifier_keys;
 extern uint8_t keyboard_keys[6];
@@ -68,11 +69,11 @@ extern volatile uint8_t keyboard_leds;
 #define KEY_8		37
 #define KEY_9		38
 #define KEY_0		39
-#define KEY_ENTER	40	
+#define KEY_ENTER	40
 #define KEY_ESC		41
-#define KEY_BACKSPACE	42	
+#define KEY_BACKSPACE	42
 #define KEY_TAB		43
-#define KEY_SPACE	44	
+#define KEY_SPACE	44
 #define KEY_MINUS	45
 #define KEY_EQUAL	46
 #define KEY_LEFT_BRACE	47
@@ -98,36 +99,36 @@ extern volatile uint8_t keyboard_leds;
 #define KEY_F10		67
 #define KEY_F11		68
 #define KEY_F12		69
-#define KEY_PRINTSCREEN	70		
-#define KEY_SCROLL_LOCK	71		
+#define KEY_PRINTSCREEN	70
+#define KEY_SCROLL_LOCK	71
 #define KEY_PAUSE	72
-#define KEY_INSERT	73	
+#define KEY_INSERT	73
 #define KEY_HOME	74
 #define KEY_PAGE_UP	75
 #define KEY_DELETE	76
 #define KEY_END		77
-#define KEY_PAGE_DOWN	78	
+#define KEY_PAGE_DOWN	78
 #define KEY_RIGHT	79
 #define KEY_LEFT	80
 #define KEY_DOWN	81
 #define KEY_UP		82
 #define KEY_NUM_LOCK	83
-#define KEYPAD_SLASH	84	
-#define KEYPAD_ASTERIX	85	
-#define KEYPAD_MINUS	86	
-#define KEYPAD_PLUS	87	
-#define KEYPAD_ENTER	88	
+#define KEYPAD_SLASH	84
+#define KEYPAD_ASTERIX	85
+#define KEYPAD_MINUS	86
+#define KEYPAD_PLUS	87
+#define KEYPAD_ENTER	88
 #define KEYPAD_1	89
 #define KEYPAD_2	90
-#define KEYPAD_3	91	
-#define KEYPAD_4	92	
-#define KEYPAD_5	93	
-#define KEYPAD_6	94	
-#define KEYPAD_7	95	
-#define KEYPAD_8	96	
-#define KEYPAD_9	97	
-#define KEYPAD_0	98		
-#define KEYPAD_PERIOD	99		
+#define KEYPAD_3	91
+#define KEYPAD_4	92
+#define KEYPAD_5	93
+#define KEYPAD_6	94
+#define KEYPAD_7	95
+#define KEYPAD_8	96
+#define KEYPAD_9	97
+#define KEYPAD_0	98
+#define KEYPAD_PERIOD	99
 
 
 
@@ -160,7 +161,7 @@ extern volatile uint8_t keyboard_leds;
 #define MSB(n) ((n >> 8) & 255)
 
 #if defined(__AVR_AT90USB162__)
-#define HW_CONFIG() 
+#define HW_CONFIG()
 #define PLL_CONFIG() (PLLCSR = ((1<<PLLE)|(1<<PLLP0)))
 #define USB_CONFIG() (USBCON = (1<<USBE))
 #define USB_FREEZE() (USBCON = ((1<<USBE)|(1<<FRZCLK)))
