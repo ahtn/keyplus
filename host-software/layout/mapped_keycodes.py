@@ -4,6 +4,7 @@
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
 from layout.keycodes import *
+from layout.common import *
 
 key_symbols = {
     # start HID normal keycodes
@@ -424,9 +425,9 @@ key_symbols = {
 
 def get_keycode_type(keycode):
     if type(kc) != int:
-        raise TypeError("keycode must be an int")
+        raise ParseKeycodeError("keycode must be an int")
     if kc < 0 or kc > 0xffff:
-        raise ValueError("keycode must be a 16 bit integer")
+        raise ParseKeycodeError("keycode must be a 16 bit integer")
 
     if (keycode & EKC_TAG):
         return KC_TYPE_EKC
@@ -448,7 +449,7 @@ def keycode_from_binary(kc_raw):
     elif kc_type == KC_TYPE_EKC:
         pass
     else:
-        raise ValueError("Unknown keycode format")
+        raise ParseKeycodeError("Unknown keycode format")
 
 
 def interpret_keycode(kc_in):
@@ -457,10 +458,10 @@ def interpret_keycode(kc_in):
         return key_symbols[kc_str]
     elif "-" in kc_str:
         if kc_str.count('-') > 2:
-            raise Exception("Too many '-' in keycode: '{}'".format(kc_str))
+            raise ParseKeycodeError("Too many '-' in keycode: '{}'".format(kc_str))
         if kc_str.count('-') == 2:
             if kc_str.count('--') != 1 or kc_str[-1] != '-' or kc_str == "--":
-                raise Exception("Couldn't handle keycode: '{}'".format(kc_str))
+                raise ParseKeycodeError("Couldn't handle keycode: '{}'".format(kc_str))
         mods, kc = kc_str.split("-", 1)
         ctrl = False
         shift = False
@@ -485,11 +486,11 @@ def interpret_keycode(kc_in):
             elif mod == 'f':
                 force = True
             else:
-                raise Exception("Unexpected or duplicate character in mods mask: '{}'".format(mod))
+                raise ParseKeycodeError("Unexpected or duplicate character in mods mask: '{}'".format(mod))
         kc = interpret_keycode(kc)
         return gen_modkey(kc, ctrl=ctrl, shift=shift, alt=alt, gui=gui, right=right, force=force)
     else:
-        raise Exception("Unexpected keycode: '{}'".format(kc_in))
+        raise ParseKeycodeError("Unexpected keycode: '{}'".format(kc_in))
 
 
 if __name__ == "__main__":

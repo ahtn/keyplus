@@ -28,6 +28,10 @@ import xusb_boot
 
 STATUS_BAR_TIMEOUT=4500
 
+DEBUG_LAYOUT_FILE = ""
+DEBUG_RF_FILE = ""
+DEBUG_FIRMWARE_FILE = ""
+
 def error_msg_box(msg, title="Error"):
     errorBox = QMessageBox()
     errorBox.setWindowTitle(title)
@@ -458,10 +462,6 @@ class FileSelector(QWidget):
     def getTargetID(self):
         return self.deviceSettings.getCurrentSettings()[0]
 
-
-
-
-
 class LayoutSettingsScope(QGroupBox):
 
     def __init__(self, parent=None):
@@ -471,6 +471,7 @@ class LayoutSettingsScope(QGroupBox):
 
     def initUI(self):
         self.fileWidget = FileBrowseWidget("Layout file (*.yaml)")
+        self.fileWidget.setText(DEBUG_LAYOUT_FILE)
         layout = QFormLayout()
         layout.addRow(QLabel("Layout file (.yaml): "), self.fileWidget)
         label = QLabel("<b>Note:</b> Each device that can act as a "
@@ -605,6 +606,9 @@ class FileBrowseWidget(QWidget):
 
         self.setLayout(hbox)
 
+    def setText(self, val):
+        self.lineEdit.setText(val)
+
     def text(self):
         return self.lineEdit.text()
 
@@ -727,17 +731,42 @@ class Loader(QMainWindow):
         self.setWindowTitle('keyplus layout and firmware loader')
         self.show()
 
+    def process_layout(self, layout_json_obj, layout_file, device_info):
+        try:
+            settings_gen = layout.parser.SettingsGenerator(layout_json_obj, None)
+            layout_data = settings_gen.gen_layout_section(device_info.id)
+            rf_data = settings_gen.gen_settings_section(device_info.id)
+            return layout_data, rf_data
+        except (layout.parser.ParseError, layout.parser.ParseKeycodeError) as err:
+            error_msg_box(str(err))
+            self.statusBar().showMessage(
+                'Error parsing "{}"'.format(layout_file),
+                timeout=STATUS_BAR_TIMEOUT*2
+            )
+            return None, None
+
+    def abort_update(self, target_device):
+        try:
+            target_device.close()
+        except:
+            pass
+
+        self.deviceListWidget.updateList()
+
     @Slot(str)
     def programDeviceHandler(self, device_path):
         target_device = self.tryOpenDevicePath(device_path)
-        if target_device == None: return
+
+        if target_device == None:
+            self.abort_update(target_device)
+            return
 
         programmingMode = self.fileSelectorWidget.getProgramingInfo()
 
         if is_bootloader_device(target_device) and programmingMode != FileSelector.ScopeFirmware:
             error_msg_box("Can only upload firmware while bootloader is running. "
                           "Either reset it, or upload a firmware hex instead")
-            target_device.close()
+            self.abort_update(target_device)
             return
 
         if programmingMode == FileSelector.ScopeLayout:
@@ -747,7 +776,7 @@ class Loader(QMainWindow):
 
             if layout_file == '':
                 error_msg_box("No layout file given.")
-                target_device.close()
+                self.abort_update(target_device)
                 return
             else:
                 pass
@@ -760,12 +789,12 @@ class Loader(QMainWindow):
                     layout_json_obj = yaml.safe_load(file_obj.read())
                 except Exception as err:
                     error_msg_box("Syntax error in yaml file: " + str(err))
-                    target_device.close()
+                    self.abort_update(target_device)
                     return
 
-            settings_gen = layout.parser.SettingsGenerator(layout_json_obj, None)
-            layout_data = settings_gen.gen_layout_section(device_info.id)
-            rf_data = settings_gen.gen_settings_section(device_info.id)
+            layout_data, rf_data = self.process_layout(layout_json_obj, layout_file, device_info)
+            if layout_data == None or rf_data == None:
+                return
 
             protocol.update_layout_section(target_device, layout_data)
             protocol.update_settings_section(target_device, rf_data, keep_rf=True)
@@ -781,15 +810,15 @@ class Loader(QMainWindow):
 
             if layout_file == '':
                 error_msg_box("No layout file given.")
-                target_device.close()
+                self.abort_update(target_device)
                 return
             elif rf_file == '':
                 error_msg_box("No RF settings file given.")
-                target_device.close()
+                self.abort_update(target_device)
                 return
             elif device_id == None:
                 error_msg_box("No device id file given.")
-                target_device.close()
+                self.abort_update(target_device)
                 return
 
             layout_json_obj = None
@@ -799,14 +828,14 @@ class Loader(QMainWindow):
                     layout_json_obj = yaml.safe_load(file_obj.read())
                 except Exception as err:
                     error_msg_box("Syntax error in yaml file: " + str(err))
-                    target_device.close()
+                    self.abort_update(target_device)
                     return
             with open(rf_file) as file_obj:
                 try:
                     rf_json_obj = yaml.safe_load(file_obj.read())
                 except Exception as err:
                     error_msg_box("Syntax error in yaml file: " + str(err))
-                    target_device.close()
+                    self.abort_update(target_device)
                     return
 
             try:
@@ -814,15 +843,16 @@ class Loader(QMainWindow):
             except IndexError:
                 error_msg_box("No device has id '{}' in the given layout file"
                               .format(device_id))
-                target_device.close()
+                self.abort_update(target_device)
                 return
             except Exception as err:
                 error_msg_box("Error Generating RF settings data: " + str(err))
-                target_device.close()
+                self.abort_update(target_device)
                 return
 
-            layout_data = settings_gen.gen_layout_section(device_id)
-            settings_data = settings_gen.gen_settings_section(device_id)
+            layout_data, rf_data = self.process_layout(layout_json_obj, layout_file, device_info)
+            if layout_data == None or rf_data == None:
+                return
 
             protocol.update_settings_section(target_device, settings_data)
             protocol.update_layout_section(target_device, layout_data)
@@ -861,13 +891,6 @@ class Loader(QMainWindow):
             except:
                 pass
             raise Exception("Unimplementend programming mode")
-
-        try:
-            target_device.close()
-        except:
-            pass
-
-        self.deviceListWidget.updateList()
 
 
     def programFirmwareHex(self, boot_vid, boot_pid, serial_num, file_name):

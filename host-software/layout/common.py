@@ -16,6 +16,9 @@ KEYBOARD_REPORT_MODE_6KRO = 2 # 6kro
 class ParseError(Exception):
     pass
 
+class ParseKeycodeError(Exception):
+    pass
+
 class ParseTypeError(Exception):
     pass
 
@@ -45,6 +48,9 @@ def try_get(dictionary, key, default=None, hint="", ignore_case=True, val_type=N
         else:
             raise ParseError("Expected '{}' field in '{}'".format(key, hint))
 
+
+def num_to_ordinal_str(n):
+    return "{}{}".format(n, "tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4])
 
 def bytes_from_hex(string):
     try:

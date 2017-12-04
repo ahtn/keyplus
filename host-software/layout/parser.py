@@ -47,13 +47,36 @@ class Layout:
         try:
             self.keyboard_count = len(self.layers[0])
         except:
-            raise ParseError("Expected at least one keyboard for layers in {}".format(layout_name))
+            raise ParseError("Expected at least one keyboard device in 'layers' field of {}".format(layout_name))
 
         # number of keys in keyboards
         try:
             self.sub_matrix_sizes = [len(kb) for kb in self.layers[0]]
         except:
             raise ParseError("Couldn't get keyboard sizes {}".format(layout_name))
+
+        # check that all the layers have the same dimensions
+        for layer_i in range(self.layer_count):
+            device_count_i = len(self.layers[layer_i])
+            if device_count_i != self.keyboard_count:
+                raise ParseError("Unbalanced layer structure in layout '{}'. "
+                    " The first layer has '{}' devices, but the {} layer has '{}' devices."
+                    .format(layout_name, self.layer_count,
+                            num_to_ordinal_str(layer_i+1), device_count_i)
+                )
+            for device_i in range(self.keyboard_count):
+                expected_size = self.sub_matrix_sizes[device_i]
+                actual_size = len(self.layers[layer_i][device_i])
+                if actual_size != expected_size:
+                    raise ParseError("Mismatching devices in layout '{}'. "
+                        "The {} device has '{}' keycodes in the first layer, but "
+                        "in the {} layer the same device has '{}' keycodes."
+                        .format(
+                            layout_name,
+                            num_to_ordinal_str(device_i+1), expected_size,
+                            num_to_ordinal_str(layer_i+1), actual_size
+                        )
+                    )
 
         # total matrix size of layout
         self.matrix_size = self.calc_total_matrix_size()
@@ -223,25 +246,25 @@ class SettingsGenerator:
         for (_, layout) in self.layout_data.items():
             if layout.id == layout_id:
                 return layout
-        raise IndexError("Couldn't find layout with id: {}".format(layout_id))
+        raise ParseError("Couldn't find layout with id: {}".format(layout_id))
 
     def get_layout_by_name(self, layout_name):
         if layout_name in self.layout_data:
             return self.layout_data[layout_name]
-        raise KeyError("Couldn't find layout with name: {}".format(layout_name))
+        raise ParseError("Couldn't find layout with name: {}".format(layout_name))
 
     def get_device_by_name(self, device_name):
         if device_name in self.device_name_map:
             dev_id = self.device_name_map[device_name]
             return self.device_data[dev_id]
         else:
-            raise KeyError("Couldn't find device named: {}".format(device_name))
+            raise ParseError("Couldn't find device named: {}".format(device_name))
 
     def get_device_by_id(self, dev_id):
         if dev_id in self.device_data:
             return self.device_data[dev_id]
         else:
-            raise IndexError("Couldn't find device with id: {}".format(dev_id))
+            raise ParseError("Couldn't find device with id: {}".format(dev_id))
 
     def parse_devices(self):
         self.device_data = {}
@@ -251,13 +274,13 @@ class SettingsGenerator:
         for (device_name, device_data) in try_get(self.layout, 'devices').items():
             dev = Device.from_json_obj(device_data, device_name)
 
-            self.assert_validate_device(dev)
+            self.assert_validate_device(dev, device_name)
 
             self.device_data[dev.id] = dev
             self.device_name_map[device_name] = dev.id
             self.largest_device_id = max(self.largest_device_id, dev.id)
 
-    def assert_validate_device(self, dev):
+    def assert_validate_device(self, dev, device_name):
         if dev.scan_mode.mode == ScanMode.NO_MATRIX:
             return
 
@@ -265,13 +288,19 @@ class SettingsGenerator:
             raise ParseError("Device id '{}' too large. Max allowed value is {}"
                              .format(dev.id, MAX_DEVICE_ID))
 
+        # if not dev.id in self.device_data:
+        #     raise ParseError("Tried to build layout for device id '{}', but no"
+        #                      " matching device was found in the layout file."
+        #                      .format(dev.id))
+
         # check layout identifier
         if not dev.layout_name in self.layout_data:
             raise ParseError("Couldn't find layout with name '{}' for "
                 "keyboard '{}'".format(dev.layout_name, device_name))
+
         if (dev.id in self.device_data):
             raise ParseError("Duplicate device id '{}' used in both "
-                    "'{}' and '{}'".format(dev.id, device_name, self.device_data[dev.id]['name']))
+                    "'{}' and '{}'".format(dev.id, device_name, self.device_data[dev.id].name))
 
         # check layout offset
         offset_max = self.layout_data[dev.layout_name].keyboard_count
