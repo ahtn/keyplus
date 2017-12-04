@@ -19,7 +19,7 @@ class ParseError(Exception):
 class ParseTypeError(Exception):
     pass
 
-def try_get(dictionary, key, hint="", ignore_case=True, val_type=None):
+def try_get(dictionary, key, default=None, hint="", ignore_case=True, val_type=None):
     try:
         value = dictionary[key]
 
@@ -38,6 +38,8 @@ def try_get(dictionary, key, hint="", ignore_case=True, val_type=None):
         else:
             return value
     except:
+        if default != None:
+            return default
         if (hint == ""):
             raise ParseError("Expected '{}' field".format(key))
         else:

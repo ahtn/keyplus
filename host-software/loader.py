@@ -959,23 +959,27 @@ class Loader(QMainWindow):
         header = ["Attribute", "Value"]
         device_settings = [
             ("Device ID", settingsInfo.id),
-            ("Device Name", settingsInfo.name.decode('utf-8')),
-            ("Device Serial Number", device.serial_number),
+            ("Device name", settingsInfo.name.decode('utf-8')),
+            ("Device serial number", device.serial_number),
             ("Last layout update", protocol.timestamp_to_str(settingsInfo.timestamp)),
             ("Default report mode", protocol.report_mode_to_str(settingsInfo.default_report_mode)),
             ("Matrix scan mode", protocol.scan_mode_to_str(settingsInfo.scan_mode)),
-            ("Matrix Columns", settingsInfo.col_count),
-            ("Matrix Rows", settingsInfo.row_count),
+            ("Matrix columns", settingsInfo.col_count),
+            ("Matrix rows", settingsInfo.row_count),
 
-            ("RF Pipe0", binascii.hexlify(rfInfo.pipe0).decode('ascii')),
-            ("RF Pipe1", binascii.hexlify(rfInfo.pipe1).decode('ascii')),
-            ("RF Pipe2", "{:02x}".format(rfInfo.pipe2)),
-            ("RF Pipe3", "{:02x}".format(rfInfo.pipe3)),
-            ("RF Pipe4", "{:02x}".format(rfInfo.pipe4)),
-            ("RF Pipe5", "{:02x}".format(rfInfo.pipe5)),
+            ("RF pipe0", binascii.hexlify(rfInfo.pipe0).decode('ascii')),
+            ("RF pipe1", binascii.hexlify(rfInfo.pipe1).decode('ascii')),
+            ("RF pipe2", "{:02x}".format(rfInfo.pipe2)),
+            ("RF pipe3", "{:02x}".format(rfInfo.pipe3)),
+            ("RF pipe4", "{:02x}".format(rfInfo.pipe4)),
+            ("RF pipe5", "{:02x}".format(rfInfo.pipe5)),
+
+            ("RF channel", str(rfInfo.channel)),
+            ("RF auto retransmit count", str(rfInfo.arc)),
+            ("RF data rate", protocol.data_rate_to_str(rfInfo.data_rate)),
         ]
         firmware_settings = [
-            ("Firmware Version", "{}.{}.{}".format(
+            ("Firmware version", "{}.{}.{}".format(
                 firmwareInfo.version_major, firmwareInfo.version_minor, firmwareInfo.version_patch)),
             ("Firmware build date", str(datetime.datetime.fromtimestamp(firmwareInfo.timestamp))),
             ("Firmware git hash", "{:08x}".format(firmwareInfo.git_hash)),

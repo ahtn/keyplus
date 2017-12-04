@@ -53,7 +53,7 @@ class RFSettings:
 
         self.ekey = None
 
-        self.arc = 8
+        self.arc = 15
         self.data_rate = RF_DR_2MBPS
         self.power = PWR_0DB
 
@@ -285,7 +285,8 @@ class RFSettings:
                 'aes_encryption_key': RFSettings.bytearray_to_hex(self.ekey),
                 'rf_channel': self.channel,
                 'data_rate': RFSettings.data_rate_to_str(self.data_rate),
-                'power': RFSettings.power_to_str(self.power),
+                'transmit_power': RFSettings.power_to_str(self.power),
+                'auto_retransmit_count': self.arc,
             }
         }
 
