@@ -16,10 +16,10 @@ KEYBOARD_REPORT_MODE_6KRO = 2 # 6kro
 class ParseError(Exception):
     pass
 
-class ParseKeycodeError(Exception):
+class ParseKeycodeError(ParseError):
     pass
 
-class ParseTypeError(Exception):
+class ParseTypeError(ParseError):
     pass
 
 def try_get(dictionary, key, default=None, hint="", ignore_case=True, val_type=None):

@@ -731,12 +731,12 @@ class Loader(QMainWindow):
         self.setWindowTitle('keyplus layout and firmware loader')
         self.show()
 
-    def process_layout(self, layout_json_obj, layout_file, device_info):
+    def process_layout(self, layout_json_obj, layout_file, device_id):
         try:
             settings_gen = layout.parser.SettingsGenerator(layout_json_obj, None)
-            layout_data = settings_gen.gen_layout_section(device_info.id)
-            rf_data = settings_gen.gen_settings_section(device_info.id)
-            return layout_data, rf_data
+            layout_data = settings_gen.gen_layout_section(device_id)
+            settings_data = settings_gen.gen_settings_section(device_id)
+            return layout_data, settings_data
         except (layout.parser.ParseError, layout.parser.ParseKeycodeError) as err:
             error_msg_box(str(err))
             self.statusBar().showMessage(
@@ -781,8 +781,6 @@ class Loader(QMainWindow):
             else:
                 pass
 
-            device_info = protocol.get_device_info(target_device)
-
             layout_json_obj = None
             with open(layout_file) as file_obj:
                 try:
@@ -792,19 +790,20 @@ class Loader(QMainWindow):
                     self.abort_update(target_device)
                     return
 
-            layout_data, rf_data = self.process_layout(layout_json_obj, layout_file, device_info)
-            if layout_data == None or rf_data == None:
+            device_info = protocol.get_device_info(target_device)
+            layout_data, settings_data = self.process_layout(layout_json_obj, layout_file, device_info.id)
+            if layout_data == None or settings_data == None:
                 return
 
             protocol.update_layout_section(target_device, layout_data)
-            protocol.update_settings_section(target_device, rf_data, keep_rf=True)
+            protocol.update_settings_section(target_device, settings_data, keep_rf=True)
             protocol.reset_device(target_device)
 
             self.statusBar().showMessage("Finished updating layout", timeout=STATUS_BAR_TIMEOUT)
         elif programmingMode == FileSelector.ScopeDevice:
             layout_file = self.fileSelectorWidget.getRFLayoutFile()
             rf_file = self.fileSelectorWidget.getRFFile()
-            device_id = self.fileSelectorWidget.getTargetID()
+            target_id = self.fileSelectorWidget.getTargetID()
 
             self.statusBar().showMessage("Started updating RF settings", timeout=STATUS_BAR_TIMEOUT)
 
@@ -816,7 +815,7 @@ class Loader(QMainWindow):
                 error_msg_box("No RF settings file given.")
                 self.abort_update(target_device)
                 return
-            elif device_id == None:
+            elif target_id == None:
                 error_msg_box("No device id file given.")
                 self.abort_update(target_device)
                 return
@@ -840,19 +839,13 @@ class Loader(QMainWindow):
 
             try:
                 settings_gen = layout.parser.SettingsGenerator(layout_json_obj, rf_json_obj)
-            except IndexError:
-                error_msg_box("No device has id '{}' in the given layout file"
-                              .format(device_id))
-                self.abort_update(target_device)
-                return
-            except Exception as err:
+            except ParseError as err:
                 error_msg_box("Error Generating RF settings data: " + str(err))
                 self.abort_update(target_device)
                 return
 
-            layout_data, rf_data = self.process_layout(layout_json_obj, layout_file, device_info)
-            if layout_data == None or rf_data == None:
-                return
+            layout_data = settings_gen.gen_layout_section(target_id)
+            settings_data = settings_gen.gen_settings_section(target_id)
 
             protocol.update_settings_section(target_device, settings_data)
             protocol.update_layout_section(target_device, layout_data)

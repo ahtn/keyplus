@@ -10,7 +10,7 @@
     .pipe_addr_4 = 0x63,
     .pipe_addr_5 = 0x00,
     .channel = 0x08,
-    .arc = 8,
+    .arc = 15,
     .data_rate = RF_DR_2MBPS,
     .power = PWR_0DB,
 #if DEBUG_AES_KEY
