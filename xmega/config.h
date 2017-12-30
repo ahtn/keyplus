@@ -27,6 +27,10 @@
 #define VBUS_PIN_MASK CHECK_PIN
 #endif
 
+#ifndef VBUS_PIN_VECT
+#define VBUS_PIN_VECT CHECK_PIN_VECT
+#endif
+
 #define BOOTLOADER_VID 0x6666
 #define BOOTLOADER_PID 0xB007
 

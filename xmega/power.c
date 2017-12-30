@@ -202,7 +202,7 @@ void vbus_pin_init(void) {
 
 // TODO: when we reset make sure to add some sort of delay so that we don't
 // trigger this over and over again while the input is debouncing.
-ISR(VBUS_PIN_INT0_VECT) {
+ISR(VBUS_PIN_VECT) {
 #if USE_NRF24
     // Put the nRF24 module in standby-I mode to stop RX and TX operations.
     nrf24_ce(0);
