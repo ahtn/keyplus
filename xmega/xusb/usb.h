@@ -169,6 +169,9 @@ void* usb_string_to_descriptor(char* str);
 /// Get the number SOF packets received
 uint32_t get_sof_count(void);
 
+/// Check if a USB connection has been established
+bool has_usb_connection(void);
+
 /// Internal common methods called by the hardware API
 void usb_handle_setup(void);
 void usb_handle_control_out_complete(void);

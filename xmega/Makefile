@@ -7,6 +7,7 @@
 #                        global build defines                         #
 #######################################################################
 
+TARGET_BASE_NAME = xmega_keyplus
 
 ARCH = XMEGA
 
@@ -19,9 +20,6 @@ CLOCK_SPEED_SLOW = 12000000
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex
-
-# Object files directory
-OBJ_DIR = obj
 
 BASE_PATH=../src
 XMEGA_PATH=.
@@ -39,18 +37,10 @@ INC_PATHS += \
 # Note: Specific board configs are stored in the `boards` directory.
 
 ifndef BOARD
-  include boards/default/config.mk
-  TARGET = xmega_keyplus
-else ifneq ("$(wildcard boards/$(BOARD)/config.mk)","")
-  include boards/$(BOARD)/config.mk
-  TARGET = xmega_keyplus_$(BOARD)
-else
-  $(error "Unknown board $(BOARD)")
+  BOARD = keyplus_mini
 endif
 
-ifndef MCU
-  MCU = atxmega32a4u
-endif
+include avr-makefile/boards.mk
 
 #######################################################################
 #                        common build settings                        #
@@ -114,20 +104,14 @@ CSTANDARD = -std=gnu99
 
 # Place -D or -U options here for C sources
 CDEFS += -DCLOCK_SPEED_SLOW=$(CLOCK_SPEED_SLOW)UL
-CDEFS += -DF_CPU=$(F_CPU)UL
-CDEFS += -DF_USB=$(F_USB)UL
-CDEFS += -DBOARD=BOARD_$(BOARD) -DARCH=ARCH_$(ARCH)
 CDEFS += $(USB_OPTS)
 CDEFS += -D'HW_VERSION=$(HW_VERSION)'
 CDEFS += -D'FW_VERSION=$(FW_VERSION)'
 
 # Place -D or -U options here for ASM sources
-ADEFS  = -DF_CPU=$(F_CPU)
-ADEFS += -DF_USB=$(F_USB)UL
-ADEFS += -DBOARD=BOARD_$(BOARD)
 ADEFS += $(USB_OPTS)
+ADEFS += -D __$(DEVICE)__
 
-#
 ifdef ID
   CDEFS += -DDEVICE_ID=$(ID)
 endif
@@ -150,42 +134,6 @@ CDEFS += -DUSE_CHECK_PIN=$(USE_CHECK_PIN)
 #######################################################################
 #                   xmega flash and memory settings                   #
 #######################################################################
-
-FUSE_SECTION_START=0x08F0020
-
-# see avr-gcc for information on avrxmega2, avrxmega4, etc
-# NOTE: haven't tested on all these chips
-ifeq ($(MCU), atxmega16a4u)
-  BOOT_SECTION_START = 0x004000
-  BOOTLOADER_SIZE = 0x1000
-  AVRDUDE_PART = x16a4
-  LD_SCRIPT = avrxmega2.xn
-  MCU_STRING = "ATxmega16a4u"
-else ifeq ($(MCU), atxmega32a4u)
-  BOOT_SECTION_START = 0x008000
-  BOOTLOADER_SIZE = 0x1000
-  AVRDUDE_PART = x32a4
-  LD_SCRIPT = avrxmega2.xn
-  MCU_STRING = "ATxmega32a4u"
-else ifeq ($(MCU), atxmega64a4u)
-  BOOT_SECTION_START = 0x010000
-  BOOTLOADER_SIZE = 0x1000
-  AVRDUDE_PART = x64a4
-  LD_SCRIPT = avrxmega4.xn
-  MCU_STRING = "ATxmega64a4u"
-else ifeq ($(MCU), atxmega128a4u)
-  BOOT_SECTION_START = 0x020000
-  BOOTLOADER_SIZE = 0x2000
-  AVRDUDE_PART = x128a4
-  MCU_STRING = "ATxmega128a4u"
-  # NOTE: avr-gcc says atxmega128a4u -> avrxmega7, but it also says avrxmega7
-  # is for devices with more than 128KiB program memory and more than 64KiB
-  # of RAM. So avrxmega7 is probably used with external RAM
-  # LD_SCRIPT = avrxmega7.xn
-  LD_SCRIPT = avrxmega6.xn
-else
-  $(error No part matches MCU='$(MCU)')
-endif
 
 # LD_SCRIPT_DIR = /usr/lib/ldscripts
 LD_SCRIPT_DIR = ./ld-scripts
@@ -211,15 +159,15 @@ all: hex fuse lock
 program: hex program-boot
 
 # reset a board into bootloader via usb, then program it via the bootloader
-program-boot: $(TARGET).hex
+program-boot: $(TARGET_HEX)
 	./scripts/flash_hex.sh $<
 
 # program a board that is already in in bootloader mode
-program-boot-2: $(TARGET).hex
+program-boot-2: $(TARGET_hex)
 	./xusb-boot/scripts/flash.py -f $<
 
 # program a board using an external programmer
-program-hard: $(TARGET).hex
+program-hard: $(TARGET_hex)
 	$(AVRDUDE_CMD) -U flash:w:$<:i -E noreset
 
 #######################################################################
@@ -237,27 +185,13 @@ FUSE4 = FF
 # b5:4 = BODACT, b3 = EESAVE, b2:0 = BODLEVEL
 FUSE5 = D6
 
-program-fuses:
-	$(AVRDUDE_CMD) \
-		-U fuse0:w:0x$(FUSE0):m \
-		-U fuse1:w:0x$(FUSE1):m \
-		-U fuse2:w:0x$(FUSE2):m \
-		-U fuse4:w:0x$(FUSE4):m \
-		-U fuse5:w:0x$(FUSE5):m
-
 # lock options, see fuses.c (lock bit values generated in $(TARGET).lock)
 LOCKBITS_DEBUG := BF # RW enabled for external programmer
 LOCKBITS_RELEASE := BC # RW disabled for external programmer
 LOCKBITS = $(LOCKBITS_RELEASE)
 
-program-lock:
-	$(AVRDUDE_CMD) -U lock:w:0x$(LOCKBITS):m \
-
-# extract the fuse section from the elf file
-$(TARGET).fuse: $(TARGET).elf
-	avr-objcopy -O $(FORMAT) -j .fuse --change-section-lma .fuse=$(FUSE_SECTION_START) $< $@
-
--include avr.mk
+include avr-makefile/avr.mk
+include avr-makefile/avr-xmega.mk
 
 # Listing of phony targets.
 .PHONY : all program bootload_only bootload program-fuses program-boot \

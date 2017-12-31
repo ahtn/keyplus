@@ -35,6 +35,11 @@
 
 #include "xusb-boot/spm_interface.h"
 
+#ifdef DUAL_USB
+#include "xusb/usb.h"
+#include "boards/alpha_split/alpha_split_util.h"
+#endif
+
 USB_ENDPOINTS(5);
 
 void wdt_disable(void) {
@@ -215,6 +220,10 @@ void usb_mode_setup(void) {
     g_slow_clock_mode = 0;
     usb_configure_clock();
 
+#if DUAL_USB
+    init_bus_switches();
+#endif
+
     xmega_common_init();
 
     usb_init();
@@ -244,6 +253,49 @@ void usb_mode_setup(void) {
 
 void usb_mode_main_loop(void) {
     // uint8_t has_rf_message = false;
+
+#ifdef DUAL_USB
+#define USB_WAIT_TIME 700 // total time to wait for a USB connection
+#define USB_TOGGLE_TIME 300 // time to wait listening on a given USB port
+    {
+        // NOTE: I2C_OE_LEFT is also connected to USB_SEL, so when
+        uint16_t start_time = timer_read16_ms();
+        uint16_t toggle_time = timer_read16_ms();
+        // try right port first (because I2C_OE_LEFT shared with USB SEL)
+        uint8_t usb_port = 0; // 0 -> USB Right EN, 1 -> USB Left EN
+        SET_BUS_SWITCH(I2C_OE_LEFT, usb_port);
+        SET_BUS_SWITCH(USB_OE, 1);
+
+        while (true) {
+            if ( (timer_read16_ms() - toggle_time) > USB_TOGGLE_TIME ) {
+                // time to check other USB port for connection
+                usb_port = !usb_port;
+                SET_BUS_SWITCH(I2C_OE_LEFT, usb_port);
+                toggle_time = timer_read16_ms();
+            }
+
+            if ( has_usb_connection() ) {
+                // made a valid connection, so enable I2C mode on the
+                // other port.
+                if (usb_port == 0) { // i.e. USB on left */
+                    // if USB is enabled on the left port, need to enable I2C
+                    // on the right port
+                    SET_BUS_SWITCH(I2C_OE_RIGHT, 1);
+                }
+                break;
+            } else if ( (timer_read16_ms() - start_time) > USB_WAIT_TIME ) {
+                // didn't make a USB connection in time, so disable USB, and
+                // enable both I2C connections
+                SET_BUS_SWITCH(USB_OE, 0);
+                SET_BUS_SWITCH(I2C_OE_LEFT, 1);
+                SET_BUS_SWITCH(I2C_OE_RIGHT, 1);
+                break;
+            }
+            wdt_kick();
+            enter_sleep_mode(SLEEP_MODE_IDLE);
+        }
+    }
+#endif
 
     while (1) {
         bool scan_changed = false;
@@ -327,7 +379,6 @@ void usb_mode_main_loop(void) {
         enter_sleep_mode(SLEEP_MODE_IDLE);
 #endif
         wdt_kick();
-
     }
 }
 

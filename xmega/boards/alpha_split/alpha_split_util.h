@@ -9,7 +9,8 @@
     if (value) name##_PORT.OUTCLR = name##_PIN; /*enable*/ \
     else name##_PORT.OUTSET = name##_PIN; /*disable*/ \
 
+#define GET_BUS_SWITCH(name) ((~name##_PORT.OUT) & name##_PIN)
 
 void init_bus_switches(void);
-void init_bus_switch_toggler(void);
-void bus_switch_toggle_task(void);
+void init_bus_switch_toggle(void);
+void bus_switch_toggle_usb(void);
