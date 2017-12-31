@@ -283,7 +283,9 @@ void usb_mode_main_loop(void) {
                     SET_BUS_SWITCH(I2C_OE_RIGHT, 1);
                 }
                 break;
-            } else if ( (timer_read16_ms() - start_time) > USB_WAIT_TIME ) {
+            }
+
+            if ( (timer_read16_ms() - start_time) > USB_WAIT_TIME ) {
                 // didn't make a USB connection in time, so disable USB, and
                 // enable both I2C connections
                 SET_BUS_SWITCH(USB_OE, 0);
@@ -309,6 +311,8 @@ void usb_mode_main_loop(void) {
             uint8_t *matrix_data = i2c_packet+1;
             const uint8_t use_deltas = true;
 
+            count++;
+
 #if USE_I2C
             i2c_packet[0] = (i2c_get_active_address() << 1) | 0x01;
 #endif
@@ -318,10 +322,13 @@ void usb_mode_main_loop(void) {
 #if USE_I2C
             i2c_packet[data_size+1] = i2c_calculate_checksum(i2c_packet, data_size+1);
 
-            // TODO: important
+
+            // TODO: IMPORTANT! really need to fix this
             // TODO: don't block here, add buffer for queued messages
-            while (!i2c_broadcast(i2c_packet, data_size+2));
+            // while (!i2c_broadcast(i2c_packet, data_size+2));
+            i2c_broadcast(i2c_packet, data_size+2);
 #endif
+
 
             keyboard_update_device_matrix(GET_SETTING(device_id), matrix_data);
 
@@ -381,6 +388,14 @@ void usb_mode_main_loop(void) {
         wdt_kick();
     }
 }
+
+// #include <avr/interrupt.h>
+// ISR(BADISR_vect) {
+//     // Catch all for unknown interrupts
+//     while(1) {
+//         // wdt_kick();
+//     }
+// }
 
 int main(void) {
     // Disable the wdt incase it was running

@@ -193,16 +193,15 @@ void vbus_pin_init(void) {
     // init the pin to check VUSB
     VBUS_PORT.DIRCLR = VBUS_PIN_MASK;
     PORTCFG.MPCMASK = VBUS_PIN_MASK;
-    VBUS_PORT.PIN0CTRL = PORT_OPC_TOTEM_gc;
+    VBUS_PORT.PIN0CTRL = PORT_OPC_TOTEM_gc | PORT_ISC_BOTHEDGES_gc;
     VBUS_PORT.OUTCLR = VBUS_PIN_MASK;
-
-    VBUS_PORT.INT0MASK |= VBUS_PIN_MASK;
-    VBUS_PORT.INTCTRL = PORT_INT0LVL_HI_gc;
+    VBUS_PIN_INT_MASK = VBUS_PIN_MASK;
+    VBUS_PORT.INTCTRL = PORT_INT1LVL_HI_gc;
 }
 
 // TODO: when we reset make sure to add some sort of delay so that we don't
 // trigger this over and over again while the input is debouncing.
-ISR(VBUS_PIN_VECT) {
+ISR(VBUS_PIN_INT_VECT) {
 #if USE_NRF24
     // Put the nRF24 module in standby-I mode to stop RX and TX operations.
     nrf24_ce(0);

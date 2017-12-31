@@ -6,6 +6,26 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#if USE_CHECK_PIN
+
+#ifndef VBUS_PORT
+#define VBUS_PORT CHECK_PORT
+#endif
+
+#ifndef VBUS_PIN_MASK
+#define VBUS_PIN_MASK CHECK_PIN
+#endif
+
+#ifndef VBUS_PIN_INT_MASK
+#define VBUS_PIN_INT_MASK VBUS_PORT . CHECK_PIN_INT_MASK
+#endif
+
+#ifndef VBUS_PIN_INT_VECT
+#define VBUS_PIN_INT_VECT CHECK_PIN_INT_VECT
+#endif
+
+#endif
+
 typedef enum {
     MODE_BATTERY,
     MODE_WIRED,
