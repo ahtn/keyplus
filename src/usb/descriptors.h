@@ -10,6 +10,10 @@
 
 #include "usb_user_impl.h"
 
+#if USE_WEBUSB
+#include "usb/util/webusb.h"
+#endif
+
 typedef struct usb_config_desc_keyboard_t {
     usb_config_desc_t conf;
 
@@ -33,6 +37,10 @@ typedef struct usb_config_desc_keyboard_t {
     usb_interface_desc_t intf4;
     usb_hid_desc_t hid4;
     usb_endpoint_desc_t ep5in;
+
+#ifdef USE_WEBUSB
+    usb_webusb_desc_t webusb;
+#endif
 } usb_config_desc_keyboard_t;
 
 // endpoint and interface numbers

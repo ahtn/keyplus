@@ -213,6 +213,20 @@ ROM const usb_config_desc_keyboard_t usb_config_desc = {
         .wMaxPacketSize   = EP_IN_SIZE_NKRO_KEYBOARD,
         .bInterval        = REPORT_INTERVAL_NKRO_KEYBOARD,
     },
+
+#ifdef USE_WEBUSB
+    // webusb descriptor
+    {
+        .bLength = sizeof(usb_webusb_desc_t),
+        // .bDescriptorType = WEBUSB;
+        // .bDevCapabilityType;
+        // .bReserved;
+        .PlatformCapabilityUUID = WEBUSB_UUID,
+        .bcdVersion = WEBUSB_BCDVERSION,
+        // .bVendorCode;
+        // .iLandingPage;
+    }
+#endif
 };
 
 // language id in string 0 descriptor
@@ -235,3 +249,12 @@ ROM const uint16_t usb_string_desc_3[7] = {
     USB_STRING_DESC_SIZE(sizeof(usb_string_desc_3)),
     '0','.','1','2','3','4'
 };
+
+#ifdef USE_WEBUSB
+ROM const uint8_t usb_url_desc_1[17] = {
+    sizeof(usb_url_desc_1),
+    WEBUSB_URL,
+    WEBUSB_SCHEME_HTTP,
+    '1', '2', '7', '.', '0', '.', '0', '.', '1', ':', '8', '0', '0', '0'
+};
+#endif
