@@ -29,6 +29,7 @@ C_SRC += \
 	$(CORE_PATH)/nonce.c \
 	$(CORE_PATH)/packet.c \
 	$(CORE_PATH)/settings.c \
+	$(CORE_PATH)/crc.c \
 	$(CORE_PATH)/util.c \
 
 # NRF24 module, defaults to 0

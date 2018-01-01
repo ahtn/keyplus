@@ -41,8 +41,8 @@ typedef struct layout_info_t {
     uint8_t layer_count;
 } keyboard_info_t;
 
-#define LAYOUT_INFO_SIZE 32
-#define LAYOUT_INFO_OFFSET (offsetof(settings_t, layout))
+#define SETTINGS_LAYOUT_INFO_SIZE 32
+#define SETTINGS_LAYOUT_INFO_OFFSET (offsetof(settings_t, layout))
 typedef struct {
     uint8_t number_layouts;
     uint8_t number_devices;
@@ -51,8 +51,8 @@ typedef struct {
     device_info_t devices[MAX_NUM_DEVICES];
 } layout_settings_t;
 
-#define RF_INFO_SIZE 64
-#define RF_INFO_OFFSET (offsetof(settings_t, rf))
+#define SETTINGS_RF_INFO_SIZE 64
+#define SETTINGS_RF_INFO_OFFSET (offsetof(settings_t, rf))
 typedef struct rf_settings_t { // 64 bytes
     uint8_t pipe_addr_0[NRF_ADDR_LEN];
     uint8_t pipe_addr_1[NRF_ADDR_LEN];
@@ -65,12 +65,23 @@ typedef struct rf_settings_t { // 64 bytes
     uint8_t arc;
     uint8_t data_rate;
     uint8_t power;
-    uint8_t _reserved[14]; // padding
+    uint8_t _reserved[13]; // padding
     uint8_t ekey[AES_KEY_LEN];
     uint8_t dkey[AES_KEY_LEN];
 } rf_settings_t;
 
-#define MAIN_INFO_SIZE 96
+typedef struct feature_ctrl_t {
+    uint8_t usb_disable: 1;
+    uint8_t wired_disable: 1;
+    uint8_t rf_disable: 1;
+    uint8_t rf_mouse_disable: 1;
+    uint8_t bt_disable: 1;
+    uint8_t reserved_0: 1;
+    uint8_t reserved_1: 1;
+    uint8_t reserved_2: 1;
+} feature_ctrl_t;
+
+#define SETTINGS_MAIN_INFO_SIZE 96
 typedef struct settings_t { // 512 bytes
     uint8_t device_id;
     char device_name[32];
@@ -79,10 +90,18 @@ typedef struct settings_t { // 512 bytes
     uint8_t scan_mode;
     uint8_t row_count;
     uint8_t col_count;
-    uint8_t _reserved[51]; // size == 96
+    feature_ctrl_t feature_ctrl;
+    uint8_t _reserved[48];
+    uint8_t crc; // size == 96
     layout_settings_t layout; // size == 352
     rf_settings_t rf; // size == 64
 } settings_t;
+
+// Settings that are loaded from flash and/or changeable at run time
+typedef struct runtime_settings_t {
+    uint8_t device_id;
+    feature_ctrl_t feature_ctrl;
+} runtime_settings_t;
 
 /*********************************************************************
  *                      firmware build settings                      *
@@ -142,9 +161,10 @@ typedef struct firmware_build_settings_t {
     ((ROM const settings_t *)SETTINGS_ADDR)->x \
 )
 
-AT__SETTINGS_ADDR extern const settings_t g_settings;
+AT__SETTINGS_ADDR extern const settings_t g_settings_storage;
 
 extern XRAM rf_settings_t g_rf_settings;
+extern XRAM runtime_settings_t g_runtime_settings;
 
 extern const ROM firmware_build_settings_t g_firmware_build_settings;
 

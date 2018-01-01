@@ -131,6 +131,10 @@ endif
 
 CDEFS += -DUSE_CHECK_PIN=$(USE_CHECK_PIN)
 
+ifdef NO_DEBUG
+  CDEFS += -DNDEBUG
+endif
+
 #######################################################################
 #                   xmega flash and memory settings                   #
 #######################################################################

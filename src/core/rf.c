@@ -10,8 +10,11 @@
 #include "core/led.h"
 #include "core/nrf24.h"
 #include "core/packet.h"
+#include "core/ring_buf.h"
 #include "core/settings.h"
 #include "core/util.h"
+
+#include "debug.h"
 
 #define NUM_KEYBOARD_PIPES 4
 
@@ -141,16 +144,39 @@ void rf_handle_ack_payloads(void) {
 
 #ifndef NO_RF_RECEIVE
 
-#define RECEIVE_BUFFER_MAX_LENGTH 8
+#define PACKET_BUFFER_MAX_LEN 22
+#define PACKET_BUFFER_ITEM_SIZE (PACKET_BUFFER_MAX_LEN+2)
+#define RECEIVE_BUFFER_MAX_LENGTH (127 / PACKET_BUFFER_ITEM_SIZE)
+DEFINE_RING_BUF_VARIANT(127, uint8_t, uint8_t, ring_buf128);
 
-typedef struct {
-    uint8_t pipe_num;
-    uint8_t width;
-    uint8_t payload[22];
-} nrf_packet_t;
+ring_buf128_type s_rx_buffer;
 
-volatile XRAM uint8_t s_receive_buffer_len;
-XRAM nrf_packet_t s_receive_buffer[RECEIVE_BUFFER_MAX_LENGTH];
+static uint8_t packet_buffer_space(void) {
+    return ring_buf128_space(&s_rx_buffer);
+}
+
+static bit_t packet_buffer_has_data(void) {
+    return ring_buf128_has_data(&s_rx_buffer);
+}
+
+static uint8_t packet_buffer_get(void) {
+    return ring_buf128_get(&s_rx_buffer);
+}
+
+static void packet_buffer_add_byte(uint8_t byte) {
+    ring_buf128_put(&s_rx_buffer, byte);
+}
+
+static void packet_buffer_load(uint8_t len) {
+    uint8_t i;
+    const nrf24_spi_command_t cmd = R_RX_PAYLOAD;
+    nrf24_csn(0);
+    nrf24_spi_send_byte(cmd);
+    for (i = 0; i < len; ++i) {
+        ring_buf128_put(&s_rx_buffer, nrf24_spi_send_byte(NRF_NOP));
+    }
+    nrf24_csn(1);
+}
 
 static bit_t auto_ack = true;
 
@@ -209,7 +235,7 @@ void rf_init_receive(void) {
 
     nrf24_write_reg(NRF_STATUS, 0x70);
 
-    s_receive_buffer_len = 0;
+    ring_buf128_clear(&s_rx_buffer);
 #if !RF_POLLING
     rf_enable_receive_irq();
 #endif
@@ -217,50 +243,6 @@ void rf_init_receive(void) {
     // enable the receiver
     nrf24_ce(1);
 }
-
-#define CRC16_POLY 0x1021
-uint16_t crc16_step(uint16_t crc, uint8_t data, uint8_t num_bits) {
-    while (num_bits != 0) {
-        bit_t bitn = data & 0x80;
-        bit_t crc_carry = crc & 0x8000;
-        crc = crc << 1;
-        if (crc_carry ^ bitn) {
-            crc ^= CRC16_POLY;
-        }
-        num_bits--;
-        data = data << 1;
-    }
-    return crc;
-}
-
-// expected format
-// addr -> transmitter address [5 bytes]
-// raw_packet -> PID[9 bit] + payload[x byte] + crc16[2 byte]
-// raw_packet.len -> 4+x bytes
-// the packet has (x+3)*8+1 bits of actual data
-//
-// Returns non zero on CRC error
-bit_t check_packet_crc(const uint8_t *addr, uint8_t *raw_packet, uint8_t payload_len) {
-    uint16_t crc = 0xffff;
-    int8_t i;
-
-    // the crc is computed over the address as well as the data
-    for (i = RF_ADDR_WIDTH-1; i >= 0; --i) {
-        crc = crc16_step(crc, addr[i], 8);
-    }
-
-    // combine (x+3) bytes to the checksum
-    for (i = 0; i < payload_len+3; ++i) {
-        crc = crc16_step(crc, raw_packet[i], 8);
-    }
-
-    // get the one left over bit and apply it to the checksum
-    crc = crc16_step(crc, raw_packet[i], 1);
-
-    return crc != 0;
-}
-
-
 
 // To disable sending auto ack packets as a receiver, we need to disable
 // enhanced shockburst mode and read the enhanced shockburst packets the
@@ -363,10 +345,26 @@ bit_t is_valid_packet(const packet_t *packet, uint8_t pipe_num) {
 // static XRAM uint8_t s_nrf_data[33];
 
 // Returns false if not a valid packet
-bit_t read_packet(uint8_t buffer_pos) REENT {
-    uint8_t pipe_num = s_receive_buffer[buffer_pos].pipe_num;
-    uint8_t width = s_receive_buffer[buffer_pos].width;
-    XRAM uint8_t *packet_payload = s_receive_buffer[buffer_pos].payload;
+bit_t read_packet(void) REENT {
+    XRAM uint8_t packet_payload[PACKET_BUFFER_MAX_LEN];
+
+    debug_toggle(1);
+    debug_toggle(3);
+
+    // get the packet pipe and size from the buffer
+    const uint8_t pipe_num = packet_buffer_get();
+    const uint8_t width = packet_buffer_get();
+
+    debug_toggle(1);
+
+    if (width >= PACKET_BUFFER_MAX_LEN)  {
+        return false;
+    }
+
+    // read out the packet payload into the buffer
+    ring_buf128_take(&s_rx_buffer, packet_payload, width);
+
+    debug_toggle(1);
 
     // NOTE: currently mouse pipes are disabled in passive listening mode
     if (pipe_num == 5 || pipe_num == 4) {
@@ -428,7 +426,7 @@ bit_t read_packet(uint8_t buffer_pos) REENT {
         }
 
         // check crc
-        if (check_packet_crc(addr, s_nrf_data, KEYBOARD_PAYLOAD_LENGTH)) {
+        if (crc_nrf24_raw_packet(addr, s_nrf_data, KEYBOARD_PAYLOAD_LENGTH)) {
             return false;
         }
 
@@ -451,8 +449,11 @@ bit_t read_packet(uint8_t buffer_pos) REENT {
     }
 #endif
 
+
     // All packets except unifying mouse packets are encrypted.
     aes_decrypt(packet_payload);
+
+    debug_toggle(1);
 
     // usb_print(packet_payload, 16); // debugging
 
@@ -523,6 +524,8 @@ bit_t read_packet(uint8_t buffer_pos) REENT {
             return false;
         }
 
+        debug_toggle(3);
+
         // the packet we got is valid, so reset the sync state count
         device_uid_list[device_id].sync_state = DEV_STATE_SYNCED_0;
         device_uid_list[device_id].check_id = packet->gen.packet_id;
@@ -538,33 +541,42 @@ bit_t read_packet(uint8_t buffer_pos) REENT {
     }
 }
 
-void rf_receive_buffer_add(void) {
+void rf_packet_buffer_add(void) {
     uint8_t pipe_num;
     uint8_t width;
 
     pipe_num = nrf24_get_rx_pipe_num();
+    debug_toggle(2);
+
     if (pipe_num == STATUS_RX_FIFO_EMPTY) {
+        // no data in rx fifo
         return;
     }
 
     width = nrf24_read_rx_payload_width();
+    debug_toggle(2);
 
-    if (s_receive_buffer_len == RECEIVE_BUFFER_MAX_LENGTH) {
+    if (packet_buffer_space() < width) {
+        // no space left in buffer
         nrf24_flush_rx(); // TODO: could probably handle this better
         return;
     }
 
-    if (width > 22) {
+    debug_toggle(2);
+
+    if (width > PACKET_BUFFER_MAX_LEN) {
         // drop packets that are too large
         nrf24_read_rx_payload(NULL, 0);
         return;
     }
 
-    s_receive_buffer[s_receive_buffer_len].pipe_num = pipe_num;
-    s_receive_buffer[s_receive_buffer_len].width = width;
-    nrf24_read_rx_payload(s_receive_buffer[s_receive_buffer_len].payload, width);
+    debug_toggle(2);
 
-    s_receive_buffer_len++;
+    packet_buffer_add_byte(pipe_num);
+    packet_buffer_add_byte(width);
+    packet_buffer_load(width);
+
+    debug_toggle(2);
 }
 
 void rf_isr(void) {
@@ -572,7 +584,8 @@ void rf_isr(void) {
 
     if (status & STATUS_RX_DR_bm) {
         do {
-            rf_receive_buffer_add();
+            rf_packet_buffer_add();
+            debug_toggle(3);
         } while ( (nrf24_get_rx_pipe_num()) != STATUS_RX_FIFO_EMPTY );
     }
 
@@ -597,13 +610,11 @@ bit_t rf_task(void) {
 #endif
 
     {
-        uint8_t i;
-        for (i = 0; i < s_receive_buffer_len; ++i) {
-            has_data |= read_packet(i);
+        while (packet_buffer_has_data()) {
+            debug_toggle(0);
+            has_data |= read_packet();
         }
     }
-
-    s_receive_buffer_len = 0;
 
 #if !RF_POLLING
     rf_enable_receive_irq();

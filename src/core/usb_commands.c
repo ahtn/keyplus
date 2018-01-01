@@ -142,19 +142,19 @@ static void cmd_get_device_settings(void) {
         flash_read(
             g_vendor_report_in.data+2,
             SETTINGS_ADDR + (EP_SIZE_VENDOR-2),
-            MAIN_INFO_SIZE - (EP_SIZE_VENDOR-2)
+            SETTINGS_MAIN_INFO_SIZE - (EP_SIZE_VENDOR-2)
         );
     } else if (info_type == INFO_LAYOUT) {
         flash_read(
             g_vendor_report_in.data+2,
-            SETTINGS_ADDR + LAYOUT_INFO_OFFSET,
-            LAYOUT_INFO_SIZE
+            SETTINGS_ADDR + SETTINGS_LAYOUT_INFO_OFFSET,
+            SETTINGS_LAYOUT_INFO_SIZE
         );
     } else if (info_type == INFO_RF) {
         flash_read(
             g_vendor_report_in.data+2,
-            SETTINGS_ADDR + RF_INFO_OFFSET,
-            RF_INFO_SIZE
+            SETTINGS_ADDR + SETTINGS_RF_INFO_OFFSET,
+            SETTINGS_RF_INFO_SIZE
         );
     } else if (info_type == INFO_FIRMWARE) {
         flash_read(
@@ -211,7 +211,7 @@ void parse_cmd(void) {
             if (update_type == SETTING_UPDATE_ALL) {
                 flash_layout.num_packets = (SETTINGS_SIZE) / EP_SIZE_VENDOR;
             } else if (update_type == SETTING_UPDATE_KEEP_RF) {
-                flash_layout.num_packets = (SETTINGS_SIZE - RF_INFO_SIZE) / EP_SIZE_VENDOR;
+                flash_layout.num_packets = (SETTINGS_SIZE - SETTINGS_RF_INFO_SIZE) / EP_SIZE_VENDOR;
             } else {
                 cmd_error(ERROR_INVALID_VALUE);
                 return;
@@ -230,8 +230,8 @@ void parse_cmd(void) {
                 flash_modify_enable();
                 flash_write(
                     (uint8_t*)&g_rf_settings,
-                    SETTINGS_ADDR + RF_INFO_OFFSET,
-                    RF_INFO_SIZE
+                    SETTINGS_ADDR + SETTINGS_RF_INFO_OFFSET,
+                    SETTINGS_RF_INFO_SIZE
                 );
                 flash_modify_disable();
             }

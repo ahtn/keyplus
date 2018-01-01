@@ -7,14 +7,16 @@
 
 #include <string.h>
 
+#include "core/crc.h"
 #include "core/flash.h"
-#include "core/util.h"
 #include "core/matrix_scanner.h"
+#include "core/util.h"
 
 // settings loaded into ram
 XRAM rf_settings_t g_rf_settings;
+XRAM runtime_settings_t g_runtime_settings;
 
-AT__SETTINGS_ADDR const settings_t g_settings = {
+AT__SETTINGS_ADDR const settings_t g_settings_storage = {
 
     .device_id = DEVICE_ID,
 
@@ -86,12 +88,36 @@ uint8_t device_id_to_pipe_num(const uint8_t device_id) {
 
 
 void settings_load_from_flash(void) {
+    // load rf setings into ram
+    flash_read((uint8_t*)&g_rf_settings, (flash_ptr_t)&(GET_SETTING(rf)), sizeof(rf_settings_t));
+
+    if (crc16_buffer((uint8_t*)&g_settings_storage, SETTINGS_MAIN_INFO_SIZE) != 0) {
+        // Didn't find a valid value for CRC in the settings, so load default
+        // settings instead
+
+        // TODO: Decide what to do when settings are corrupt;
+        const runtime_settings_t default_runtime_settings = {
+            .device_id = 0,
+            .feature_ctrl = {
+                .usb_disable = false,
+                .wired_disable = true,
+                .rf_disable = true,
+                .rf_mouse_disable = true,
+                .bt_disable = true,
+            },
+        };
+
+        g_runtime_settings = default_runtime_settings;
+        g_scan_plan.mode = MATRIX_SCANNER_MODE_NONE;
+
+        // Should rf settings have a crc too?
+    }
+
+    // TODO: validate the settings before returning
 #ifndef CONFIG_NO_MATRIX
     g_scan_plan.mode = GET_SETTING(scan_mode);
     g_scan_plan.rows = GET_SETTING(row_count);
     g_scan_plan.cols = GET_SETTING(col_count);
 #endif
 
-    // load rf setings into ram
-    flash_read((uint8_t*)&g_rf_settings, (flash_ptr_t)&(GET_SETTING(rf)), sizeof(rf_settings_t));
 }

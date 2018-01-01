@@ -35,6 +35,8 @@
 
 #include "xusb-boot/spm_interface.h"
 
+#include "debug.h"
+
 #ifdef DUAL_USB
 #include "xusb/usb.h"
 #include "boards/alpha_split/alpha_split_util.h"
@@ -311,8 +313,6 @@ void usb_mode_main_loop(void) {
             uint8_t *matrix_data = i2c_packet+1;
             const uint8_t use_deltas = true;
 
-            count++;
-
 #if USE_I2C
             i2c_packet[0] = (i2c_get_active_address() << 1) | 0x01;
 #endif
@@ -400,6 +400,9 @@ void usb_mode_main_loop(void) {
 int main(void) {
     // Disable the wdt incase it was running
     wdt_disable();
+    init_debug();
+
+    debug_set(3, 1);
 
 #if USE_CHECK_PIN
     // Enable VBUS pin so we can check USB voltage
