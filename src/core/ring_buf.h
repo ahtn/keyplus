@@ -18,8 +18,8 @@ typedef struct type_name ## _type { \
 
 #define RING_BUF_MOD(size, x) ((x) % (size))
 #define RING_BUF_ADD(size, x, y) (RING_BUF_MOD(size, x + y))
-#define RING_BUF_LEN(size, buf) (RING_BUF_MOD(size, buf->tail - buf->head))
-#define RING_BUF_SPACE(size, buf) ((size-1) - RING_BUF_LEN(size, buf))
+#define RING_BUF_LEN(size, ptr_type, buf) (RING_BUF_MOD(size, (ptr_type)(buf->tail - buf->head)))
+#define RING_BUF_SPACE(size, ptr_type, buf) (((size-1) - RING_BUF_LEN(size, ptr_type, buf)))
 
 #define DEFINE_RING_BUF_CLEAR_FUNCTION(size, ptr_type, data_type, type_name) \
 static inline void type_name ## _clear (type_name ## _type *buf) { \
@@ -34,12 +34,12 @@ static inline uint8_t type_name ## _has_data (type_name ## _type *buf) { \
 
 #define DEFINE_RING_BUF_LEN_FUNCTION(size, ptr_type, data_type, type_name) \
 static inline ptr_type type_name ## _len (type_name ## _type *buf) { \
-    return RING_BUF_LEN(size, buf); \
+    return RING_BUF_LEN(size, ptr_type, buf); \
 } \
 
 #define DEFINE_RING_BUF_SPACE_FUNCTION(size, ptr_type, data_type, type_name) \
 static inline ptr_type type_name ## _space (type_name ## _type *buf) { \
-    return RING_BUF_SPACE(size, buf); \
+    return RING_BUF_SPACE(size, ptr_type, buf); \
 } \
 
 #define DEFINE_RING_BUF_GET_FUNCTION(size, ptr_type, data_type, type_name) \
@@ -66,8 +66,8 @@ static inline void type_name ## _put (type_name ## _type *buf, data_type val) { 
 } \
 
 #define DEFINE_RING_BUF_FILL_FUNCTION(size, ptr_type, data_type, type_name) \
-static inline void type_name ## _fill (type_name ## _type *buf, data_type *fill_data, ptr_type fill_len) { \
-    assert(fill_len < RING_BUF_SPACE(size, buf)); \
+static inline void type_name ## _fill (type_name ## _type *buf, const data_type *fill_data, ptr_type fill_len) { \
+    assert(fill_len <= RING_BUF_SPACE(size, ptr_type, buf)); \
     while (fill_len--) { \
         buf->data[buf->tail] = *fill_data++; \
         buf->tail = RING_BUF_ADD(size, buf->tail, 1); \
@@ -76,7 +76,7 @@ static inline void type_name ## _fill (type_name ## _type *buf, data_type *fill_
 
 #define DEFINE_RING_BUF_TAKE_FUNCTION(size, ptr_type, data_type, type_name) \
 static inline void type_name ## _take (type_name ## _type *buf, data_type *dest, ptr_type take_len) { \
-    assert((ptr_type)take_len < (ptr_type)RING_BUF_LEN(size, buf)); \
+    assert(take_len <= RING_BUF_LEN(size, ptr_type, buf)); \
     while (take_len--) { \
         *dest++ = buf->data[buf->head]; \
         buf->head = RING_BUF_ADD(size, buf->head, 1); \
@@ -86,7 +86,7 @@ static inline void type_name ## _take (type_name ## _type *buf, data_type *dest,
 #define DEFINE_RING_BUF_SKIP_FUNCTION(size, ptr_type, data_type, type_name) \
 static inline void type_name ## _skip (type_name ## _type *buf, ptr_type skip_len) { \
     const ptr_type new_head = RING_BUF_ADD(size, buf->head, skip_len); \
-    assert((ptr_type)skip_len < (ptr_type)RING_BUF_LEN(size, buf)); \
+    assert(skip_len <= RING_BUF_LEN(size, ptr_type, buf)); \
     buf->head = new_head; \
 } \
 
@@ -131,5 +131,4 @@ static inline void type_name ## _skip (type_name ## _type *buf, ptr_type skip_le
     DEFINE_RING_BUF_PEEK_FUNCTION(buf_len+1, ptr_type, data_type, buf_name) \
     DEFINE_RING_BUF_PUT_FUNCTION(buf_len+1, ptr_type, data_type, buf_name) \
     DEFINE_RING_BUF_FILL_FUNCTION(buf_len+1, ptr_type, data_type, buf_name) \
-    DEFINE_RING_BUF_TAKE_FUNCTION(buf_len+1, ptr_type, data_type, buf_name) \
-    DEFINE_RING_BUF_SKIP_FUNCTION(buf_len+1, ptr_type, data_type, buf_name)
+    DEFINE_RING_BUF_TAKE_FUNCTION(buf_len+1, ptr_type, data_type, buf_name)

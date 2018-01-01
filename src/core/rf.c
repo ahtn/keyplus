@@ -348,14 +348,9 @@ bit_t is_valid_packet(const packet_t *packet, uint8_t pipe_num) {
 bit_t read_packet(void) REENT {
     XRAM uint8_t packet_payload[PACKET_BUFFER_MAX_LEN];
 
-    debug_toggle(1);
-    debug_toggle(3);
-
     // get the packet pipe and size from the buffer
     const uint8_t pipe_num = packet_buffer_get();
     const uint8_t width = packet_buffer_get();
-
-    debug_toggle(1);
 
     if (width >= PACKET_BUFFER_MAX_LEN)  {
         return false;
@@ -363,8 +358,6 @@ bit_t read_packet(void) REENT {
 
     // read out the packet payload into the buffer
     ring_buf128_take(&s_rx_buffer, packet_payload, width);
-
-    debug_toggle(1);
 
     // NOTE: currently mouse pipes are disabled in passive listening mode
     if (pipe_num == 5 || pipe_num == 4) {
@@ -453,8 +446,6 @@ bit_t read_packet(void) REENT {
     // All packets except unifying mouse packets are encrypted.
     aes_decrypt(packet_payload);
 
-    debug_toggle(1);
-
     // usb_print(packet_payload, 16); // debugging
 
     // Valitate that the packet before handling it
@@ -524,8 +515,6 @@ bit_t read_packet(void) REENT {
             return false;
         }
 
-        debug_toggle(3);
-
         // the packet we got is valid, so reset the sync state count
         device_uid_list[device_id].sync_state = DEV_STATE_SYNCED_0;
         device_uid_list[device_id].check_id = packet->gen.packet_id;
@@ -546,7 +535,6 @@ void rf_packet_buffer_add(void) {
     uint8_t width;
 
     pipe_num = nrf24_get_rx_pipe_num();
-    debug_toggle(2);
 
     if (pipe_num == STATUS_RX_FIFO_EMPTY) {
         // no data in rx fifo
@@ -554,7 +542,6 @@ void rf_packet_buffer_add(void) {
     }
 
     width = nrf24_read_rx_payload_width();
-    debug_toggle(2);
 
     if (packet_buffer_space() < width) {
         // no space left in buffer
@@ -562,21 +549,15 @@ void rf_packet_buffer_add(void) {
         return;
     }
 
-    debug_toggle(2);
-
-    if (width > PACKET_BUFFER_MAX_LEN) {
+    if (width+2 > PACKET_BUFFER_MAX_LEN) {
         // drop packets that are too large
         nrf24_read_rx_payload(NULL, 0);
         return;
     }
 
-    debug_toggle(2);
-
     packet_buffer_add_byte(pipe_num);
     packet_buffer_add_byte(width);
     packet_buffer_load(width);
-
-    debug_toggle(2);
 }
 
 void rf_isr(void) {
@@ -585,7 +566,6 @@ void rf_isr(void) {
     if (status & STATUS_RX_DR_bm) {
         do {
             rf_packet_buffer_add();
-            debug_toggle(3);
         } while ( (nrf24_get_rx_pipe_num()) != STATUS_RX_FIFO_EMPTY );
     }
 
@@ -611,7 +591,6 @@ bit_t rf_task(void) {
 
     {
         while (packet_buffer_has_data()) {
-            debug_toggle(0);
             has_data |= read_packet();
         }
     }
