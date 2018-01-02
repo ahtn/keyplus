@@ -236,6 +236,7 @@ void rf_init_receive(void) {
     nrf24_write_reg(NRF_STATUS, 0x70);
 
     ring_buf128_clear(&s_rx_buffer);
+
 #if !RF_POLLING
     rf_enable_receive_irq();
 #endif
@@ -560,6 +561,8 @@ void rf_packet_buffer_add(void) {
     packet_buffer_load(width);
 }
 
+// NOTE: because needs to control the nRF24, if other code needs to communicate
+// with the nRF24, it should disable this interrupt
 void rf_isr(void) {
     uint8_t status = nrf24_read_status();
 
@@ -568,7 +571,6 @@ void rf_isr(void) {
             rf_packet_buffer_add();
         } while ( (nrf24_get_rx_pipe_num()) != STATUS_RX_FIFO_EMPTY );
     }
-
 
     nrf24_write_reg(NRF_STATUS, STATUS_ALL_IRQ_FLAGS_bm);
 }
@@ -583,21 +585,17 @@ bit_t rf_task(void) {
     rf_isr();
 #endif
 
-#if !RF_POLLING
-    // disable the rf_isr while we are reading packets, it modifies the
-    // s_receive_buffer_len list which we are reading here.
-    rf_disable_receive_irq();
-#endif
+// #if !RF_POLLING
+//     rf_disable_receive_irq();
+// #endif
 
-    {
-        while (packet_buffer_has_data()) {
-            has_data |= read_packet();
-        }
+    while (packet_buffer_has_data()) {
+        has_data |= read_packet();
     }
 
-#if !RF_POLLING
-    rf_enable_receive_irq();
-#endif
+// #if !RF_POLLING
+//     rf_enable_receive_irq();
+// #endif
 
     return has_data;
 }

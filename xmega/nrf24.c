@@ -5,6 +5,8 @@
 
 #include <avr/io.h>
 
+#include "avr_util.h"
+
 #include "core/nrf24.h"
 
 // add a little abstraction here so that we can move the SPI port around if desired
@@ -129,4 +131,41 @@ void nrf24_disable(void) {
         NRF24_SPI_PORT.DIRCLR = (1<<SS) | (1<<MOSI) | (1<<SCK); // inputs
         NRF24_CE_PORT.DIRSET = NRF24_CE_PIN;
     }
+}
+
+#ifndef NRF24_IRQ_PORT
+#define NRF24_IRQ_PORT         DEF_AVR_PORT(NRF24_IRQ_PIN_PORT)
+#define NRF24_IRQ_PIN_MASK     DEF_AVR_PIN_MASK(NRF24_IRQ_PIN_NUM)
+#define NRF24_IRQ_INT_VECT     DEF_AVR_INT_VECT(NRF24_IRQ_PIN_PORT, NRF24_IRQ_INT_NUM)
+#define NRF24_IRQ_INTMASK      DEF_AVR_INT_INTMASK(NRF24_IRQ_PIN_PORT, NRF24_IRQ_INT_NUM)
+#define NRF24_IRQ_INT_LVL      DEF_AVR_INT_LVL(NRF24_IRQ_INT_NUM, LO)
+#define NRF24_IRQ_INT_LVL_MASK DEF_AVR_INT_LVL_MASK(NRF24_IRQ_INT_NUM)
+#endif
+
+#include <avr/interrupt.h>
+#include "core/rf.h"
+
+// setup irq pin interrupt
+void rf_enable_receive_irq(void) {
+    // Pin as input
+    NRF24_IRQ_PORT.DIRCLR = NRF24_IRQ_PIN_MASK;
+
+    // Generate when IRQ pin is pulled low
+    PORTCFG.MPCMASK = NRF24_IRQ_PIN_MASK;
+    NRF24_IRQ_PORT.PIN0CTRL = PORT_OPC_PULLUP_gc | PORT_ISC_LEVEL_gc;
+
+    // Set interrupt priority
+    NRF24_IRQ_PORT.INTCTRL =
+        (NRF24_IRQ_PORT.INTCTRL & ~NRF24_IRQ_INT_LVL_MASK) | NRF24_IRQ_INT_LVL;
+
+    // Enable the pin as an intterupt source on the corresponding ISR
+    NRF24_IRQ_INTMASK |= NRF24_IRQ_PIN_MASK;
+
+}
+
+void rf_disable_receive_irq(void) {
+}
+
+ISR(NRF24_IRQ_INT_VECT) {
+    rf_isr();
 }
