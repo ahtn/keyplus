@@ -18,7 +18,7 @@ uint16_t crc16_step(uint16_t crc, uint8_t data, uint8_t num_bits) {
     return crc;
 }
 
-uint16_t crc16_buffer(uint8_t *buf_ptr, uint8_t length) {
+uint16_t crc16_buffer(const uint8_t *buf_ptr, uint8_t length) {
     uint16_t crc = 0xffff;
     while (length > 0) {
         const uint8_t this_byte = *buf_ptr;
@@ -40,7 +40,7 @@ uint16_t crc16_buffer(uint8_t *buf_ptr, uint8_t length) {
 // the packet has (x+3)*8+1 bits of actual data
 //
 // Returns non zero on CRC error
-bit_t crc_check_nrf24_raw_packet(const uint8_t *addr, uint8_t *raw_packet, uint8_t payload_len) {
+bit_t crc_check_nrf24_raw_packet(XRAM const uint8_t *addr, XRAM uint8_t *raw_packet, uint8_t payload_len) {
     uint16_t crc = 0xffff;
     int8_t i;
 

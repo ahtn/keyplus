@@ -75,6 +75,7 @@ CFLAGS += -fno-jump-tables
 # List C source files here.
 C_SRC += $(SRC_USB) \
 	aes.c \
+	debug.c \
 	descriptors.c \
 	flash.c \
 	fuses.c \
@@ -131,8 +132,12 @@ endif
 
 CDEFS += -DUSE_CHECK_PIN=$(USE_CHECK_PIN)
 
-ifdef NO_DEBUG
-  CDEFS += -DNDEBUG
+ifeq ($(TESTING), 1)
+  CDEFS += -DUSB_BUFFERED=$(TESTING)
+endif
+
+ifeq ($(NO_DEBUG), 1)
+  CDEFS += -DNDEBUG=$(NO_DEBUG)
 endif
 
 #######################################################################
@@ -158,7 +163,7 @@ CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
 #                              recepies                               #
 #######################################################################
 
-all: hex fuse lock
+all: fuse lock hex
 
 program: hex program-boot
 

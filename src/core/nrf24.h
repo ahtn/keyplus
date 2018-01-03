@@ -18,9 +18,13 @@ typedef uint8_t nrf24_status_t;
 void nrf24_init(void);
 void nrf24_disable(void);
 uint8_t nrf24_spi_send_byte(uint8_t byte);
+nrf24_status_t nrf24_read_status(void);
+
 void nrf24_csn(uint8_t val);
 void nrf24_ce(uint8_t val);
-nrf24_status_t nrf24_read_status(void);
+#if !RF_POLLING
+uint8_t nrf24_irq(void);
+#endif
 
 // read and write single byte registers
 uint8_t nrf24_read_reg(nrf24_register_t reg);

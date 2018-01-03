@@ -42,6 +42,12 @@ void wdt_init(void) {
     while(WDT.STATUS & WDT_SYNCBUSY_bm) {}
 }
 
+void wdt_disable(void) {
+    uint8_t temp = (WDT.CTRL & ~WDT_ENABLE_bm) | WDT_CEN_bm;
+    CCP = CCP_IOREG_gc;
+    WDT.CTRL = temp;
+}
+
 void wdt_kick(void) {
     asm("wdr");
 }

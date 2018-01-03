@@ -7,6 +7,7 @@
 #include <stddef.h>
 
 #include "core/bootloader.h"
+#include "core/debug.h"
 #include "core/flash.h"
 #include "core/hardware.h"
 #include "core/layout.h"
@@ -23,8 +24,30 @@
 
 static bit_t passthrough_mode_on;
 
-static uint8_t s_vendor_state = STATE_WAIT_CMD;
-static bool s_restore_rf_settings;
+XRAM static uint8_t s_vendor_state = STATE_WAIT_CMD;
+XRAM static bool s_restore_rf_settings;
+
+XRAM static uint8_t s_usb_commands_in_progress;
+
+XRAM struct {
+    // TODO: clean up most of the code related to this
+    // TODO: must change to 16bit, need to check flashing software first
+    uint8_t num_packets;
+    uint8_t counter;
+    uint16_t addr;
+} flash_layout;
+
+static uint8_t usb_commands_locked(void) {
+    return s_usb_commands_in_progress;
+}
+
+static void unlock_usb_commands(void) {
+    s_usb_commands_in_progress = false;
+}
+
+static void lock_usb_commands(void) {
+    s_usb_commands_in_progress = true;
+}
 
 bit_t is_passthrough_enabled(void) {
     return passthrough_mode_on;
@@ -40,27 +63,22 @@ void reset_usb_reports(void) {
     reset_vendor_report();
     reset_mouse_report();
     reset_keyboard_reports();
+    unlock_usb_commands();
 }
 
-XRAM struct {
-    // TODO: clean up most of the code related to this
-    // TODO: must change to 16bit, need to check flashing software first
-    uint8_t num_packets;
-    uint8_t counter;
-    uint16_t addr;
-} flash_layout;
-
+#define ERROR_PACKET_LENGTH 2
 void cmd_error(uint8_t code) {
-    g_vendor_report_in.data[0] = CMD_ERROR_CODE;
-    g_vendor_report_in.data[1] = code; // no error
-    g_vendor_report_in.len = 2;
+    assert(vendor_in_free_space() > ERROR_PACKET_LENGTH);
+    vendor_in_write_byte(ERROR_PACKET_LENGTH);
+
+    vendor_in_write_byte(CMD_ERROR_CODE);
+    vendor_in_write_byte(code);
     send_vendor_report();
 }
 
 void cmd_ok(void) {
     cmd_error(ERROR_CODE_NONE);
 }
-
 
 /* TODO: abstract */
 void cmd_reset(void) {
@@ -69,19 +87,42 @@ void cmd_reset(void) {
 }
 
 // send data to the host for debugging purposes
-void usb_print(uint8_t *data, uint8_t len) {
-    g_vendor_report_in.data[0] = CMD_PRINT;
-    g_vendor_report_in.data[1] = len;
-    if (len > VENDOR_REPORT_LEN-2) {
-        len = VENDOR_REPORT_LEN-2;
+uint8_t usb_print(const uint8_t *data, uint8_t len) {
+    const uint8_t packet_len = len+2;
+    uint8_t i;
+
+    if (usb_commands_locked()) {
+        return 1;
     }
-    /* copy(vendor_report.data+1, data, len); */
-    memcpy(g_vendor_report_in.data+2, data, len);
-    g_vendor_report_in.len = len+2;
+    if (packet_len+1 > vendor_in_free_space()) {
+        // buffer is full, so can't accept data
+        return 1;
+    }
+
+    // The packet length
+    vendor_in_write_byte(packet_len);
+
+    vendor_in_write_byte(CMD_PRINT);
+    vendor_in_write_byte(len);
+    for (i = 0; i < len; ++i) {
+        vendor_in_write_byte(data[i]);
+    }
+    // vendor_in_write_buf(data, len);
     send_vendor_report();
+
+    // g_vendor_report_in.data[0] = CMD_PRINT;
+    // g_vendor_report_in.data[1] = len;
+    // if (len > VENDOR_REPORT_LEN-2) {
+    //     len = VENDOR_REPORT_LEN-2;
+    // }
+    // /* copy(vendor_report.data+1, data, len); */
+    // memcpy(g_vendor_report_in.data+2, data, len);
+    // g_vendor_report_in.len = len+2;
+    // send_vendor_report();
+    return 0;
 }
 
-void usb_blocking_print(uint8_t *data, uint8_t len) {
+void usb_blocking_print(const uint8_t *data, uint8_t len) {
     while (!is_ready_vendor_out_report()) { send_vendor_report(); }
     usb_print(data, len);
     while (!is_ready_vendor_out_report()) { send_vendor_report(); }
@@ -217,11 +258,10 @@ void parse_cmd(void) {
                 return;
             }
 
-
-
             // TODO: instead of using this global, just run everything in a loop?
             g_input_disabled = true;
 
+            lock_usb_commands();
             s_vendor_state = STATE_WRITE_FLASH;
 
             erase_page_range(SETTINGS_PAGE_NUM, SETTINGS_PAGE_COUNT);
@@ -253,6 +293,7 @@ void parse_cmd(void) {
             // TODO: instead of using this global, just run everything in a loop?
             g_input_disabled = true;
 
+            lock_usb_commands();
             s_vendor_state = STATE_WRITE_FLASH;
 
             erase_page_range(LAYOUT_PAGE_NUM, number_pages);
@@ -299,7 +340,7 @@ void handle_vendor_out_reports(void) {
         if (flash_layout.counter >= flash_layout.num_packets) {
             s_vendor_state = STATE_WAIT_CMD;
             g_input_disabled = false;
-
+            unlock_usb_commands();
             // dynamic_delay_ms(100);
             // cmd_reset();
         }

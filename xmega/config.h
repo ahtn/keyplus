@@ -40,4 +40,7 @@
 #define DEBOUNCE_RELEASE_TRIGGER_TIME 2
 
 #define SCANNER_MATRIX_DELTA 1
+
+#ifndef RF_POLLING
 #define RF_POLLING 0
+#endif

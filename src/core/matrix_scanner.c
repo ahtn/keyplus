@@ -7,6 +7,7 @@
 
 #include <string.h>
 
+#include "core/settings.h"
 #include "core/packet.h"
 #include "core/layout.h"
 

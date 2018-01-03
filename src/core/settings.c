@@ -9,12 +9,15 @@
 
 #include "core/crc.h"
 #include "core/flash.h"
-#include "core/matrix_scanner.h"
 #include "core/util.h"
 
 // settings loaded into ram
 XRAM rf_settings_t g_rf_settings;
 XRAM runtime_settings_t g_runtime_settings;
+
+#if USE_SCANNER == 0
+XRAM matrix_scan_plan_t g_scan_plan;
+#endif
 
 AT__SETTINGS_ADDR const settings_t g_settings_storage = {
 
@@ -107,7 +110,7 @@ void settings_load_from_flash(void) {
             },
         };
 
-        g_runtime_settings = default_runtime_settings;
+        memcpy(&g_runtime_settings, &default_runtime_settings, sizeof(runtime_settings_t));
         g_scan_plan.mode = MATRIX_SCANNER_MODE_NONE;
 
         // Should rf settings have a crc too?

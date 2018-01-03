@@ -74,8 +74,8 @@ enum {
     INFO_UNSUPPORTED = 0xff,
 };
 
-void usb_print(uint8_t *data, uint8_t len);
-void usb_blocking_print(uint8_t *data, uint8_t len);
+uint8_t usb_print(const uint8_t *data, uint8_t len);
+void usb_blocking_print(const uint8_t *data, uint8_t len);
 void reset_usb_reports(void);
 void cmd_send_layer(uint8_t kb_id);
 void handle_vendor_out_reports(void);

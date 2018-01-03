@@ -13,8 +13,9 @@
 #include "core/ring_buf.h"
 #include "core/settings.h"
 #include "core/util.h"
+#include "core/debug.h"
 
-#include "debug.h"
+#include "core/usb_commands.h"
 
 #define NUM_KEYBOARD_PIPES 4
 
@@ -28,7 +29,9 @@ XRAM bool g_rf_enabled;
 
 // #define NRF24_IRQ_MASKS (MASK_TX_DS_bm | MASK_MAX_RT_bm)
 // #define NRF24_IRQ_MASKS (0x70)
-#define NRF24_IRQ_MASKS (0x00)
+#define NRF24_RX_IRQ_MASK (MASK_MAX_RT_bm | MASK_TX_DS_bm)
+#define NRF24_TX_IRQ_MASK (0)
+#define NRF24_IRQ_MASK_ALL (MASK_MAX_RT_bm | MASK_TX_DS_bm | MASK_RX_DR_bm)
 
 void nrf_registers_common(void) {
     // When ack payloads > 15bytes are used @2Mbps, need ARD >=500µs.
@@ -36,7 +39,7 @@ void nrf_registers_common(void) {
     // The ARD is given by `(ard + 1) * 250µs` with a maximum delay of 4ms.
     const uint8_t rf_ard = device_id_to_pipe_num(GET_SETTING(device_id)) + 1;
 
-    nrf24_write_reg(CONFIG, NRF24_IRQ_MASKS); // need to power down before settings these registers
+    nrf24_write_reg(CONFIG, NRF24_IRQ_MASK_ALL); // need to power down before settings these registers
     nrf24_write_reg(RF_SETUP, RF_DR_2MBPS | PWR_0DB);
     nrf24_write_reg(SETUP_AW, ((RF_ADDR_WIDTH - 2) & 0x3));
     nrf24_write_reg(RF_CH, g_rf_settings.channel);
@@ -89,7 +92,7 @@ void rf_init_send(void) {
     nrf24_flush_rx();
     nrf24_flush_tx();
 
-    nrf24_write_reg(CONFIG, RF_CRC_MODE | PWR_UP_bm | (0<<PRIM_RX) | NRF24_IRQ_MASKS);
+    nrf24_write_reg(CONFIG, RF_CRC_MODE | PWR_UP_bm | (0<<PRIM_RX) | NRF24_TX_IRQ_MASK);
     nrf24_ce(0);
 }
 
@@ -147,12 +150,19 @@ void rf_handle_ack_payloads(void) {
 #define PACKET_BUFFER_MAX_LEN 22
 #define PACKET_BUFFER_ITEM_SIZE (PACKET_BUFFER_MAX_LEN+2)
 #define RECEIVE_BUFFER_MAX_LENGTH (127 / PACKET_BUFFER_ITEM_SIZE)
-DEFINE_RING_BUF_VARIANT(127, uint8_t, uint8_t, ring_buf128);
 
-ring_buf128_type s_rx_buffer;
+XRAM ring_buf128_type s_rx_buffer;
 
-static uint8_t packet_buffer_space(void) {
-    return ring_buf128_space(&s_rx_buffer);
+static void packet_buffer_clear(void) {
+    ring_buf128_clear(&s_rx_buffer);
+}
+
+static uint8_t packet_buffer_free_space(void) {
+    return ring_buf128_free_space(&s_rx_buffer);
+}
+
+static uint8_t packet_buffer_len(void) {
+    return ring_buf128_len(&s_rx_buffer);
 }
 
 static bit_t packet_buffer_has_data(void) {
@@ -231,14 +241,14 @@ void rf_init_receive(void) {
     nrf24_flush_rx();
     nrf24_flush_tx();
 
-    nrf24_write_reg(CONFIG, RF_CRC_MODE | PWR_UP_bm | (1<<PRIM_RX) | NRF24_IRQ_MASKS);
+    nrf24_write_reg(CONFIG, RF_CRC_MODE | PWR_UP_bm | (1<<PRIM_RX) | NRF24_RX_IRQ_MASK);
 
     nrf24_write_reg(NRF_STATUS, 0x70);
 
-    ring_buf128_clear(&s_rx_buffer);
+    packet_buffer_clear();
 
 #if !RF_POLLING
-    rf_enable_receive_irq();
+    rf_init_receive_irq();
 #endif
 
     // enable the receiver
@@ -278,7 +288,7 @@ void rf_auto_ack(bit_t enabled) {
         nrf24_write_reg(RX_PW_P1, KEYBOARD_PAYLOAD_LENGTH+4);
         nrf24_write_reg(RX_PW_P2, KEYBOARD_PAYLOAD_LENGTH+4);
         nrf24_write_reg(RX_PW_P3, KEYBOARD_PAYLOAD_LENGTH+4);
-        nrf24_write_reg(CONFIG, PWR_UP_bm | (1<<PRIM_RX) | NRF24_IRQ_MASKS); // don't validate crc
+        nrf24_write_reg(CONFIG, PWR_UP_bm | (1<<PRIM_RX) | NRF24_RX_IRQ_MASK); // don't validate crc
         nrf24_ce(1);
     }
     nrf24_flush_rx();
@@ -347,13 +357,21 @@ bit_t is_valid_packet(const packet_t *packet, uint8_t pipe_num) {
 
 // Returns false if not a valid packet
 bit_t read_packet(void) REENT {
-    XRAM uint8_t packet_payload[PACKET_BUFFER_MAX_LEN];
+    static XRAM uint8_t packet_payload[PACKET_BUFFER_MAX_LEN];
 
     // get the packet pipe and size from the buffer
     const uint8_t pipe_num = packet_buffer_get();
     const uint8_t width = packet_buffer_get();
 
-    if (width >= PACKET_BUFFER_MAX_LEN)  {
+    if (width > PACKET_BUFFER_MAX_LEN)  {
+        debug_toggle(4);
+        packet_buffer_clear();
+        return false;
+    }
+
+    if (width > packet_buffer_len()) {
+        debug_toggle(5);
+        packet_buffer_clear();
         return false;
     }
 
@@ -375,6 +393,7 @@ bit_t read_packet(void) REENT {
         }
 
         // usb_print(packet_payload, 16); // debugging
+        // usb_print(packet_payload, width);
 
         // checksum passed, so assume we got a valid unifying packet
         unifying_read_packet(packet_payload);
@@ -446,6 +465,8 @@ bit_t read_packet(void) REENT {
 
     // All packets except unifying mouse packets are encrypted.
     aes_decrypt(packet_payload);
+
+    usb_print(packet_payload, width);
 
     // usb_print(packet_payload, 16); // debugging
 
@@ -544,13 +565,13 @@ void rf_packet_buffer_add(void) {
 
     width = nrf24_read_rx_payload_width();
 
-    if (packet_buffer_space() < width) {
+    if (packet_buffer_free_space() < width+2) {
         // no space left in buffer
         nrf24_flush_rx(); // TODO: could probably handle this better
         return;
     }
 
-    if (width+2 > PACKET_BUFFER_MAX_LEN) {
+    if (width > PACKET_BUFFER_MAX_LEN) {
         // drop packets that are too large
         nrf24_read_rx_payload(NULL, 0);
         return;
@@ -585,17 +606,9 @@ bit_t rf_task(void) {
     rf_isr();
 #endif
 
-// #if !RF_POLLING
-//     rf_disable_receive_irq();
-// #endif
-
     while (packet_buffer_has_data()) {
         has_data |= read_packet();
     }
-
-// #if !RF_POLLING
-//     rf_enable_receive_irq();
-// #endif
 
     return has_data;
 }

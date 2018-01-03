@@ -4,7 +4,8 @@
 #pragma once
 
 #include <stdint.h>
-#include <assert.h>
+#include "core/util.h"
+#include "core/debug.h"
 
 // Note: A ring buffer defined with a given size `size` will only be able to
 // store `(size-1)` elements at a time, but still uses `size*sizeof(data_type)`
@@ -14,59 +15,91 @@ typedef struct type_name ## _type { \
     data_type data[size]; \
     ptr_type head; \
     ptr_type tail; \
-} type_name ## _type ; \
+} type_name ## _type \
 
 #define RING_BUF_MOD(size, x) ((x) % (size))
 #define RING_BUF_ADD(size, x, y) (RING_BUF_MOD(size, x + y))
 #define RING_BUF_LEN(size, ptr_type, buf) (RING_BUF_MOD(size, (ptr_type)(buf->tail - buf->head)))
 #define RING_BUF_SPACE(size, ptr_type, buf) (((size-1) - RING_BUF_LEN(size, ptr_type, buf)))
 
-#define DEFINE_RING_BUF_CLEAR_FUNCTION(size, ptr_type, data_type, type_name) \
-static inline void type_name ## _clear (type_name ## _type *buf) { \
+// clear()
+#define PROTO_RING_BUF_CLEAR_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+fn_type void type_name ## _clear (XRAM type_name ## _type *buf)
+
+#define DEFINE_RING_BUF_CLEAR_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+PROTO_RING_BUF_CLEAR_FUNCTION(size, ptr_type, data_type, type_name, fn_type) { \
     buf->head = 0; \
     buf->tail = 0; \
 } \
 
-#define DEFINE_RING_BUF_HAS_DATA_FUNCTION(size, ptr_type, data_type, type_name) \
-static inline uint8_t type_name ## _has_data (type_name ## _type *buf) { \
+// has_data()
+#define PROTO_RING_BUF_HAS_DATA_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+fn_type uint8_t type_name ## _has_data (XRAM const type_name ## _type *buf)
+
+#define DEFINE_RING_BUF_HAS_DATA_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+PROTO_RING_BUF_HAS_DATA_FUNCTION(size, ptr_type, data_type, type_name, fn_type) { \
     return buf->head != buf->tail; \
 } \
 
-#define DEFINE_RING_BUF_LEN_FUNCTION(size, ptr_type, data_type, type_name) \
-static inline ptr_type type_name ## _len (type_name ## _type *buf) { \
+// len()
+#define PROTO_RING_BUF_LEN_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+fn_type ptr_type type_name ## _len (XRAM const type_name ## _type *buf)
+
+#define DEFINE_RING_BUF_LEN_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+PROTO_RING_BUF_LEN_FUNCTION(size, ptr_type, data_type, type_name, fn_type) { \
     return RING_BUF_LEN(size, ptr_type, buf); \
 } \
 
-#define DEFINE_RING_BUF_SPACE_FUNCTION(size, ptr_type, data_type, type_name) \
-static inline ptr_type type_name ## _space (type_name ## _type *buf) { \
+// free_space()
+#define PROTO_RING_BUF_SPACE_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+fn_type ptr_type type_name ## _free_space (XRAM const type_name ## _type *buf) \
+
+#define DEFINE_RING_BUF_SPACE_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+PROTO_RING_BUF_SPACE_FUNCTION(size, ptr_type, data_type, type_name, fn_type) { \
     return RING_BUF_SPACE(size, ptr_type, buf); \
 } \
 
-#define DEFINE_RING_BUF_GET_FUNCTION(size, ptr_type, data_type, type_name) \
-static inline data_type type_name ## _get (type_name ## _type *buf) { \
+// get()
+#define PROTO_RING_BUF_GET_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+fn_type data_type type_name ## _get (XRAM type_name ## _type *buf)
+
+#define DEFINE_RING_BUF_GET_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+PROTO_RING_BUF_GET_FUNCTION(size, ptr_type, data_type, type_name, fn_type) { \
     const data_type data = buf->data[buf->head]; \
     assert(buf->head != buf->tail); \
     buf->head = RING_BUF_ADD(size, buf->head, 1); \
     return data; \
 } \
 
-#define DEFINE_RING_BUF_PEEK_FUNCTION(size, ptr_type, data_type, type_name) \
-static inline data_type type_name ## _peek (type_name ## _type *buf) { \
+// peek()
+#define PROTO_RING_BUF_PEEK_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+fn_type data_type type_name ## _peek (XRAM const type_name ## _type *buf)
+
+#define DEFINE_RING_BUF_PEEK_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+PROTO_RING_BUF_PEEK_FUNCTION(size, ptr_type, data_type, type_name, fn_type) { \
     const data_type data = buf->data[buf->head]; \
     assert(buf->head != buf->tail); \
     return data; \
 } \
 
-#define DEFINE_RING_BUF_PUT_FUNCTION(size, ptr_type, data_type, type_name) \
-static inline void type_name ## _put (type_name ## _type *buf, data_type val) { \
+// put()
+#define PROTO_RING_BUF_PUT_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+fn_type void type_name ## _put (XRAM type_name ## _type *buf, data_type val)
+
+#define DEFINE_RING_BUF_PUT_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+PROTO_RING_BUF_PUT_FUNCTION(size, ptr_type, data_type, type_name, fn_type) { \
     const ptr_type next_tail = RING_BUF_ADD(size, buf->tail, 1); \
     assert(next_tail != buf->head); \
     buf->data[buf->tail] = val; \
     buf->tail = next_tail; \
 } \
 
-#define DEFINE_RING_BUF_FILL_FUNCTION(size, ptr_type, data_type, type_name) \
-static inline void type_name ## _fill (type_name ## _type *buf, const data_type *fill_data, ptr_type fill_len) { \
+// fill()
+#define PROTO_RING_BUF_FILL_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+fn_type void type_name ## _fill (XRAM type_name ## _type *buf, const data_type *fill_data, ptr_type fill_len)
+
+#define DEFINE_RING_BUF_FILL_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+PROTO_RING_BUF_FILL_FUNCTION(size, ptr_type, data_type, type_name, fn_type) { \
     assert(fill_len <= RING_BUF_SPACE(size, ptr_type, buf)); \
     while (fill_len--) { \
         buf->data[buf->tail] = *fill_data++; \
@@ -74,8 +107,12 @@ static inline void type_name ## _fill (type_name ## _type *buf, const data_type 
     } \
 } \
 
-#define DEFINE_RING_BUF_TAKE_FUNCTION(size, ptr_type, data_type, type_name) \
-static inline void type_name ## _take (type_name ## _type *buf, data_type *dest, ptr_type take_len) { \
+// take()
+#define PROTO_RING_BUF_TAKE_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+fn_type void type_name ## _take (XRAM type_name ## _type *buf, data_type *dest, ptr_type take_len)
+
+#define DEFINE_RING_BUF_TAKE_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+PROTO_RING_BUF_TAKE_FUNCTION(size, ptr_type, data_type, type_name, fn_type) { \
     assert(take_len <= RING_BUF_LEN(size, ptr_type, buf)); \
     while (take_len--) { \
         *dest++ = buf->data[buf->head]; \
@@ -83,8 +120,12 @@ static inline void type_name ## _take (type_name ## _type *buf, data_type *dest,
     } \
 } \
 
-#define DEFINE_RING_BUF_SKIP_FUNCTION(size, ptr_type, data_type, type_name) \
-static inline void type_name ## _skip (type_name ## _type *buf, ptr_type skip_len) { \
+// skip()
+#define PROTO_RING_BUF_SKIP_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+fn_type void type_name ## _skip (XRAM type_name ## _type *buf, ptr_type skip_len)
+
+#define DEFINE_RING_BUF_SKIP_FUNCTION(size, ptr_type, data_type, type_name, fn_type) \
+PROTO_RING_BUF_SKIP_FUNCTION(size, ptr_type, data_type, type_name, fn_type) { \
     const ptr_type new_head = RING_BUF_ADD(size, buf->head, skip_len); \
     assert(skip_len <= RING_BUF_LEN(size, ptr_type, buf)); \
     buf->head = new_head; \
@@ -120,15 +161,43 @@ static inline void type_name ## _skip (type_name ## _type *buf, ptr_type skip_le
 //   <buf_name>_fill(*buf, data_type *value, ptr_type len): put multiple items in ring buffer
 //   <buf_name>_take(*buf, data_type *value, ptr_type len): get multiple items in ring buffer
 //   <buf_name>_skip(*buf, data_type len): discard `len` items from the ring buffer
-//
-#define DEFINE_RING_BUF_VARIANT(buf_len, ptr_type, data_type, buf_name) \
-    DEFINE_RING_BUF_TYPE(buf_len+1, ptr_type, data_type, buf_name) \
-    DEFINE_RING_BUF_CLEAR_FUNCTION(buf_len+1, ptr_type, data_type, buf_name) \
-    DEFINE_RING_BUF_HAS_DATA_FUNCTION(buf_len+1, ptr_type, data_type, buf_name) \
-    DEFINE_RING_BUF_LEN_FUNCTION(buf_len+1, ptr_type, data_type, buf_name) \
-    DEFINE_RING_BUF_SPACE_FUNCTION(buf_len+1, ptr_type, data_type, buf_name) \
-    DEFINE_RING_BUF_GET_FUNCTION(buf_len+1, ptr_type, data_type, buf_name) \
-    DEFINE_RING_BUF_PEEK_FUNCTION(buf_len+1, ptr_type, data_type, buf_name) \
-    DEFINE_RING_BUF_PUT_FUNCTION(buf_len+1, ptr_type, data_type, buf_name) \
-    DEFINE_RING_BUF_FILL_FUNCTION(buf_len+1, ptr_type, data_type, buf_name) \
-    DEFINE_RING_BUF_TAKE_FUNCTION(buf_len+1, ptr_type, data_type, buf_name)
+
+#define DEFINE_INLINE_RING_BUF_VARIANT(buf_len, ptr_type, data_type, buf_name) \
+    DEFINE_RING_BUF_TYPE(buf_len+1, ptr_type, data_type, buf_name); \
+    DEFINE_RING_BUF_CLEAR_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, static inline) \
+    DEFINE_RING_BUF_HAS_DATA_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, static inline) \
+    DEFINE_RING_BUF_LEN_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, static inline) \
+    DEFINE_RING_BUF_SPACE_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, static inline) \
+    DEFINE_RING_BUF_GET_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, static inline) \
+    DEFINE_RING_BUF_PEEK_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, static inline) \
+    DEFINE_RING_BUF_PUT_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, static inline) \
+    DEFINE_RING_BUF_FILL_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, static inline) \
+    DEFINE_RING_BUF_TAKE_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, static inline)
+
+#define EMPTY
+#define DEFINE_PROTO_RING_BUF_VARIANT(buf_len, ptr_type, data_type, buf_name) \
+    DEFINE_RING_BUF_TYPE(buf_len+1, ptr_type, data_type, buf_name); \
+    PROTO_RING_BUF_CLEAR_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY); \
+    PROTO_RING_BUF_HAS_DATA_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY); \
+    PROTO_RING_BUF_LEN_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY); \
+    PROTO_RING_BUF_SPACE_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY); \
+    PROTO_RING_BUF_GET_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY); \
+    PROTO_RING_BUF_PEEK_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY); \
+    PROTO_RING_BUF_PUT_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY); \
+    PROTO_RING_BUF_FILL_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY); \
+    PROTO_RING_BUF_TAKE_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY)
+
+#define DEFINE_BODY_RING_BUF_VARIANT(buf_len, ptr_type, data_type, buf_name) \
+    DEFINE_RING_BUF_CLEAR_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
+    DEFINE_RING_BUF_HAS_DATA_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
+    DEFINE_RING_BUF_LEN_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
+    DEFINE_RING_BUF_SPACE_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
+    DEFINE_RING_BUF_GET_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
+    DEFINE_RING_BUF_PEEK_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
+    DEFINE_RING_BUF_PUT_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
+    DEFINE_RING_BUF_FILL_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
+    DEFINE_RING_BUF_TAKE_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY)
+
+DEFINE_PROTO_RING_BUF_VARIANT(127, uint8_t, uint8_t, ring_buf128);
+// DEFINE_INLINE_RING_BUF_VARIANT(127, uint8_t, uint8_t, ring_buf128);
+

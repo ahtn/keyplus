@@ -47,4 +47,5 @@ void reset_mcu(void);
 void idle_sleep(void);
 
 void wdt_init(void);
+void wdt_disable(void);
 void wdt_kick(void);

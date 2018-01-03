@@ -8,6 +8,7 @@
 #include "avr_util.h"
 
 #include "core/nrf24.h"
+#include "core/debug.h"
 
 // add a little abstraction here so that we can move the SPI port around if desired
 #define NRF24_SPI_PORT PORTC
@@ -133,6 +134,8 @@ void nrf24_disable(void) {
     }
 }
 
+#if RF_POLLING == 0
+
 #ifndef NRF24_IRQ_PORT
 #define NRF24_IRQ_PORT         DEF_AVR_PORT(NRF24_IRQ_PIN_PORT)
 #define NRF24_IRQ_PIN_MASK     DEF_AVR_PIN_MASK(NRF24_IRQ_PIN_NUM)
@@ -146,13 +149,18 @@ void nrf24_disable(void) {
 #include "core/rf.h"
 
 // setup irq pin interrupt
-void rf_enable_receive_irq(void) {
+void rf_init_receive_irq(void) {
     // Pin as input
     NRF24_IRQ_PORT.DIRCLR = NRF24_IRQ_PIN_MASK;
 
     // Generate when IRQ pin is pulled low
     PORTCFG.MPCMASK = NRF24_IRQ_PIN_MASK;
+
+    // NOTE: Can probably use the low level intterupt as well, but since the
+    // internal pull-up's is too weak, the irq signal line tends to generate
+    // two interrupts before the irq line is released.
     NRF24_IRQ_PORT.PIN0CTRL = PORT_OPC_PULLUP_gc | PORT_ISC_LEVEL_gc;
+    // NRF24_IRQ_PORT.PIN0CTRL = PORT_OPC_PULLUP_gc | PORT_ISC_FALLING_gc;
 
     // Set interrupt priority
     NRF24_IRQ_PORT.INTCTRL =
@@ -163,9 +171,24 @@ void rf_enable_receive_irq(void) {
 
 }
 
+// Disable the interrupt
+void rf_enable_receive_irq(void) {
+    NRF24_IRQ_INTMASK |= NRF24_IRQ_PIN_MASK;
+}
+
+// Enable the interrupt
 void rf_disable_receive_irq(void) {
+    NRF24_IRQ_INTMASK &= ~NRF24_IRQ_PIN_MASK;
+}
+
+
+uint8_t nrf24_irq(void) {
+    return NRF24_IRQ_PORT.IN & NRF24_IRQ_PIN_MASK;
 }
 
 ISR(NRF24_IRQ_INT_VECT) {
+    debug_toggle(1);
     rf_isr();
 }
+
+#endif

@@ -28,5 +28,6 @@
 #endif
 
 #define RF_POLLING 0
+#define USB_BUFFERED 0
 
 #define CONFIG_NO_MATRIX

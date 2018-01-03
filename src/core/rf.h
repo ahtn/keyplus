@@ -32,7 +32,7 @@ void rf_handle_ack_payloads(void);
 
 void rf_receive_buffer_add(void);
 
-void rf_enable_isr(void);
+void rf_init_receive_irq(void);
 void rf_enable_receive_irq(void);
 void rf_disable_receive_irq(void);
 

@@ -322,7 +322,7 @@ void keyboards_init(void) {
 // TODO: update this
 // NOTE: this should not be called from an interrupt, as it will break
 // how the matrix interpreting step.
-void keyboard_update_device_matrix(uint8_t device_id, const uint8_t *matrix_packet) {
+void keyboard_update_device_matrix(uint8_t device_id, const uint8_t *matrix_packet) REENT {
     // first figure out what sort of packet was received and
     const uint8_t packet_type = matrix_packet[0] >> PACKET_MATRIX_TYPE_BIT_POS;
     const uint8_t packet_data_size = matrix_packet[0] & PACKET_MATRIX_SIZE_MASK;

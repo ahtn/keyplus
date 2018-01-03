@@ -131,6 +131,12 @@ bit_t is_ready_vendor_in_report(void) {
 }
 
 bit_t send_vendor_report(void) {
+#if USB_BUFFERED
+    if (g_vendor_report_in.len == 0 && vendor_in_buf_has_packet()) {
+        vendor_in_load_packet();
+    }
+#endif
+
     if (is_ready_vendor_in_report() && g_vendor_report_in.len > 0) {
         LACR16(&(usb_xmega_endpoints[EP_NUM_VENDOR].in.STATUS), USB_EP_UNF_bm);
 

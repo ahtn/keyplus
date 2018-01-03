@@ -23,13 +23,14 @@ CDEFS += -DBUILD_TIME_STAMP="$(BUILD_TIME_STAMP)"
 CDEFS += -DGIT_HASH="$(GIT_HASH)"
 
 C_SRC += \
+	$(CORE_PATH)/crc.c \
 	$(CORE_PATH)/flash.c \
 	$(CORE_PATH)/hardware.c \
 	$(CORE_PATH)/layout.c \
 	$(CORE_PATH)/nonce.c \
 	$(CORE_PATH)/packet.c \
+	$(CORE_PATH)/ring_buf.c \
 	$(CORE_PATH)/settings.c \
-	$(CORE_PATH)/crc.c \
 	$(CORE_PATH)/util.c \
 
 # NRF24 module, defaults to 0

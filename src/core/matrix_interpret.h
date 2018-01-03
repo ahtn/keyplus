@@ -64,7 +64,7 @@ typedef struct key_event_queue_t {
 extern XRAM keyboard_t g_keyboard_slots[MAX_NUM_KEYBOARD_SLOTS];
 
 void keyboards_init(void);
-void keyboard_update_device_matrix(uint8_t device_num, const uint8_t *buf);
+void keyboard_update_device_matrix(uint8_t device_id, const uint8_t *matrix_packet) REENT;
 void keyboard_interpret_matrix(uint8_t keyboard_id);
 void keyboard_reset_matrix(uint8_t keyboard_id);
 layer_mask_t keyboard_get_layer_mask(uint8_t keyboard_id);

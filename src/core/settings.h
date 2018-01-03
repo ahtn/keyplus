@@ -9,6 +9,7 @@
 #include "core/util.h"
 #include "core/packet.h"
 #include "core/nrf24.h"
+#include "core/matrix_scanner.h"
 
 #include "core/flash.h"
 

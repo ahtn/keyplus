@@ -27,6 +27,14 @@ inline void nrf24_ce(uint8_t val) {
     RFCE = val;
 }
 
+uint8_t nrf24_irq(void) {
+    return RFIRQ;
+}
+
+void rf_init_receive_irq(void) {
+    rf_enable_receive_irq();
+}
+
 void rf_enable_receive_irq(void) {
     RF_IRQEN = 1;
 }

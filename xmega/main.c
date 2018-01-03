@@ -9,6 +9,7 @@
 #include "core/vendor_report.h"
 
 #include "core/aes.h"
+#include "core/debug.h"
 #include "core/hardware.h"
 #include "core/layout.h"
 #include "core/led.h"
@@ -35,20 +36,12 @@
 
 #include "xusb-boot/spm_interface.h"
 
-#include "debug.h"
-
 #ifdef DUAL_USB
 #include "xusb/usb.h"
 #include "boards/alpha_split/alpha_split_util.h"
 #endif
 
 USB_ENDPOINTS(5);
-
-void wdt_disable(void) {
-    uint8_t temp = (WDT.CTRL & ~WDT_ENABLE_bm) | WDT_CEN_bm;
-    CCP = CCP_IOREG_gc;
-    WDT.CTRL = temp;
-}
 
 // TODO: Pins that are left floating can cause the system to use more power, so
 // making them output low.
@@ -253,59 +246,68 @@ void usb_mode_setup(void) {
     usb_attach();
 }
 
-void usb_mode_main_loop(void) {
-    // uint8_t has_rf_message = false;
-
 #ifdef DUAL_USB
-#define USB_WAIT_TIME 700 // total time to wait for a USB connection
-#define USB_TOGGLE_TIME 300 // time to wait listening on a given USB port
-    {
-        // NOTE: I2C_OE_LEFT is also connected to USB_SEL, so when
-        uint16_t start_time = timer_read16_ms();
-        uint16_t toggle_time = timer_read16_ms();
-        // try right port first (because I2C_OE_LEFT shared with USB SEL)
-        uint8_t usb_port = 0; // 0 -> USB Right EN, 1 -> USB Left EN
-        SET_BUS_SWITCH(I2C_OE_LEFT, usb_port);
-        SET_BUS_SWITCH(USB_OE, 1);
+#define USB_WAIT_TIME 900 // total time to wait for a USB connection
+#define USB_TOGGLE_TIME 450 // time to wait listening on a given USB port
+#define USB_TOGGLE_OFF_TIME 40 // turn off the USB port while switching
 
-        while (true) {
-            if ( (timer_read16_ms() - toggle_time) > USB_TOGGLE_TIME ) {
-                // time to check other USB port for connection
-                usb_port = !usb_port;
-                SET_BUS_SWITCH(I2C_OE_LEFT, usb_port);
-                toggle_time = timer_read16_ms();
-            }
+// NOTE: This method might have issuses when powering on from a cold boot
+// since there's probably going to be a period of time where the board has
+// power, but the OS/BIOS hasn't intiated its USB controler yet.
+void usb_find_port(void) {
+    // NOTE: I2C_OE_LEFT is also connected to USB_SEL, so when
+    uint16_t start_time = timer_read16_ms();
+    uint16_t toggle_time = timer_read16_ms();
+    // try right port first (because I2C_OE_LEFT shared with USB SEL)
+    uint8_t usb_port = 0; // 0 -> USB Right EN, 1 -> USB Left EN
+    SET_BUS_SWITCH(I2C_OE_LEFT, usb_port);
+    SET_BUS_SWITCH(USB_OE, 1);
 
-            if ( has_usb_connection() ) {
-                // made a valid connection, so enable I2C mode on the
-                // other port.
-                if (usb_port == 0) { // i.e. USB on left */
-                    // if USB is enabled on the left port, need to enable I2C
-                    // on the right port
-                    SET_BUS_SWITCH(I2C_OE_RIGHT, 1);
-                }
-                break;
-            }
-
-            if ( (timer_read16_ms() - start_time) > USB_WAIT_TIME ) {
-                // didn't make a USB connection in time, so disable USB, and
-                // enable both I2C connections
-                SET_BUS_SWITCH(USB_OE, 0);
-                SET_BUS_SWITCH(I2C_OE_LEFT, 1);
-                SET_BUS_SWITCH(I2C_OE_RIGHT, 1);
-                break;
-            }
-            wdt_kick();
-            enter_sleep_mode(SLEEP_MODE_IDLE);
+    while (true) {
+        if ( (timer_read16_ms() - toggle_time) > USB_TOGGLE_TIME ) {
+            // time to check other USB port for connection
+            toggle_time = timer_read16_ms();
+            usb_port = !usb_port;
+            SET_BUS_SWITCH(USB_OE, 0);
+            SET_BUS_SWITCH(I2C_OE_LEFT, usb_port);
+            static_delay_ms(USB_TOGGLE_OFF_TIME);
+            SET_BUS_SWITCH(USB_OE, 1);
         }
+
+        if ( has_usb_connection() ) {
+            // made a valid connection, so enable I2C mode on the
+            // other port.
+            if (usb_port == 0) { // i.e. USB on left */
+                // if USB is enabled on the left port, need to enable I2C
+                // on the right port
+                SET_BUS_SWITCH(I2C_OE_RIGHT, 1);
+            }
+            break;
+        }
+
+        if ( (timer_read16_ms() - start_time) > USB_WAIT_TIME ) {
+            // didn't make a USB connection in time, so disable USB, and
+            // enable both I2C connections
+            SET_BUS_SWITCH(USB_OE, 0);
+            SET_BUS_SWITCH(I2C_OE_LEFT, 1);
+            SET_BUS_SWITCH(I2C_OE_RIGHT, 1);
+            break;
+        }
+        wdt_kick();
+        enter_sleep_mode(SLEEP_MODE_IDLE);
     }
+}
+#endif
+
+void usb_mode_main_loop(void) {
+    uint32_t counter = 0;
+#if DUAL_USB
+    usb_find_port();
 #endif
 
     while (1) {
         bool scan_changed = false;
-
         scan_changed |= matrix_scan();
-
 
         // TODO: need to clean this up
         if (scan_changed) {
@@ -381,21 +383,19 @@ void usb_mode_main_loop(void) {
         sticky_key_task();
         hold_key_task();
 
-#if !(USE_NRF24 && !RF_POLLING)
-        // Don't have RF irq pin, so need to scan
+#if USE_NRF24 && RF_POLLING
+        // Don't have RF IRQ, so don't sleep to reduce chance that packets are
+        // dropped
+        debug_toggle(0);
+#else
+        // okay to sleep if we have RF IRQ
+        debug_set(0, 1);
         enter_sleep_mode(SLEEP_MODE_IDLE);
+        debug_set(0, 0);
 #endif
         wdt_kick();
     }
 }
-
-// #include <avr/interrupt.h>
-// ISR(BADISR_vect) {
-//     // Catch all for unknown interrupts
-//     while(1) {
-//         // wdt_kick();
-//     }
-// }
 
 int main(void) {
     // Disable the wdt incase it was running
