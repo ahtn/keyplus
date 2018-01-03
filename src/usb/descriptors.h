@@ -90,7 +90,7 @@ typedef struct usb_config_desc_keyboard_t {
 // report intervals for enpdoints (in ms)
 #define REPORT_INTERVAL_BOOT_KEYBOARD 1
 #define REPORT_INTERVAL_MEDIA 10
-#define REPORT_INTERVAL_MOUSE 10
+#define REPORT_INTERVAL_MOUSE 1
 #define REPORT_INTERVAL_VENDOR_IN 1
 #define REPORT_INTERVAL_VENDOR_OUT 10
 #define REPORT_INTERVAL_NKRO_KEYBOARD 1
