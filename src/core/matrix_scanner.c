@@ -37,8 +37,7 @@ static inline uint8_t get_key_number(uint8_t row, uint8_t col) {
     return flash_read_byte(LAYOUT_ADDR + row*g_scan_plan.cols + col);
 }
 
-
-void init_matrix_scanner(void) {
+void init_matrix_scanner_utils(void) {
     g_delta_list_len = 0;
     g_down_list_len = 0;
     // TODO: load scan key map

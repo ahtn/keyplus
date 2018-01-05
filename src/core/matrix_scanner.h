@@ -62,10 +62,10 @@ extern uint8_t g_matrix[MAX_NUM_ROWS][(MAX_NUM_COLS+7)/8];
 extern const ROM uint8_t *g_scan_key_map;
 extern XRAM matrix_scan_plan_t g_scan_plan;
 
-void init_matrix_scanner(void);
+// functions to be called to update the key matrix
+void init_matrix_scanner_utils(void);
 void scanner_add_matrix_key(uint8_t row, uint8_t col);
 void scanner_del_matrix_key(uint8_t row, uint8_t col);
-
 
 // TODO
 bit_t is_matrix_active(void);

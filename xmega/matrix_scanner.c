@@ -128,26 +128,19 @@ static void setup_rows(void) {
     }
 }
 
-//  makes all floating inputs
+//  makes all rows floating inputs
 static inline void unselect_rows(void) {
     PORTD.DIRCLR = row_mask_d;
     PORTC.DIRCLR = row_mask_c;
 }
 
-// make all output low
+// make all rows output low
 static inline void select_all_rows(void) {
     PORTD.DIRSET = row_mask_d;
     PORTD.OUTCLR = row_mask_d;
 
     PORTC.DIRSET = row_mask_c;
     PORTC.OUTCLR = row_mask_c;
-}
-
-
-// make all output low
-static inline void float_all_rows(void) {
-    PORTD.DIRCLR = row_mask_d;
-    PORTC.DIRCLR = row_mask_c;
 }
 
 bool matrix_has_active_row(void) {
@@ -212,7 +205,7 @@ void matrix_scanner_init(void) {
     setup_rows();
     unselect_rows();
 
-    init_matrix_scanner();
+    init_matrix_scanner_utils();
 }
 
 static void matrix_scan_irq_clear_flags(void) {
@@ -284,7 +277,8 @@ static inline uint8_t scan_row(uint8_t row) {
         uint8_t col = i*8;
         for ( ; pin_mask != 0 ; col++, pin_mask<<=1 ) {
             if (s_is_debouncing[row][i] & pin_mask) {
-                // debouncing
+                // key debouncing:
+                // check if the key has finished debouncing
                 if (s_debounce_type[row][i] & pin_mask) {
                     // debouncing key press
                     const uint8_t bounce_duration = (uint8_t)(cur_time - s_debounce_time[row][col]);
@@ -338,10 +332,10 @@ static inline uint8_t scan_row(uint8_t row) {
                     }
                 }
             } else {
-                // not debouncing
+                // not debouncing, so a key was pressed/released.
 
                 if (!(changed_pins & pin_mask)) {
-                    // ignore pins that haven't changed
+                    // ignore pins in this row that haven't changed
                     continue;
                 }
 
@@ -370,7 +364,7 @@ static inline uint8_t scan_row(uint8_t row) {
                     has_updated = 1;
                 }
 
-                // this pin has changed, and we are not debouncing, so update it
+                // this pin has changed, so we start it's debounce timer
                 if (is_key_down) {
                     s_debounce_type[row][i] |= pin_mask; // indicates key press debounce
 
@@ -388,7 +382,6 @@ static inline uint8_t scan_row(uint8_t row) {
     return has_updated;
 }
 
-// TODO: should inline these calls
 uint8_t get_matrix_num_keys_down(void) {
     return s_matrix_number_keys_down;
 }
@@ -459,7 +452,7 @@ bool matrix_scan(void) {
 
 
     // TODO: add an error event that can be sent over USB for when invalid
-    // values are used
+    // values are used for scan settings etc.
     return false;
 }
 
@@ -521,8 +514,6 @@ bool matrix_scan(void) {
     };
 
     const uint8_t cur_time = timer_read8_ms();
-
-    usb_print((uint8_t*)&new_row_data, 1);
 
     for (uint8_t i = 0; i < bytes_per_row; ++i) {
         uint8_t changed_pins = old_row[i] ^ new_row[i];
