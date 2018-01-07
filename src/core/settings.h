@@ -66,7 +66,7 @@ typedef struct rf_settings_t { // 64 bytes
     uint8_t arc;
     uint8_t data_rate;
     uint8_t power;
-    uint8_t _reserved[13]; // padding
+    uint8_t _reserved[14]; // padding
     uint8_t ekey[AES_KEY_LEN];
     uint8_t dkey[AES_KEY_LEN];
 } rf_settings_t;
