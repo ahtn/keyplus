@@ -394,6 +394,12 @@ class ProgramCommand(GenericDeviceCommand):
         )
 
         self.arg_parser.add_argument(
+            '-I', '--new-id', dest='new_id', type=int, default=None,
+            help='Gives the device a new device ID (requires both a layout file '
+            ' and a rf file)'
+        )
+
+        self.arg_parser.add_argument(
             '-x', '--hex', dest='hex_file', type=str, default=None,
             help='TODO'
         )
@@ -415,10 +421,17 @@ class ProgramCommand(GenericDeviceCommand):
         layout_file = args.layout_file
         rf_file = args.rf_file
         hex_file = args.hex_file
+        new_id = args.new_id
+
+        if new_id != None and (layout_file == None or rf_file == None):
+            print("Error: to programming a new device ID, require both a "
+                  "layout file and a rf file", file=sys.stderr)
+            exit(EXIT_COMMAND_ERROR)
 
         if layout_file == None and hex_file == None and rf_file == None:
             self.arg_parser.print_help()
             exit(0)
+
 
         device = self.find_matching_device(args)
 
@@ -457,7 +470,18 @@ class ProgramCommand(GenericDeviceCommand):
         if layout_file != None:
             print("Parsing files...")
             device_info = protocol.get_device_info(device)
-            layout_data, settings_data = self.process_layout(layout_json_obj, rf_json_obj, layout_file, device_info.id)
+
+            if new_id == None:
+                target_id = device_info.id
+            else:
+                target_id = new_id
+
+            layout_data, settings_data = self.process_layout(
+                layout_json_obj,
+                rf_json_obj,
+                layout_file,
+                target_id
+            )
             if layout_data == None or settings_data == None:
                 exit(EXIT_BAD_FILE)
             print("Parsing finished...")
