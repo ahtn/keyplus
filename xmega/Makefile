@@ -136,8 +136,10 @@ ifeq ($(TESTING), 1)
   CDEFS += -DUSB_BUFFERED=$(TESTING)
 endif
 
-ifeq ($(NO_DEBUG), 1)
-  CDEFS += -DNDEBUG=$(NO_DEBUG)
+ifdef DEBUG_LEVEL
+  CDEFS += -DDEBUG_LEVEL=$(DEBUG_LEVEL)
+else
+  CDEFS += -DDEBUG_LEVEL=0
 endif
 
 #######################################################################
@@ -147,9 +149,15 @@ endif
 # LD_SCRIPT_DIR = /usr/lib/ldscripts
 LD_SCRIPT_DIR = ./ld-scripts
 
+include avr-makefile/avr-xmega.mk
+
+ifeq ($(MCU_FLASH_SIZE), 32)
 SETTING_ADDR := 0x6E00
 LAYOUT_ADDR := 0x7000
 LAYOUT_SIZE := 0x1000
+else
+  $(error Error unsupported flash size='$(FLASH_SIZE)')
+endif
 
 LDFLAGS += -T $(LD_SCRIPT_DIR)/$(LD_SCRIPT)
 LDFLAGS += -Wl,--section-start=.key_settings_block=$(SETTING_ADDR)
@@ -200,7 +208,6 @@ LOCKBITS_RELEASE := BC # RW disabled for external programmer
 LOCKBITS = $(LOCKBITS_RELEASE)
 
 include avr-makefile/avr.mk
-include avr-makefile/avr-xmega.mk
 include avr-makefile/avr-program.mk
 
 

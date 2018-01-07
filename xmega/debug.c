@@ -8,7 +8,7 @@
 #include "core/hardware.h"
 #include "core/debug.h"
 
-#if !(NDEBUG > 4)
+#if defined(DEBUG_LEVEL) && DEBUG_LEVEL >= 4
 __ATTR_NORETURN__ void hang(void) {
     cli();
     wdt_disable();
@@ -57,7 +57,7 @@ __ATTR_NORETURN__ void assert_fail(void) {
 
 
 // #ifndef DISABLE_DEBUG
-#if !(NDEBUG > 3)
+#if defined(DEBUG_LEVEL) && DEBUG_LEVEL >= 2
 
 void init_debug(void) {
     // test pins
