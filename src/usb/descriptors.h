@@ -88,12 +88,12 @@ typedef struct usb_config_desc_keyboard_t {
 #define EP5_OUT_SIZE 0
 
 // report intervals for enpdoints (in ms)
-#define REPORT_INTERVAL_BOOT_KEYBOARD 10
+#define REPORT_INTERVAL_BOOT_KEYBOARD 1
 #define REPORT_INTERVAL_MEDIA 10
-#define REPORT_INTERVAL_MOUSE 10
-#define REPORT_INTERVAL_VENDOR_IN 10
+#define REPORT_INTERVAL_MOUSE 1
+#define REPORT_INTERVAL_VENDOR_IN 1
 #define REPORT_INTERVAL_VENDOR_OUT 10
-#define REPORT_INTERVAL_NKRO_KEYBOARD 10
+#define REPORT_INTERVAL_NKRO_KEYBOARD 1
 
 // report id for media report
 #define REPORT_ID_SYSTEM 0x01

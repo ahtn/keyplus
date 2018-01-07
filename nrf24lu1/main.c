@@ -54,7 +54,6 @@ void dongle_init(void) {
 // #include "usb/hid/hut_consumer.h"
 
 void main(void) {
-    static uint16_t last_time = 0;
     dongle_init();
 
     // TODO: make this controlable by USB commands

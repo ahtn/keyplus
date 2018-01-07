@@ -264,8 +264,4 @@ PROTO_BLOCK_RING_TAKE_FUNCTION(ptr_type, data_type, type_name, fn_type) { \
     buf->length++; \
 }
 
-
-// DEFINE_INLINE_RING_BUF_VARIANT(127, uint8_t, uint8_t, ring_buf128);
-
-
-// DEFINE_PROTO_RING_BUF_VARIANT(127, uint8_t, uint8_t, ring_buf128);
+DEFINE_PROTO_RING_BUF_VARIANT(127, uint8_t, uint8_t, ring_buf128);
