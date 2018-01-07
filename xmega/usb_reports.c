@@ -85,6 +85,7 @@ bit_t send_nkro_keyboard_report(void) {
 bit_t is_ready_mouse_report(void) {
     return usb_xmega_endpoints[EP_NUM_MOUSE].in.STATUS & USB_EP_UNF_bm;
 }
+
 // mouse report
 bit_t send_mouse_report(void) {
     if (is_ready_mouse_report() && g_report_pending_mouse) {
@@ -161,7 +162,7 @@ uint8_t read_vendor_report(uint8_t *dest) {
     uint8_t i;
     uint8_t length = 0;
     if (!is_ready_vendor_out_report()) {
-        return length;
+        return 1;
     }
 
     length = usb_xmega_endpoints[EP_NUM_VENDOR].out.CNT;
@@ -170,5 +171,5 @@ uint8_t read_vendor_report(uint8_t *dest) {
     }
 
     LACR16(&(usb_xmega_endpoints[EP_NUM_VENDOR].out.STATUS), USB_EP_BUSNACK0_bm);
-    return length;
+    return 0;
 }

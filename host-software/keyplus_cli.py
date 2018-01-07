@@ -35,9 +35,9 @@ def timestamp_to_string(tstamp):
 def print_device_info(device, indent="  "):
     dev_info = protocol.get_device_info(device)
     print(indent, "id: ", dev_info.id)
-    print(indent, "name: '{}'".format(dev_info.name.decode('utf-8')) )
-    print(indent, "layout last updated: ", timestamp_to_string(dev_info.timestamp))
-    print(indent, "default_report_mode: ", dev_info.default_report_mode)
+    print(indent, "name: '{}'".format(dev_info.device_name_str()) )
+    print(indent, "layout last updated: ", dev_info.timestamp_str())
+    print(indent, "default_report_mode: ", dev_info.default_report_mode_str())
     print(indent, "scan_mode: ", dev_info.scan_mode)
     print(indent, "row_count: ", dev_info.row_count)
     print(indent, "col_count: ", dev_info.col_count)

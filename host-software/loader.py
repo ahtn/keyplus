@@ -28,9 +28,17 @@ import xusb_boot
 
 STATUS_BAR_TIMEOUT=4500
 
-DEBUG_LAYOUT_FILE = ""
-DEBUG_RF_FILE = ""
-DEBUG_FIRMWARE_FILE = ""
+if 1:
+    # debug settings
+    DEFAULT_LAYOUT_FILE = "../layouts/basic_split_test.yaml"
+    DEFAULT_RF_FILE = "../layouts/test_rf_config.yaml"
+    DEFAULT_FIRMWARE_FILE = ""
+    DEFAULT_DEVICE_ID = 10
+else:
+    DEFAULT_LAYOUT_FILE = ""
+    DEFAULT_RF_FILE = ""
+    DEFAULT_FIRMWARE_FILE = ""
+    DEFAULT_DEVICE_ID = ''
 
 def error_msg_box(msg, title="Error"):
     errorBox = QMessageBox()
@@ -84,7 +92,7 @@ class DeviceWidget(QGroupBox):
         super(DeviceWidget, self).__init__(None)
 
         self.device = device
-        self.valid = False
+        self.label = None
 
         self.initUI()
 
@@ -105,23 +113,50 @@ class DeviceWidget(QGroupBox):
                     ),
                   file=sys.stderr
             )
-        self.valid = True
-        build_time_str = protocol.timestamp_to_str(settingsInfo.timestamp)
-        self.label = QLabel('{} | {} | Firmware v{}.{}.{}\n'
-                            'Device id: {}\n'
-                            'Serial number: {}\n'
-                            'Last time updated: {}'
-            .format(
-                self.device.manufacturer_string,
-                self.device.product_string,
-                firmwareInfo.version_major,
-                firmwareInfo.version_minor,
-                firmwareInfo.version_patch,
-                settingsInfo.id,
-                self.device.serial_number,
-                build_time_str
+
+        if settingsInfo.crc == settingsInfo.computed_crc:
+            build_time_str = protocol.timestamp_to_str(settingsInfo.timestamp)
+            self.label = QLabel('{} | {} | Firmware v{}.{}.{}\n'
+                                'Device id: {}\n'
+                                'Serial number: {}\n'
+                                'Last time updated: {}'
+                .format(
+                    self.device.manufacturer_string,
+                    self.device.product_string,
+                    firmwareInfo.version_major,
+                    firmwareInfo.version_minor,
+                    firmwareInfo.version_patch,
+                    settingsInfo.id,
+                    self.device.serial_number,
+                    build_time_str
+                )
             )
-        )
+        else:
+            # CRC doesn't match
+            if settingsInfo.is_empty:
+                self.label = QLabel('??? | ??? | Firmware v{}.{}.{}\n'
+                                    'Warning: Empty settings!\n'
+                                    'Serial number: {}\n'
+                    .format(
+                        firmwareInfo.version_major,
+                        firmwareInfo.version_minor,
+                        firmwareInfo.version_patch,
+                        self.device.serial_number,
+                    )
+                )
+            else:
+                # corrupt settings in the flash
+                build_time_str = protocol.timestamp_to_str(settingsInfo.timestamp)
+                self.label = QLabel('??? | ??? | Firmware v{}.{}.{}\n'
+                                    'WARNING: Settings are uninitialized\n'
+                                    'Serial number: {}\n'
+                    .format(
+                        firmwareInfo.version_major,
+                        firmwareInfo.version_minor,
+                        firmwareInfo.version_patch,
+                        self.device.serial_number,
+                    )
+                )
 
     # xusb_boot bootloader device
     def setup_xusb_bootloader_label(self):
@@ -140,7 +175,6 @@ class DeviceWidget(QGroupBox):
                   file=sys.stderr
             )
 
-        self.valid = True
         self.label = QLabel('{} | {} | Bootloader v{}.{}\n'
                             'MCU: {}\n'
                             'Flash size: {}\n'
@@ -173,7 +207,6 @@ class DeviceWidget(QGroupBox):
         #           file=sys.stderr
         #     )
 
-        self.valid = True
         self.label = QLabel('nRF24LU1+ Bootloader v{}.{}\n'
                             'MCU: nRF24LU1+\n'
             .format(
@@ -197,6 +230,9 @@ class DeviceWidget(QGroupBox):
         else:
             raise Exception("Unsupported USB device {}:{}".format(
                 self.device.vendor_id, self.device.product_id))
+
+        if self.label == None:
+            return
 
         self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.label.setStyleSheet("""
@@ -361,7 +397,7 @@ class DeviceList(QScrollArea):
 
         for devInfo in newDevices:
             devWidget = DeviceWidget(devInfo)
-            if devWidget.valid:
+            if devWidget.label:
                 self.deviceWidgets.append(devWidget)
                 self.layout.addWidget(devWidget)
                 devWidget.program.connect(self.programming_handler)
@@ -471,7 +507,7 @@ class LayoutSettingsScope(QGroupBox):
 
     def initUI(self):
         self.fileWidget = FileBrowseWidget("Layout file (*.yaml)")
-        self.fileWidget.setText(DEBUG_LAYOUT_FILE)
+        self.fileWidget.setText(DEFAULT_LAYOUT_FILE)
         layout = QFormLayout()
         layout.addRow(QLabel("Layout file (.yaml): "), self.fileWidget)
         label = QLabel("<b>Note:</b> Each device that can act as a "
@@ -499,11 +535,14 @@ class DeviceSettingsScope(QGroupBox):
 
     def initUI(self):
         self.layoutFile = FileBrowseWidget("Layout settings file .yaml (*.yaml)")
+        self.layoutFile.setText(DEFAULT_LAYOUT_FILE)
         self.rfSettingsFile = FileBrowseWidget("Device settings file .yaml (*.yaml)")
+        self.rfSettingsFile.setText(DEFAULT_RF_FILE)
         layout = QFormLayout()
         layout.addRow(QLabel("Layout settings file (.yaml):"), self.layoutFile)
         layout.addRow(QLabel("RF settings file (.yaml):"), self.rfSettingsFile)
         self.idLine = QLineEdit()
+        self.idLine.setText(str(DEFAULT_DEVICE_ID))
         self.idLine.setMaximumWidth(50)
         self.idLine.setValidator(QIntValidator(0, 63))
         layout.addRow(QLabel("Device id (0-63):"), self.idLine)
@@ -569,6 +608,7 @@ class FirmwareSettingsScope(QGroupBox):
 
     def initUI(self):
         self.fileWidget = FileBrowseWidget("Firmware file .hex (*.hex)")
+        self.fileWidget.setText(DEFAULT_FIRMWARE_FILE)
         layout = QFormLayout()
         layout.addRow(QLabel("Firmware file (.hex):"), self.fileWidget)
         label = QLabel("<b>Note:</b> after updating the firmware, all layout "
@@ -975,13 +1015,22 @@ class Loader(QMainWindow):
         header = ["Attribute", "Value"]
         device_settings = [
             ("Device ID", settingsInfo.id),
-            ("Device name", settingsInfo.name.decode('utf-8')),
+            ("Device name", settingsInfo.device_name_str()),
             ("Device serial number", device.serial_number),
-            ("Last layout update", protocol.timestamp_to_str(settingsInfo.timestamp)),
-            ("Default report mode", protocol.report_mode_to_str(settingsInfo.default_report_mode)),
-            ("Matrix scan mode", protocol.scan_mode_to_str(settingsInfo.scan_mode)),
+            ("Last layout update", settingsInfo.timestamp_str()),
+            ("Default report mode", settingsInfo.default_report_mode_str()),
+            ("Matrix scan mode", settingsInfo.scan_mode_str()),
             ("Matrix columns", settingsInfo.col_count),
             ("Matrix rows", settingsInfo.row_count),
+            ("Settings stored CRC", settingsInfo.crc),
+            ("Settings computed CRC", settingsInfo.computed_crc),
+
+            ("USB Enabled", settingsInfo.row_count),
+            ("I2C Enabled", settingsInfo.row_count),
+            (" Enabled", settingsInfo.row_count),
+            ("USB Enabled", settingsInfo.row_count),
+            ("USB Enabled", settingsInfo.row_count),
+            # ("Bluetooth Enabled", settingsInfo.row_count),
 
             ("RF pipe0", binascii.hexlify(rfInfo.pipe0).decode('ascii')),
             ("RF pipe1", binascii.hexlify(rfInfo.pipe1).decode('ascii')),
@@ -1002,29 +1051,29 @@ class Loader(QMainWindow):
             ("Layout storage size", firmwareInfo.layout_flash_size),
             ("Bootloader VID", "{:04x}".format(firmwareInfo.bootloader_vid)),
             ("Bootloader PID", "{:04x}".format(firmwareInfo.bootloader_pid)),
-            ("Support scanning", protocol.has_fw_support_scanning(firmwareInfo)),
-            ("Support scanning col to row", protocol.has_fw_support_scanning_col_row(firmwareInfo)),
-            ("Support scanning row to col", protocol.has_fw_support_scanning_row_col(firmwareInfo)),
+            ("Support scanning", firmwareInfo.has_fw_support_scanning()),
+            ("Support scanning col to row", firmwareInfo.has_fw_support_scanning_col_row()),
+            ("Support scanning row to col", firmwareInfo.has_fw_support_scanning_row_col()),
 
-            ("Media keys", protocol.has_fw_support_key_media(firmwareInfo)),
-            ("Mouse keys", protocol.has_fw_support_key_mouse(firmwareInfo)),
-            ("Layer keys", protocol.has_fw_support_key_layers(firmwareInfo)),
-            ("Sticky keys", protocol.has_fw_support_key_sticky(firmwareInfo)),
-            ("Tap keys", protocol.has_fw_support_key_tap(firmwareInfo)),
-            ("Hold keys", protocol.has_fw_support_key_hold(firmwareInfo)),
+            ("Media keys", firmwareInfo.has_fw_support_key_media()),
+            ("Mouse keys", firmwareInfo.has_fw_support_key_mouse()),
+            ("Layer keys", firmwareInfo.has_fw_support_key_layers()),
+            ("Sticky keys", firmwareInfo.has_fw_support_key_sticky()),
+            ("Tap keys", firmwareInfo.has_fw_support_key_tap()),
+            ("Hold keys", firmwareInfo.has_fw_support_key_hold()),
 
-            ("Support 6KRO", protocol.has_fw_support_6kro(firmwareInfo)),
-            ("Support NKRO", protocol.has_fw_support_key_hold(firmwareInfo)),
+            ("Support 6KRO", firmwareInfo.has_fw_support_6kro()),
+            ("Support NKRO", firmwareInfo.has_fw_support_key_hold()),
 
-            ("Support indicator LEDs", protocol.has_fw_support_led_indicators(firmwareInfo)),
-            ("Support LED backlighting", protocol.has_fw_support_led_backlighting(firmwareInfo)),
-            ("Support ws2812 LEDs", protocol.has_fw_support_led_ws2812(firmwareInfo)),
+            ("Support indicator LEDs", firmwareInfo.has_fw_support_led_indicators()),
+            ("Support LED backlighting", firmwareInfo.has_fw_support_led_backlighting()),
+            ("Support ws2812 LEDs", firmwareInfo.has_fw_support_led_ws2812()),
 
-            ("Support USB", protocol.has_fw_support_usb(firmwareInfo)),
-            ("Support nRF24 wireless", protocol.has_fw_support_wireless(firmwareInfo)),
-            ("Support Unifying", protocol.has_fw_support_unifying(firmwareInfo)),
-            ("Support I2C", protocol.has_fw_support_i2c(firmwareInfo)),
-            ("Support Bluetooth", protocol.has_fw_support_bluetooth(firmwareInfo)),
+            ("Support USB", firmwareInfo.has_fw_support_usb()),
+            ("Support nRF24 wireless", firmwareInfo.has_fw_support_wireless()),
+            ("Support Unifying", firmwareInfo.has_fw_support_unifying()),
+            ("Support I2C", firmwareInfo.has_fw_support_i2c()),
+            ("Support Bluetooth", firmwareInfo.has_fw_support_bluetooth()),
         ]
         self.info_window = DeviceInformationWindow(self, header, device_settings, firmware_settings)
         self.info_window.setModal(True)

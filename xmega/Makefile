@@ -169,11 +169,11 @@ program: hex program-boot
 
 # reset a board into bootloader via usb, then program it via the bootloader
 program-boot: $(TARGET_HEX)
-	./scripts/flash_hex.sh $<
+	./scripts/flash_hex.sh $< $(MCU)
 
 # program a board that is already in in bootloader mode
 program-boot-2: $(TARGET_hex)
-	./xusb-boot/scripts/flash.py -f $<
+	./xusb-boot/scripts/flash.py -f $< -mcu $(MCU)
 
 # program a board using an external programmer
 program-hard: $(TARGET_hex)
@@ -201,6 +201,8 @@ LOCKBITS = $(LOCKBITS_RELEASE)
 
 include avr-makefile/avr.mk
 include avr-makefile/avr-xmega.mk
+include avr-makefile/avr-program.mk
+
 
 # Listing of phony targets.
 .PHONY : all program bootload_only bootload program-fuses program-boot \

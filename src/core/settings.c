@@ -31,6 +31,10 @@ AT__SETTINGS_ADDR const settings_t g_settings_storage = {
 #include "settings/dev_layout_settings.c"
 
 #include "settings/dev_rf_settings.c"
+
+    // NOTE: can't do this at compile time, need to parse the layout file
+    // and generate it here.
+    .crc = 0x1234,
 };
 
 
@@ -91,29 +95,39 @@ uint8_t device_id_to_pipe_num(const uint8_t device_id) {
 
 
 void settings_load_from_flash(void) {
+
+
     // load rf setings into ram
     flash_read((uint8_t*)&g_rf_settings, (flash_ptr_t)&(GET_SETTING(rf)), sizeof(rf_settings_t));
 
-    if (crc16_buffer((uint8_t*)&g_settings_storage, SETTINGS_MAIN_INFO_SIZE) != 0) {
-        // Didn't find a valid value for CRC in the settings, so load default
-        // settings instead
+    { // validate that the settings are (not corrupt)/(have been initilized)
+        const uint16_t flash_checksum = crc16_flash_buffer(
+            SETTINGS_ADDR,
+            SETTINGS_MAIN_INFO_SIZE
+        );
+        if (flash_checksum != 0) {
+            // Didn't find a valid value for CRC in the settings, so load default
+            // settings instead
 
-        // TODO: Decide what to do when settings are corrupt;
-        const runtime_settings_t default_runtime_settings = {
-            .device_id = 0,
-            .feature_ctrl = {
-                .usb_disable = false,
-                .wired_disable = true,
-                .rf_disable = true,
-                .rf_mouse_disable = true,
-                .bt_disable = true,
-            },
-        };
+            // TODO: Decide what to do when settings are corrupt. If a feature
+            // could prevent reflashing the layout over the USB interface,
+            // should prefer to disable it.
+            const runtime_settings_t default_runtime_settings = {
+                .device_id = 0,
+                .feature_ctrl = {
+                    .usb_disable = false,
+                    .wired_disable = true,
+                    .rf_disable = true,
+                    .rf_mouse_disable = true,
+                    .bt_disable = true,
+                },
+            };
 
-        memcpy(&g_runtime_settings, &default_runtime_settings, sizeof(runtime_settings_t));
-        g_scan_plan.mode = MATRIX_SCANNER_MODE_NONE;
+            memcpy(&g_runtime_settings, &default_runtime_settings, sizeof(runtime_settings_t));
+            g_scan_plan.mode = MATRIX_SCANNER_MODE_NONE;
 
-        // Should rf settings have a crc too?
+            // Should rf settings have a crc too?
+        }
     }
 
     // TODO: validate the settings before returning

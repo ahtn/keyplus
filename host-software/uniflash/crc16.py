@@ -3,7 +3,8 @@
 # Copyright 2017 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-from btool import *
+def u16(x):
+    return x & 0xffff
 
 def crc16_step(crc, byte):
     crc_poly = 0x1021

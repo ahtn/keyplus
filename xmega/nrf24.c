@@ -187,8 +187,9 @@ uint8_t nrf24_irq(void) {
 }
 
 ISR(NRF24_IRQ_INT_VECT) {
-    debug_toggle(1);
+    debug_set(1, 0);
     rf_isr();
+    debug_set(1, 1);
 }
 
 #endif

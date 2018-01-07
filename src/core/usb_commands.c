@@ -20,6 +20,8 @@
 #include "core/mouse_report.h"
 #include "core/vendor_report.h"
 
+#include "core/debug.h"
+
 /* TODO: abstract mcu specifi usb code */
 
 static bit_t passthrough_mode_on;
@@ -37,7 +39,7 @@ XRAM struct {
     uint16_t addr;
 } flash_layout;
 
-static uint8_t usb_commands_locked(void) {
+static uint8_t usb_commands_is_locked(void) {
     return s_usb_commands_in_progress;
 }
 
@@ -45,8 +47,12 @@ static void unlock_usb_commands(void) {
     s_usb_commands_in_progress = false;
 }
 
+// static void lock_usb_commands(void) {
+//     s_usb_commands_in_progress = true;
+// }
+
 static void lock_usb_commands(void) {
-    s_usb_commands_in_progress = true;
+    s_usb_commands_in_progress = false;
 }
 
 bit_t is_passthrough_enabled(void) {
@@ -88,10 +94,11 @@ void cmd_reset(void) {
 
 // send data to the host for debugging purposes
 uint8_t usb_print(const uint8_t *data, uint8_t len) {
+#if USB_BUFFERED
     const uint8_t packet_len = len+2;
     uint8_t i;
 
-    if (usb_commands_locked()) {
+    if (usb_commands_is_locked()) {
         return 1;
     }
     if (packet_len+1 > vendor_in_free_space()) {
@@ -109,16 +116,22 @@ uint8_t usb_print(const uint8_t *data, uint8_t len) {
     }
     // vendor_in_write_buf(data, len);
     send_vendor_report();
+#else
 
-    // g_vendor_report_in.data[0] = CMD_PRINT;
-    // g_vendor_report_in.data[1] = len;
-    // if (len > VENDOR_REPORT_LEN-2) {
-    //     len = VENDOR_REPORT_LEN-2;
-    // }
-    // /* copy(vendor_report.data+1, data, len); */
-    // memcpy(g_vendor_report_in.data+2, data, len);
-    // g_vendor_report_in.len = len+2;
-    // send_vendor_report();
+    if (usb_commands_is_locked()) {
+        return 1;
+    }
+
+    g_vendor_report_in.data[0] = CMD_PRINT;
+    g_vendor_report_in.data[1] = len;
+    if (len > VENDOR_REPORT_LEN-2) {
+        len = VENDOR_REPORT_LEN-2;
+    }
+    /* copy(vendor_report.data+1, data, len); */
+    memcpy(g_vendor_report_in.data+2, data, len);
+    g_vendor_report_in.len = len+2;
+    send_vendor_report();
+#endif
     return 0;
 }
 
@@ -169,8 +182,6 @@ static void cmd_get_device_settings(void) {
 
     g_vendor_report_in.data[0] = CMD_GET_DEVICE_SETTINGS;
 
-// #define SETTINGS_ADDR_REF ((flash_ptr_t)(&g_settings))
-
     g_vendor_report_in.data[1] = info_type;
 
     if (info_type == INFO_MAIN_0) {
@@ -213,11 +224,13 @@ static void cmd_get_device_settings(void) {
 
 void parse_cmd(void) {
     uint8_t cmd = g_vendor_report_out.data[0];
+    debug_toggle(1);
     switch (cmd) {
         case CMD_BOOTLOADER: {
             cmd_custom_bootloader();
         } break;
         case CMD_GET_DEVICE_SETTINGS: {
+            debug_toggle(5);
             cmd_get_device_settings();
         } break;
         case CMD_RESET: {
@@ -296,6 +309,7 @@ void parse_cmd(void) {
             lock_usb_commands();
             s_vendor_state = STATE_WRITE_FLASH;
 
+            debug_toggle(3);
             erase_page_range(LAYOUT_PAGE_NUM, number_pages);
 
             cmd_ok();
@@ -314,7 +328,10 @@ void handle_vendor_out_reports(void) {
         return;
     }
 
-    g_vendor_report_out.len = read_vendor_report(g_vendor_report_out.data);
+    if (read_vendor_report(g_vendor_report_out.data)) {
+        return;
+    }
+    g_vendor_report_out.len = 0;
 
     if (s_vendor_state == STATE_WAIT_CMD) {
         parse_cmd();
@@ -323,6 +340,7 @@ void handle_vendor_out_reports(void) {
         const uint8_t size = g_vendor_report_out.len;
         const uint16_t addr = flash_layout.addr + (uint16_t)flash_layout.counter * EP_SIZE_VENDOR;
 
+        debug_toggle(2);
         wdt_kick();
 
         // at this stage all the necessary pages have been erased, so all we
@@ -338,6 +356,7 @@ void handle_vendor_out_reports(void) {
 
         flash_layout.counter += 1;
         if (flash_layout.counter >= flash_layout.num_packets) {
+            debug_toggle(3);
             s_vendor_state = STATE_WAIT_CMD;
             g_input_disabled = false;
             unlock_usb_commands();

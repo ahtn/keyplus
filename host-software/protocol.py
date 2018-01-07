@@ -6,6 +6,8 @@ import struct
 import hexdump
 import datetime
 
+from uniflash.crc16 import crc16_bytes
+
 DEFAULT_PID = 0x1111
 DEFAULT_VID = 0x6666
 DEFAULT_INTERFACE = 3
@@ -134,9 +136,47 @@ def get_layers(device, layout_id):
     response = simple_command(device, CMD_GET_LAYER, [layout_id])
     return struct.unpack_from("<B HHH", response)
 
+
+KBInfoMainNamedTuple = collections.namedtuple("KBInfoMain",
+    "id name timestamp default_report_mode "
+    "scan_mode row_count col_count feature_ctrl reserved crc"
+)
+
+class KBInfoMain(KBInfoMainNamedTuple):
+    @staticmethod
+    def _make_with_crc(fields, crc, is_empty):
+        result = KBInfoMain._make(fields)
+        result.computed_crc = crc
+        result.is_empty = is_empty
+        return result
+
+    def device_name_str(self):
+        if self.is_empty:
+            return ""
+        else:
+            try:
+                result = self.name.decode('utf-8')
+            except UnicodeDecodeError:
+                result = str(self.name)
+            return result
+
+    def timestamp_str(self):
+        return timestamp_to_str(self.timestamp)
+
+    def default_report_mode_str(self):
+        return report_mode_to_str(self.default_report_mode)
+
+    def scan_mode_str(self):
+        return scan_mode_to_str(self.scan_mode)
+
 def get_device_info(device):
+    DEVICE_INFO_SIZE = 96
     response = simple_command(device, CMD_GET_DEVICE_SETTINGS, [INFO_MAIN_0])[1:]
     response += simple_command(device, CMD_GET_DEVICE_SETTINGS, [INFO_MAIN_1])[1:]
+    response = response[0:DEVICE_INFO_SIZE]
+
+    # check if the flash has been initialized
+    is_empty = sum([1 for byte in response if byte != 0xff]) == 0
 
     # uint8_t device_id;
     # char device_name[32];
@@ -145,14 +185,14 @@ def get_device_info(device):
     # uint8_t scan_mode;
     # uint8_t row_count;
     # uint8_t col_count;
-    # uint8_t _reserved[51]; // total size == 96
-    KBInfoMain = collections.namedtuple("KBInfoMain",
-        "id name timestamp default_report_mode "
-        "scan_mode row_count col_count reserved"
-    )
+    # uint8_t feature_ctrl;
+    # uint8_t _reserved[48];
+    # uint16_t crc; // total size == 96
 
-    x = struct.unpack("< B 32s q 4B 51s", response[0:96])
-    return KBInfoMain._make(x)
+    crc = crc16_bytes(response[:DEVICE_INFO_SIZE-2])
+
+    x = struct.unpack("< B 32s q 5B 48s H", response)
+    return KBInfoMain._make_with_crc(x, crc, is_empty)
 
 def get_layout_info(device):
     response = simple_command(device, CMD_GET_DEVICE_SETTINGS, [INFO_LAYOUT])[1:]
@@ -166,6 +206,113 @@ def get_layout_info(device):
 
     x = struct.unpack("< 2B 30s", response[0:32])
     return KBInfoLayout._make(x)
+
+KBInfoFirmwareNamedTuple = collections.namedtuple("KBInfoFirmware",
+    """
+    version_major version_minor version_patch
+    layout_flash_size
+    timestamp
+    git_hash
+    connectivity_support_flags
+    scan_support_flags
+    kb_support_flags
+    keyhandler_support_flags
+    led_support_flags
+    bootloader_vid
+    bootloader_pid
+    reserved
+    """
+)
+
+class KBInfoFirmware(KBInfoFirmwareNamedTuple):
+    SUPPORT_SCANNING_MASK = 0x01
+    SUPPORT_SCANNING_COL_ROW_MASK = 0x02
+    SUPPORT_SCANNING_ROW_COL_MASK = 0x04
+    SUPPORT_SCANNING_PINS_MASK = 0x08
+    SUPPORT_SCANNING_ARBITRARY_MASK = 0x10
+    SUPPORT_SCANNING_BUILT_IN_MASK = 0x20
+
+    def has_fw_support_scanning(self):
+        return (self.scan_support_flags & self.SUPPORT_SCANNING_MASK) != 0
+
+    def has_fw_support_scanning_row_col(self):
+        return (self.scan_support_flags & self.SUPPORT_SCANNING_ROW_COL_MASK) != 0
+
+    def has_fw_support_scanning_col_row(self):
+        return (self.scan_support_flags & self.SUPPORT_SCANNING_COL_ROW_MASK) != 0
+
+    def has_fw_support_scanning_pins(self):
+        return (self.scan_support_flags & self.SUPPORT_SCANNING_PINS_MASK) != 0
+
+    def has_fw_support_scanning_arbitrary(self):
+        return (self.scan_support_flags & self.SUPPORT_SCANNING_ARBITRARY_MASK) != 0
+
+    def has_fw_support_scanning_built_in(self):
+        return (self.scan_support_flags & self.SUPPORT_SCANNING_BUILT_IN_MASK) != 0
+
+    SUPPORT_KEY_MEDIA = 0x01
+    SUPPORT_KEY_MOUSE = 0x02
+    SUPPORT_KEY_LAYERS = 0x04
+    SUPPORT_KEY_STICKY = 0x08
+    SUPPORT_KEY_TAP = 0x10
+    SUPPORT_KEY_HOLD = 0x20
+
+    def has_fw_support_key_media(self):
+        return (self.keyhandler_support_flags & self.SUPPORT_KEY_MEDIA) != 0
+
+    def has_fw_support_key_mouse(self):
+        return (self.keyhandler_support_flags & self.SUPPORT_KEY_MOUSE) != 0
+
+    def has_fw_support_key_layers(self):
+        return (self.keyhandler_support_flags & self.SUPPORT_KEY_LAYERS) != 0
+
+    def has_fw_support_key_sticky(self):
+        return (self.keyhandler_support_flags & self.SUPPORT_KEY_STICKY) != 0
+
+    def has_fw_support_key_tap(self):
+        return (self.keyhandler_support_flags & self.SUPPORT_KEY_TAP) != 0
+
+    def has_fw_support_key_hold(self):
+        return (self.keyhandler_support_flags & self.SUPPORT_KEY_HOLD) != 0
+
+    SUPPORT_KRO_N = 0x01;
+    SUPPORT_KRO_6 = 0x02;
+
+    def has_fw_support_nkro(self):
+        return (self.kb_support_flags & self.SUPPORT_KRO_N) != 0
+    def has_fw_support_6kro(self):
+        return (self.kb_support_flags & self.SUPPORT_KRO_6) != 0
+
+    SUPPORT_LED_INDICATORS = 0x01
+    SUPPORT_LED_BACKLIGHTING = 0x02
+    SUPPORT_LED_WS2812 = 0x04
+
+    def has_fw_support_led_indicators(self):
+        return (self.led_support_flags & self.SUPPORT_LED_INDICATORS) != 0
+    def has_fw_support_led_backlighting(self):
+        return (self.led_support_flags & self.SUPPORT_LED_BACKLIGHTING) != 0
+    def has_fw_support_led_ws2812(self):
+        return (self.led_support_flags & self.SUPPORT_LED_WS2812) != 0
+
+    SUPPORT_WIRELESS = 0x01
+    SUPPORT_I2C = 0x02
+    SUPPORT_UNIFYING = 0x04
+    SUPPORT_USB = 0x08
+    SUPPORT_BT = 0x10
+
+    def has_fw_support_wireless(self):
+        return (self.connectivity_support_flags & self.SUPPORT_WIRELESS) != 0
+    def has_fw_support_i2c(self):
+        return (self.connectivity_support_flags & self.SUPPORT_I2C) != 0
+    def has_fw_support_unifying(self):
+        return (self.connectivity_support_flags & self.SUPPORT_UNIFYING) != 0
+    def has_fw_support_usb(self):
+        return (self.connectivity_support_flags & self.SUPPORT_USB) != 0
+    def has_fw_support_bluetooth(self):
+        return (self.connectivity_support_flags & self.SUPPORT_BT) != 0
+
+
+
 
 def get_firmware_info(device):
     # uint8_t version_major;
@@ -219,23 +366,6 @@ def get_firmware_info(device):
     # uint8_t reserved[31];
 
     response = simple_command(device, CMD_GET_DEVICE_SETTINGS, [INFO_FIRMWARE])[1:]
-
-    KBInfoFirmware = collections.namedtuple("KBInfoFirmware",
-        """
-        version_major version_minor version_patch
-        layout_flash_size
-        timestamp
-        git_hash
-        connectivity_support_flags
-        scan_support_flags
-        kb_support_flags
-        keyhandler_support_flags
-        led_support_flags
-        bootloader_vid
-        bootloader_pid
-        reserved
-        """
-    )
 
     x = struct.unpack("< 3B L Q Q 5B 2H 30s" ,response)
     return KBInfoFirmware._make(x)
@@ -338,8 +468,8 @@ REPORT_MODE_STR_MAP = {
     KEYBOARD_REPORT_MODE_6KRO: "6KRO",
     KEYBOARD_REPORT_MODE_NKRO: "NKRO",
 }
-def report_mode_to_str(mode):
 
+def report_mode_to_str(mode):
     if mode in REPORT_MODE_STR_MAP:
         return REPORT_MODE_STR_MAP[mode]
     else:
@@ -389,101 +519,16 @@ def timestamp_to_str(timestamp_raw):
         except OSError:
             return str(hex(timestamp_raw))
 
-SUPPORT_SCANNING_MASK = 0x01
-SUPPORT_SCANNING_COL_ROW_MASK = 0x02
-SUPPORT_SCANNING_ROW_COL_MASK = 0x04
-SUPPORT_SCANNING_PINS_MASK = 0x08
-SUPPORT_SCANNING_ARBITRARY_MASK = 0x10
-SUPPORT_SCANNING_BUILT_IN_MASK = 0x20
-
-def has_fw_support_scanning(firmwareInfo):
-    return (firmwareInfo.scan_support_flags & SUPPORT_SCANNING_MASK) != 0
-
-def has_fw_support_scanning_row_col(firmwareInfo):
-    return (firmwareInfo.scan_support_flags & SUPPORT_SCANNING_ROW_COL_MASK) != 0
-
-def has_fw_support_scanning_col_row(firmwareInfo):
-    return (firmwareInfo.scan_support_flags & SUPPORT_SCANNING_COL_ROW_MASK) != 0
-
-def has_fw_support_scanning_pins(firmwareInfo):
-    return (firmwareInfo.scan_support_flags & SUPPORT_SCANNING_PINS_MASK) != 0
-
-def has_fw_support_scanning_arbitrary(firmwareInfo):
-    return (firmwareInfo.scan_support_flags & SUPPORT_SCANNING_ARBITRARY_MASK) != 0
-
-def has_fw_support_scanning_built_in(firmwareInfo):
-    return (firmwareInfo.scan_support_flags & SUPPORT_SCANNING_BUILT_IN_MASK) != 0
-
-SUPPORT_KEY_MEDIA = 0x01
-SUPPORT_KEY_MOUSE = 0x02
-SUPPORT_KEY_LAYERS = 0x04
-SUPPORT_KEY_STICKY = 0x08
-SUPPORT_KEY_TAP = 0x10
-SUPPORT_KEY_HOLD = 0x20
-
-def has_fw_support_key_media(firmwareInfo):
-    return (firmwareInfo.keyhandler_support_flags & SUPPORT_KEY_MEDIA) != 0
-
-def has_fw_support_key_mouse(firmwareInfo):
-    return (firmwareInfo.keyhandler_support_flags & SUPPORT_KEY_MOUSE) != 0
-
-def has_fw_support_key_layers(firmwareInfo):
-    return (firmwareInfo.keyhandler_support_flags & SUPPORT_KEY_LAYERS) != 0
-
-def has_fw_support_key_sticky(firmwareInfo):
-    return (firmwareInfo.keyhandler_support_flags & SUPPORT_KEY_STICKY) != 0
-
-def has_fw_support_key_tap(firmwareInfo):
-    return (firmwareInfo.keyhandler_support_flags & SUPPORT_KEY_TAP) != 0
-
-def has_fw_support_key_hold(firmwareInfo):
-    return (firmwareInfo.keyhandler_support_flags & SUPPORT_KEY_HOLD) != 0
-
-SUPPORT_KRO_N = 0x01;
-SUPPORT_KRO_6 = 0x02;
-
-def has_fw_support_nkro(firmwareInfo):
-    return (firmwareInfo.kb_support_flags & SUPPORT_KRO_N) != 0
-def has_fw_support_6kro(firmwareInfo):
-    return (firmwareInfo.kb_support_flags & SUPPORT_KRO_6) != 0
-
-SUPPORT_LED_INDICATORS = 0x01
-SUPPORT_LED_BACKLIGHTING = 0x02
-SUPPORT_LED_WS2812 = 0x04
-
-def has_fw_support_led_indicators(firmwareInfo):
-    return (firmwareInfo.led_support_flags & SUPPORT_LED_INDICATORS) != 0
-def has_fw_support_led_backlighting(firmwareInfo):
-    return (firmwareInfo.led_support_flags & SUPPORT_LED_BACKLIGHTING) != 0
-def has_fw_support_led_ws2812(firmwareInfo):
-    return (firmwareInfo.led_support_flags & SUPPORT_LED_WS2812) != 0
-
-SUPPORT_WIRELESS = 0x01
-SUPPORT_I2C = 0x02
-SUPPORT_UNIFYING = 0x04
-SUPPORT_USB = 0x08
-SUPPORT_BT = 0x10
-
-def has_fw_support_wireless(firmwareInfo):
-    return (firmwareInfo.connectivity_support_flags & SUPPORT_WIRELESS) != 0
-def has_fw_support_i2c(firmwareInfo):
-    return (firmwareInfo.connectivity_support_flags & SUPPORT_I2C) != 0
-def has_fw_support_unifying(firmwareInfo):
-    return (firmwareInfo.connectivity_support_flags & SUPPORT_UNIFYING) != 0
-def has_fw_support_usb(firmwareInfo):
-    return (firmwareInfo.connectivity_support_flags & SUPPORT_USB) != 0
-def has_fw_support_bluetooth(firmwareInfo):
-    return (firmwareInfo.connectivity_support_flags & SUPPORT_BT) != 0
-
-
 if __name__ == "__main__":
     import easyhid
     # hid_devs = easyhid.Enumeration(vid=0)
     hid_list = easyhid.Enumeration()
-    sub_set = hid_list.filter(vid=0x6666, pid=0x1111, interface=3)
-    device = sub_set[0].open()
+    sub_set = hid_list.find(vid=0x6666, pid=0x1111, interface=3)
+    print(sub_set)
+    device = sub_set[0]
+    device.open()
 
     print(get_firmware_info(device))
-    # print(get_device_info(device))
+    print(get_device_info(device))
     # print(get_layers(device, 0))
 

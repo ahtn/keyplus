@@ -9,6 +9,10 @@
 #include "core/flash.h"
 #include "core/settings.h"
 
+#include "core/keyboard_report.h"
+#include "core/mouse_report.h"
+#include "core/vendor_report.h"
+
 #include "usb/descriptors.h"
 #include "usb/util/usb_hid.h"
 
@@ -261,7 +265,8 @@ uint8_t usbFrameCnt = 0;  // reset idle counter
 #define USB_REQ_HID_SET_IDLE      0x0a
 #define USB_REQ_HID_SET_PROTOCOL  0x0b
 void usb_cb_control_setup(void) {
-    if ((usb_setup.bmRequestType & USB_REQTYPE_TYPE_MASK) == 0x20){
+
+    if ((usb_setup.bmRequestType & USB_REQTYPE_TYPE_MASK) == 0x20) {
         uint8_t bRequest = usb_setup.bRequest;
         uint8_t interface = usb_setup.wIndex;
         uint8_t length = usb_setup.wLength;
@@ -280,13 +285,13 @@ void usb_cb_control_setup(void) {
             /* TODO: clean this up */
             switch (interface) {
                 case INTERFACE_BOOT_KEYBOARD:
-                    memset(ep0_buf_in, 0, 8);
-                    usb_ep0_in(length);
+                    memcpy(ep0_buf_in, (uint8_t*)&g_boot_keyboard_report, sizeof(hid_report_boot_keyboard_t));
+                    usb_ep0_in(sizeof(hid_report_boot_keyboard_t));
                     usb_ep0_out();
                     break;
                 case INTERFACE_MOUSE:
-                    memset(ep0_buf_in, 0, 8);
-                    usb_ep0_in(length);
+                    memcpy(ep0_buf_in, (uint8_t*)&g_mouse_report, sizeof(hid_report_mouse_t));
+                    usb_ep0_in(sizeof(hid_report_mouse_t));
                     usb_ep0_out();
                     break;
                 case INTERFACE_MEDIA:
@@ -312,14 +317,9 @@ void usb_cb_control_setup(void) {
                     usb_ep0_out();
                     break;
                 case INTERFACE_NKRO_KEYBOARD:
-                    /* TODO:  */
-                    if (0) {
-                        usb_ep0_stall();
-                    } else {
-                        memset(ep0_buf_in, 0, 29);
-                        usb_ep0_in(29);
-                        usb_ep0_out();
-                    }
+                    memcpy(ep0_buf_in, (uint8_t*)&g_nkro_keyboard_report, sizeof(hid_report_nkro_keyboard_t));
+                    usb_ep0_in(sizeof(hid_report_nkro_keyboard_t));
+                    usb_ep0_out();
                     break;
             }
         } else if (bRequest == USB_REQ_HID_GET_IDLE) {

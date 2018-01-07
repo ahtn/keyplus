@@ -1,6 +1,7 @@
 // Copyright 2018 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
+#include "core/flash.h"
 #include "core/crc.h"
 
 #define CRC16_POLY 0x1021
@@ -20,11 +21,18 @@ uint16_t crc16_step(uint16_t crc, uint8_t data, uint8_t num_bits) {
 
 uint16_t crc16_buffer(const uint8_t *buf_ptr, uint8_t length) {
     uint16_t crc = 0xffff;
-    while (length > 0) {
-        const uint8_t this_byte = *buf_ptr;
-        crc = crc16_step(crc, this_byte, 8);
-        buf_ptr++;
+    while (length-- > 0) {
+        crc = crc16_step(crc, *buf_ptr++, 8);
         length--;
+    }
+    return crc;
+}
+
+uint16_t crc16_flash_buffer(flash_ptr_t flash_ptr, uint8_t length) {
+    uint16_t crc = 0xffff;
+    while (length-- > 0) {
+        const uint8_t flash_byte = flash_read_byte(flash_ptr++);
+        crc = crc16_step(crc, flash_byte , 8);
     }
     return crc;
 }

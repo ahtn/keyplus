@@ -51,8 +51,11 @@ CDEFS += \
 	-DNO_RF_TRANSMIT \
 	-DF_CPU=$(F_CPU)UL \
 
-CDEFS += \
-	-DNDEBUG \
+CDEFS += -DUSB_BUFFERED=0
+
+ifdef DEBUG_LEVEL
+	CDEFS += -DDEBUG_LEVEL=$(DEBUG_LEVEL)
+endif
 
 # Using optimize for speed can result in a smaller binary in sdcc
 OPTIMIZATION = --opt-code-speed

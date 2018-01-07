@@ -7,6 +7,10 @@
 #include "core/util.h"
 #include "core/debug.h"
 
+/*********************************************************************
+ *               ring buffer (byte stream ring buffer)               *
+ *********************************************************************/
+
 // Note: A ring buffer defined with a given size `size` will only be able to
 // store `(size-1)` elements at a time, but still uses `size*sizeof(data_type)`
 // bytes in memory. This simplifies the implementation.
@@ -197,6 +201,72 @@ PROTO_RING_BUF_SKIP_FUNCTION(size, ptr_type, data_type, type_name, fn_type) { \
     DEFINE_RING_BUF_PUT_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
     DEFINE_RING_BUF_FILL_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
     DEFINE_RING_BUF_TAKE_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY)
+
+
+/*********************************************************************
+ *                block ring (block base ring buffer)                *
+ *********************************************************************/
+
+// Note: A ring buffer defined with a given size `size` will only be able to
+// store `(size-1)` elements at a time, but still uses `size*sizeof(data_type)`
+// bytes in memory. This simplifies the implementation.
+#define DEFINE_BLOCK_RING_TYPE(num_blocks, block_size, ptr_type, data_type, type_name) \
+typedef struct type_name ## _type { \
+    data_type data[num_blocks][block_size]; \
+    ptr_type head; \
+    ptr_type tail; \
+    ptr_type length; \
+} type_name ## _type
+
+// len()
+#define PROTO_BLOCK_RING_LEN_FUNCTION(ptr_type, data_type, type_name, fn_type) \
+fn_type ptr_type type_name ## _len (XRAM type_name ## _type *buf, ptr_type skip_len)
+
+#define DEFINE_BLOCK_RING_LEN_FUNCTION(block_count, block_size, ptr_type, \
+    data_type, type_name, fn_type) \
+PROTO_BLOCK_RING_LEN_FUNCTION(ptr_type, data_type, type_name, fn_type) { \
+    return buf->length; \
+}
+
+// is_full()
+#define PROTO_BLOCK_RING_IS_FULL_FUNCTION(ptr_type, data_type, type_name, fn_type) \
+fn_type uint8_t type_name ## _is_full (XRAM type_name ## _type *buf, ptr_type skip_len)
+
+#define DEFINE_BLOCK_RING_IS_FULL_FUNCTION(block_count, ptr_type, data_type, \
+    type_name, fn_type) \
+PROTO_BLOCK_RING_IS_FULL_FUNCTION(ptr_type, data_type, type_name, fn_type) { \
+    return buf->length == block_count; \
+}
+
+// get()
+#define PROTO_BLOCK_RING_GET_FUNCTION(ptr_type, data_type, type_name, fn_type) \
+fn_type data_type* type_name ## _get (XRAM type_name ## _type *buf, ptr_type skip_len)
+
+#define DEFINE_BLOCK_RING_GET_FUNCTION(block_count, ptr_type, data_type, \
+    type_name, fn_type) \
+PROTO_BLOCK_RING_TAKE_FUNCTION(ptr_type, data_type, type_name, fn_type) { \
+    assert(buf->length > 0); \
+    data_type* result = buf->data[buf->head]; \
+    buf->head = RING_BUF_ADD(block_count, buf->head, 1); \
+    buf->length--; \
+}
+
+// put()
+#define PROTO_BLOCK_RING_PUT_FUNCTION(ptr_type, data_type, type_name, fn_type) \
+fn_type data_type* type_name ## _put (XRAM type_name ## _type *buf, ptr_type skip_len)
+
+#define DEFINE_BLOCK_RING_PUT_FUNCTION(block_count, ptr_type, data_type, \
+    type_name, fn_type) \
+PROTO_BLOCK_RING_TAKE_FUNCTION(ptr_type, data_type, type_name, fn_type) { \
+    assert(buf->length < block_count); \
+    data_type* result = buf->data[buf->tail]; \
+    buf->tail = RING_BUF_ADD(block_count, buf->tail, 1); \
+    buf->length++; \
+}
+
+
+
+
 
 DEFINE_PROTO_RING_BUF_VARIANT(127, uint8_t, uint8_t, ring_buf128);
 // DEFINE_INLINE_RING_BUF_VARIANT(127, uint8_t, uint8_t, ring_buf128);

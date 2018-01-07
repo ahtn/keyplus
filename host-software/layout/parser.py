@@ -22,6 +22,8 @@ from layout.rf_settings import *
 from layout.device import *
 from layout.ekc_data import EKCDataMain
 
+from uniflash.crc16 import crc16_bytes
+
 RF_INFO_SIZE = 64
 
 class Layout:
@@ -210,7 +212,9 @@ class SettingsGenerator:
         # uint8_t scan_mode;
         # uint8_t row_count;
         # uint8_t col_count;
-        # uint8_t _reserved[51]; // total size == 96
+        # uint8_t feature_ctrl;
+        # uint8_t _reserved[48];
+        # uint16_t crc; // total size == 96
         result = bytearray(0)
 
         device = self.get_device_by_id(device_id)
@@ -230,7 +234,13 @@ class SettingsGenerator:
         # scan mode information
         result += self.gen_scan_mode_info(device_id)
 
-        result += bytearray(51)
+        # feature control information
+        result += struct.pack('<B', 0) # TODO add feature ctrl to config file
+
+        result += bytearray(48)
+
+        result += struct.pack('<H', crc16_bytes(result))
+
         return result
 
 

@@ -383,7 +383,7 @@ bit_t read_packet(void) REENT {
         uint8_t i;
         uint8_t csum = 0;
 
-        // the unifying protocal packets use a siple arithmetic checksum
+        // the unifying protocal packets use a simple arithmetic checksum
         for (i=0; i < width; i++) {
             csum += packet_payload[i];
         }
@@ -392,8 +392,9 @@ bit_t read_packet(void) REENT {
             return false;
         }
 
-        // usb_print(packet_payload, 16); // debugging
-        // usb_print(packet_payload, width);
+#if DEBUG_LEVEL >= 6
+        usb_print(packet_payload, width);
+#endif
 
         // checksum passed, so assume we got a valid unifying packet
         unifying_read_packet(packet_payload);
@@ -466,9 +467,9 @@ bit_t read_packet(void) REENT {
     // All packets except unifying mouse packets are encrypted.
     aes_decrypt(packet_payload);
 
+#if DEBUG_LEVEL >= 6
     usb_print(packet_payload, width);
-
-    // usb_print(packet_payload, 16); // debugging
+#endif
 
     // Valitate that the packet before handling it
     {

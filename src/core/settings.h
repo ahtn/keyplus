@@ -93,7 +93,7 @@ typedef struct settings_t { // 512 bytes
     uint8_t col_count;
     feature_ctrl_t feature_ctrl;
     uint8_t _reserved[48];
-    uint8_t crc; // size == 96
+    uint16_t crc; // size == 96
     layout_settings_t layout; // size == 352
     rf_settings_t rf; // size == 64
 } settings_t;

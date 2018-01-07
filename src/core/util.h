@@ -17,6 +17,8 @@
 #define ROM __code
 #define WEAK __attribute__((weak))
 #define AT(addr) __at (addr)
+// sdcc doesn't have no return attribute.
+#define NO_RETURN_ATTR
 
 #elif AVR
 
@@ -29,6 +31,7 @@
 #define ROM __flash
 #define WEAK __attribute__((weak))
 #define AT(addr)
+#define NO_RETURN_ATTR __ATTR_NORETURN__
 
 #else
 // generic
@@ -40,6 +43,7 @@
 #define WEAK
 #define ISR(x)
 #define AT(addr)
+#define NO_RETURN_ATTR
 #endif
 
 #if defined(__SDCC_mcs51)

@@ -55,15 +55,20 @@ void unifying_read_packet(uint8_t *nrf_packet) {
     const uint8_t nrf_packet_type = nrf_packet[1];
     switch (nrf_packet_type) {
         case 0xC2: {
+            uint16_t data[4];
             uint16_t x = ((nrf_packet[5] & 0x0f) << 8) | nrf_packet[4];
             uint16_t y = (uint16_t)((nrf_packet[6]) << 4) | (uint16_t)((nrf_packet[5] & 0xf0) >> 4);
             g_unifying_mouse_state.buttons_1 = nrf_packet[2];
             g_unifying_mouse_state.buttons_2 = nrf_packet[3];
-            g_unifying_mouse_state.x = (uint16_t)sign_extend_12(x);
-            g_unifying_mouse_state.y = (uint16_t)sign_extend_12(y);
+            g_unifying_mouse_state.x = sign_extend_12(x);
+            g_unifying_mouse_state.y = sign_extend_12(y);
             g_unifying_mouse_state.wheel_y = nrf_packet[7];
             g_unifying_mouse_state.wheel_x = nrf_packet[8];
             g_unifying_mouse_state_changed = true;
+            data[0] = x;
+            data[1] = y;
+            data[2] = g_unifying_mouse_state.x;
+            data[3] = g_unifying_mouse_state.y;
             /* mouse_active = true; */
         } break;
 
@@ -98,7 +103,6 @@ void unifying_mouse_handle(void) {
 
     g_report_pending_mouse = true;
     g_unifying_mouse_state_changed = false;;
-
 
     /* TODO: test code only, remove later */
     /* if (keyboard_get_layer_mask(0) & (1 << 6)) { */

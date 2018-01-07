@@ -315,6 +315,7 @@ void usb_mode_main_loop(void) {
             uint8_t *matrix_data = i2c_packet+1;
             const uint8_t use_deltas = true;
 
+            usb_print(matrix_data, 16);
 #if USE_I2C
             i2c_packet[0] = (i2c_get_active_address() << 1) | 0x01;
 #endif
@@ -363,14 +364,10 @@ void usb_mode_main_loop(void) {
             // TODO: might want to implement a scheduling system for tasks
             rf_task();
         }
-
-        // TODO: ignore these USB tasks when no USB present connected (i.e. i2c
-        // mode). We can then use deeper sleep modes.
-        unifying_mouse_handle();
 #endif
-
-        led_task();
         macro_task();
+
+        unifying_mouse_handle();
 
         send_keyboard_report();
         send_media_report();
@@ -382,6 +379,8 @@ void usb_mode_main_loop(void) {
 
         sticky_key_task();
         hold_key_task();
+
+        led_task();
 
 #if USE_NRF24 && RF_POLLING
         // Don't have RF IRQ, so don't sleep to reduce chance that packets are
