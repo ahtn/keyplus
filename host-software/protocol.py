@@ -528,7 +528,6 @@ if __name__ == "__main__":
     device = sub_set[0]
     device.open()
 
-    print(get_firmware_info(device))
-    print(get_device_info(device))
-    # print(get_layers(device, 0))
-
+    # print(get_firmware_info(device))
+    # print(get_device_info(device))
+    update_settings_section(device, bytes([i%256 for i in range(512)]), keep_rf=1)

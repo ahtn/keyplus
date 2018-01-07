@@ -74,11 +74,17 @@ void reset_usb_reports(void) {
 
 #define ERROR_PACKET_LENGTH 2
 void cmd_error(uint8_t code) {
+#if USB_BUFFERED
     assert(vendor_in_free_space() > ERROR_PACKET_LENGTH);
     vendor_in_write_byte(ERROR_PACKET_LENGTH);
 
     vendor_in_write_byte(CMD_ERROR_CODE);
     vendor_in_write_byte(code);
+#else
+    g_vendor_report_in.len = ERROR_PACKET_LENGTH;
+    g_vendor_report_in.data[0] = CMD_ERROR_CODE;
+    g_vendor_report_in.data[1] = code;
+#endif
     send_vendor_report();
 }
 
@@ -309,7 +315,7 @@ void parse_cmd(void) {
             lock_usb_commands();
             s_vendor_state = STATE_WRITE_FLASH;
 
-            debug_toggle(3);
+            // debug_toggle(3);
             erase_page_range(LAYOUT_PAGE_NUM, number_pages);
 
             cmd_ok();
@@ -328,17 +334,18 @@ void handle_vendor_out_reports(void) {
         return;
     }
 
-    if (read_vendor_report(g_vendor_report_out.data)) {
+    read_vendor_report(g_vendor_report_out.data);
+
+    if (g_vendor_report_out.len == 0) {
         return;
     }
-    g_vendor_report_out.len = 0;
 
     if (s_vendor_state == STATE_WAIT_CMD) {
         parse_cmd();
     } else if (s_vendor_state == STATE_WRITE_FLASH) {
         /* const uint8_t page = LAYOUT_PAGE_NUM + flash_layout.counter/CHUNKS_PER_PAGE; */
-        const uint8_t size = g_vendor_report_out.len;
         const uint16_t addr = flash_layout.addr + (uint16_t)flash_layout.counter * EP_SIZE_VENDOR;
+        const uint8_t size = g_vendor_report_out.len;
 
         debug_toggle(2);
         wdt_kick();
@@ -348,6 +355,8 @@ void handle_vendor_out_reports(void) {
         flash_modify_enable();
         flash_write(g_vendor_report_out.data, addr, size);
         flash_modify_disable();
+
+        g_vendor_report_out.len = 0;
 
         // zero report incase it contained encryption key data, etc.
         memset(g_vendor_report_out.data, 0, EP_SIZE_VENDOR);

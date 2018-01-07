@@ -161,11 +161,14 @@ bit_t is_ready_vendor_out_report(void) {
 uint8_t read_vendor_report(uint8_t *dest) {
     uint8_t i;
     uint8_t length = 0;
+
     if (!is_ready_vendor_out_report()) {
         return 1;
     }
 
     length = usb_xmega_endpoints[EP_NUM_VENDOR].out.CNT;
+    g_vendor_report_out.len = length;
+
     for (i = 0; i < length; ++i) {
         dest[i] = EP_OUT_BUF_VENDOR[i];
     }

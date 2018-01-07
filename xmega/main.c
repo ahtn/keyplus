@@ -364,10 +364,9 @@ void usb_mode_main_loop(void) {
             // TODO: might want to implement a scheduling system for tasks
             rf_task();
         }
+        unifying_mouse_handle();
 #endif
         macro_task();
-
-        unifying_mouse_handle();
 
         send_keyboard_report();
         send_media_report();

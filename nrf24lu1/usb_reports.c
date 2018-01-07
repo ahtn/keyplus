@@ -140,6 +140,7 @@ uint8_t read_vendor_report(uint8_t *buf) {
     if (is_ready_vendor_out_report()) {
         uint8_t length = BC_OUT_VENDOR;
         memcpy(buf, EP_OUT_BUF_VENDOR, length);
+        g_vendor_report_out.len = length;
 
         // rearm the out endpoint by writing any value to its bc register
         BC_OUT_VENDOR = 0xff;
