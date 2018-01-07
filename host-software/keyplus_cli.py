@@ -1,18 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
-from __future__ import print_function, division
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import intelhex
 import argparse
+import yaml
 
 import time, math, sys, datetime
-import protocol, easyhid
+
+import layout.parser
+import protocol
+import easyhid
 
 __version_info__ = (0, 0, 1)
 __version__ = '.'.join([str(i) for i in __version_info__])
 
+EXIT_COMMAND_ERROR = 1
+EXIT_MATCH_DEVICE = 2
+EXIT_UNSUPPORTED_FEATURE = 3
+EXIT_BAD_FILE = 4
 
 def print_hid_info(device):
     print("{:x}:{:x} | {} | {} | {}"
@@ -62,7 +69,16 @@ def print_all_info(device):
 # Generic Command
 class GenericCommand(object):
     def __init__(self, description):
+
+        command_name = ""
+        for name in Keyer.COMMAND_NAME_MAP:
+            if Keyer.COMMAND_NAME_MAP[name] == self.__class__:
+                command_name = name
+
+        command_name = sys.argv[0] + " " + command_name
+
         self.arg_parser = argparse.ArgumentParser(
+            prog=command_name,
             description=description
         )
         self.description = description
@@ -86,20 +102,23 @@ class GenericDeviceCommand(GenericCommand):
         super(GenericDeviceCommand, self).__init__(description)
 
         self.arg_parser.add_argument(
-            '-s', dest='serial', type=str, default=None,
-            help='Serial number of the USB device to use. If there is no exact '
-            'match, looks for partial matches.'
+            '-i', '--id', dest='dev_id', type=int, default=None,
+            help='The id of the device to program'
         )
 
         self.arg_parser.add_argument(
-            '-d', dest='vid_pid', type=str, default=None,
+            '-s', '--serial', dest='serial', type=str, default=None,
+            help='Serial number of the USB device to use. Can be a partial match.'
+        )
+
+        self.arg_parser.add_argument(
+            '-d', '--vid-pid', dest='vid_pid', type=str, default=None,
             help='Open a device based on a vid_pid pair'
         )
 
         self.arg_parser.add_argument(
             '-n', dest='name', type=str, default=None,
-            help='Name of the USB device to use. If there is no exact '
-            'match, look for partial matches.'
+            help='Name of the USB device to use. Can be a partial match.'
         )
 
     def get_similar_serial_number(self, dev_list, serial):
@@ -142,7 +161,7 @@ class GenericDeviceCommand(GenericCommand):
                     if target_vid > 0xffff: raise Exception
                 except:
                     print("Bad VID/PID pair: " + args.vid_pid, file=sys.stderr)
-                    exit(2)
+                    exit(EXIT_MATCH_DEVICE)
             elif len(matches) == 2:
                 try:
                     if matches[0] == '':
@@ -157,7 +176,7 @@ class GenericDeviceCommand(GenericCommand):
                     if target_pid and target_pid > 0xffff: raise Exception
                 except:
                     print("Bad VID/PID pair: " + args.vid_pid, file=sys.stderr)
-                    exit(2)
+                    exit(EXIT_MATCH_DEVICE)
 
         if args.serial != None:
             args.serial = self.get_similar_serial_number(hid_list, args.serial)
@@ -171,9 +190,33 @@ class GenericDeviceCommand(GenericCommand):
 
         if len(matching_devices) == 0:
             print("Couldn't find a matching device to open", file=sys.stderr)
-            exit(1)
+            exit(EXIT_MATCH_DEVICE)
 
-        return matching_devices[0]
+        if args.dev_id != None:
+            matching_id_list = []
+            for dev in matching_devices:
+                try:
+                    dev.open()
+                    dev_info = protocol.get_device_info(dev)
+                    dev.close()
+                    if dev_info.id == args.dev_id:
+                        matching_id_list.append(dev)
+                except:
+                    print("Warning: couldn't open device: " + str(dev), file=sys.stderr)
+                    dev.close()
+            matching_devices = matching_id_list
+
+        num_matches = len(matching_devices)
+
+        if num_matches== 0:
+            print("Couldn't find any matching devices.", file=sys.stderr)
+            exit(EXIT_MATCH_DEVICE)
+        elif num_matches == 1:
+            return matching_devices[0]
+        elif num_matches > 1:
+            print("Error: found {} matching devices, select a specifc device or "
+                  "disconnect the other devices".format(num_matches), file=sys.stderr)
+            exit(EXIT_MATCH_DEVICE)
 
     def task(self, args):
         pass
@@ -215,7 +258,7 @@ class PassthroughCommand(GenericDeviceCommand):
         except protocol.KBProtocolException as err:
             if err.error_code == protocol.ProtocolError.ERROR_UNSUPPORTED_COMMAND:
                 print("Target device doesn't support matrix scanning", file=sys.stderr)
-                exit(3)
+                exit(EXIT_UNSUPPORTED_FEATURE)
             raise err
         passthrough_timeout = 10000
 
@@ -264,6 +307,7 @@ class ListCommand(GenericCommand):
                 if args.verbosity >= 1:
                     print_device_info(dev)
                     print_layout_info(dev)
+                dev.close()
 
 # Test command for controlling LEDs
 class LEDCommand(GenericDeviceCommand):
@@ -309,13 +353,149 @@ class BootloaderCommand(GenericDeviceCommand):
         protocol.enter_bootloader(device)
         device.close()
 
-class HelpCommand(GenericDeviceCommand):
+class HelpCommand(GenericCommand):
     def __init__(self):
         super(HelpCommand, self).__init__(
             'Prints help for the given command'
         )
 
-class Keyer:
+        self.arg_parser.add_argument(
+            'command_name', type=str, default=None, nargs='?',
+            help='The command to provide help for'
+        )
+
+    def task(self, args):
+        if args.command_name == None:
+            self.arg_parser.print_help()
+            exit(0)
+
+        if args.command_name in Keyer.COMMAND_NAME_MAP:
+            cmd = Keyer.COMMAND_NAME_MAP[args.command_name]()
+            cmd.arg_parser.print_help()
+        else:
+            print("Error: Can't find help for unknown command " +
+                  str(args.command_name), file=sys.stderr)
+
+
+class ProgramCommand(GenericDeviceCommand):
+    def __init__(self):
+        super(ProgramCommand, self).__init__(
+            'Program layout, rf settings and hex files'
+        )
+
+        self.arg_parser.add_argument(
+            '-l', '--layout', dest='layout_file', type=str, default=None,
+            help='The layout file to program'
+        )
+
+        self.arg_parser.add_argument(
+            '-r', '--rf', dest='rf_file', type=str, default=None,
+            help='The rf file to program'
+        )
+
+        self.arg_parser.add_argument(
+            '-x', '--hex', dest='hex_file', type=str, default=None,
+            help='TODO'
+        )
+
+    def process_layout(self, layout_json_obj, rf_json, layout_file, device_id):
+        try:
+            settings_gen = layout.parser.SettingsGenerator(layout_json_obj, rf_json)
+            layout_data = settings_gen.gen_layout_section(device_id)
+            settings_data = settings_gen.gen_settings_section(device_id)
+            return layout_data, settings_data
+        except (layout.parser.ParseError, layout.parser.ParseKeycodeError) as err:
+            print(
+                'Error parsing "{}": {}'.format(layout_file),
+                str(err)
+            )
+            exit(EXIT_BAD_FILE)
+
+    def task(self, args):
+        layout_file = args.layout_file
+        rf_file = args.rf_file
+        hex_file = args.hex_file
+
+        if layout_file == None and hex_file == None and rf_file == None:
+            self.arg_parser.print_help()
+            exit(0)
+
+        device = self.find_matching_device(args)
+
+        device.open()
+        print("Programing start...")
+        print_hid_info(device)
+        print_device_info(device)
+        print_layout_info(device)
+        print("")
+
+
+        if layout_file != None:
+            with open(layout_file) as file_obj:
+                try:
+                    layout_json_obj = yaml.safe_load(file_obj.read())
+                # except yaml.YAMLError as err:
+                except Exception as err:
+                    print("Error in Layout Settings YAML file: " + str(err), file=sys.stderr)
+                    device.close()
+                    exit(EXIT_BAD_FILE)
+        else:
+            layout_json_obj = None
+
+        if rf_file != None:
+            with open(rf_file) as file_obj:
+                try:
+                    rf_json_obj = yaml.safe_load(file_obj.read())
+                # except yaml.YAMLError as err:
+                except Exception as err:
+                    print("Error in RF Settings YAML file: " + str(err), file=sys.stderr)
+                    device.close()
+                    exit(EXIT_BAD_FILE)
+        else:
+            rf_json_obj = None
+
+        if layout_file != None:
+            print("Parsing files...")
+            device_info = protocol.get_device_info(device)
+            layout_data, settings_data = self.process_layout(layout_json_obj, rf_json_obj, layout_file, device_info.id)
+            if layout_data == None or settings_data == None:
+                exit(EXIT_BAD_FILE)
+            print("Parsing finished...")
+
+        if layout_file and not rf_file:
+            print("Updating layout only...")
+            protocol.update_settings_section(device, settings_data, keep_rf=True)
+            protocol.update_layout_section(device, layout_data)
+        elif layout_file and rf_file:
+            print("Updating layout and rf settings...")
+            protocol.update_settings_section(device, settings_data)
+            protocol.update_layout_section(device, layout_data)
+        elif layout_file and rf_file and hex_file:
+            print("TODO: not implemented", file=sys.stderr)
+        elif hex_file and not layout_file and not rf_file:
+            print("TODO: not implemented", file=sys.stderr)
+        else:
+            pass
+
+        print("Done!")
+
+        protocol.reset_device(device)
+        device.close()
+
+
+class Keyer(object):
+    COMMAND_NAME_MAP = {
+        "bootloader": BootloaderCommand,
+        "debug": DebugCommand,
+        "led": LEDCommand,
+        "list": ListCommand,
+        "passthrough": PassthroughCommand,
+        "reset": ResetCommand,
+        "program": ProgramCommand,
+        # "layers": LayerCommand(),
+        "help": HelpCommand,
+    }
+
     def __init__(self):
 
         command_list = {
@@ -325,6 +505,7 @@ class Keyer:
             "list": ListCommand(),
             "passthrough": PassthroughCommand(),
             "reset": ResetCommand(),
+            "program": ProgramCommand(),
             # "layers": LayerCommand(),
             "help": HelpCommand(),
         }
@@ -348,21 +529,11 @@ class Keyer:
         args = parser.parse_args(sys.argv[1:2])
 
         if args.command in command_list:
-            if args.command == "help":
-                if len(sys.argv) < 3:
-                    parser.print_help()
-                else:
-                    cmd = sys.argv[2]
-                    if cmd in command_list:
-                        command_list[cmd].help()
-                    else:
-                        print('Unrecognized command: {}'.format(cmd), file=sys.stderr)
-            else:
-                command_list[args.command].run()
+            command_list[args.command].run()
         else:
             print('Unrecognized command: {}'.format(args.command), file=sys.stderr)
             parser.print_help()
-            exit(1)
+            exit(EXIT_COMMAND_ERROR)
         exit(0)
 
 
