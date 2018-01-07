@@ -23,16 +23,14 @@ avaliable commands run
 ./keyplus_cli.py -h
 ```
 
-Program a device based on it's serial:
+Program a device based with the given serial number:
 ```
-./keyplus_cli.py progarm --serial 5W162 --layout layout_file.yaml
+./keyplus_cli.py program --serial 5W162 --layout layout_file.yaml
 ```
 
 Program a device giving it a new device id:
 ```
-./keyplus_cli.py progarm --new-id 11 --layout_file layout_file.yaml --rf rf_file.yaml
+./keyplus_cli.py program --new-id 11 --layout layout_file.yaml --rf rf_file.yaml
 ```
-When no flags are given to target a specific device, the first device found
-will be used. However, if multiple devices are connected, then this command
-will fail and require you to add flags to target a specific device or
-disconnect the other devices.
+Note since we didn't give a serial number, device id, etc. this command would
+attempt to program any connected device.
