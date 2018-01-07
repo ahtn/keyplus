@@ -23,7 +23,7 @@ avaliable commands run
 ./keyplus_cli.py -h
 ```
 
-Program a device based with the given serial number:
+Program a device with the given serial number:
 ```
 ./keyplus_cli.py program --serial 5W162 --layout layout_file.yaml
 ```
