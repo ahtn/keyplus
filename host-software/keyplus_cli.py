@@ -20,6 +20,7 @@ EXIT_COMMAND_ERROR = 1
 EXIT_MATCH_DEVICE = 2
 EXIT_UNSUPPORTED_FEATURE = 3
 EXIT_BAD_FILE = 4
+EXIT_INSUFFICIENT_SPACE = 5
 
 def print_hid_info(device):
     print("{:x}:{:x} | {} | {} | {}"
@@ -400,13 +401,41 @@ class ProgramCommand(GenericDeviceCommand):
         )
 
         self.arg_parser.add_argument(
-            '-x', '--hex', dest='hex_file', type=str, default=None,
-            help='TODO'
+            '-x', '--fw-hex', dest='hex_file', type=str, default=None,
+            help='TODO firmware hex file'
+        )
+
+        self.arg_parser.add_argument(
+            '-M', '--merge-hex', dest='merge_hex',
+            type=lambda x: int(x, 0), # integer of any base
+            nargs='+', default=None,
+            help='For use in build scripts. Don\'t actually program the device,'
+            ' instead use the arguments provided to construct a firmware hexfile'
+            ' with the given settings pre-programmed. In addition to the other'
+            ' settings fields this flag takes 3 arguments: '
+            ' [settings_addr, layout_addr, layout_size]'
+            ' which determine where the layout will be placed in the result hex.'
+        )
+
+        self.arg_parser.add_argument(
+            '-o', '--outfile', dest='outfile',
+            type=str, default=None,
+            help='The file written by the -M flag. If no file is given, print'
+            ' to stdoutput'
         )
 
     def process_layout(self, layout_json_obj, rf_json, layout_file, device_id):
         try:
             settings_gen = layout.parser.SettingsGenerator(layout_json_obj, rf_json)
+            if not settings_gen.has_id(device_id):
+                print(
+                    'Error parsing "{}": No device with id {}'.format(
+                        layout_file,
+                        device_id
+                    ),
+                    file=sys.stderr
+                )
+                exit(EXIT_BAD_FILE)
             layout_data = settings_gen.gen_layout_section(device_id)
             settings_data = settings_gen.gen_settings_section(device_id)
             return layout_data, settings_data
@@ -423,9 +452,22 @@ class ProgramCommand(GenericDeviceCommand):
         hex_file = args.hex_file
         new_id = args.new_id
 
+        if args.merge_hex:
+            if (new_id == None or layout_file == None or rf_file == None or \
+                    new_id == None):
+                print("Error: To generate a merged hex file, need all settings"
+                        " files.", file=sys.stderr)
+                exit(EXIT_COMMAND_ERROR)
+            if len(args.merge_hex) != 3:
+                print("Error: To generate a merged hex file, need to provide "
+                      "[settings_addr, layout_addr, layout_size] as arguments",
+                      file=sys.stderr)
+                exit(EXIT_COMMAND_ERROR)
+
+
         if new_id != None and (layout_file == None or rf_file == None):
-            print("Error: to programming a new device ID, require both a "
-                  "layout file and a rf file", file=sys.stderr)
+            print("Error: when providing a new ID, a layout and RF file "
+                  "must be provided", file=sys.stderr)
             exit(EXIT_COMMAND_ERROR)
 
         if layout_file == None and hex_file == None and rf_file == None:
@@ -433,14 +475,15 @@ class ProgramCommand(GenericDeviceCommand):
             exit(0)
 
 
-        device = self.find_matching_device(args)
+        if not args.merge_hex:
+            device = self.find_matching_device(args)
 
-        device.open()
-        print("Programing start...")
-        print_hid_info(device)
-        print_device_info(device)
-        print_layout_info(device)
-        print("")
+            device.open()
+            print("Programing start...")
+            print_hid_info(device)
+            print_device_info(device)
+            print_layout_info(device)
+            print("")
 
 
         if layout_file != None:
@@ -469,7 +512,9 @@ class ProgramCommand(GenericDeviceCommand):
 
         if layout_file != None:
             print("Parsing files...")
-            device_info = protocol.get_device_info(device)
+
+            if not args.merge_hex:
+                device_info = protocol.get_device_info(device)
 
             if new_id == None:
                 target_id = device_info.id
@@ -486,7 +531,50 @@ class ProgramCommand(GenericDeviceCommand):
                 exit(EXIT_BAD_FILE)
             print("Parsing finished...")
 
-        if layout_file and not rf_file:
+        if args.merge_hex:
+            # don't want to program the device, instead we want to build a
+            # hexfile with the settings preprogrammed
+            with open(hex_file) as f:
+                fw_hex = intelhex.IntelHex(f)
+
+            settings_addr = args.merge_hex[0]
+            layout_addr = args.merge_hex[1]
+            layout_size = args.merge_hex[2]
+
+            if len(layout_data) > layout_size:
+                print("Error: layout data to large. Got {} bytes, but only "
+                      "{} bytes available".format(
+                          len(layout_data),
+                          layout_size
+                      ), file=sys.stderr)
+                exit(EXIT_INSUFFICIENT_SPACE)
+
+            settings_hex = intelhex.IntelHex()
+            settings_hex.frombytes(
+                settings_data,
+                offset = settings_addr
+            )
+
+            layout_hex = intelhex.IntelHex()
+            layout_hex.frombytes(
+                layout_data,
+                offset = layout_addr
+            )
+
+
+            fw_hex.merge(settings_hex, overlap='replace')
+            # first erase anything that is in the layout section
+            for i in range(layout_addr, layout_addr+layout_size):
+                fw_hex[i] = fw_hex.padding
+            fw_hex.merge(layout_hex, overlap='replace')
+
+            if args.outfile:
+                with open(args.outfile, 'w') as outfile:
+                    fw_hex.write_hex_file(outfile)
+            else:
+                    fw_hex.write_hex_file(sys.stdout)
+            exit(0)
+        elif layout_file and not rf_file:
             print("Updating layout only...")
             protocol.update_settings_section(device, settings_data, keep_rf=True)
             protocol.update_layout_section(device, layout_data)

@@ -270,6 +270,9 @@ class SettingsGenerator:
         else:
             raise ParseError("Couldn't find device named: {}".format(device_name))
 
+    def has_id(self, dev_id):
+        return dev_id in self.device_data
+
     def get_device_by_id(self, dev_id):
         if dev_id in self.device_data:
             return self.device_data[dev_id]
@@ -431,7 +434,6 @@ class SettingsGenerator:
             raise ParseError("TODO: 'pins' scan mode not implemented yet")
         else:
             raise ParseError("Unsupported scan mode {}".format(mode))
-
 
 if __name__ == "__main__":
     layout = None
