@@ -205,6 +205,12 @@ void battery_mode_main_loop(void) {
 }
 #endif
 
+/*********************************************************************
+ *                             USB Mode                              *
+ *********************************************************************/
+
+#if defined(USE_USB) && USE_USB==1
+
 static uint8_t s_has_usb_port;
 #ifdef DUAL_USB
 #define USB_WAIT_TIME 900 // total time to wait for a USB connection
@@ -267,7 +273,6 @@ void usb_find_port(void) {
     }
 }
 #endif
-
 
 void usb_mode_setup(void) {
     set_power_mode(MODE_USB);
@@ -412,6 +417,8 @@ void usb_mode_main_loop(void) {
     }
 }
 
+#endif
+
 int main(void) {
     // Disable the wdt incase it was running
     wdt_disable();
@@ -433,6 +440,9 @@ int main(void) {
         battery_mode_setup();
         battery_mode_main_loop();
     }
+#elif !USE_CHECK_PIN && USE_NRF24
+    battery_mode_setup();
+    battery_mode_main_loop();
 #else
     usb_mode_setup();
     usb_mode_main_loop();

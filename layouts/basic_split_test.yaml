@@ -97,6 +97,72 @@ devices:
     layout: split_layout
     layout_offset: 1
 
+
+
+  "blue gamma split - left":
+    id: 12
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: 4
+      cols: 6
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r2c2, r2c1, r2c0, r2c3, r2c4, r2c5,
+        r3c2, r3c1, r3c0, r3c3, r3c4, r3c5,
+        r1c2, r1c1, r1c0, r1c3, r1c4, r1c5,
+        r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
+      ]
+    layout: gamma_split
+    layout_offset: 0
+
+  "blue gamma split - right":
+    id: 13
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: 4
+      cols: 6
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r2c2, r2c1, r2c0, r2c3, r2c4, r2c5,
+        r3c2, r3c1, r3c0, r3c3, r3c4, r3c5,
+        r1c2, r1c1, r1c0, r1c3, r1c4, r1c5,
+        r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
+      ]
+    layout: gamma_split
+    layout_offset: 1
+
+  "orange gamma split - left":
+    id: 14
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: 4
+      cols: 6
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r2c2, r2c1, r2c0, r2c3, r2c4, r2c5,
+        r3c2, r3c1, r3c0, r3c3, r3c4, r3c5,
+        r1c2, r1c1, r1c0, r1c3, r1c4, r1c5,
+        r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
+      ]
+    layout: gamma_split
+    layout_offset: 0
+
+  "orange gamma split - right":
+    id: 15
+    scan_mode: # wireless only
+      mode: col_row # options: col_row, pins, none
+      rows: 4
+      cols: 6
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r2c2, r2c1, r2c0, r2c3, r2c4, r2c5,
+        r3c2, r3c1, r3c0, r3c3, r3c4, r3c5,
+        r1c2, r1c1, r1c0, r1c3, r1c4, r1c5,
+        r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
+      ]
+    layout: gamma_split
+    layout_offset: 1
+
   # rf dongle
   nrf_dongle:
     id: 48
@@ -225,4 +291,78 @@ layouts:
           kp_0,       kp_.
         ]
       ]
+    ]
+  gamma_split:
+    default_layer: 0
+    layers: [
+      [ # layer 0 (colemak)
+        [ # left hand
+          tab , q   , w   , f   , p   , g   ,
+          ent , a   , r   , s   , t   , d   ,
+          lalt, z   , x   , c   , v   , b   ,
+          esc , L4  , lctl, L3  , lctl, spc ,
+        ],
+        [ # right hand
+          j   , l   , u   , y   , ";" , "-" ,
+          h   , n   , e   , i   , o   , "'" ,
+          k   , m   , "," , "." , "/" , "`" ,
+          sticky_lshift, sticky_L2, bspc, lgui, esc , ralt
+        ],
+      ],
+      [ # layer 1 (qwerty arrows)
+        [ # left hand
+          ____, q   , w   , e   , r   , t   ,
+          ____, a   , s   , d   , f   , g   ,
+          ____, z   , x   , c   , v   , b   ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          y   , u   , up  , o   , p   , "-" ,
+          h   , left, down, rght, ";" , "'" ,
+          m   , n   , "," , "." , "/" , "`" ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+      ],
+      [ # layer 2 (symbol)
+        [ # left hand
+          ____, "|" , "2" , "3" , "4" , "5" ,
+          ____, "1" , "\\", "(" , "[" , "{" ,
+          ____, "!" , "@" , "#" , "$" , "%" ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          "6" , "7" , "8" , "9" , "+" , "-" ,
+          "}" , "]" , ")" , "=" , "0" , "*" ,
+          "^" , "&" , "," , "." , "/" , "~" ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+      ],
+      [ # layer 3 (fn)
+        [ # left hand
+          ins , del , home, up  , end , pgup,
+          ____, esc , left, down, rght, pgdn,
+          ____, F1  , F2  , F3  , F4  , F5  ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          C-pgup, C-home, C-up  , C-end , C-del , F12 ,
+          C-pgdn, C-left, C-down, C-rght, C-bspc, F11 ,
+          F6    , F7    , F8    , F9    , F10   , CA-none ,
+          ____  , ____  , ____  , ____  , ____  , ____,
+        ],
+      ],
+      [ # layer 4 (media)
+        [ # left hand
+          slck, pscr, mply, volu, mstp, F11 ,
+          bspc, mute, mprv, vold, mnxt, app ,
+          ____, C-y , CS-z , C-i , C-. , C-; ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          wh_u, btn1, ms_u, btn2, RS-c, dongle_0 ,
+          wh_d, ms_l, ms_d, ms_r, btn3, dongle_1 ,
+          set_l3 , set_l0 , set_l1 , set_l2 , NONE, test_2 ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+      ],
     ]

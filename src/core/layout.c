@@ -190,6 +190,8 @@ XRAM flash_size_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
     20, 21, 22, 19, 18, 23,
 #elif DEVICE_ID == 0x30
 #define KEY_NUMBER_MAP()
+#else
+#define KEY_NUMBER_MAP()
 #endif
 
 

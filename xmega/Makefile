@@ -81,10 +81,9 @@ CFLAGS += -Wno-error=unused-but-set-variable
 CFLAGS += -fno-jump-tables
 
 # List C source files here.
-C_SRC += $(SRC_USB) \
+C_SRC += \
 	aes.c \
 	debug.c \
-	descriptors.c \
 	flash.c \
 	fuses.c \
 	hardware.c \
@@ -95,8 +94,13 @@ C_SRC += $(SRC_USB) \
 	nonce.c \
 	power.c \
 	timer.c \
-	usb_reports.c \
 	ws2812.c \
+
+ifeq ($(USE_USB), 1)
+C_SRC += $(SRC_USB) \
+	descriptors.c \
+	usb_reports.c
+endif
 
 # List Assembler source files here.
 # NOTE: Use *.S for user written asm files. *.s is used for compiler generated

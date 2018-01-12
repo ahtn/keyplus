@@ -43,8 +43,12 @@ ifeq ($(USE_NRF24), 1)
     ifeq ($(USE_UNIFYING), 0)
         CDEFS += -DUSE_UNIFYING=0
     else
-        C_SRC += $(CORE_PATH)/unifying.c
-        CDEFS += -DUSE_UNIFYING=1
+        ifeq ($(USE_USB), 1)
+            C_SRC += $(CORE_PATH)/unifying.c
+            CDEFS += -DUSE_UNIFYING=1
+        else
+            $(error "Need USB for unifying support")
+        endif
     endif
 else
     CDEFS += -DUSE_NRF24=0
