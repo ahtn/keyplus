@@ -230,15 +230,15 @@ void matrix_scan_irq_enable(void) {
     static_delay_variable_clock_us(2); // TODO: check if more error margin is needed
     matrix_scan_irq_clear_flags();
     has_scan_irq_triggered = 0;
-    PORTA.INTCTRL = PORT_INT0LVL_LO_gc;
-    PORTB.INTCTRL = PORT_INT0LVL_LO_gc;
-    PORTC.INTCTRL = PORT_INT0LVL_LO_gc;
+    PORTA.INTCTRL = (PORTA.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_LO_gc;
+    PORTB.INTCTRL = (PORTB.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_LO_gc;
+    PORTC.INTCTRL = (PORTC.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_LO_gc;
 }
 
 void matrix_scan_irq_disable(void) {
-    PORTA.INTCTRL = PORT_INT0LVL_OFF_gc;
-    PORTB.INTCTRL = PORT_INT0LVL_OFF_gc;
-    PORTC.INTCTRL = PORT_INT0LVL_OFF_gc;
+    PORTA.INTCTRL = (PORTA.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_OFF_gc;
+    PORTB.INTCTRL = (PORTB.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_OFF_gc;
+    PORTC.INTCTRL = (PORTC.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_OFF_gc;
     unselect_rows();
 }
 
