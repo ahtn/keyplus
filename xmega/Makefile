@@ -40,6 +40,14 @@ ifndef BOARD
   BOARD = keyplus_mini
 endif
 
+ifndef LAYOUT_FILE
+  LAYOUT_FILE=../layouts/basic_split_test.yaml
+endif
+
+ifndef RF_FILE
+  RF_FILE=../layouts/test_rf_config.yaml
+endif
+
 include avr-makefile/boards.mk
 
 #######################################################################
@@ -152,9 +160,25 @@ LD_SCRIPT_DIR = ./ld-scripts
 include avr-makefile/avr-xmega.mk
 
 ifeq ($(MCU_FLASH_SIZE), 32)
-SETTING_ADDR := 0x6E00
-LAYOUT_ADDR := 0x7000
-LAYOUT_SIZE := 0x1000
+  SETTING_ADDR := 0x6E00
+  LAYOUT_ADDR := 0x7000
+  LAYOUT_SIZE := 0x1000
+else ifeq ($(MCU_FLASH_SIZE), 64)
+  SETTING_ADDR := 0x7E00
+  LAYOUT_ADDR := 0x8000
+  LAYOUT_SIZE := 0x8000
+else ifeq ($(MCU_FLASH_SIZE), 128)
+  SETTING_ADDR := 0x7E00
+  LAYOUT_ADDR := 0x8000
+  LAYOUT_SIZE := 0x18000
+else ifeq ($(MCU_FLASH_SIZE), 192)
+  SETTING_ADDR := 0x7E00
+  LAYOUT_ADDR := 0x8000
+  LAYOUT_SIZE := 0x28000
+else ifeq ($(MCU_FLASH_SIZE), 256)
+  SETTING_ADDR := 0x7E00
+  LAYOUT_ADDR := 0x8000
+  LAYOUT_SIZE := 0x38000
 else
   $(error Error unsupported flash size='$(FLASH_SIZE)')
 endif
@@ -168,23 +192,35 @@ CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
 CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
 
 #######################################################################
-#                              recepies                               #
+#                              recipes                               #
 #######################################################################
 
-all: fuse lock hex
+LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
+MERGED_HEX="$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex"
 
-program: hex program-boot
+all: fuse lock $(MERGED_HEX)
+
+$(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
+	../host-software/keyplus_cli.py program \
+		--new-id $(ID) \
+		--layout $(LAYOUT_FILE) \
+		--rf $(RF_FILE) \
+		--fw-hex $(TARGET_HEX) \
+		-M $(SETTING_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
+		-o $(MERGED_HEX)
+
+program: $(MERGED_HEX) program-boot
 
 # reset a board into bootloader via usb, then program it via the bootloader
-program-boot: $(TARGET_HEX)
+program-boot: $(MERGED_HEX)
 	./scripts/flash_hex.sh $< $(MCU)
 
 # program a board that is already in in bootloader mode
-program-boot-2: $(TARGET_hex)
+program-boot-2: $(MERGED_HEX)
 	./xusb-boot/scripts/flash.py -f $< -mcu $(MCU)
 
 # program a board using an external programmer
-program-hard: $(TARGET_hex)
+program-hard: $(MERGED_HEX)
 	$(AVRDUDE_CMD) -U flash:w:$<:i -E noreset
 
 #######################################################################

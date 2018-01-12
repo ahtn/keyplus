@@ -563,9 +563,12 @@ class ProgramCommand(GenericDeviceCommand):
 
 
             fw_hex.merge(settings_hex, overlap='replace')
+
             # first erase anything that is in the layout section
             for i in range(layout_addr, layout_addr+layout_size):
-                fw_hex[i] = fw_hex.padding
+                fw_hex[i] = 0 # dummy, write so del works
+                del fw_hex[i]
+
             fw_hex.merge(layout_hex, overlap='replace')
 
             if args.outfile:

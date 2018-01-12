@@ -1,6 +1,10 @@
 # Copyright 2017 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
+#######################################################################
+#                        global build defines                         #
+#######################################################################
+
 TARGET	= nrf24lu1_keyboard
 OBJ_DIR	= obj
 MCU		= NRF24LU1
@@ -15,6 +19,26 @@ USE_USB := 1
 USE_NRF24 := 1
 USE_I2C := 0
 USE_SCANNER := 0
+
+#######################################################################
+#                               config                                #
+#######################################################################
+
+ifndef ID
+  ID=0
+endif
+
+ifndef LAYOUT_FILE
+  LAYOUT_FILE=../layouts/basic_split_test.yaml
+endif
+
+ifndef RF_FILE
+  RF_FILE=../layouts/test_rf_config.yaml
+endif
+
+#######################################################################
+#                            source files                             #
+#######################################################################
 
 C_SRC += \
 	aes.c \
@@ -38,6 +62,10 @@ include $(BASE_PATH)/core/core.mk
 include $(BASE_PATH)/usb/usb.mk
 include $(BASE_PATH)/key_handlers/key_handlers.mk
 
+#######################################################################
+#                              c defines                              #
+#######################################################################
+
 VPATH += $(BASE_PATH)
 
 INC_PATHS += \
@@ -47,7 +75,6 @@ INC_PATHS += \
 CDEFS += \
 	-D$(MCU) \
 	-DINTEL_8052 \
-	-DFLASH_$(FLASH_SIZE) \
 	-DNO_RF_TRANSMIT \
 	-DF_CPU=$(F_CPU)UL \
 
@@ -57,19 +84,48 @@ ifdef DEBUG_LEVEL
 	CDEFS += -DDEBUG_LEVEL=$(DEBUG_LEVEL)
 endif
 
-# Using optimize for speed can result in a smaller binary in sdcc
-OPTIMIZATION = --opt-code-speed
-# OPTIMIZATION = --opt-code-size
+#######################################################################
+#                     flash and storage settings                      #
+#######################################################################
+
+ifeq ($(UNIRECV), 1)
+  # Unifying receiver
+  SETTINGS_ADDR=0x6600
+  LAYOUT_ADDR=0x6800
+  LAYOUT_SIZE=0x0800
+  BOOTLOADER_ADDR=0x7400
+  FLASH_SIZE=32
+
+  CDEFS += -DNONCE_ADDR=0x7200
+  CDEFS += -DBOOTLOADER_ADDR=$(BOOTLOADER_ADDR)
+  CDEFS += -DUSE_UNIFYING_BOOTLOADER=1
+else
+  # Generic nRF24LU1+ dongle
+  SETTINGS_ADDR=0x5E00
+  LAYOUT_ADDR=0x6000
+  LAYOUT_SIZE=0x1400
+  # Use default settings for the other values. (see ./hardware_user_impl.h)
+  CDEFS += -DUSE_UNIFYING_BOOTLOADER=0
+endif
 
 ifeq ($(FLASH_SIZE), 16)
-	BOOTLOADER = bins/nrf24lu1_bootloader-f16.hex
-	CODE_SIZE=--code-size 0x4000
+	BOOTLOADER=bins/nrf24lu1_bootloader-f16.hex
+	CODE_SIZE=0x4000
 else ifeq ($(FLASH_SIZE), 32)
-	BOOTLOADER = bins/nrf24lu1_bootloader-f32.hex
-	CODE_SIZE=--code-size 0x8000
+	BOOTLOADER=bins/nrf24lu1_bootloader-f32.hex
+	CODE_SIZE=0x8000
 else
 	$(error Invalid size for flash='$(FLASH_SIZE)')
 endif
+CDEFS += -DFLASH_$(FLASH_SIZE)
+
+#######################################################################
+#                     linker and compiler options                     #
+#######################################################################
+
+# Using optimize for speed can result in a smaller binary in sdcc
+OPTIMIZATION = --opt-code-speed
+# OPTIMIZATION = --opt-code-size
 
 AS = /usr/local/bin/sdas8051
 CC = /usr/local/bin/sdcc
@@ -90,7 +146,7 @@ CFLAGS   = \
 
 LFLAGS   = \
 	--code-loc 0x0000 \
-	$(CODE_SIZE) \
+	--code-size $(CODE_SIZE) \
 	--xram-loc 0x8000 \
 	--xram-size 0x800 \
 	--iram-size 0x100 \
@@ -100,29 +156,35 @@ LFLAGS   = \
 
 ASFLAGS  = -xglospff
 
+CDEFS += -DSETTINGS_ADDR=$(SETTINGS_ADDR)
+CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
+CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
+
+#######################################################################
+#                               recipes                               #
+#######################################################################
+
 C_REL_FILES = $(patsubst %.c, $(OBJ_DIR)/%.rel, $(C_SRC))
 ASM_REL_FILES = $(patsubst %.S, $(OBJ_DIR)/%.rel, $(ASM_SRC))
 DEP_FILES = $(patsubst %.c, $(OBJ_DIR)/%.dep, $(C_SRC))
 REL_FILES = $(C_REL_FILES) $(ASM_REL_FILES)
 
-all: nrf24_dongle
+LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
+MERGED_HEX="$(basename $(TARGET))-$(LAYOUT_NAME).hex"
 
-nrf24_dongle: CDEFS += -DSETTINGS_ADDR=0x5E00
-nrf24_dongle: CDEFS += -DLAYOUT_ADDR=0x6000
-nrf24_dongle: CDEFS += -DLAYOUT_SIZE=0x1400
-nrf24_dongle: CDEFS += -DUSE_UNIFYING_BOOTLOADER=0
-nrf24_dongle: $(TARGET).hex size
+all: $(MERGED_HEX)
 
-nrf24_dongle_plain: clean nrf24_dongle
+unifying: $(TARGET)-unirecv.hex
 
-unifying_hex: clean
-unifying_hex: CDEFS += -DLAYOUT_SIZE=0x0800
-unifying_hex: CDEFS += -DSETTINGS_ADDR=0x6600
-unifying_hex: CDEFS += -DLAYOUT_ADDR=0x6800
-unifying_hex: CDEFS += -DNONCE_ADDR=0x7200
-unifying_hex: CDEFS += -DBOOTLOADER_ADDR=0x7400
-unifying_hex: CDEFS += -DUSE_UNIFYING_BOOTLOADER=1
-unifying_hex: $(TARGET)-uni.hex size
+$(MERGED_HEX): $(TARGET).hex
+	@echo "=== merging layout settings files ==="
+	../host-software/keyplus_cli.py program \
+		--new-id $(ID) \
+		--layout $(LAYOUT_FILE) \
+		--rf $(RF_FILE) \
+		--fw-hex $(TARGET).hex \
+		-M $(SETTINGS_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
+		-o $(TARGET)-$(LAYOUT_NAME).hex
 
 $(TARGET).hex: $(REL_FILES) $(BOOTLOADER)
 	@echo "=== compiling target ==="
@@ -134,7 +196,7 @@ $(TARGET).hex: $(REL_FILES) $(BOOTLOADER)
 	@mv $@-temp $@
 	@mv *.lk *.map *.mem -t $(OBJ_DIR)
 
-$(TARGET)-uni.hex: $(REL_FILES)
+$(TARGET)-unirecv.hex: $(REL_FILES)
 	@echo "=== compiling target ==="
 	$(CC) $(CFLAGS) $(LFLAGS) $(REL_FILES) -o $@
 	@scripts/sort-intel-hex $@ > $@-temp
@@ -171,12 +233,12 @@ clean:
 	rm -fr nrfburn.txt
 
 # program: flash
-program-boot: $(TARGET).hex size
-	./scripts/flash_hex.sh $(TARGET).hex
+program-boot: $(MERGED_HEX) size
+	./scripts/flash_hex.sh $(MERGED_HEX)
 
 program-hard: flash
 flash: $(TARGET).hex size
-	nrfburn -f $(FLASH_SIZE) -w $(TARGET).hex
+	nrfburn -f $(FLASH_SIZE) -w $(MERGED_HEX)
 
 -include $(DEP_FILES)
 
