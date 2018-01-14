@@ -68,7 +68,7 @@ How you wire the keyboard matrix doesn't have to match how the keys are arranged
 in your layout. The `matrix_map` field lets you describe how the keys in the matrix
 map to the corresponding layout in the `layouts` section.
 
-As an example suppose you make a keyboard with 6 keys, and in your layout section
+As an example suppose you make a keyboard with 6 keys, and in your layout section (described below)
 you have:
 
 ```yaml
@@ -113,3 +113,213 @@ devices each using one of the `matrix_map`'s given above and for both set
 having to make a separate layout for each board.
 
 ### Layouts section
+
+The layout section determines what keycodes your keyboards will output, what
+layers the keyboards have, and how the pieces of a split keyboard work together.
+
+Ultimately, the layouts are made up of a list of keycodes which define what a
+key does when it is pressed. Keyplus provides all the traditional keycodes
+found on a standard keyboard, as well as its own special keycodes that can be
+used to achieve advanced functionality. The documentation for the keycodes
+provided by keyplus can be found here: (TODO: add link to keycode documentation)
+
+The next few sections will cover examples of how to make a simple keyboard
+layout with multiple layers, as well as some examples of split keyboards.
+
+#### Simple layouts
+
+Below is a simple example that describes a simple numpad layout, with one
+layer:
+
+```yaml
+  numpad_layout:
+    layers: [
+      [ # layer 0
+        [ # numpad
+          nlck, kp_/, kp_*, kp_-  ,
+          kp_7, kp_8, kp_9, kp_+  , # note, since this is a numpad, we use the
+          kp_4, kp_5, kp_6,         #`kp_` (keypad) version of the keycodes
+          kp_1, kp_2, kp_3, kp_ent,
+          kp_0,       kp_.
+        ]
+      ]
+    ]
+```
+
+Now lets add another layer to the `numpad_layout` by replacing the `kp_.` key
+with a layer key `L1`:
+
+```yaml
+  numpad_layout:
+    layers: [
+      [ # layer 0
+        [ # numpad
+          nlck, kp_/, kp_*, kp_-  ,
+          kp_7, kp_8, kp_9, kp_+  ,
+          kp_4, kp_5, kp_6,
+          kp_1, kp_2, kp_3, kp_ent,
+          kp_0,       L1,
+        ]
+      ],
+      [ # layer 1
+        [ # numpad
+          ____, ____, ____, ____  ,
+          g   , h   , i   , ____  ,
+          d   , e   , f   ,
+          a   , b   , c   , ____  ,
+          ____,       ____,
+        ]
+      ]
+    ]
+```
+
+Now when the `L1` is held, the keycodes on layer 1 will be used instead of layer 0.
+Notice how we define some of the keycodes on layer 1 with a blank symbol `____`.
+What this means is that keycode is *transparent* on that layer, and if that key
+is pressed, it will fall back to the definition of the previous active layer.
+
+There are also other kinds of layer keys with their own separate behaviour,
+(TODO: add documentation on different layer changing keys)
+
+#### Split keyboard layouts
+
+Keyplus also has very flexible split keyboard support, and provides two ways
+for how layers can be handled between devices. The first and more common way
+is for all the devices in a split keyboard layout to share the same layer state.
+In this case when a layer key is pressed on one piece of a split keyboard, it
+will change layers on all the other devices as well. However, it is also
+possible to have a split keyboard where each piece maintains its own
+independent layer state.
+
+##### Split keyboard layouts with shared layers
+
+Defining a split keyboard layout with shared layers is very similar to the
+non-split examples given above, except on each layer we include the list of
+keycodes for each device. Also, when the device is defined in the `devices`
+section, it is necessary to define which component of the split layout the
+device maps to with the `layout_offset field`.  For example, below would define
+a 3-way split keyboard with 2 layers:
+
+```yaml
+devices:
+    device_1:
+        layout: name_of_split_layout
+        layout_offset: 0        # 0 means that this will be the 1st piece in the split layout
+        # other device settings ...
+
+    device_2:
+        layout: name_of_split_layout
+        layout_offset: 1        # 1 means that this will be the 2nd piece
+        # other device settings ...
+
+    device_3:
+        layout: name_of_split_layout
+        layout_offset: 2        # 2 means that this will be the 3rd piece
+        # other device settings ...
+
+layout:
+  name_of_split_layout:
+    layers: [
+      [ # layer 0
+        [
+            # keycodes for 1st piece on layer 0
+        ],
+        [
+            # keycodes for 2nd piece on layer 0
+        ],
+        [
+            # keycodes for 3rd piece on layer 0
+        ],
+        # etc.
+        # this list can continue for as many devices in the split layout
+      ],
+      [ # layer 1
+        [
+            # keycodes for 1st piece on layer 1
+        ],
+        [
+            # keycodes for 2nd piece on layer 1
+        ],
+        [
+            # keycodes for 3rd piece on layer 1
+        ],
+        # etc.
+        # this list should have the same length as layer 0
+      ],
+      # etc. for up to 16 layers
+```
+
+##### Split keyboard layouts with independent layer state
+
+It is also possible to define a split keyboard with each piece maintaining its
+own layer state. In this way, when a layer key is press on one piece of a
+split keyboard, it will not affect the layer state of any of the other pieces, and
+all the pieces can potentially be on different layers at any moment in time.
+
+Since keyplus maintains a separate layer state for each layout, what we need to
+do is to map each piece of the split keyboard to their own individual layout.
+Here's the same 3-way split keyboard example as above, except this time each
+piece is mapped to a different layout and so will get its own layer state:
+
+```yaml
+devices:
+    device_1:
+        layout: layout_piece_1
+        layout_offset: 0   # 0 use zero for each layout offset, since we are
+                           # going to map each piece to their own layouts with
+                           # only one spilt component in each
+        # other device settings ...
+
+    device_2:
+        layout: layout_piece_2
+        layout_offset: 0
+        # other device settings ...
+
+    device_3:
+        layout: layout_piece_3
+        layout_offset: 0
+        # other device settings ...
+
+layout:
+  layout_piece_1:
+    layers: [
+      [ # layer 0
+        [
+            # keycodes for 1st piece on layer 0
+        ],
+      ],
+      [ # layer 1
+        [
+            # keycodes for 1st piece on layer 1
+        ],
+      ],
+      # etc. for up to 16 layers
+
+  layout_piece_2:
+    layers: [
+      [ # layer 0
+        [
+            # keycodes for 1st piece on layer 0
+        ],
+      ],
+      [ # layer 1
+        [
+            # keycodes for 1st piece on layer 1
+        ],
+      ],
+      # etc. for up to 16 layers
+
+  layout_piece_3:
+    layers: [
+      [ # layer 0
+        [
+            # keycodes for 1st piece on layer 0
+        ],
+      ],
+      [ # layer 1
+        [
+            # keycodes for 1st piece on layer 1
+        ],
+      ],
+      # etc. for up to 16 layers
+```
