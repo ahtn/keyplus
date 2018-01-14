@@ -257,17 +257,17 @@ split keyboard, it will not affect the layer state of any of the other pieces, a
 all the pieces can potentially be on different layers at any moment in time.
 
 Since keyplus maintains a separate layer state for each layout, what we need to
-do is to map each piece of the split keyboard to their own individual layout.
-Here's the same 3-way split keyboard example as above, except this time each
-piece is mapped to a different layout and so will get its own layer state:
+do is to map each piece of the split keyboard to its own individual layout.
+Here is the same 3-way split keyboard example as above, except this time each
+piece is mapped to a different layout and hence will get its own layer state:
 
 ```yaml
 devices:
     device_1:
         layout: layout_piece_1
         layout_offset: 0   # 0 use zero for each layout offset, since we are
-                           # going to map each piece to their own layouts with
-                           # only one spilt component in each
+                           # going to map each piece to its own layout with
+                           # only one spilt component in each of the layouts
         # other device settings ...
 
     device_2:
