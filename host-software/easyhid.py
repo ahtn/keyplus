@@ -49,6 +49,11 @@ if "Windows" in platform.platform():
         hidapi = ffi.dlopen('hidapi.dll')
     except:
         hidapi = ffi.dlopen(ctypes.util.find_library('hidapi.dll'))
+elif "Darwin" in platform.platform():
+    try:
+        hidapi = ffi.dlopen('hidapi')
+    except:
+        hidapi = ffi.dlopen(ctypes.util.find_library('hidapi'))
 else:
     try:
         hidapi = ffi.dlopen('hidapi-libusb')
