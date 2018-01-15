@@ -4,9 +4,7 @@ ifndef MCU
     MCU = atxmega64a4u
 endif
 
-C_SRC += boards/alpha_split/alpha_split_util.c
-
-CDEFS += -DDUAL_USB=1
+# C_SRC += boards/alpha_split/alpha_split_util.c
 
 CDEFS += -DVBUS_PIN_PORT=C
 CDEFS += -DVBUS_PIN_NUM=1
@@ -31,6 +29,9 @@ CDEFS += -DNRF24_IRQ_INT_NUM=1
 
 #### v2
 # Note: USB_SEL is connected to I2C_OE_LEFT
+
+DUAL_USB := 1
+
 CDEFS += -DALPHA_SPLIT_V2
 CDEFS += -DI2C_OE_LEFT_PORT=PORTR
 CDEFS += -DI2C_OE_LEFT_PIN=PIN0_bm

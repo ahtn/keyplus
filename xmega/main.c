@@ -36,9 +36,8 @@
 
 #include "xusb-boot/spm_interface.h"
 
-#ifdef DUAL_USB
-#include "xusb/usb.h"
-#include "boards/alpha_split/alpha_split_util.h"
+#if DUAL_USB
+#include "dual_usb.h"
 #endif
 
 USB_ENDPOINTS(5);
@@ -209,70 +208,7 @@ void battery_mode_main_loop(void) {
  *                             USB Mode                              *
  *********************************************************************/
 
-#if defined(USE_USB) && USE_USB==1
-
-static uint8_t s_has_usb_port;
-#ifdef DUAL_USB
-#define USB_WAIT_TIME 900 // total time to wait for a USB connection
-#define USB_TOGGLE_TIME 450 // time to wait listening on a given USB port
-#define USB_TOGGLE_OFF_TIME 40 // turn off the USB port while switching
-
-// NOTE: This method might have issuses when powering on from a cold boot
-// since there's probably going to be a period of time where the board has
-// power, but the OS/BIOS hasn't intiated its USB controler yet.
-void usb_find_port(void) {
-    // NOTE: I2C_OE_LEFT is also connected to USB_SEL, so when
-    uint16_t start_time = timer_read16_ms();
-    uint16_t toggle_time = timer_read16_ms();
-    // try right port first (because I2C_OE_LEFT shared with USB SEL)
-    uint8_t usb_port = 0; // 0 -> USB Right EN, 1 -> USB Left EN
-    SET_BUS_SWITCH(I2C_OE_LEFT, usb_port);
-    SET_BUS_SWITCH(USB_OE, 1);
-    usb_detach();
-    dynamic_delay_ms(30);
-    usb_attach();
-
-    while (true) {
-        if ( (timer_read16_ms() - toggle_time) > USB_TOGGLE_TIME ) {
-            // time to check other USB port for connection
-            toggle_time = timer_read16_ms();
-            usb_port = !usb_port;
-            SET_BUS_SWITCH(USB_OE, 0);
-            SET_BUS_SWITCH(I2C_OE_LEFT, usb_port);
-            static_delay_ms(USB_TOGGLE_OFF_TIME);
-            SET_BUS_SWITCH(USB_OE, 1);
-            usb_detach();
-            dynamic_delay_ms(30);
-            usb_attach();
-        }
-
-        if ( has_usb_connection() ) {
-            // made a valid connection, so enable I2C mode on the
-            // other port.
-            if (usb_port == 0) { // i.e. USB on left */
-                // if USB is enabled on the left port, need to enable I2C
-                // on the right port
-                SET_BUS_SWITCH(I2C_OE_RIGHT, 1);
-            }
-            s_has_usb_port = true;
-            break;
-        }
-
-        if ( (timer_read16_ms() - start_time) > USB_WAIT_TIME ) {
-            // didn't make a USB connection in time, so disable USB, and
-            // enable both I2C connections
-            SET_BUS_SWITCH(USB_OE, 0);
-            SET_BUS_SWITCH(I2C_OE_LEFT, 1);
-            SET_BUS_SWITCH(I2C_OE_RIGHT, 1);
-            s_has_usb_port = false;
-            usb_detach();
-            break;
-        }
-        wdt_kick();
-        enter_sleep_mode(SLEEP_MODE_IDLE);
-    }
-}
-#endif
+#if USE_USB
 
 void usb_mode_setup(void) {
     set_power_mode(MODE_USB);
@@ -286,11 +222,12 @@ void usb_mode_setup(void) {
 
 #if DUAL_USB
     init_bus_switches();
+#else
+    usb_init();
 #endif
 
     xmega_common_init();
 
-    usb_init();
     reset_usb_reports();
     keyboards_init();
 
@@ -308,11 +245,15 @@ void usb_mode_setup(void) {
     sei();
 
 #if DUAL_USB
-    usb_find_port();
+    const uint8_t s_has_usb_port = usb_find_port();
+    if (s_has_usb_port) {
+        usb_init();
+        usb_attach();
+    }
 #else
     // TODO: when we don't have the dual USB feature, need to check if we are
     // have a USB connection as well
-    s_has_usb_port = true;
+    const uint8_t s_has_usb_port = true;
     usb_attach();
 #endif
 
@@ -406,12 +347,12 @@ void usb_mode_main_loop(void) {
 #if USE_NRF24 && RF_POLLING
         // Don't have RF IRQ, so don't sleep to reduce chance that packets are
         // dropped
-        debug_toggle(0);
+        // debug_toggle(0);
 #else
         // okay to sleep if we have RF IRQ
-        debug_set(0, 1);
+        // debug_set(0, 1);
         enter_sleep_mode(SLEEP_MODE_IDLE);
-        debug_set(0, 0);
+        // debug_set(0, 0);
 #endif
         wdt_kick();
     }
@@ -423,8 +364,6 @@ int main(void) {
     // Disable the wdt incase it was running
     wdt_disable();
     init_debug();
-
-    debug_set(3, 1);
 
 #if USE_CHECK_PIN
     // Enable VBUS pin so we can check USB voltage

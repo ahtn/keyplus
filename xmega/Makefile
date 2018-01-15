@@ -144,8 +144,12 @@ endif
 
 CDEFS += -DUSE_CHECK_PIN=$(USE_CHECK_PIN)
 
-ifeq ($(TESTING), 1)
-  CDEFS += -DUSB_BUFFERED=$(TESTING)
+# TODO:
+CDEFS += -DUSB_BUFFERED=0
+
+ifdef DUAL_USB
+  CDEFS += -DDUAL_USB=1
+  C_SRC += dual_usb.c
 endif
 
 ifdef DEBUG_LEVEL
