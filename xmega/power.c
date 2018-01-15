@@ -199,13 +199,40 @@ void vbus_pin_init(void) {
         (VBUS_PORT.INTCTRL & ~VBUS_INT_LVL_MASK) | VBUS_INT_LVL;
 }
 
-// TODO: when we reset make sure to add some sort of delay so that we don't
-// trigger this over and over again while the input is debouncing.
 ISR(VBUS_INT_VECT) {
+    // NOTE: when hot plugging split components, I've seen the VBUS voltage drop
+    // to levels as low as 2.2V. The recovery time is about 15μs on a good USB
+    // port. On a cheap USB hub which does not have the 120μF bulk
+    // capacitance required by the USB standard, I've seen recovery times of
+    // nearly 700μs. This can cause spurious resets, so will sample the reset
+    // twice to debounce it.
+    //
+    // Could also solve this problem in hardware with a 100nF capacitor.
+
+#ifndef VBUS_FILTER_CAPACITOR
+    dynamic_delay_ms(1);
+    const uint8_t sample = VBUS_PORT.IN & VBUS_PIN_MASK;
+    const power_mode_t power_mode = get_power_mode();
+
+    if (power_mode == MODE_BATTERY && sample == 0) {
+        // If running from battery power, abort the reset if the pin doesn't
+        // stay LOW.
+        return;
+    }
+
+    if (sample != 0) {
+        // If running from USB power, abort the reset if the pin doesn't
+        // stay HIGH.
+        return;
+    }
+#endif
+
+
 #if USE_NRF24
     // Put the nRF24 module in standby-I mode to stop RX and TX operations.
     nrf24_ce(0);
 #endif
+
     reset_mcu();
 }
 #endif
