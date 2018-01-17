@@ -145,7 +145,7 @@ endif
 CDEFS += -DUSE_CHECK_PIN=$(USE_CHECK_PIN)
 
 # TODO:
-CDEFS += -DUSB_BUFFERED=0
+CDEFS += -DUSB_BUFFERED=1
 
 ifdef DUAL_USB
   CDEFS += -DDUAL_USB=1
@@ -157,6 +157,9 @@ ifdef DEBUG_LEVEL
 else
   CDEFS += -DDEBUG_LEVEL=0
 endif
+
+# Treat this makefile as a dependency to all object files
+MAKEFILE_INC += Makefile
 
 #######################################################################
 #                   xmega flash and memory settings                   #
