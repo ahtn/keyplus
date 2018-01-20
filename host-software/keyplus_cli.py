@@ -597,6 +597,17 @@ class ProgramCommand(GenericDeviceCommand):
         protocol.reset_device(device)
         device.close()
 
+class PairCommand(GenericDeviceCommand):
+    def __init__(self):
+        super(PairCommand, self).__init__(
+            'Put the device into pairing mode'
+        )
+
+    def task(self, args):
+        device = self.find_matching_device(args)
+        device.open()
+        protocol.begin_pairing(device)
+        device.close()
 
 class Keyer(object):
     COMMAND_NAME_MAP = {
@@ -607,6 +618,7 @@ class Keyer(object):
         "passthrough": PassthroughCommand,
         "reset": ResetCommand,
         "program": ProgramCommand,
+        "pair": PairCommand,
         # "layers": LayerCommand(),
         "help": HelpCommand,
     }
@@ -621,6 +633,7 @@ class Keyer(object):
             "passthrough": PassthroughCommand(),
             "reset": ResetCommand(),
             "program": ProgramCommand(),
+            "pair": PairCommand(),
             # "layers": LayerCommand(),
             "help": HelpCommand(),
         }

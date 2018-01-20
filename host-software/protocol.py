@@ -27,6 +27,8 @@ CMD_PASSTHROUGH_MATRIX = 0x09
 CMD_UPDATE_SETTINGS = 0x0A
 CMD_UPDATE_LAYOUT = 0x0B
 
+CMD_UNIFYING_PAIR = 0x10
+
 INFO_MAIN_0 = 0
 INFO_MAIN_1 = 1
 INFO_LAYOUT = 2
@@ -421,6 +423,10 @@ def enter_bootloader(device):
     fw_info = get_firmware_info(device)
     response = simple_command(device, CMD_BOOTLOADER, receive=False)
     return (fw_info.bootloader_vid, fw_info.bootloader_pid)
+
+def begin_pairing(device):
+    response = simple_command(device, CMD_UNIFYING_PAIR, receive=False)
+    return response
 
 def set_indicator_led(device, state):
     response = simple_command(device, CMD_LED_CONTROL, [state], receive=False)

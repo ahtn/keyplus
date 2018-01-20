@@ -42,7 +42,7 @@ AT__SETTINGS_ADDR const settings_t g_settings_storage = {
 const ROM firmware_build_settings_t g_firmware_build_settings = {
     .version_major = 0,
     .version_minor = 2,
-    .version_patch = 0,
+    .version_patch = 1,
 
     .layout_flash_size = LAYOUT_SIZE,
     .timestamp = { BUILD_TIME_STAMP },

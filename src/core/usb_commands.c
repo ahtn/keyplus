@@ -14,6 +14,7 @@
 #include "core/led.h"
 #include "core/matrix_interpret.h"
 #include "core/matrix_scanner.h"
+#include "core/unifying.h"
 
 #include "core/keyboard_report.h"
 #include "core/media_report.h"
@@ -171,6 +172,10 @@ static void cmd_custom_bootloader(void) {
     bootloader_jmp();
 }
 
+static void cmd_unifying_pairing(void) {
+    unifying_begin_pairing();
+}
+
 static void erase_page_range(uint16_t start_page, uint16_t page_count) {
     uint16_t i;
     wdt_kick();
@@ -319,6 +324,10 @@ void parse_cmd(void) {
             erase_page_range(LAYOUT_PAGE_NUM, number_pages);
 
             cmd_ok();
+        } break;
+
+        case CMD_UNIFYING_PAIR: {
+            cmd_unifying_pairing();
         } break;
         default: {
             cmd_error(ERROR_UNKNOWN_CMD);
