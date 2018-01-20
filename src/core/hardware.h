@@ -17,6 +17,14 @@ extern bit_t g_slow_clock_mode;
 #error "F_CPU needs to be defined"
 #endif
 
+#ifndef enable_interrupts
+#error "enale_interrupts needs to be defined in 'hardware_user_impl.h'"
+#endif
+
+#ifndef disable_interrupts
+#error "disable_interrupts needs to be defined in 'hardware_user_impl.h'"
+#endif
+
 #define CLOCK_SPEED_FAST F_CPU
 
 #ifndef CLOCK_SPEED_SLOW

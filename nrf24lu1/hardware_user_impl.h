@@ -3,11 +3,21 @@
 
 #pragma once
 
+#include "nrf24lu1.h"
+
 // NOTE: not the best solution, but it's good enough
 void dynamic_delay_us(uint16_t us);
 
 #define static_delay_us(x) dynamic_delay_us(x)
 #define static_delay_ms(x) dynamic_delay_ms(x)
+
+#define enable_interrupts() do { \
+    EA = 1; \
+} while(0);
+
+#define disable_interrupts() do { \
+    EA = 0; \
+} while(0);
 
 #if   defined(FLASH_16)
 #define FLASH_SIZE              0x4000

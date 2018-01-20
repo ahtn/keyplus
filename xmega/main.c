@@ -325,7 +325,11 @@ void usb_mode_main_loop(void) {
 #if USE_NRF24
         if (g_rf_enabled) {
             // TODO: might want to implement a scheduling system for tasks
-            rf_task();
+            if (unifying_is_pairing_active()) {
+                unifying_pairing_poll();
+            } else {
+                rf_task();
+            }
         }
         unifying_mouse_handle();
 #endif

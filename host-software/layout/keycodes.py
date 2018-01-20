@@ -313,6 +313,7 @@ KC_KRO_6                   = KC_SPECIAL_START | 0xEB
 KC_KRO_N                   = KC_SPECIAL_START | 0xEC
 KC_KRO_AUTO                = KC_SPECIAL_START | 0xED
 KC_LAYER_RESET             = KC_SPECIAL_START | 0xEE
+KC_UNIFYING_PAIR           = KC_SPECIAL_START | 0xEF
 
 KC_TEST_0                  = KC_SPECIAL_START | 0xF8
 KC_TEST_1                  = KC_SPECIAL_START | 0xF9

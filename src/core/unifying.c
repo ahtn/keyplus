@@ -5,12 +5,16 @@
 
 #include <string.h>
 
-#include "core/usb_commands.h"
 #include "core/led.h"
 #include "core/nrf24.h"
+#include "core/rf.h"
+#include "core/settings.h"
+#include "core/timer.h"
+#include "core/usb_commands.h"
 
 #include "core/matrix_interpret.h"
 #include "core/mouse_report.h"
+#include "core/hardware.h"
 
 /* #include "core/.h" */
 
@@ -33,9 +37,11 @@ XRAM uint8_t g_unifying_mouse_state_changed = false;
 // the address registers are written LSB bit first
 // BB:0A:DC:A5:75
 static XRAM uint8_t unifying_pairing_addr[5] = {0x75, 0xA5, 0xDC, 0x0A, 0xBB};
-static XRAM uint8_t current_pairing_step;
+static XRAM uint8_t last_pairing_step = UNIFYING_PAIR_DISABLED;
 static XRAM uint8_t pairing_target_addr[UNIFYING_ADDR_WIDTH];
 static XRAM uint8_t tmp_buffer[32];
+static XRAM uint16_t pairing_timeout;
+static XRAM uint16_t packet_timeout;
 
 // TODO: make rf.c share this code
 static uint8_t check_checksum(const uint8_t *data, const uint8_t len) {
@@ -133,13 +139,42 @@ void unifying_mouse_handle(void) {
 #endif
 }
 
+void unifying_begin_pairing(void) {
+    uint8_t config;
+
+    disable_interrupts();
+
+    rf_init_receive(); // set rf settings for receive mode
+
+    unifying_set_pairing_address(g_rf_settings.pipe_addr_1, g_rf_settings.pipe_addr_4);
+
+    // TODO: probably add interrupt based mode later, but for now just mask the
+    // IRQ for the NRF
+    config = nrf24_read_reg(CONFIG);
+    config = config | MASK_ALL_IRQ_bm;
+    nrf24_write_reg(CONFIG, config);
+
+    enable_interrupts();
+    last_pairing_step = 0;
+    pairing_timeout = timer_read16_ms() + UNIFYING_PAIRING_TIMEOUT;
+}
+
+void unifying_end_pairing(void) {
+    last_pairing_step = UNIFYING_PAIR_DISABLED;
+    rf_init_receive();
+}
+
+bit_t unifying_is_pairing_active(void) {
+    return last_pairing_step != UNIFYING_PAIR_DISABLED;
+}
 
 // Note: Assumes all other relevant settings are in place
-void set_pairing_address(const uint8_t *target_addr, uint8_t addr_lsb) {
-    // Use first two pipes
+void unifying_set_pairing_address(const uint8_t *target_addr, uint8_t addr_lsb) {
+    // Use first three pipes
     // P0 = BB:0A:DC:A5:75
     // P1 = TARGET_ADDRESS
-    // P2..P5 = disabled
+    // P2 = TARGET_ADDRESS with LSB set to 0
+    // P3..P5 = disabled
     nrf24_write_addr(TX_ADDR, unifying_pairing_addr, UNIFYING_ADDR_WIDTH);
     nrf24_write_addr(RX_ADDR_P0, unifying_pairing_addr, UNIFYING_ADDR_WIDTH);
 
@@ -153,19 +188,11 @@ void set_pairing_address(const uint8_t *target_addr, uint8_t addr_lsb) {
     nrf24_write_reg(EN_RXADDR, 0b0111);
 }
 
-void begin_pairing(void) {
-    current_pairing_step = 0;
-}
-
-// Note: may modify packet_buffer
-/* uint8_t pair_mouse(uint8_t *packet_buffer, uint8_t width, uint8_t pipe_num) { */
 bit_t handle_pairing(uint8_t pipe_num) {
     unifying_packet_t *packet = (unifying_packet_t*)tmp_buffer;
     uint8_t width = nrf24_read_rx_payload_width();
 
     nrf24_read_rx_payload(tmp_buffer, width);
-
-    usb_print(tmp_buffer, width);
 
     if (pipe_num > 1) {
         return false;
@@ -175,13 +202,20 @@ bit_t handle_pairing(uint8_t pipe_num) {
         return false;
     }
 
-    if ( !(packet->header.type == FRAME_PAIRING || packet->header.type == 0x0f) ) {
+    if ( !(packet->header.type == FRAME_PAIRING || packet->header.type == 0x0f ||
+            last_pairing_step >= 3)) {
         return false;
     }
 
-    current_pairing_step++;
+    last_pairing_step++;
 
-    if (packet->header.step == 1 && current_pairing_step == 1) {
+    tmp_buffer[width] = last_pairing_step;
+    usb_print(tmp_buffer, width+1);
+
+    packet_timeout = timer_read16_ms() + UNIFYING_PAIRING_PACKET_TIMEOUT;
+
+    if (packet->header.step == 1 && last_pairing_step == 1) {
+
 
         packet->req_1.frame_type = 0x1f;
         //req_1->step = 1;
@@ -201,7 +235,7 @@ bit_t handle_pairing(uint8_t pipe_num) {
         /* p("\na%d w%d: ", pipe_num, sizeof(req_1_t)); */
         /* print_buf(tmp_buffer, sizeof(req_1_t)); */
         /* p("\n"); */
-    } else if (packet->header.step == 2 && current_pairing_step == 2) {
+    } else if (packet->header.step == 2 && last_pairing_step == 2) {
         packet->req_2.frame_type = 0x1f;
         //req_2->step = 2;
 
@@ -215,7 +249,7 @@ bit_t handle_pairing(uint8_t pipe_num) {
         /* p("\na%d w%d: ", pipe_num, sizeof(packet->req_1_t)); */
         /* print_buf(tmp_buffer, sizeof(packet->req_1_t)); */
         /* p("\n"); */
-    } else if (packet->header.step == 3 && current_pairing_step == 3) {
+    } else if (packet->header.step == 3 && last_pairing_step == 3) {
         packet->resp_3.frame_type = 0x0f;
         //resp_3->step = 6;
 
@@ -228,20 +262,34 @@ bit_t handle_pairing(uint8_t pipe_num) {
 
         /* p("\na%d w%d: ", pipe_num, sizeof(packet->resp_3_t)); */
         /* print_buf(tmp_buffer, sizeof(packet->resp_3_t)); */
-
+    } else if (last_pairing_step >= 10) {
+        // Successfully paired with the device, and received a packet from it
+        // after it has paired
         return true;
-    } else {
-        current_pairing_step = 0;
     }
     return false;
 }
 
+// TODO: add interrupt based mode?
 void unifying_pairing_poll(void) {
     uint8_t pipe_num = nrf24_get_rx_pipe_num();
+    uint8_t pairing_complete = false;
 
     while (pipe_num != 0b111) {
-        handle_pairing(pipe_num);
+        pairing_complete |= handle_pairing(pipe_num);
+
         led_testing_toggle();
         pipe_num = nrf24_get_rx_pipe_num();
+    }
+
+    if (has_passed_time16(timer_read16_ms(), packet_timeout)) {
+        last_pairing_step = 0;
+    }
+
+    if (
+        pairing_complete ||
+        has_passed_time16(timer_read16_ms(), pairing_timeout)
+    ) {
+        reset_mcu();
     }
 }

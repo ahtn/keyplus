@@ -328,6 +328,7 @@ key_symbols = {
     "kro_6": KC_KRO_6,
     "kro_n": KC_KRO_N,
     "kro_auto": KC_KRO_AUTO,
+    "pair": KC_UNIFYING_PAIR,
 
     "test_0": KC_TEST_0,
     "test_1": KC_TEST_1,

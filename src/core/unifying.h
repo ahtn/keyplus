@@ -8,6 +8,11 @@
 #define UNIFYING_PAIR_FAILED 0
 #define UNIFYING_PAIR_IN_PROGRESS 1
 #define UNIFYING_PAIR_FINISHED 2
+#define UNIFYING_PAIR_DISABLED 255
+
+// If pairing is not complete in this time, fail
+#define UNIFYING_PAIRING_TIMEOUT 20000
+#define UNIFYING_PAIRING_PACKET_TIMEOUT 2000
 
 typedef enum {
     FRAME_PAIRING = 0x5f,
@@ -93,5 +98,7 @@ extern XRAM uint8_t g_unifying_mouse_state_changed;
 
 void unifying_mouse_handle(void);
 void unifying_pairing_poll(void);
-void set_pairing_address(const uint8_t *target_addr, uint8_t addr_lsb);
+void unifying_set_pairing_address(const uint8_t *target_addr, uint8_t addr_lsb);
 void unifying_read_packet(uint8_t *nrf_packet);
+void unifying_begin_pairing(void);
+bit_t unifying_is_pairing_active(void);

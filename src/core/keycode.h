@@ -131,7 +131,7 @@ typedef enum keycode_type_t {
 /*********************************************************************
  *                         special keycodes                          *
  *********************************************************************/
-// NOTE: has space for 4096 (0x1000) keycodes
+// NOTE: has space for 16384 (0x4000) keycodes
 
 typedef enum special_keycode_t {
     KC_TRANSPARENT             = KC_SPECIAL_START | 0x00 ,
@@ -206,6 +206,7 @@ typedef enum special_keycode_t {
     KC_KRO_N                   = KC_SPECIAL_START | 0xEC,
     KC_KRO_AUTO                = KC_SPECIAL_START | 0xED,
     KC_LAYER_RESET             = KC_SPECIAL_START | 0xEE,
+    KC_UNIFYING_PAIR           = KC_SPECIAL_START | 0xEF,
 
     KC_TEST_0                  = KC_SPECIAL_START | 0xF8,
     KC_TEST_1                  = KC_SPECIAL_START | 0xF9,

@@ -267,7 +267,7 @@ layouts:
         [ # right hand
           wh_u, btn1, ms_u, btn2, RS-c, dongle_0 ,
           wh_d, ms_l, ms_d, ms_r, btn3, dongle_1 ,
-          set_l3 , set_l0 , set_l1 , set_l2 , NONE, test_2 ,
+          set_l3 , set_l0 , set_l1 , set_l2 , NONE, pair ,
           ____, ____, ____, ____, ____,
         ],
       ],
@@ -300,7 +300,7 @@ layouts:
           tab , q   , w   , f   , p   , g   ,
           ent , a   , r   , s   , t   , d   ,
           lalt, z   , x   , c   , v   , b   ,
-          esc , L4  , lctl, L3  , lctl, spc ,
+          esc , L4  , L4  , lctl  , L3  , spc ,
         ],
         [ # right hand
           j   , l   , u   , y   , ";" , "-" ,

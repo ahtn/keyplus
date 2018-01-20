@@ -56,10 +56,6 @@ void dongle_init(void) {
 void main(void) {
     dongle_init();
 
-    // TODO: make this controlable by USB commands
-    // unifying pairing options
-    /* set_pairing_address(g_settings.pipe_addr_1, g_settings.pipe_addr_4); */
-
     // enable all interrupts
     EA = 1;
 
@@ -68,16 +64,11 @@ void main(void) {
     while (true) {
         wdt_kick();
 
-        // need to add unifying task back in
-        /* // next handle data received over RF */
-        /* if (g_rf_unifying_mouse_poll) { */
-        /*  unifying_pairing_poll(); */
-        /*  continue; */
-        /* } else { */
-        /*  has_rf_message = rf_task(); */
-        /* } */
-
-        rf_task();
+        if (unifying_is_pairing_active()) {
+            unifying_pairing_poll();
+        } else {
+            rf_task();
+        }
 
         interpret_all_keyboard_matrices();
 
@@ -93,6 +84,5 @@ void main(void) {
 
         sticky_key_task();
         hold_key_task();
-
     }
 }

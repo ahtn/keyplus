@@ -5,56 +5,47 @@
 
 #include "config.h"
 
-#include "core/usb_commands.h"
-
-#include "core/keyboard_report.h"
-#include "core/keycode.h"
-#include "core/matrix_interpret.h"
 #include "core/mouse_report.h"
+
+#include "core/keycode.h"
 #include "core/rf.h"
 #include "core/settings.h"
-
-#if 1
+#include "core/unifying.h"
+#include "core/usb_commands.h"
 
 static const ROM char msg[] = "hello world\n";
-#ifndef AVR
-// TODO: integrate this into the handling as rf receiver
-static bit_t enabled = false;
-#endif
-
-static bit_t is_test_key(keycode_t keycode) {
-    return ( keycode >= KC_TEST_0 && keycode <= KC_TEST_7 );
-}
 
 static bit_t is_dongle_key(keycode_t keycode) {
-    return ( keycode >= KC_DONGLE_0 && keycode <= KC_DONGLE_7 );
+    return ( KC_DONGLE_0 <= keycode && keycode <= KC_DONGLE_7 );
 }
 
 static bit_t keycode_checker(keycode_t keycode) {
-    return is_test_key(keycode) || is_dongle_key(keycode);
+    return ( KC_DONGLE_0 <= keycode && keycode <= KC_TEST_7);
 }
-
 
 /* TODO:  */
 static void handler(keycode_t keycode, key_event_t event) REENT {
-    if (is_test_key(keycode)) {
-        switch (keycode) {
-            case KC_TEST_3: {
-                if (event == EVENT_PRESSED) {
-                    usb_print((uint8_t *)msg, sizeof(msg));
-                }
-            } break;
+    switch (keycode) {
+        case KC_UNIFYING_PAIR: {
+            if (event == EVENT_PRESSED) {
+                unifying_begin_pairing();
+            }
+            return;
+        } break;
 
-            case KC_TEST_4: {
-                if (event == EVENT_PRESSED) {
-                    // run_macro(0);
-                }
-            } break;
+        case KC_TEST_3: {
+            if (event == EVENT_PRESSED) {
+                usb_print((uint8_t *)msg, sizeof(msg));
+            }
+            return;
+        } break;
 
-            default:
-                break;
-        }
-        return;
+        case KC_TEST_4: {
+            if (event == EVENT_PRESSED) {
+                // run_macro(0);
+            }
+            return;
+        } break;
     }
 
 #if USE_NRF24
@@ -78,5 +69,3 @@ XRAM keycode_callbacks_t custom_keycodes = {
     .handler = handler,
     .active_when_disabled = true,
 };
-
-#endif
