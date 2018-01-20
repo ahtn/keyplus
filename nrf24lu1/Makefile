@@ -172,9 +172,14 @@ REL_FILES = $(C_REL_FILES) $(ASM_REL_FILES)
 LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
 MERGED_HEX="$(basename $(TARGET))-$(LAYOUT_NAME).hex"
 
-all: $(MERGED_HEX)
 
-unifying: $(TARGET)-unirecv.hex
+ifeq ($(UNIRECV), 1)
+ALL_TARGET=$(TARGET)-unirecv.hex
+else
+ALL_TARGET=$(MERGED_HEX)
+endif
+
+all: $(ALL_TARGET)
 
 $(MERGED_HEX): $(TARGET).hex
 	@echo "=== merging layout settings files ==="
