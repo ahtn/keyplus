@@ -38,8 +38,10 @@ typedef struct usb_config_desc_keyboard_t {
     usb_hid_desc_t hid4;
     usb_endpoint_desc_t ep5in;
 
-#ifdef USE_WEBUSB
-    usb_webusb_desc_t webusb;
+#if USE_WEBUSB
+    usb_interface_desc_t intf5;
+    usb_endpoint_desc_t ep4in_duplicate;
+    usb_endpoint_desc_t ep4out_duplicate;
 #endif
 } usb_config_desc_keyboard_t;
 
@@ -49,13 +51,24 @@ typedef struct usb_config_desc_keyboard_t {
 #define INTERFACE_MEDIA 2
 #define INTERFACE_VENDOR 3
 #define INTERFACE_NKRO_KEYBOARD 4
-#define NUM_INTERFACES (INTERFACE_NKRO_KEYBOARD+1)
+#define INTERFACE_WEBUSB 5
+
+#if USE_WEBUSB
+#define LAST_INTERFACE_NUMBER INTERFACE_WEBUSB
+#else
+#define LAST_INTERFACE_NUMBER INTERFACE_NKRO_KEYBOARD
+#endif
+
+#define NUM_INTERFACES (LAST_INTERFACE_NUMBER+1)
 
 #define EP_NUM_BOOT_KEYBOARD    1
 #define EP_NUM_MOUSE            2
 #define EP_NUM_MEDIA            3
 #define EP_NUM_VENDOR           4
 #define EP_NUM_NKRO_KEYBOARD    5
+
+// Try to use the same endpoint for both webUSB and rawHID
+#define EP_NUM_WEBUSB           EP_NUM_VENDOR
 
 // endpoint sizes
 #define EP_SIZE_VENDOR 0x40
@@ -65,12 +78,14 @@ typedef struct usb_config_desc_keyboard_t {
 #define EP_IN_SIZE_MOUSE            0x08
 #define EP_IN_SIZE_MEDIA            0x08
 #define EP_IN_SIZE_VENDOR           EP_SIZE_VENDOR
+#define EP_IN_SIZE_WEBUSB           EP_IN_SIZE_VENDOR
 #define EP_IN_SIZE_NKRO_KEYBOARD    0x20
 
 #define EP_OUT_SIZE_BOOT_KEYBOARD   0
 #define EP_OUT_SIZE_MOUSE           0
 #define EP_OUT_SIZE_MEDIA           0
 #define EP_OUT_SIZE_VENDOR          EP_SIZE_VENDOR
+#define EP_OUT_SIZE_WEBUSB          EP_OUT_SIZE_VENDOR
 #define EP_OUT_SIZE_NKRO_KEYBOARD   0
 
 #define EP0_IN_SIZE EP0_SIZE
@@ -93,6 +108,8 @@ typedef struct usb_config_desc_keyboard_t {
 #define REPORT_INTERVAL_MOUSE 1
 #define REPORT_INTERVAL_VENDOR_IN 1
 #define REPORT_INTERVAL_VENDOR_OUT 10
+#define REPORT_INTERVAL_WEBUSB_IN REPORT_INTERVAL_VENDOR_IN
+#define REPORT_INTERVAL_WEBUSB_OUT REPORT_INTERVAL_VENDOR_OUT
 #define REPORT_INTERVAL_NKRO_KEYBOARD 1
 
 // report id for media report
@@ -112,6 +129,9 @@ typedef struct usb_config_desc_keyboard_t {
 #define STRING_DESC_SERIAL_NUMBER 3
 #define STRING_DESC_TEST 4
 
+#define WEBUSB_VENDOR_CODE 0x42
+#define WEBUSB_LANDING_PAGE 0x00
+
 extern ROM const usb_config_desc_keyboard_t usb_config_desc;
 extern ROM const usb_device_desc_t usb_device_desc;
 extern ROM const uint16_t usb_string_desc_0[];
@@ -129,6 +149,21 @@ extern ROM const uint8_t sizeof_hid_desc_vendor;
 extern ROM const uint8_t hid_desc_vendor[];
 extern ROM const uint8_t sizeof_hid_desc_nkro_keyboard;
 extern ROM const uint8_t hid_desc_nkro_keyboard[];
+
+#if USE_WEBUSB
+
+typedef struct bos_desc_table_t {
+    usb_bos_desc_t bos_desc;
+    usb_webusb_desc_t webusb_bos_desc;
+} bos_desc_table_t;
+
+extern ROM const bos_desc_table_t bos_desc_table;
+
+#define WEBUSB_URL_COUNT 1
+extern ROM const uint8_t webusb_url_desc_0[];
+// extern ROM const uint8_t usb_url_desc_1[];
+
+#endif
 
 void usb_ep0_packetizer_data_set(const ROM uint8_t *data, uint16_t size);
 void usb_ep0_packetizer_data_send(void);

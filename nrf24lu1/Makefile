@@ -78,11 +78,14 @@ CDEFS += \
 	-DNO_RF_TRANSMIT \
 	-DF_CPU=$(F_CPU)UL \
 
+CDEFS += -DUSE_WEBUSB=1
+
 CDEFS += -DUSB_BUFFERED=0
 
 ifdef DEBUG_LEVEL
 	CDEFS += -DDEBUG_LEVEL=$(DEBUG_LEVEL)
 endif
+
 
 #######################################################################
 #                     flash and storage settings                      #

@@ -164,7 +164,7 @@ devices:
     layout_offset: 1
 
   # rf dongle
-  nrf_dongle:
+  "keyplus nRF dongle":
     id: 48
     scan_mode: # rf dongle, so don't need a matrix
       mode: no_matrix # options: col_row, pins, no_matrix

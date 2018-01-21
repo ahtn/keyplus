@@ -103,75 +103,92 @@ void usb_get_descriptor(const usb_request_t *request) {
     }
     packetizer_data_ptr = NULL;
 
-    switch (desc_type) {
-        case USB_DESC_DEVICE: {
-            packetizer_data_ptr = (const XRAM uint8_t*) &usb_device_desc;
-            packetizer_data_size = sizeof(usb_device_desc);
-        } break;
+    if (request->val.bRequest == WEBUSB_VENDOR_CODE &&
+        request->val.bmRequestType == 0b11000000 &&
+        request->val.wIndexLSB == WEBUSB_REQ_GET_URL) {
+        const uint8_t index = request->val.wValueLSB;
+        if (index < WEBUSB_URL_COUNT) {
+            if (index == 0) {
+                packetizer_data_ptr = (const XRAM uint8_t*) &webusb_url_desc_0;
+            }
+            packetizer_data_size = flash_read_byte((flash_ptr_t)packetizer_data_ptr);
+        }
+    } else {
+        switch (desc_type) {
+            case USB_DESC_DEVICE: {
+                packetizer_data_ptr = (const XRAM uint8_t*) &usb_device_desc;
+                packetizer_data_size = sizeof(usb_device_desc);
+            } break;
 
-        // for USB 2.0
-        case USB_DESC_DEVICE_QUAL:
-        case USB_DESC_OTHER_SPEED_CONF: {
-            // Do nothing, this will generate an error and signifies that this is not
-            // a USB 2.0 high-speed device.
-        } break;
+            // for USB 2.0
+            case USB_DESC_DEVICE_QUAL:
+            case USB_DESC_OTHER_SPEED_CONF: {
+                // Do nothing, this will generate an error and signifies that this is not
+                // a USB 2.0 high-speed device.
+            } break;
 
-        case USB_DESC_CONFIGURATION: {
-            packetizer_data_ptr = (const XRAM uint8_t*) &usb_config_desc;
-            packetizer_data_size = sizeof(usb_config_desc);
-        } break;
+            case USB_DESC_BOS: {
+                packetizer_data_ptr = (const XRAM uint8_t*) &bos_desc_table;
+                packetizer_data_size = sizeof(bos_desc_table);
+            } break;
 
-        case USB_DESC_STRING: {
-            const uint8_t string_id = request->get_desc.index;
-            if (string_id < USB_STRING_DESC_COUNT) {
-                switch (string_id) {
-                    case STRING_DESC_NONE: {
-                        packetizer_data_ptr = (const XRAM uint8_t*)usb_string_desc_0;
+            case USB_DESC_CONFIGURATION: {
+                packetizer_data_ptr = (const XRAM uint8_t*) &usb_config_desc;
+                packetizer_data_size = sizeof(usb_config_desc);
+            } break;
+
+            case USB_DESC_STRING: {
+                const uint8_t string_id = request->get_desc.index;
+                if (string_id < USB_STRING_DESC_COUNT) {
+                    switch (string_id) {
+                        case STRING_DESC_NONE: {
+                            packetizer_data_ptr = (const XRAM uint8_t*)usb_string_desc_0;
+                        }
+                        case STRING_DESC_MANUFACTURER: {
+                            make_string_desc(manufacturer_string);
+                            packetizer_data_ptr = string_desc_buffer;
+                        } break;
+                        case STRING_DESC_PRODUCT: {
+                            make_string_desc(GET_SETTING(device_name));
+                            packetizer_data_ptr = string_desc_buffer;
+                        } break;
+                        case STRING_DESC_SERIAL_NUMBER: {
+                            make_serial_string();
+                            packetizer_data_ptr = string_desc_buffer;
+                        } break;
                     }
-                    case STRING_DESC_MANUFACTURER: {
-                        make_string_desc(manufacturer_string);
-                        packetizer_data_ptr = string_desc_buffer;
+                    packetizer_data_size = flash_read_byte((uint16_t)packetizer_data_ptr);
+                } else {
+                    USB_EP0_STALL();
+                }
+            } break;
+
+            case USB_DESC_HID_REPORT: {
+                const uint8_t desc_interface = request->get_hid_desc.interface;
+                switch (desc_interface) {
+                    case INTERFACE_BOOT_KEYBOARD: {
+                        packetizer_data_ptr = (const XRAM uint8_t*)hid_desc_boot_keyboard;
+                        packetizer_data_size = sizeof_hid_desc_boot_keyboard;
                     } break;
-                    case STRING_DESC_PRODUCT: {
-                        make_string_desc(GET_SETTING(device_name));
-                        packetizer_data_ptr = string_desc_buffer;
+                    case INTERFACE_MOUSE : {
+                        packetizer_data_ptr = (const XRAM uint8_t*)hid_desc_mouse;
+                        packetizer_data_size = sizeof_hid_desc_mouse;
                     } break;
-                    case STRING_DESC_SERIAL_NUMBER: {
-                        make_serial_string();
-                        packetizer_data_ptr = string_desc_buffer;
+                    case INTERFACE_MEDIA: {
+                        packetizer_data_ptr = (const XRAM uint8_t*)hid_desc_media;
+                        packetizer_data_size = sizeof_hid_desc_media;
+                    } break;
+                    case INTERFACE_VENDOR: {
+                        packetizer_data_ptr = (const XRAM uint8_t*)hid_desc_vendor;
+                        packetizer_data_size = sizeof_hid_desc_vendor;
+                    } break;
+                    case INTERFACE_NKRO_KEYBOARD: {
+                        packetizer_data_ptr = (const XRAM uint8_t*)hid_desc_nkro_keyboard;
+                        packetizer_data_size = sizeof_hid_desc_nkro_keyboard;
                     } break;
                 }
-                packetizer_data_size = flash_read_byte((uint16_t)packetizer_data_ptr);
-            } else {
-                USB_EP0_STALL();
-            }
-        } break;
-
-        case USB_DESC_HID_REPORT: {
-            const uint8_t desc_interface = request->get_hid_desc.interface;
-            switch (desc_interface) {
-                case INTERFACE_BOOT_KEYBOARD: {
-                    packetizer_data_ptr = (const XRAM uint8_t*)hid_desc_boot_keyboard;
-                    packetizer_data_size = sizeof_hid_desc_boot_keyboard;
-                } break;
-                case INTERFACE_MOUSE : {
-                    packetizer_data_ptr = (const XRAM uint8_t*)hid_desc_mouse;
-                    packetizer_data_size = sizeof_hid_desc_mouse;
-                } break;
-                case INTERFACE_MEDIA: {
-                    packetizer_data_ptr = (const XRAM uint8_t*)hid_desc_media;
-                    packetizer_data_size = sizeof_hid_desc_media;
-                } break;
-                case INTERFACE_VENDOR: {
-                    packetizer_data_ptr = (const XRAM uint8_t*)hid_desc_vendor;
-                    packetizer_data_size = sizeof_hid_desc_vendor;
-                } break;
-                case INTERFACE_NKRO_KEYBOARD: {
-                    packetizer_data_ptr = (const XRAM uint8_t*)hid_desc_nkro_keyboard;
-                    packetizer_data_size = sizeof_hid_desc_nkro_keyboard;
-                } break;
-            }
-        } break;
+            } break;
+        }
     }
 
 

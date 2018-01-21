@@ -69,6 +69,15 @@ typedef struct usb_hid_desc_t {
     uint16_t  wDescriptorLength;
 } usb_hid_desc_t;
 
+// binary object store descriptor
+typedef struct usb_bos_desc_t {
+    uint8_t bLength;
+    uint8_t bDescriptorType;
+    uint16_t wTotalLength;
+    uint8_t bNumDeviceCaps;
+} usb_bos_desc_t;
+
+
 typedef enum {
     USB_ATTACHED,
     USB_POWERED,
@@ -82,18 +91,30 @@ typedef enum {
 #define USB_DIR_OUT 0x00
 
 // descriptor types
-#define USB_DESC_DEVICE            0x01
-#define USB_DESC_CONFIGURATION     0x02
-#define USB_DESC_STRING            0x03
-#define USB_DESC_INTERFACE         0x04
-#define USB_DESC_ENDPOINT          0x05
-#define USB_DESC_DEVICE_QUAL       0x06
-#define USB_DESC_OTHER_SPEED_CONF  0x07
-#define USB_DESC_INTERFACE_POWER   0x08
+#define USB_DESC_DEVICE                0x01
+#define USB_DESC_CONFIGURATION         0x02
+#define USB_DESC_STRING                0x03
+#define USB_DESC_INTERFACE             0x04
+#define USB_DESC_ENDPOINT              0x05
+#define USB_DESC_DEVICE_QUAL           0x06
+#define USB_DESC_OTHER_SPEED_CONF      0x07
+#define USB_DESC_INTERFACE_POWER       0x08
+#define USB_DESC_OTG                   0x09
+#define USB_DESC_DEBUG                 0x0A
+#define USB_DESC_INTERFACE_ASSOCIATION 0x0B
 
-#define USB_DESC_HID         0x21
-#define USB_DESC_HID_REPORT  0x22
-#define USB_DESC_HID_PHYS    0x23
+#define USB_DESC_BOS                   0x0F
+#define USB_DESC_DEVICE_CAPABILITY     0x10
+
+#define USB_DESC_HID                   0x21
+#define USB_DESC_HID_REPORT            0x22
+#define USB_DESC_HID_PHYS              0x23
+
+#define USB_DESC_HUB                   0x29
+#define USB_DESC_SUPERSPEED_HUB        0x2A
+#define USB_DESC_SS_ENDPOINT_COMPANION 0x30
+
+
 
 // Configuration descriptor attributes
 #define USB_CONFIG_BUS_POWERED   0x80
@@ -106,8 +127,28 @@ typedef enum {
 #define USB_EP_TYPE_BULK  0x02
 #define USB_EP_TYPE_INT   0x03
 
-#define USB_CLASS_HID 3
-#define USB_CLASS_VENDOR 0xff
+
+#define USB_CLASS_AUDIO                 1
+#define USB_CLASS_COMM                  2
+#define USB_CLASS_HID                   3
+#define USB_CLASS_PHYSICAL              5
+#define USB_CLASS_PRINTER               7
+#define USB_CLASS_PTP                   6
+#define USB_CLASS_IMAGE                 6
+
+#define USB_CLASS_MASS_STORAGE          8
+#define USB_CLASS_HUB                   9
+#define USB_CLASS_DATA                  10
+#define USB_CLASS_SMART_CARD            0x0b
+
+#define USB_CLASS_CONTENT_SECURITY      0x0d
+#define USB_CLASS_VIDEO                 0x0e
+#define USB_CLASS_PERSONAL_HEALTHCARE   0x0f
+#define USB_CLASS_DIAGNOSTIC_DEVICE     0xdc
+
+#define USB_CLASS_WIRELESS              0xe0
+#define USB_CLASS_APPLICATION           0xfe
+#define USB_CLASS_VENDOR                0xff
 
 #define HID_SUBCLASS_NONE 0
 #define HID_SUBCLASS_BOOT 1
@@ -132,5 +173,22 @@ typedef enum {
 // USB 2.0
  #define USB_REVISION_2_0 0x0200
 
+// USB 2.0.1
+ #define USB_REVISION_2_0_1 0x0201
+
 // HID 1.11
 #define USB_HID_REVISION_1_11 0x0111
+
+
+#define USB_DEV_CAPABILITY_WIRELESS_USB                 0x01
+#define USB_DEV_CAPABILITY_USB_2_0_EXTENSION            0x02
+#define USB_DEV_CAPABILITY_SUPERSPEED_USB               0x03
+#define USB_DEV_CAPABILITY_CONTAINER_ID                 0x04
+#define USB_DEV_CAPABILITY_PLATFORM                     0x05
+#define USB_DEV_CAPABILITY_POWER_DELIVERY_CAPABILITY    0x06
+#define USB_DEV_CAPABILITY_BATTERY_INFO_CAPABILITY      0x07
+#define USB_DEV_CAPABILITY_PD_CONSUMER_PORT_CAPABILITY  0x08
+#define USB_DEV_CAPABILITY_PD_PROVIDER_PORT_CAPABILITY  0x09
+#define USB_DEV_CAPABILITY_SUPERSPEED_PLUS              0x0A
+#define USB_DEV_CAPABILITY_PRECISION_TIME_MEASUREMENT   0x0B
+#define USB_DEV_CAPABILITY_WIRELESS_USB_EXT             0x0C

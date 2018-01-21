@@ -309,6 +309,24 @@ void usb_hid_request(void) {
     }
 }
 
+void usb_vendor_request(void) {
+    switch (usb_request.val.bRequest) {
+        case WEBUSB_VENDOR_CODE: {
+            const uint8_t req_type = usb_request.val.wIndexLSB;
+            if (req_type == WEBUSB_REQ_GET_URL) {
+                usb_get_descriptor((usb_request_t*)&usb_request);
+            } else {
+                USB_EP0_STALL();
+            }
+        } break;
+
+        default: {
+            USB_EP0_STALL();
+        }
+    }
+}
+
+
 // this function selects the appropriate request handle when we recevie a setup
 // data packet
 void usb_receive_request(void) {
@@ -338,6 +356,10 @@ void usb_receive_request(void) {
 
         case USB_REQTYPE_TYPE_CLASS: {
             usb_hid_request();
+        } break;
+
+        case USB_REQTYPE_TYPE_VENDOR: {
+            usb_vendor_request();
         } break;
 
         default: {

@@ -13,7 +13,9 @@
 
 // NOTE: since we're not using high speed, USB 1.1 works fine here
 
-#define USB_REVISION USB_REVISION_1_1
+// #define USB_REVISION USB_REVISION_1_1
+// #define USB_REVISION USB_REVISION_2_0
+#define USB_REVISION USB_REVISION_2_0_1
 #define USB_HID_REVISION USB_HID_REVISION_1_11
 
 ROM const usb_device_desc_t usb_device_desc = {
@@ -214,18 +216,36 @@ ROM const usb_config_desc_keyboard_t usb_config_desc = {
         .bInterval        = REPORT_INTERVAL_NKRO_KEYBOARD,
     },
 
-#ifdef USE_WEBUSB
-    // webusb descriptor
-    {
-        .bLength = sizeof(usb_webusb_desc_t),
-        // .bDescriptorType = WEBUSB;
-        // .bDevCapabilityType;
-        // .bReserved;
-        .PlatformCapabilityUUID = WEBUSB_UUID,
-        .bcdVersion = WEBUSB_BCDVERSION,
-        // .bVendorCode;
-        // .iLandingPage;
-    }
+#if USE_WEBUSB
+    .intf5 = {
+        .bLength            = sizeof(usb_interface_desc_t),
+        .bDescriptorType    = USB_DESC_INTERFACE,
+        .bInterfaceNumber   = INTERFACE_WEBUSB,
+        .bAlternateSetting  = 0,
+        .bNumEndpoints      = 2,
+        .bInterfaceClass    = 0xff, // TODO
+        .bInterfaceSubClass = 0xff,
+        .bInterfaceProtocol = 0xff, // TODO
+        .iInterface         = STRING_DESC_NONE,
+    },
+    // endpoint descriptor in
+    .ep4in_duplicate = {
+        .bLength          = sizeof(usb_endpoint_desc_t),
+        .bDescriptorType  = USB_DESC_ENDPOINT,
+        .bEndpointAddress = USB_DIR_IN | EP_NUM_VENDOR,
+        .bmAttributes     = USB_EP_TYPE_INT,
+        .wMaxPacketSize   = EP_IN_SIZE_WEBUSB,
+        .bInterval        = REPORT_INTERVAL_WEBUSB_IN,
+    },
+    // endpoint descriptor out
+    .ep4out_duplicate = {
+        .bLength          = sizeof(usb_endpoint_desc_t),
+        .bDescriptorType  = USB_DESC_ENDPOINT,
+        .bEndpointAddress = USB_DIR_OUT | EP_NUM_VENDOR,
+        .bmAttributes     = USB_EP_TYPE_INT,
+        .wMaxPacketSize   = EP_OUT_SIZE_WEBUSB,
+        .bInterval        = REPORT_INTERVAL_WEBUSB_OUT,
+    },
 #endif
 };
 
@@ -251,10 +271,38 @@ ROM const uint16_t usb_string_desc_3[7] = {
 };
 
 #ifdef USE_WEBUSB
-ROM const uint8_t usb_url_desc_1[17] = {
-    sizeof(usb_url_desc_1),
+ROM const bos_desc_table_t bos_desc_table = {
+    .bos_desc = {
+        .bLength = sizeof(usb_bos_desc_t),
+        .bDescriptorType = USB_DESC_BOS,
+        .wTotalLength = sizeof(bos_desc_table_t),
+        .bNumDeviceCaps = 1,
+    },
+
+// webusb descriptor
+    .webusb_bos_desc = {
+        .bLength = sizeof(usb_webusb_desc_t),
+        .bDescriptorType = USB_DESC_DEVICE_CAPABILITY,
+        .bDevCapabilityType = USB_DEV_CAPABILITY_PLATFORM,
+        .bReserved = 0,
+        .PlatformCapabilityUUID = WEBUSB_UUID,
+        .bcdVersion = WEBUSB_BCDVERSION,
+        .bVendorCode = WEBUSB_VENDOR_CODE,
+        .iLandingPage = WEBUSB_LANDING_PAGE,
+    },
+};
+
+ROM const uint8_t webusb_url_desc_0[15] = {
+    sizeof(webusb_url_desc_0),
     WEBUSB_URL,
     WEBUSB_SCHEME_HTTP,
-    '1', '2', '7', '.', '0', '.', '0', '.', '1', ':', '8', '0', '0', '0'
+    '0', '.', '0', '.', '0', '.', '0', ':', '8', '0', '0', '0'
 };
+
+// ROM const uint8_t usb_url_desc_2[15] = {
+//     sizeof(usb_url_desc_1),
+//     WEBUSB_URL,
+//     WEBUSB_SCHEME_HTTP,
+//     '0', '.', '0', '.', '0', '.', '0', ':', '8', '0', '0', '0'
+// };
 #endif

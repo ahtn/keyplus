@@ -26,3 +26,5 @@ typedef struct usb_webusb_desc_t {
 #define WEBUSB_SCHEME_HTTP 0
 #define WEBUSB_SCHEME_HTTPS 1
 #define WEBUSB_SCHEME_RAW 255
+
+#define WEBUSB_REQ_GET_URL 2
