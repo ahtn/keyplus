@@ -56,9 +56,17 @@ RF_DR_250KBPS  = (1 << RF_DR_LOW)
 RF_DR_1MBPS    = 0
 RF_DR_2MBPS    = (1 << RF_DR_HIGH)
 
-
 MAX_NUMBER_LAYOUTS = 64
 MAX_NUMBER_DEVICES = 64
+
+FEATURE_CTRL_USB_DISABLE      = (1 << 0)
+FEATURE_CTRL_WIRED_DISABLE    = (1 << 1)
+FEATURE_CTRL_RF_DISABLE       = (1 << 2)
+FEATURE_CTRL_RF_MOUSE_DISABLE = (1 << 3)
+FEATURE_CTRL_BT_DISABLE       = (1 << 4)
+FEATURE_CTRL_RESERVED_0       = (1 << 5)
+FEATURE_CTRL_RESERVED_1       = (1 << 6)
+FEATURE_CTRL_RESERVED_2       = (1 << 7)
 
 
 class ProtocolError:
@@ -170,6 +178,22 @@ class KBInfoMain(KBInfoMainNamedTuple):
 
     def scan_mode_str(self):
         return scan_mode_to_str(self.scan_mode)
+
+    def has_usb_disabled(self):
+        return bool(self.feature_ctrl & FEATURE_CTRL_USB_DISABLE)
+
+    def has_i2c_disabled(self):
+        return bool(self.feature_ctrl & FEATURE_CTRL_WIRED_DISABLE)
+
+    def has_nrf24_disabled(self):
+        return bool(self.feature_ctrl & FEATURE_CTRL_RF_DISABLE)
+
+    def has_unifying_mouse_disabled(self):
+        return bool(self.feature_ctrl & FEATURE_CTRL_RF_MOUSE_DISABLE)
+
+    def has_bluetooth_disabled(self):
+        return bool(self.feature_ctrl & FEATURE_CTRL_BT_DISABLE)
+
 
 def get_device_info(device):
     DEVICE_INFO_SIZE = 96
@@ -296,14 +320,14 @@ class KBInfoFirmware(KBInfoFirmwareNamedTuple):
     def has_fw_support_led_ws2812(self):
         return (self.led_support_flags & self.SUPPORT_LED_WS2812) != 0
 
-    SUPPORT_WIRELESS = 0x01
+    SUPPORT_NRF24 = 0x01
     SUPPORT_I2C = 0x02
     SUPPORT_UNIFYING = 0x04
     SUPPORT_USB = 0x08
     SUPPORT_BT = 0x10
 
-    def has_fw_support_wireless(self):
-        return (self.connectivity_support_flags & self.SUPPORT_WIRELESS) != 0
+    def has_fw_support_nrf24(self):
+        return (self.connectivity_support_flags & self.SUPPORT_NRF24) != 0
     def has_fw_support_i2c(self):
         return (self.connectivity_support_flags & self.SUPPORT_I2C) != 0
     def has_fw_support_unifying(self):

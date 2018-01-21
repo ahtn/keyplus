@@ -49,7 +49,7 @@ const ROM firmware_build_settings_t g_firmware_build_settings = {
     .git_hash = { GIT_HASH },
 
     // connectivity
-    .wireless_support = USE_NRF24,
+    .nrf24_support = USE_NRF24,
     .i2c_support = USE_I2C,
     .unifying_support = USE_UNIFYING,
     .usb_support = USE_USB,
@@ -112,23 +112,19 @@ void settings_load_from_flash(void) {
             // TODO: Decide what to do when settings are corrupt. If a feature
             // could prevent reflashing the layout over the USB interface,
             // should prefer to disable it.
-            const runtime_settings_t default_runtime_settings = {
-                .device_id = 0,
-                .feature_ctrl = {
-                    .usb_disable = false,
-                    .wired_disable = true,
-                    .rf_disable = true,
-                    .rf_mouse_disable = true,
-                    .bt_disable = true,
-                },
-            };
+            g_runtime_settings.device_id = 0;
+            g_runtime_settings.feature_ctrl = FEATURE_CTRL_FEATURES_DISABLED_AT_BUILD_TIME;
 
-            memcpy(&g_runtime_settings, &default_runtime_settings, sizeof(runtime_settings_t));
             g_scan_plan.mode = MATRIX_SCANNER_MODE_NONE;
 
             // Should rf settings have a crc too?
         }
     }
+
+    // Don't show features as enabled that are disabled at build time
+    g_runtime_settings.feature_ctrl &= FEATURE_CTRL_FEATURES_DISABLED_AT_BUILD_TIME;
+
+
 
     // TODO: validate the settings before returning
 #ifndef CONFIG_NO_MATRIX

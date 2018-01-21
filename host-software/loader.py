@@ -1025,12 +1025,11 @@ class Loader(QMainWindow):
             ("Settings stored CRC", settingsInfo.crc),
             ("Settings computed CRC", settingsInfo.computed_crc),
 
-            ("USB Enabled", settingsInfo.row_count),
-            ("I2C Enabled", settingsInfo.row_count),
-            (" Enabled", settingsInfo.row_count),
-            ("USB Enabled", settingsInfo.row_count),
-            ("USB Enabled", settingsInfo.row_count),
-            # ("Bluetooth Enabled", settingsInfo.row_count),
+            ("USB", not (settingsInfo.has_usb_disabled() or not firmwareInfo.has_fw_support_usb())),
+            ("I2C", not (settingsInfo.has_i2c_disabled() or not firmwareInfo.has_fw_support_i2c())),
+            ("nRF24 wireless", not (settingsInfo.has_nrf24_disabled() or not firmwareInfo.has_fw_support_nrf24())),
+            ("Unifying mouse", not (settingsInfo.has_unifying_mouse_disabled() or not firmwareInfo.has_fw_support_unifying())),
+            ("Bluetooth", not (settingsInfo.has_bluetooth_disabled() or not firmwareInfo.has_fw_support_bluetooth())),
 
             ("RF pipe0", binascii.hexlify(rfInfo.pipe0).decode('ascii')),
             ("RF pipe1", binascii.hexlify(rfInfo.pipe1).decode('ascii')),
@@ -1070,7 +1069,7 @@ class Loader(QMainWindow):
             ("Support ws2812 LEDs", firmwareInfo.has_fw_support_led_ws2812()),
 
             ("Support USB", firmwareInfo.has_fw_support_usb()),
-            ("Support nRF24 wireless", firmwareInfo.has_fw_support_wireless()),
+            ("Support nRF24 wireless", firmwareInfo.has_fw_support_nrf24()),
             ("Support Unifying", firmwareInfo.has_fw_support_unifying()),
             ("Support I2C", firmwareInfo.has_fw_support_i2c()),
             ("Support Bluetooth", firmwareInfo.has_fw_support_bluetooth()),

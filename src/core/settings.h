@@ -71,16 +71,32 @@ typedef struct rf_settings_t { // 64 bytes
     uint8_t dkey[AES_KEY_LEN];
 } rf_settings_t;
 
-typedef struct feature_ctrl_t {
-    uint8_t usb_disable: 1;
-    uint8_t wired_disable: 1;
-    uint8_t rf_disable: 1;
-    uint8_t rf_mouse_disable: 1;
-    uint8_t bt_disable: 1;
-    uint8_t reserved_0: 1;
-    uint8_t reserved_1: 1;
-    uint8_t reserved_2: 1;
-} feature_ctrl_t;
+#define FEATURE_CTRL_USB_DISABLE      (1 << 0)
+#define FEATURE_CTRL_WIRED_DISABLE    (1 << 1)
+#define FEATURE_CTRL_RF_DISABLE       (1 << 2)
+#define FEATURE_CTRL_RF_MOUSE_DISABLE (1 << 3)
+#define FEATURE_CTRL_BT_DISABLE       (1 << 4)
+#define FEATURE_CTRL_RESERVED_0       (1 << 5)
+#define FEATURE_CTRL_RESERVED_1       (1 << 6)
+#define FEATURE_CTRL_RESERVED_2       (1 << 7)
+
+#define FEATURE_CTRL_FEATURES_DISABLED_AT_BUILD_TIME \
+    (!USE_USB << 0) | \
+    (!USE_I2C << 1) | \
+    (!USE_NRF24 << 2) | \
+    (!USE_UNIFYING << 3) | \
+    (!USE_BLUETOOTH << 4)
+
+// typedef struct feature_ctrl_t {
+//     uint8_t usb_disable: 1;
+//     uint8_t wired_disable: 1;
+//     uint8_t rf_disable: 1;
+//     uint8_t rf_mouse_disable: 1;
+//     uint8_t bt_disable: 1;
+//     uint8_t reserved_0: 1;
+//     uint8_t reserved_1: 1;
+//     uint8_t reserved_2: 1;
+// } feature_ctrl_t;
 
 #define SETTINGS_MAIN_INFO_SIZE 96
 typedef struct settings_t { // 512 bytes
@@ -91,7 +107,7 @@ typedef struct settings_t { // 512 bytes
     uint8_t scan_mode;
     uint8_t row_count;
     uint8_t col_count;
-    feature_ctrl_t feature_ctrl;
+    uint8_t feature_ctrl;
     uint8_t _reserved[48];
     uint16_t crc; // size == 96
     layout_settings_t layout; // size == 352
@@ -101,7 +117,7 @@ typedef struct settings_t { // 512 bytes
 // Settings that are loaded from flash and/or changeable at run time
 typedef struct runtime_settings_t {
     uint8_t device_id;
-    feature_ctrl_t feature_ctrl;
+    uint8_t feature_ctrl;
 } runtime_settings_t;
 
 /*********************************************************************
@@ -116,7 +132,7 @@ typedef struct firmware_build_settings_t {
     uint8_t git_hash[8]; // git hash of the firmware
 
     // supported connectivity features
-    uint8_t wireless_support: 1;
+    uint8_t nrf24_support: 1;
     uint8_t i2c_support: 1;
     uint8_t unifying_support: 1;
     uint8_t usb_support: 1;
