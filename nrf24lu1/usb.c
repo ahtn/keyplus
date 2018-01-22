@@ -23,7 +23,6 @@
 
 XRAM uint8_t has_received_usb_data;
 
-static XRAM uint8_t usb_current_configuration;
 static XRAM usb_state_t usb_state;
 
 // TODO: probably move these
@@ -155,7 +154,7 @@ void usb_handle_device_request(void) {
                 in0buf[0] = 0x00;
                 in0bc = 0x01;
             } else if (usb_state == USB_CONFIGURED) {
-                in0buf[0] = usb_current_configuration;
+                in0buf[0] = g_usb_current_configuration;
                 in0bc = 0x01;
             } else {
                 // Behavior not specified in other states, so STALL
@@ -166,11 +165,15 @@ void usb_handle_device_request(void) {
         case USB_REQ_SET_CONFIGURATION: {
             if (usb_request.val.wValueLSB == 0x00) {
                 usb_state = USB_ADDRESSED;
-                usb_current_configuration = 0x00;
+                g_usb_current_configuration = 0x00;
                 USB_EP0_HSNAK();
             } else if (usb_request.val.wValueLSB == 0x01) {
                 usb_state = USB_CONFIGURED;
-                usb_current_configuration = 0x01;
+                g_usb_current_configuration = 0x01;
+                USB_EP0_HSNAK();
+            } else if (usb_request.val.wValueLSB == 0x02) {
+                usb_state = USB_CONFIGURED;
+                g_usb_current_configuration = 0x02;
                 USB_EP0_HSNAK();
             } else {
                 USB_EP0_STALL(); // Stall for invalid config values
@@ -212,6 +215,8 @@ void usb_handle_endpoint_request(void) {
 }
 
 void usb_handle_interface_request(void) {
+    uint8_t index = usb_request.val.wIndexLSB;
+
     switch (usb_request.val.bRequest) {
         case USB_REQ_GET_STATUS: {
             if (usb_state != USB_CONFIGURED) {
@@ -227,6 +232,31 @@ void usb_handle_interface_request(void) {
 
         case USB_REQ_GET_DESCRIPTOR: {
             usb_get_descriptor((usb_request_t*)&usb_request);
+        } break;
+
+        case USB_REQ_GET_INTERFACE: {
+            if (index == INTERFACE_VENDOR) {
+                in0buf[0] = g_usb_alt_setting_vendor;
+                in0bc = 0x01;
+            } else if (index <= NUM_INTERFACES) {
+                // only one alt setting for other interfaces
+                in0buf[0] = 0x00;
+                in0bc = 0x01;
+            } else {
+                USB_EP0_STALL();
+            }
+        } break;
+
+        case USB_REQ_SET_INTERFACE: {
+            if (index == INTERFACE_VENDOR) {
+                g_usb_alt_setting_vendor = usb_request.val.wValueLSB;
+                USB_EP0_HSNAK();
+            } else if (index <= NUM_INTERFACES) {
+                // do nothing, only one alt setting for other interfaces
+                USB_EP0_HSNAK();
+            } else {
+                USB_EP0_STALL();
+            }
         } break;
 
         default: {
@@ -414,7 +444,8 @@ void usb_poll(void) {
         case IVEC_USBRESET: { // USB bus reset
             usbirq = USBIRQ_URES_bm;
             usb_state = USB_DEFAULT;    // reset internal states
-            usb_current_configuration = 0;
+            g_usb_current_configuration = 0;
+            g_usb_alt_setting_vendor = 0;
         } break;
 
         case IVEC_EP0IN: {

@@ -15,10 +15,13 @@
 
 // #define USB_REVISION USB_REVISION_1_1
 // #define USB_REVISION USB_REVISION_2_0
-#define USB_REVISION USB_REVISION_2_0_1
-// #define USB_REVISION USB_REVISION_2_1
+// #define USB_REVISION USB_REVISION_2_0_1
+#define USB_REVISION USB_REVISION_2_1
 
 #define USB_HID_REVISION USB_HID_REVISION_1_11
+
+XRAM uint8_t g_usb_current_configuration = 0;
+XRAM uint8_t g_usb_alt_setting_vendor = 0;
 
 ROM const usb_device_desc_t usb_device_desc = {
     .bLength            = sizeof(usb_device_desc_t),
@@ -34,17 +37,232 @@ ROM const usb_device_desc_t usb_device_desc = {
     .iManufacturer      = STRING_DESC_MANUFACTURER,
     .iProduct           = STRING_DESC_PRODUCT,
     .iSerialNumber      = STRING_DESC_SERIAL_NUMBER,
-    .bNumConfigurations = 1,
+    .bNumConfigurations = 2,
 };
 
-ROM const usb_config_desc_keyboard_t usb_config_desc = {
+ROM const usb_config_desc_raw_hid_t usb_config_raw_hid_desc = {
     // configuration descriptor
     {
         .bLength             = sizeof(usb_config_desc_t),
         .bDescriptorType     = USB_DESC_CONFIGURATION,
-        .wTotalLength        = sizeof(usb_config_desc_keyboard_t),
+        .wTotalLength        = sizeof(usb_config_desc_raw_hid_t),
         .bNumInterfaces      = NUM_INTERFACES,
-        .bConfigurationValue = 1,
+        .bConfigurationValue = CONFIGURATION_RAWHID,
+        .iConfiguration      = STRING_DESC_NONE,
+        .bmAttributes        = USB_CONFIG_BUS_POWERED,
+        .bMaxPower           = 250, //
+    },
+
+    // boot keyboard interface descriptor
+    {
+        .bLength            = sizeof(usb_interface_desc_t),
+        .bDescriptorType    = USB_DESC_INTERFACE,
+        .bInterfaceNumber   = INTERFACE_BOOT_KEYBOARD,
+        .bAlternateSetting  = 0,
+        .bNumEndpoints      = 1,
+        .bInterfaceClass    = USB_CLASS_HID,
+        .bInterfaceSubClass = HID_SUBCLASS_BOOT,
+        .bInterfaceProtocol = HID_PROTOCOL_KEYBOARD,
+        .iInterface         = STRING_DESC_NONE,
+    },
+    // boot keyboard HID descriptor
+    {
+        .bLength             = sizeof(usb_hid_desc_t),
+        .bDescriptorType     = USB_DESC_HID,
+        .bcdHID              = USB_HID_REVISION,
+        .bCountryCode        = HID_COUNTRY_NONE,
+        .bNumDescriptors     = 1,
+        .bDescriptorType_HID = USB_DESC_HID_REPORT,
+        .wDescriptorLength   = sizeof(hid_desc_boot_keyboard),
+    },
+    // boot keyboard in endpoint descriptor
+    {
+        .bLength          = sizeof(usb_endpoint_desc_t),
+        .bDescriptorType  = USB_DESC_ENDPOINT,
+        .bEndpointAddress = (uint8_t)(USB_DIR_IN | EP_NUM_BOOT_KEYBOARD),
+        .bmAttributes     = USB_EP_TYPE_INT,
+        .wMaxPacketSize   = EP_IN_SIZE_BOOT_KEYBOARD,
+        .bInterval        = REPORT_INTERVAL_BOOT_KEYBOARD,
+    },
+
+    // mouse interface descriptor
+    {
+        .bLength            = sizeof(usb_interface_desc_t),
+        .bDescriptorType    = USB_DESC_INTERFACE,
+        .bInterfaceNumber   = INTERFACE_MOUSE,
+        .bAlternateSetting  = 0,
+        .bNumEndpoints      = 1,
+        .bInterfaceClass    = USB_CLASS_HID,
+        .bInterfaceSubClass = HID_SUBCLASS_BOOT,
+        .bInterfaceProtocol = HID_PROTOCOL_MOUSE, // mouse
+        .iInterface         = STRING_DESC_NONE,
+    },
+    { // mouse HID descriptor
+        .bLength             = sizeof(usb_hid_desc_t),
+        .bDescriptorType     = USB_DESC_HID,
+        .bcdHID              = USB_HID_REVISION,
+        .bCountryCode        = HID_COUNTRY_NONE,
+        .bNumDescriptors     = 1,
+        .bDescriptorType_HID = USB_DESC_HID_REPORT,
+        .wDescriptorLength   = sizeof(hid_desc_mouse),
+    },
+    { // mouse in endpoint descriptor
+        .bLength          = sizeof(usb_endpoint_desc_t),
+        .bDescriptorType  = USB_DESC_ENDPOINT,
+        .bEndpointAddress = USB_DIR_IN | EP_NUM_MOUSE,
+        .bmAttributes     = USB_EP_TYPE_INT,
+        .wMaxPacketSize   = EP_IN_SIZE_MOUSE,
+        .bInterval        = REPORT_INTERVAL_MOUSE,
+    },
+
+    // media interface descriptor
+    {
+        .bLength            = sizeof(usb_interface_desc_t),
+        .bDescriptorType    = USB_DESC_INTERFACE,
+        .bInterfaceNumber   = INTERFACE_MEDIA,
+        .bAlternateSetting  = 0,
+        .bNumEndpoints      = 1,
+        .bInterfaceClass    = USB_CLASS_HID,
+        .bInterfaceSubClass = 0,
+        .bInterfaceProtocol = 0, // TODO
+        .iInterface         = STRING_DESC_NONE,
+    },
+    // media HID descriptor
+    {
+        .bLength             = sizeof(usb_hid_desc_t),
+        .bDescriptorType     = USB_DESC_HID,
+        .bcdHID              = USB_HID_REVISION,
+        .bCountryCode        = HID_COUNTRY_NONE,
+        .bNumDescriptors     = 1,
+        .bDescriptorType_HID = USB_DESC_HID_REPORT,
+        .wDescriptorLength   = sizeof(hid_desc_media),
+    },
+    // media endpoint descriptor
+    {
+        .bLength          = sizeof(usb_endpoint_desc_t),
+        .bDescriptorType  = USB_DESC_ENDPOINT,
+        .bEndpointAddress = USB_DIR_IN | EP_NUM_MEDIA,
+        .bmAttributes     = USB_EP_TYPE_INT,
+        .wMaxPacketSize   = EP_IN_SIZE_MEDIA,
+        .bInterval        = REPORT_INTERVAL_MEDIA,
+    },
+
+    // vendor interface descriptor
+    .intf3_rawhid = {
+        .bLength            = sizeof(usb_interface_desc_t),
+        .bDescriptorType    = USB_DESC_INTERFACE,
+        .bInterfaceNumber   = INTERFACE_VENDOR,
+        .bAlternateSetting  = ALTERNATE_SETTING_RAWHID,
+        .bNumEndpoints      = 2,
+        .bInterfaceClass    = USB_CLASS_HID,
+        .bInterfaceSubClass = USB_CLASS_VENDOR,
+        .bInterfaceProtocol = USB_CLASS_VENDOR,
+        .iInterface         = STRING_DESC_NONE,
+    },
+    // vendor HID descriptor
+    {
+        .bLength             = sizeof(usb_hid_desc_t),
+        .bDescriptorType     = USB_DESC_HID,
+        .bcdHID              = USB_HID_REVISION,
+        .bCountryCode        = HID_COUNTRY_NONE,
+        .bNumDescriptors     = 1,
+        .bDescriptorType_HID = USB_DESC_HID_REPORT,
+        .wDescriptorLength   = sizeof(hid_desc_vendor),
+    },
+    // endpoint descriptor in
+    {
+        .bLength          = sizeof(usb_endpoint_desc_t),
+        .bDescriptorType  = USB_DESC_ENDPOINT,
+        .bEndpointAddress = USB_DIR_IN | EP_NUM_VENDOR,
+        .bmAttributes     = USB_EP_TYPE_INT,
+        .wMaxPacketSize   = EP_SIZE_VENDOR,
+        .bInterval        = REPORT_INTERVAL_VENDOR_IN,
+    },
+    // endpoint descriptor out
+    {
+        .bLength          = sizeof(usb_endpoint_desc_t),
+        .bDescriptorType  = USB_DESC_ENDPOINT,
+        .bEndpointAddress = USB_DIR_OUT | EP_NUM_VENDOR,
+        .bmAttributes     = USB_EP_TYPE_INT,
+        .wMaxPacketSize   = EP_SIZE_VENDOR,
+        .bInterval        = REPORT_INTERVAL_VENDOR_OUT,
+    },
+
+    // vendor interface descriptor
+    .intf3_webusb = {
+        .bLength            = sizeof(usb_interface_desc_t),
+        .bDescriptorType    = USB_DESC_INTERFACE,
+        .bInterfaceNumber   = INTERFACE_VENDOR,
+        .bAlternateSetting  = ALTERNATE_SETTING_WEBUSB,
+        .bNumEndpoints      = 2,
+        .bInterfaceClass    = USB_CLASS_VENDOR,
+        .bInterfaceSubClass = USB_CLASS_VENDOR,
+        .bInterfaceProtocol = USB_CLASS_VENDOR,
+        .iInterface         = STRING_DESC_NONE,
+    },
+    // endpoint descriptor in
+    {
+        .bLength          = sizeof(usb_endpoint_desc_t),
+        .bDescriptorType  = USB_DESC_ENDPOINT,
+        .bEndpointAddress = USB_DIR_IN | EP_NUM_VENDOR,
+        .bmAttributes     = USB_EP_TYPE_INT,
+        .wMaxPacketSize   = EP_SIZE_VENDOR,
+        .bInterval        = REPORT_INTERVAL_VENDOR_IN,
+    },
+    // endpoint descriptor out
+    {
+        .bLength          = sizeof(usb_endpoint_desc_t),
+        .bDescriptorType  = USB_DESC_ENDPOINT,
+        .bEndpointAddress = USB_DIR_OUT | EP_NUM_VENDOR,
+        .bmAttributes     = USB_EP_TYPE_INT,
+        .wMaxPacketSize   = EP_SIZE_VENDOR,
+        .bInterval        = REPORT_INTERVAL_VENDOR_OUT,
+    },
+
+    // nkro keyboard interface descriptor
+    {
+        .bLength            = sizeof(usb_interface_desc_t),
+        .bDescriptorType    = USB_DESC_INTERFACE,
+        .bInterfaceNumber   = INTERFACE_NKRO_KEYBOARD,
+        .bAlternateSetting  = 0,
+        .bNumEndpoints      = 1,
+        .bInterfaceClass    = USB_CLASS_HID,
+        .bInterfaceSubClass = 0,
+        .bInterfaceProtocol = 0,
+        .iInterface         = STRING_DESC_NONE,
+    },
+
+    // nkro keyboard HID descriptor
+    {
+        .bLength             = sizeof(usb_hid_desc_t),
+        .bDescriptorType     = USB_DESC_HID,
+        .bcdHID              = USB_HID_REVISION,
+        .bCountryCode        = HID_COUNTRY_NONE,
+        .bNumDescriptors     = 1,
+        .bDescriptorType_HID = USB_DESC_HID_REPORT,
+        .wDescriptorLength   = sizeof(hid_desc_nkro_keyboard),
+    },
+    // keyboard in endpoint descriptor
+    {
+        .bLength          = sizeof(usb_endpoint_desc_t),
+        .bDescriptorType  = USB_DESC_ENDPOINT,
+        .bEndpointAddress = USB_DIR_IN | EP_NUM_NKRO_KEYBOARD,
+        .bmAttributes     = USB_EP_TYPE_INT,
+        .wMaxPacketSize   = EP_IN_SIZE_NKRO_KEYBOARD,
+        .bInterval        = REPORT_INTERVAL_NKRO_KEYBOARD,
+    },
+
+};
+
+#if 0
+ROM const usb_config_desc_webusb_t usb_config_webusb_desc = {
+    // configuration descriptor
+    {
+        .bLength             = sizeof(usb_config_desc_t),
+        .bDescriptorType     = USB_DESC_CONFIGURATION,
+        .wTotalLength        = sizeof(usb_config_desc_webusb_t),
+        .bNumInterfaces      = NUM_INTERFACES,
+        .bConfigurationValue = CONFIGURATION_WEBUSB,
         .iConfiguration      = STRING_DESC_NONE,
         .bmAttributes        = USB_CONFIG_BUS_POWERED,
         .bMaxPower           = 250, //
@@ -267,6 +485,8 @@ ROM const usb_config_desc_keyboard_t usb_config_desc = {
     },
 #endif
 };
+#endif
+
 
 // language id in string 0 descriptor
 ROM const uint16_t usb_string_desc_0[2] = {

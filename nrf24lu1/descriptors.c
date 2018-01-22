@@ -131,8 +131,8 @@ void usb_get_descriptor(const usb_request_t *request) {
             } break;
 
             case USB_DESC_CONFIGURATION: {
-                packetizer_data_ptr = (const XRAM uint8_t*) &usb_config_desc;
-                packetizer_data_size = sizeof(usb_config_desc);
+                packetizer_data_ptr = (const XRAM uint8_t*) &usb_config_raw_hid_desc;
+                packetizer_data_size = sizeof(usb_config_raw_hid_desc);
             } break;
 
             case USB_DESC_STRING: {
