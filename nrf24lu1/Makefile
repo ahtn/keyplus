@@ -182,7 +182,7 @@ else
 ALL_TARGET=$(MERGED_HEX)
 endif
 
-all: $(ALL_TARGET)
+all: $(ALL_TARGET) size
 
 $(MERGED_HEX): $(TARGET).hex
 	@echo "=== merging layout settings files ==="
@@ -236,17 +236,17 @@ $(OBJ_DIR)/%.dep: %.c
 
 clean:
 	rm -f $(TARGET).hex
-	rm -f $(TARGET)-uni.hex
+	rm -f $(MERGED_HEX).hex
+	rm -f $(TARGET)-unirecv.hex
 	rm -fr $(OBJ_DIR)
 	rm -fr nrfburn.txt
 
 # program: flash
-program-boot: $(MERGED_HEX) size
-	./scripts/flash_hex.sh $(MERGED_HEX)
+program-boot: $(ALL_TARGET) size
+	./scripts/flash_hex.sh $(ALL_TARGET)
 
-program-hard: flash
-flash: $(TARGET).hex size
-	nrfburn -f $(FLASH_SIZE) -w $(MERGED_HEX)
+program-hard: $(ALL_TARGET) size
+	nrfburn -f $(FLASH_SIZE) -w $(ALL_TARGET)
 
 -include $(DEP_FILES)
 

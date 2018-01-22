@@ -10,6 +10,14 @@
 
 #include "usb_user_impl.h"
 
+#define USE_EXTRA_INTERFACE 0
+
+// #if !USE_WEBUSB
+// #undef USE_EXTRA_INTERFACE
+// #define USE_EXTRA_INTERFACE 0
+// #endif
+
+
 #if USE_WEBUSB
 #include "usb/util/webusb.h"
 #endif
@@ -30,7 +38,9 @@ typedef struct usb_config_desc_keyboard_t {
     usb_endpoint_desc_t ep3in;
 
     usb_interface_desc_t intf3;
+#if !USE_WEBUSB || USE_EXTRA_INTERFACE
     usb_hid_desc_t hid3;
+#endif
     usb_endpoint_desc_t ep4in;
     usb_endpoint_desc_t ep4out;
 
@@ -38,7 +48,7 @@ typedef struct usb_config_desc_keyboard_t {
     usb_hid_desc_t hid4;
     usb_endpoint_desc_t ep5in;
 
-#if USE_WEBUSB
+#if USE_WEBUSB && USE_EXTRA_INTERFACE
     usb_interface_desc_t intf5;
     usb_endpoint_desc_t ep4in_duplicate;
     usb_endpoint_desc_t ep4out_duplicate;
@@ -53,13 +63,12 @@ typedef struct usb_config_desc_keyboard_t {
 #define INTERFACE_NKRO_KEYBOARD 4
 #define INTERFACE_WEBUSB 5
 
-#if USE_WEBUSB
-#define LAST_INTERFACE_NUMBER INTERFACE_WEBUSB
+#if USE_WEBUSB && USE_EXTRA_INTERFACE
+#define NUM_INTERFACES (6)
 #else
-#define LAST_INTERFACE_NUMBER INTERFACE_NKRO_KEYBOARD
+#define NUM_INTERFACES (5)
 #endif
 
-#define NUM_INTERFACES (LAST_INTERFACE_NUMBER+1)
 
 #define EP_NUM_BOOT_KEYBOARD    1
 #define EP_NUM_MOUSE            2
@@ -129,8 +138,8 @@ typedef struct usb_config_desc_keyboard_t {
 #define STRING_DESC_SERIAL_NUMBER 3
 #define STRING_DESC_TEST 4
 
-#define WEBUSB_VENDOR_CODE 0x42
-#define WEBUSB_LANDING_PAGE 0x00
+#define WEBUSB_VENDOR_CODE 0x01
+#define WEBUSB_LANDING_PAGE 0x01
 
 extern ROM const usb_config_desc_keyboard_t usb_config_desc;
 extern ROM const usb_device_desc_t usb_device_desc;
@@ -160,8 +169,8 @@ typedef struct bos_desc_table_t {
 extern ROM const bos_desc_table_t bos_desc_table;
 
 #define WEBUSB_URL_COUNT 1
-extern ROM const uint8_t webusb_url_desc_0[];
-// extern ROM const uint8_t usb_url_desc_1[];
+extern ROM const uint8_t webusb_url_desc_1[];
+// extern ROM const uint8_t usb_url_desc_2[];
 
 #endif
 

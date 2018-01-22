@@ -14,7 +14,6 @@
 #define USB_REQTYPE_DIRECTION_HOST_TO_DEVICE 0
 #define USB_REQTYPE_DIRECTION_DEVICE_TO_HOST 1
 
-// request type: type
 #define USB_REQTYPE_TYPE_STANDARD 0
 #define USB_REQTYPE_TYPE_CLASS    1
 #define USB_REQTYPE_TYPE_VENDOR   2
@@ -48,8 +47,20 @@
 #define USB_REQ_HID_SET_PROTOCOL  0x0b
 
 typedef union usb_request_t {
+    // struct {
+    //     uint8_t   bmRequestType;
+    //     uint8_t   bRequest;
+    //     uint16_t  wValue;
+    //     uint16_t  wIndex;
+    //     uint16_t  wLength;
+    // } std;
+
     struct {
-        uint8_t   bmRequestType;
+        struct   {
+            uint8_t recipient: 5;
+            uint8_t reqType: 2;
+            uint8_t direction: 1;
+        } bmRequestType;
         uint8_t   bRequest;
         uint16_t  wValue;
         uint16_t  wIndex;

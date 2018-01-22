@@ -103,14 +103,12 @@ void usb_get_descriptor(const usb_request_t *request) {
     }
     packetizer_data_ptr = NULL;
 
-    if (request->val.bRequest == WEBUSB_VENDOR_CODE &&
-        request->val.bmRequestType == 0b11000000 &&
-        request->val.wIndexLSB == WEBUSB_REQ_GET_URL) {
+    if (request->std.bmRequestType.reqType == USB_REQTYPE_TYPE_VENDOR) {
         const uint8_t index = request->val.wValueLSB;
-        if (index < WEBUSB_URL_COUNT) {
-            if (index == 0) {
-                packetizer_data_ptr = (const XRAM uint8_t*) &webusb_url_desc_0;
-            }
+        if (index <= WEBUSB_URL_COUNT) {
+            // if (index == WEBUSB_LANDING_PAGE) {
+            // }
+            packetizer_data_ptr = (const XRAM uint8_t*) &webusb_url_desc_1;
             packetizer_data_size = flash_read_byte((flash_ptr_t)packetizer_data_ptr);
         }
     } else {

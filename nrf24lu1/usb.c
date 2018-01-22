@@ -330,11 +330,11 @@ void usb_vendor_request(void) {
 // this function selects the appropriate request handle when we recevie a setup
 // data packet
 void usb_receive_request(void) {
-    const uint8_t req_type = usb_request.val.bmRequestType & USB_REQTYPE_TYPE_MASK;
+    const uint8_t req_type = usb_request.std.bmRequestType.reqType;
 
     switch (req_type) {
         case USB_REQTYPE_TYPE_STANDARD: {
-            const uint8_t recipient = usb_request.val.bmRequestType & USB_REQTYPE_RECIPIENT_MASK;
+            const uint8_t recipient = usb_request.std.bmRequestType.recipient;
             switch (recipient) {
                 case USB_REQTYPE_RECIPIENT_DEVICE: {
                     usb_handle_device_request();

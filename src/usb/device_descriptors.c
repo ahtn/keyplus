@@ -16,6 +16,8 @@
 // #define USB_REVISION USB_REVISION_1_1
 // #define USB_REVISION USB_REVISION_2_0
 #define USB_REVISION USB_REVISION_2_0_1
+// #define USB_REVISION USB_REVISION_2_1
+
 #define USB_HID_REVISION USB_HID_REVISION_1_11
 
 ROM const usb_device_desc_t usb_device_desc = {
@@ -142,18 +144,20 @@ ROM const usb_config_desc_keyboard_t usb_config_desc = {
         .bInterval        = REPORT_INTERVAL_MEDIA,
     },
 
+#if !USE_WEBUSB || USE_EXTRA_INTERFACE
     // vendor interface descriptor
-    {
+    .intf3 = {
         .bLength            = sizeof(usb_interface_desc_t),
         .bDescriptorType    = USB_DESC_INTERFACE,
         .bInterfaceNumber   = INTERFACE_VENDOR,
         .bAlternateSetting  = 0,
         .bNumEndpoints      = 2,
         .bInterfaceClass    = USB_CLASS_HID,
-        .bInterfaceSubClass = 0,
-        .bInterfaceProtocol = 0, // TODO
+        .bInterfaceSubClass = USB_CLASS_VENDOR,
+        .bInterfaceProtocol = USB_CLASS_VENDOR,
         .iInterface         = STRING_DESC_NONE,
     },
+
     // vendor HID descriptor
     {
         .bLength             = sizeof(usb_hid_desc_t),
@@ -164,6 +168,21 @@ ROM const usb_config_desc_keyboard_t usb_config_desc = {
         .bDescriptorType_HID = USB_DESC_HID_REPORT,
         .wDescriptorLength   = sizeof(hid_desc_vendor),
     },
+#else
+    // vendor interface descriptor
+    .intf3 = {
+        .bLength            = sizeof(usb_interface_desc_t),
+        .bDescriptorType    = USB_DESC_INTERFACE,
+        .bInterfaceNumber   = INTERFACE_VENDOR,
+        .bAlternateSetting  = 0,
+        .bNumEndpoints      = 2,
+        .bInterfaceClass    = USB_CLASS_VENDOR,
+        .bInterfaceSubClass = USB_CLASS_VENDOR,
+        .bInterfaceProtocol = USB_CLASS_VENDOR,
+        .iInterface         = STRING_DESC_NONE,
+    },
+#endif
+
     // endpoint descriptor in
     {
         .bLength          = sizeof(usb_endpoint_desc_t),
@@ -216,16 +235,16 @@ ROM const usb_config_desc_keyboard_t usb_config_desc = {
         .bInterval        = REPORT_INTERVAL_NKRO_KEYBOARD,
     },
 
-#if USE_WEBUSB
+#if USE_WEBUSB && USE_EXTRA_INTERFACE
     .intf5 = {
         .bLength            = sizeof(usb_interface_desc_t),
         .bDescriptorType    = USB_DESC_INTERFACE,
         .bInterfaceNumber   = INTERFACE_WEBUSB,
         .bAlternateSetting  = 0,
         .bNumEndpoints      = 2,
-        .bInterfaceClass    = 0xff, // TODO
-        .bInterfaceSubClass = 0xff,
-        .bInterfaceProtocol = 0xff, // TODO
+        .bInterfaceClass    = USB_CLASS_VENDOR,
+        .bInterfaceSubClass = USB_CLASS_VENDOR,
+        .bInterfaceProtocol = USB_CLASS_VENDOR,
         .iInterface         = STRING_DESC_NONE,
     },
     // endpoint descriptor in
@@ -292,11 +311,19 @@ ROM const bos_desc_table_t bos_desc_table = {
     },
 };
 
-ROM const uint8_t webusb_url_desc_0[15] = {
-    sizeof(webusb_url_desc_0),
+// // Note: Chrome will only report the landing page for urls using HTTPS
+// ROM const uint8_t webusb_url_desc_1[13] = {
+//     sizeof(webusb_url_desc_1),
+//     WEBUSB_URL,
+//     WEBUSB_SCHEME_HTTPS,
+//     'k', 'e', 'y', 'p', 'l', 'u', 's', '.', 'i', 'o'
+// };
+
+ROM const uint8_t webusb_url_desc_1[17] = {
+    sizeof(webusb_url_desc_1),
     WEBUSB_URL,
     WEBUSB_SCHEME_HTTP,
-    '0', '.', '0', '.', '0', '.', '0', ':', '8', '0', '0', '0'
+    'l', 'o', 'c', 'a', 'l', 'h', 'o', 's', 't', ':', '8', '0', '0', '0'
 };
 
 // ROM const uint8_t usb_url_desc_2[15] = {
