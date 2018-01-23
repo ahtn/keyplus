@@ -51,8 +51,8 @@ document.addEventListener('DOMContentLoaded', event => {
           return device.selectConfiguration(1);
         }
       })
-      .then(() => device.selectAlternateInterface(WEBUSB_INTF_NUM, 1))
       .then(() => device.claimInterface(WEBUSB_INTF_NUM))
+      .then(() => device.selectAlternateInterface(WEBUSB_INTF_NUM, 1))
 
       console.log('opened:', device)
 

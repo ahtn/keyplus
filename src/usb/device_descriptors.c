@@ -160,7 +160,7 @@ ROM const usb_config_desc_raw_hid_t usb_config_raw_hid_desc = {
         .iInterface         = STRING_DESC_NONE,
     },
     // vendor HID descriptor
-    {
+    .hid3_rawhid = {
         .bLength             = sizeof(usb_hid_desc_t),
         .bDescriptorType     = USB_DESC_HID,
         .bcdHID              = USB_HID_REVISION,
@@ -170,7 +170,7 @@ ROM const usb_config_desc_raw_hid_t usb_config_raw_hid_desc = {
         .wDescriptorLength   = sizeof(hid_desc_vendor),
     },
     // endpoint descriptor in
-    {
+    .ep4in_rawhid = {
         .bLength          = sizeof(usb_endpoint_desc_t),
         .bDescriptorType  = USB_DESC_ENDPOINT,
         .bEndpointAddress = USB_DIR_IN | EP_NUM_VENDOR,
@@ -179,7 +179,7 @@ ROM const usb_config_desc_raw_hid_t usb_config_raw_hid_desc = {
         .bInterval        = REPORT_INTERVAL_VENDOR_IN,
     },
     // endpoint descriptor out
-    {
+    .ep4out_rawhid = {
         .bLength          = sizeof(usb_endpoint_desc_t),
         .bDescriptorType  = USB_DESC_ENDPOINT,
         .bEndpointAddress = USB_DIR_OUT | EP_NUM_VENDOR,
@@ -201,7 +201,7 @@ ROM const usb_config_desc_raw_hid_t usb_config_raw_hid_desc = {
         .iInterface         = STRING_DESC_NONE,
     },
     // endpoint descriptor in
-    {
+    .ep4in_webusb = {
         .bLength          = sizeof(usb_endpoint_desc_t),
         .bDescriptorType  = USB_DESC_ENDPOINT,
         .bEndpointAddress = USB_DIR_IN | EP_NUM_VENDOR,
@@ -210,7 +210,7 @@ ROM const usb_config_desc_raw_hid_t usb_config_raw_hid_desc = {
         .bInterval        = REPORT_INTERVAL_VENDOR_IN,
     },
     // endpoint descriptor out
-    {
+    .ep4out_webusb = {
         .bLength          = sizeof(usb_endpoint_desc_t),
         .bDescriptorType  = USB_DESC_ENDPOINT,
         .bEndpointAddress = USB_DIR_OUT | EP_NUM_VENDOR,

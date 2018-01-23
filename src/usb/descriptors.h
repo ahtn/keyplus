@@ -68,7 +68,7 @@ typedef struct usb_config_desc_raw_hid_t {
     usb_endpoint_desc_t ep3in;
 
     usb_interface_desc_t intf3_rawhid;
-    usb_hid_desc_t hid3;
+    usb_hid_desc_t hid3_rawhid;
     usb_endpoint_desc_t ep4in_rawhid;
     usb_endpoint_desc_t ep4out_rawhid;
 
@@ -105,10 +105,10 @@ typedef struct bos_desc_table_t {
 #endif
 
 #define CONFIGURATION_RAWHID 1
-#define CONFIGURATION_WEBUSB 2
+// #define CONFIGURATION_WEBUSB 2
 
-#define ALTERNATE_SETTING_RAWHID 0
-#define ALTERNATE_SETTING_WEBUSB 1
+#define ALTERNATE_SETTING_RAWHID 1
+#define ALTERNATE_SETTING_WEBUSB 0
 
 #define EP_NUM_BOOT_KEYBOARD    1
 #define EP_NUM_MOUSE            2
