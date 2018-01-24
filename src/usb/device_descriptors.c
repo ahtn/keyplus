@@ -529,6 +529,19 @@ ROM const bos_desc_table_t bos_desc_table = {
         .bVendorCode = WEBUSB_VENDOR_CODE,
         .iLandingPage = WEBUSB_LANDING_PAGE,
     },
+
+    // MS OS 2.0 capability descriptor
+    .usb_msos_desc = {
+        .bLength = sizeof(usb_ms_os_20_desc_t),
+        .bDescriptorType = MS_OS_20_CAPABILITY,
+        .bDevCapabilityType = MS_OS_20_CAPABILITY,
+        .bReserved = 0,
+        .PlatformCapabilityUUID[16] = MS_OS_20_UUID,
+        .dwWindowsVersion = MS_OS_20_WINDOWS_81,
+        .bMS_VendorCode = MSOS_VENDOR_CODE,
+        .bAltEnumCode = 0,
+    },
+
 };
 
 // // Note: Chrome will only report the landing page for urls using HTTPS

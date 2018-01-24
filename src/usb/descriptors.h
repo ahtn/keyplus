@@ -7,6 +7,7 @@
 
 #include "usb/util/descriptor_defs.h"
 #include "usb/util/requests.h"
+#include "usb/util/ms_os_20.h"
 
 #include "usb_user_impl.h"
 
@@ -86,6 +87,7 @@ typedef struct usb_config_desc_raw_hid_t {
 typedef struct bos_desc_table_t {
     usb_bos_desc_t bos_desc;
     usb_webusb_desc_t webusb_bos_desc;
+    usb_ms_os_20_desc_t usb_msos_desc;
 } bos_desc_table_t;
 #endif
 
@@ -179,6 +181,8 @@ typedef struct bos_desc_table_t {
 #define STRING_DESC_TEST 4
 
 #define WEBUSB_VENDOR_CODE 0x01
+#define MSOS_VENDOR_CODE 0x02
+
 #define WEBUSB_LANDING_PAGE 0x01
 
 extern ROM const usb_config_desc_raw_hid_t usb_config_raw_hid_desc;
