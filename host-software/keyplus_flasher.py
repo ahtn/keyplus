@@ -779,6 +779,7 @@ class Loader(QMainWindow):
 
         self.setGeometry(300, 300, 350, 250)
         self.setWindowTitle('keyplus layout and firmware loader')
+        self.setWindowIcon(QIcon('keyplus.ico'))
         self.show()
 
     def process_layout(self, layout_json_obj, layout_file, device_id):

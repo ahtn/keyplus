@@ -14,7 +14,7 @@ cli_a = Analysis(['keyplus_cli.py'],
              win_private_assemblies=False,
              cipher=block_cipher)
 
-loader_a = Analysis(['loader.spec'],
+flasher_a = Analysis(['flasher.spec'],
              pathex=['C:\\Users\\user\\code\\keyplus\\host-software'],
              binaries=[],
              datas=[],
@@ -27,7 +27,7 @@ loader_a = Analysis(['loader.spec'],
              cipher=block_cipher)
 
 merged = MERGE( (cli_a, "keyplus_cli", "keyplus_cli"),
-                (loader_a, "keyplus_loader", "keyplus_loader") )
+                (flasher_a, "keyplus_flasher", "keyplus_flasher") )
 
 
 cli_pyz = PYZ(cli_a.pure, cli_a.zipped_data,
@@ -48,12 +48,12 @@ cli_coll = COLLECT(cli_exe,
                upx=True,
                name='keyplus_cli')
 
-loader_pyz = PYZ(loader_a.pure, loader_a.zipped_data,
+flasher_pyz = PYZ(flasher_a.pure, flasher_a.zipped_data,
              cipher=block_cipher)
-loader_exe = EXE(loader_pyz,
-          loader_a.scripts,
+flasher_exe = EXE(flasher_pyz,
+          flasher_a.scripts,
           exclude_binaries=True,
-          name='loader',
+          name='flasher',
           debug=False,
           strip=False,
           upx=True,
@@ -61,10 +61,10 @@ loader_exe = EXE(loader_pyz,
 
 
 
-loader_coll = COLLECT(loader_exe,
-               loader_a.binaries,
-               loader_a.zipfiles,
-               loader_a.datas,
+flasher_coll = COLLECT(flasher_exe,
+               flasher_a.binaries,
+               flasher_a.zipfiles,
+               flasher_a.datas,
                strip=False,
                upx=True,
-               name='loader')
+               name='flasher')

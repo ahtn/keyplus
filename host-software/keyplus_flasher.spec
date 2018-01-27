@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['loader.py'],
+a = Analysis(['keyplus_flasher.py'],
              pathex=['C:\\Users\\user\\code\\keyplus\\host-software'],
              binaries=[],
              datas=[('hidapi.dll', '.')],
@@ -21,8 +21,8 @@ exe = EXE(pyz,
           a.binaries,
           a.zipfiles,
           a.datas,
-          name='loader',
+          name='keyplus_flasher',
           debug=False,
           strip=False,
           upx=True,
-          console=False , icon='favicon.ico')
+          console=False , icon='keyplus.ico')
