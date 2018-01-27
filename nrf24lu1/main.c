@@ -19,6 +19,7 @@
 #include "core/vendor_report.h"
 
 #include "core/aes.h"
+#include "core/error.h"
 #include "core/hardware.h"
 #include "core/led.h"
 #include "core/matrix_interpret.h"
@@ -38,15 +39,20 @@ void nrf24lu1_rf_isr(void) __interrupt (ISR_RFIRQ);
 // TODO: cleanup init code
 void dongle_init(void) {
     wdt_init();
+    init_error_system();
 
     hardware_init();
-    settings_load_from_flash();
-    aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
     timer_init();
     led_init();
+
+    settings_load_from_flash();
+    if (!has_critical_error()) {
+        aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
+        rf_init_receive();
+        keyboards_init();
+    }
+
     usb_init();
-    rf_init_receive();
-    keyboards_init();
     reset_usb_reports();
 }
 
@@ -59,30 +65,35 @@ void main(void) {
     // enable all interrupts
     EA = 1;
 
-    rf_enable_receive_irq();
-
     while (true) {
         wdt_kick();
 
-        if (unifying_is_pairing_active()) {
-            unifying_pairing_poll();
-        } else {
-            rf_task();
+    if (!g_input_disabled && !has_critical_error()) {
+            if (unifying_is_pairing_active()) {
+                unifying_pairing_poll();
+            } else {
+                rf_task();
+            }
+
+            interpret_all_keyboard_matrices();
+
+            macro_task();
+
+            unifying_mouse_handle();
+            send_keyboard_report();
+            send_media_report();
+            send_mouse_report();
+
+            sticky_key_task();
+            hold_key_task();
         }
 
-        interpret_all_keyboard_matrices();
-
-        macro_task();
-
-        unifying_mouse_handle();
-        send_keyboard_report();
-        send_media_report();
-        send_mouse_report();
+        if (g_error_code_table[0] == 0xff) {
+            led_testing_set(1);
+        } else {
+            led_testing_set(0);
+        }
         send_vendor_report();
-
         handle_vendor_out_reports();
-
-        sticky_key_task();
-        hold_key_task();
     }
 }

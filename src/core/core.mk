@@ -24,6 +24,7 @@ CDEFS += -DGIT_HASH="$(GIT_HASH)"
 
 C_SRC += \
 	$(CORE_PATH)/crc.c \
+	$(CORE_PATH)/error.c \
 	$(CORE_PATH)/flash.c \
 	$(CORE_PATH)/hardware.c \
 	$(CORE_PATH)/layout.c \

@@ -8,6 +8,7 @@
 
 #include "core/bootloader.h"
 #include "core/debug.h"
+#include "core/error.h"
 #include "core/flash.h"
 #include "core/hardware.h"
 #include "core/layout.h"
@@ -188,11 +189,10 @@ static void erase_page_range(uint16_t start_page, uint16_t page_count) {
     flash_modify_disable();
 }
 
-static void cmd_get_device_settings(void) {
+static void cmd_get_info(void) {
     uint8_t info_type = g_vendor_report_out.data[1];
 
-    g_vendor_report_in.data[0] = CMD_GET_DEVICE_SETTINGS;
-
+    g_vendor_report_in.data[0] = CMD_GET_INFO;
     g_vendor_report_in.data[1] = info_type;
 
     if (info_type == INFO_MAIN_0) {
@@ -225,6 +225,12 @@ static void cmd_get_device_settings(void) {
             (flash_ptr_t)(&g_firmware_build_settings),
             sizeof(firmware_build_settings_t)
         );
+    } else if (info_type == INFO_ERROR_SYSTEM) {
+        memcpy(
+            g_vendor_report_in.data+2,
+            g_error_code_table,
+            SIZE_ERROR_CODE_TABLE
+        );
     } else {
         g_vendor_report_in.data[1] = INFO_UNSUPPORTED;
     }
@@ -240,9 +246,9 @@ void parse_cmd(void) {
         case CMD_BOOTLOADER: {
             cmd_custom_bootloader();
         } break;
-        case CMD_GET_DEVICE_SETTINGS: {
+        case CMD_GET_INFO: {
             debug_toggle(5);
-            cmd_get_device_settings();
+            cmd_get_info();
         } break;
         case CMD_RESET: {
             cmd_reset();

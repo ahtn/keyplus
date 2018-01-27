@@ -7,6 +7,7 @@
 
 #include "key_handlers/key_handlers.h"
 
+#include "core/error.h"
 #include "core/keyboard_report.h"
 #include "core/layout.h"
 #include "core/packet.h"
@@ -26,6 +27,7 @@ XRAM uint8_t s_read_event_queue;
 XRAM key_event_queue_t s_key_event_queues[2];
 
 #define WRITE_EVENT_QUEUE() (!s_read_event_queue)
+#define READ_EVENT_QUEUE() (s_read_event_queue)
 
 XRAM uint8_t s_has_dirty_matrix;
 XRAM uint8_t s_has_dirty_event_queue;
@@ -152,6 +154,7 @@ void queue_keycode_event(keycode_t keycode, uint8_t event_type, uint8_t kb_id) {
     key_event_trigger_t XRAM* kc_trigger;
 
     if (len >= MAX_EVENT_QUEUE_LENGTH) {
+        register_error(ERROR_KEY_EVENT_QUEUE_FULL);
         return;
     }
 
@@ -166,6 +169,7 @@ void queue_keycode_event(keycode_t keycode, uint8_t event_type, uint8_t kb_id) {
         // we should look into ways to prevent stuck keys as a result of the
         // keyboard being unloaded from memory before this event could be
         // handled.
+        register_error(ERROR_KEY_EVENT_QUEUE_UNLOADED_DEVICE);
         return;
     }
 
@@ -182,7 +186,7 @@ void queue_keycode_event(keycode_t keycode, uint8_t event_type, uint8_t kb_id) {
 
 static void apply_event_trigger_queue(uint8_t keyboard_id) {
     uint8_t i;
-    key_event_queue_t XRAM* queue = &s_key_event_queues[s_read_event_queue];
+    key_event_queue_t XRAM* queue = &s_key_event_queues[READ_EVENT_QUEUE()];
 
     for (i = 0; i < queue->length; ++i) {
         if (queue->events[i].keyboard_id != keyboard_id) {
@@ -197,7 +201,7 @@ static void apply_event_trigger_queue(uint8_t keyboard_id) {
 }
 
 // static bit_t has_unprocessed_events(void) {
-//     return (s_key_event_queues[s_read_event_queue].length != 0);
+//     return (s_key_event_queues[READ_EVENT_QUEUE()].length != 0);
 // }
 
 void reset_layer_state(uint8_t kb_slot_id) {
@@ -305,7 +309,13 @@ uint8_t acquire_slot(uint8_t kb_id) {
 }
 
 void keyboards_init(void) {
+    if (has_critical_error()) {
+        // Can't initialize if flash is corrupt
+        return;
+    }
+
     // TODO: probably set default layers
+
     keyboard_layouts_init();
     memset(s_slot_id_map, INVALID_DEVICE_ID, MAX_NUM_KEYBOARD_SLOTS);
     s_slot_fifo_pos = 0;
@@ -347,12 +357,14 @@ void keyboard_update_device_matrix(uint8_t device_id, const uint8_t *matrix_pack
     matrix_write_pos = g_keyboard_slots[kb_slot_id].matrix + device_matrix_offset;
 
     if (device_id > MAX_NUM_DEVICES) {
+        register_error(ERROR_RECEIVED_TOO_LARGE_DEVICE_ID);
         return ;
     }
 
     // TODO: probably move this to an initialization function
     // check that the device is configured properly and doesn't write outside its given matrix
     if (device_matrix_offset + device_matrix_size > g_keyboard_slots[kb_slot_id].matrix_size) {
+        register_error(ERROR_RECEIVED_TOO_LARGE_MATRIX);
         return;
     }
 
@@ -474,6 +486,8 @@ static void keyboard_trigger_event(keycode_t keycode, key_event_t event) REENT {
             return;
         }
     }
+
+    register_error(ERROR_UNHANDLED_KEYCODE);
 }
 
 // Releases keys that are were down on the old layer, but that are not present
@@ -539,12 +553,13 @@ void keyboard_interpret_matrix(uint8_t kb_slot_id) {
 
     // bounds check
     if (kb_slot_id >= MAX_NUM_KEYBOARD_SLOTS) {
+        // TODO: maybe report this in error system?
         return;
     }
 
     keyboard = &g_keyboard_slots[kb_slot_id];
 
-    // exit early if now work needs to be done
+    // exit early if no work needs to be done
     if (!keyboard->is_dirty) {
         return;
     }
@@ -569,7 +584,7 @@ void keyboard_interpret_matrix(uint8_t kb_slot_id) {
 
             // skip entire rows that have no keys that changed
             if (!changed_keys) {
-            continue;
+                continue;
             }
 
             for (bit = 0; bit < 8; ++bit) {
@@ -621,9 +636,6 @@ void keyboard_interpret_matrix(uint8_t kb_slot_id) {
     //
     // If a key is down and its keycode on the old layer and the new layer are
     // not the same, need to generate a key_released event for that key
-    //
-    // TODO: Test the behaviour of this code. Might not want to loop, here and
-    // just do it once.
     while (1) { // watchdog will timeout causing a reset if the layout is buggy
         /* layer_mask_t new_layer = keyboard_get_layer_mask(kb_slot_id); */
         layer_mask_t new_layer = get_partial_layer_mask(kb_slot_id);
@@ -643,7 +655,7 @@ void keyboard_interpret_matrix(uint8_t kb_slot_id) {
     /*  cmd_send_layer(kb_slot_id); */
     /* } */
 
-    // wait to all layer and key events have been processed before handling
+    // wait until all layer and key events have been processed before handling
     // modifiers
     apply_mods();
 
@@ -665,7 +677,8 @@ void interpret_all_keyboard_matrices(void) {
         keyboard_interpret_matrix(kb_i);
     }
 
-    s_key_event_queues[s_read_event_queue].length = 0;
+    // TODO: probably need to loop here until the key event queue is empty / not changed
+    s_key_event_queues[READ_EVENT_QUEUE()].length = 0;
 
     s_has_dirty_matrix = false;
 }

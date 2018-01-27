@@ -34,6 +34,7 @@ INFO_MAIN_1 = 1
 INFO_LAYOUT = 2
 INFO_RF = 3
 INFO_FIRMWARE = 4
+INFO_ERROR_SYSTEM = 5
 INFO_UNSUPPORTED = 0xff
 
 KEYBOARD_REPORT_MODE_AUTO = 0 # 6kro -> nkro if more than 6 keys pressed
@@ -233,6 +234,81 @@ def get_layout_info(device):
     x = struct.unpack("< 2B 30s", response[0:32])
     return KBInfoLayout._make(x)
 
+class KBInfoErrorSystem(object):
+    NUM_ERROR_CODES = 128
+    SIZE_ERROR_CODE_TABLE = NUM_ERROR_CODES // 8
+    CRITICAL_ERROR_START = 64
+
+    # ERROR_EKC_OUT_OF_BOUNDS_ACCESS = 0
+    # ERROR_UNHANDLED_KEYCODE = 1
+    # ERROR_RECEIVED_TOO_LARGE_DEVICE_ID = 2
+    # ERROR_RECEIVED_TOO_LARGE_MATRIX = 3
+    # ERROR_KEY_EVENT_QUEUE_FULL = 4
+    # ERROR_KEY_EVENT_QUEUE_UNLOADED_DEVICE = 5
+
+    # ERROR_EKC_STORAGE_TOO_LARGE = 64
+    # ERROR_NUM_LAYOUTS_TOO_LARGE = 65
+    # ERROR_SETTINGS_CRC_MISMATCH = 66
+    # ERROR_LAYOUT_STORAGE_OUT_OF_BOUNDS = 67
+
+    ERROR_CODE_MAP = {
+         0: "ERROR_EKC_OUT_OF_BOUNDS_ACCESS",
+         1: "ERROR_UNHANDLED_KEYCODE",
+         2: "ERROR_RECEIVED_TOO_LARGE_DEVICE_ID",
+         3: "ERROR_RECEIVED_TOO_LARGE_MATRIX",
+         4: "ERROR_KEY_EVENT_QUEUE_FULL",
+         5: "ERROR_KEY_EVENT_QUEUE_UNLOADED_DEVICE",
+
+         64: "ERROR_EKC_STORAGE_TOO_LARGE",
+         65: "ERROR_NUM_LAYOUTS_TOO_LARGE",
+         66: "ERROR_SETTINGS_CRC_MISMATCH",
+         67: "ERROR_LAYOUT_STORAGE_OUT_OF_BOUNDS",
+    }
+
+    def __init__(self, error_table):
+        self._error_table = error_table;
+
+        if len(error_table) != self.SIZE_ERROR_CODE_TABLE:
+            raise KBProtocolException(
+                "Invalid size for error table, expected {} bytes but got {}"
+                .format(self.SIZE_ERROR_CODE_TABLE, len(error_table))
+            )
+
+        for i in range(self.CRITICAL_ERROR_START//8, self.SIZE_ERROR_CODE_TABLE):
+            if self._error_table[i] != 0:
+                self._has_critical_error = True
+
+    def get_error_codes(self):
+        result = []
+        for (byte_i, byte) in enumerate(self._error_table):
+            if byte == 0:
+                continue;
+            for bit_i in range(8):
+                if byte & (1 << bit_i):
+                    error_code = byte_i * 8 + bit_i
+                    result.append(error_code)
+        return result
+
+    def error_code_to_name(self, code):
+        if code in self.ERROR_CODE_MAP:
+            return self.ERROR_CODE_MAP[code]
+        else:
+            return "<UNKNOWN_ERROR_CODE>"
+
+
+    def has_critical_error(self):
+        return self._has_critical_error
+
+def get_error_info(device):
+    response = simple_command(device, CMD_GET_DEVICE_SETTINGS, [INFO_ERROR_SYSTEM])[1:]
+
+    x = KBInfoErrorSystem.SIZE_ERROR_CODE_TABLE
+    error_table = response[:KBInfoErrorSystem.SIZE_ERROR_CODE_TABLE]
+
+    return KBInfoErrorSystem(error_table)
+
+
+
 KBInfoFirmwareNamedTuple = collections.namedtuple("KBInfoFirmware",
     """
     version_major version_minor version_patch
@@ -337,7 +413,13 @@ class KBInfoFirmware(KBInfoFirmwareNamedTuple):
     def has_fw_support_bluetooth(self):
         return (self.connectivity_support_flags & self.SUPPORT_BT) != 0
 
+    def has_at_least_version(self, version_str):
+        (major, minor, patch) = [int(x) for x in version_str.split('.')]
 
+        return \
+            self.version_major >= major and \
+            self.version_minor >= minor and \
+            self.version_patch >= patch
 
 
 def get_firmware_info(device):

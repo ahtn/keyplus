@@ -92,18 +92,19 @@ ifeq ($(UNIRECV), 1)
   # Unifying receiver
   SETTINGS_ADDR=0x6600
   LAYOUT_ADDR=0x6800
-  LAYOUT_SIZE=0x0800
+  LAYOUT_SIZE=0x0A00
+  NONCE_ADDR=0x7200
   BOOTLOADER_ADDR=0x7400
   FLASH_SIZE=32
 
-  CDEFS += -DNONCE_ADDR=0x7200
-  CDEFS += -DBOOTLOADER_ADDR=$(BOOTLOADER_ADDR)
   CDEFS += -DUSE_UNIFYING_BOOTLOADER=1
 else
   # Generic nRF24LU1+ dongle
-  SETTINGS_ADDR=0x5E00
-  LAYOUT_ADDR=0x6000
-  LAYOUT_SIZE=0x1400
+  SETTINGS_ADDR=0x6E00
+  LAYOUT_ADDR=0x7000
+  LAYOUT_SIZE=0x0C00
+  NONCE_ADDR=0x7C00
+  BOOTLOADER_ADDR=0x7E00
   # Use default settings for the other values. (see ./hardware_user_impl.h)
   CDEFS += -DUSE_UNIFYING_BOOTLOADER=0
 endif
@@ -159,6 +160,8 @@ ASFLAGS  = -xglospff
 CDEFS += -DSETTINGS_ADDR=$(SETTINGS_ADDR)
 CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
 CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
+CDEFS += -DNONCE_ADDR=$(NONCE_ADDR)
+CDEFS += -DBOOTLOADER_ADDR=$(BOOTLOADER_ADDR)
 
 #######################################################################
 #                               recipes                               #
@@ -179,7 +182,7 @@ else
 ALL_TARGET=$(MERGED_HEX)
 endif
 
-all: $(ALL_TARGET)
+all: $(ALL_TARGET) size
 
 $(MERGED_HEX): $(TARGET).hex
 	@echo "=== merging layout settings files ==="

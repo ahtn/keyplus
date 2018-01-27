@@ -3,6 +3,7 @@
 
 #include "core/layout.h"
 
+#include "core/error.h"
 #include "core/keycode.h"
 #include "core/macro.h"
 #include "core/settings.h"
@@ -362,7 +363,6 @@ AT__LAYOUT_ADDR const uint8_t g_layout_storage[] = {
 #endif
 };
 
-// TODO: change these to flash ptrs?
 void keyboard_layouts_init(void) {
     uint8_t i;
 
@@ -385,34 +385,42 @@ void keyboard_layouts_init(void) {
         storage_pos += sizeof(uint16_t);
 
         if (!is_valid_storage_pos(storage_pos + g_ekc_storage_size)) {
-            // TODO: a warnning here would be nice, but it will just screw up the
-            // layout instead.
             g_ekc_storage_size = 0;
+            register_error(ERROR_EKC_STORAGE_TOO_LARGE);
+            return;
+        } else {
+            g_ekc_storage_ptr = storage_pos;
         }
-        g_ekc_storage_ptr = storage_pos;
 
         storage_pos += g_ekc_storage_size;
     }
 
 
     // layout section
-    g_layout_storage_pos[0] = storage_pos;
+    {
+        uint8_t num_layouts = GET_SETTING(layout.number_layouts);
+        g_layout_storage_pos[0] = storage_pos;
 
-    // calculate the start of the keyload positions and save them for later
-    for (i = 1; i < GET_SETTING(layout.number_layouts); ++i) {
-        const uint8_t matrix_size = GET_SETTING(layout.layouts[i-1].matrix_size);
-        const uint8_t layer_count = GET_SETTING(layout.layouts[i-1].layer_count);
-        const flash_size_t this_layout_size = GET_SETTING(layout.layouts[i].matrix_size);
-
-        storage_pos += 8*sizeof(keycode_t) * matrix_size * layer_count;
-
-        if (is_valid_storage_pos(storage_pos + this_layout_size - 1)) {
-            g_layout_storage_pos[i] = storage_pos;
+        if (num_layouts > MAX_NUM_KEYBOARDS) {
+            register_error(ERROR_NUM_LAYOUTS_TOO_LARGE);
+            return;
         } else {
-            // TODO: a warning here would be nice. Instead for now, we just map
-            // excessive layout positions to the first one.
-            g_layout_storage_pos[i] = (flash_ptr_t)g_layout_storage_pos[0];
+            // calculate the start of the keyload positions and save them for later
+            for (i = 1; i < num_layouts; ++i) {
+                const uint8_t matrix_size = GET_SETTING(layout.layouts[i-1].matrix_size);
+                const uint8_t layer_count = GET_SETTING(layout.layouts[i-1].layer_count);
+                const flash_size_t this_layout_size = GET_SETTING(layout.layouts[i].matrix_size);
+
+                storage_pos += 8*sizeof(keycode_t) * matrix_size * layer_count;
+
+                if (is_valid_storage_pos(storage_pos + this_layout_size - 1)) {
+                    g_layout_storage_pos[i] = storage_pos;
+                } else {
+                    register_error(ERROR_LAYOUT_STORAGE_OUT_OF_BOUNDS);
+                    break;
+                }
+                g_layout_storage_pos[i] = storage_pos;
+            }
         }
-        g_layout_storage_pos[i] = storage_pos;
     }
 }

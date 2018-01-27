@@ -286,7 +286,8 @@ class DeviceWidget(QGroupBox):
         return QSize(560, 0)
 
 class DeviceInformationWindow(QDialog):
-    def __init__(self, parent, header, device_settings, firmware_settings, *args):
+    def __init__(self, parent, header, device_settings, firmware_settings,
+                 error_codes, *args):
         QDialog.__init__(self, parent, *args)
         self.setGeometry(300, 200, 570, 450)
         self.setWindowTitle("Device information")
@@ -298,6 +299,10 @@ class DeviceInformationWindow(QDialog):
         fw_settings_table = QTableView()
         fw_settings_table.setModel(table_model)
 
+        table_model = DeviceInformationTable(self, header, error_codes)
+        error_code_table = QTableView()
+        error_code_table.setModel(table_model)
+
         # set font
         # font = QFont("monospace", 10)
         font = QFont("", 10)
@@ -306,10 +311,12 @@ class DeviceInformationWindow(QDialog):
         # set column width to fit contents (set font first!)
         dev_settings_table.resizeColumnsToContents()
         fw_settings_table.resizeColumnsToContents()
+        error_code_table.resizeColumnsToContents()
 
         tab_view = QTabWidget()
         tab_view.addTab(dev_settings_table, "User settings")
         tab_view.addTab(fw_settings_table, "Firmware settings")
+        tab_view.addTab(error_code_table, "Error Codes")
 
         layout = QVBoxLayout(self)
         layout.addWidget(tab_view)
@@ -325,7 +332,10 @@ class DeviceInformationTable(QAbstractTableModel):
         return len(self.data_list)
 
     def columnCount(self, parent):
-        return len(self.data_list[0])
+        if len(self.data_list) == 0:
+            return 0
+        else:
+            return len(self.data_list[0])
 
     def data(self, index, role):
         if not index.isValid():
@@ -1010,6 +1020,10 @@ class Loader(QMainWindow):
         settingsInfo = protocol.get_device_info(device)
         firmwareInfo = protocol.get_firmware_info(device)
         rfInfo = protocol.get_rf_info(device)
+        if firmwareInfo.has_at_least_version('0.2.2'):
+            errorInfo = protocol.get_error_info(device)
+        else:
+            errorInfo = None
         device.close()
 
         header = ["Attribute", "Value"]
@@ -1022,8 +1036,8 @@ class Loader(QMainWindow):
             ("Matrix scan mode", settingsInfo.scan_mode_str()),
             ("Matrix columns", settingsInfo.col_count),
             ("Matrix rows", settingsInfo.row_count),
-            ("Settings stored CRC", settingsInfo.crc),
-            ("Settings computed CRC", settingsInfo.computed_crc),
+            ("Settings stored CRC", hex(settingsInfo.crc)),
+            ("Settings computed CRC", hex(settingsInfo.computed_crc)),
 
             ("USB", not (settingsInfo.has_usb_disabled() or not firmwareInfo.has_fw_support_usb())),
             ("I2C", not (settingsInfo.has_i2c_disabled() or not firmwareInfo.has_fw_support_i2c())),
@@ -1042,6 +1056,7 @@ class Loader(QMainWindow):
             ("RF auto retransmit count", str(rfInfo.arc)),
             ("RF data rate", protocol.data_rate_to_str(rfInfo.data_rate)),
         ]
+
         firmware_settings = [
             ("Firmware version", "{}.{}.{}".format(
                 firmwareInfo.version_major, firmwareInfo.version_minor, firmwareInfo.version_patch)),
@@ -1074,7 +1089,23 @@ class Loader(QMainWindow):
             ("Support I2C", firmwareInfo.has_fw_support_i2c()),
             ("Support Bluetooth", firmwareInfo.has_fw_support_bluetooth()),
         ]
-        self.info_window = DeviceInformationWindow(self, header, device_settings, firmware_settings)
+
+        if errorInfo:
+            error_codes = []
+            for code in errorInfo.get_error_codes():
+                error_codes.append(
+                    (errorInfo.error_code_to_name(code), code)
+                )
+        else:
+            error_codes = [('Error codes require firmware version 0.2.2 or greater',)]
+
+        self.info_window = DeviceInformationWindow(
+            self,
+            header,
+            device_settings,
+            firmware_settings,
+            error_codes,
+        )
         self.info_window.setModal(True)
         self.info_window.exec_()
 

@@ -39,11 +39,11 @@ void usb_ep0_packetizer_data_send(void) {
 
 static void make_string_desc(char *str) {
     char c;
-    uint8_t i = 0;
+    uint8_t i = 1;
     uint8_t len = 0;
-    while ( ((c = str[i]) != '\0') && len != MAX_STRING_LEN) {
-        string_desc_buffer[i+1] = c; // char -> uint16_t
-        len++;
+    while ( ((c = str[i-1]) != '\0') && len < MAX_STRING_LEN-2) {
+        string_desc_buffer[i] = c; // char -> uint16_t
+        len += 1;
         i++;
     }
     string_desc_buffer[0] = USB_STRING_DESC_SIZE((len+1)*sizeof(uint16_t));
@@ -76,14 +76,14 @@ static char hexdigit_to_char(uint8_t d) {
 
 static void make_serial_string(void) {
     uint8_t i;
-    uint8_t *str = (uint8_t*)string_desc_buffer+16;
+    uint8_t *str = (uint8_t*)string_desc_buffer+32;
     for (i = 0; i < 5; ++i) {
         char c = read_info_page_byte(CHIPID + i);
         *str++ = hexdigit_to_char(c >> 4);
         *str++ = hexdigit_to_char(c >> 0);
     }
     *str++ = '\0';
-    make_string_desc((uint8_t*)string_desc_buffer + 16); // NOTE: intentionally overlap memory
+    make_string_desc((uint8_t*)string_desc_buffer + 32); // NOTE: intentionally overlap memory
 }
 
 /* /1* // sets the data to be packetized *1/ */

@@ -116,6 +116,10 @@ bit_t is_ready_vendor_in_report(void) {
 
 bit_t send_vendor_report(void) {
     if (is_ready_vendor_in_report() && g_vendor_report_in.len) {
+        if (g_vendor_report_in.len > VENDOR_REPORT_LEN) {
+            g_vendor_report_in.len = 0;
+            return true;
+        }
         memcpy(EP_IN_BUF_VENDOR, g_vendor_report_in.data, g_vendor_report_in.len);
 
         // NOTE: Since our HID descriptor for this report says the report
@@ -139,6 +143,12 @@ bit_t is_ready_vendor_out_report(void) {
 uint8_t read_vendor_report(uint8_t *buf) {
     if (is_ready_vendor_out_report()) {
         uint8_t length = BC_OUT_VENDOR;
+
+        if (length > VENDOR_REPORT_LEN) {
+            BC_OUT_VENDOR = 0xff;
+            return 0;
+        }
+
         memcpy(buf, EP_OUT_BUF_VENDOR, length);
         g_vendor_report_out.len = length;
 

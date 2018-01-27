@@ -4,6 +4,7 @@
 #include "core/flash.h"
 #include "core/crc.h"
 
+// WARNING: this crc doesn't output 0 when appended with itself
 #define CRC16_POLY 0x1021
 uint16_t crc16_step(uint16_t crc, uint8_t data, uint8_t num_bits) {
     while (num_bits != 0) {

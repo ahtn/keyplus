@@ -32,7 +32,7 @@
 // the packet type.
 enum usb_vendor_cmd_t {
     CMD_ERROR_CODE = 0x00, // the response from the controller
-    CMD_GET_DEVICE_SETTINGS = 0x01, // flash keyboard layout
+    CMD_GET_INFO = 0x01, // get device information from the keyboard
     CMD_LED_CONTROL = 0x02, // control leds on the keyboard/receiver
     CMD_RESET = 0x03, // reset the dongle
     CMD_BOOTLOADER = 0x04, // go to the bootloader
@@ -73,11 +73,11 @@ enum {
     INFO_LAYOUT = 2,
     INFO_RF = 3,
     INFO_FIRMWARE = 4,
+    INFO_ERROR_SYSTEM = 5,
     INFO_UNSUPPORTED = 0xff,
 };
 
 uint8_t usb_print(const uint8_t *data, uint8_t len);
-void usb_blocking_print(const uint8_t *data, uint8_t len);
 void reset_usb_reports(void);
 void cmd_send_layer(uint8_t kb_id);
 void handle_vendor_out_reports(void);

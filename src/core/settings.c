@@ -7,6 +7,7 @@
 
 #include <string.h>
 
+#include "core/error.h"
 #include "core/crc.h"
 #include "core/flash.h"
 #include "core/util.h"
@@ -33,7 +34,7 @@ AT__SETTINGS_ADDR const settings_t g_settings_storage = {
 #include "settings/dev_rf_settings.c"
 
     // NOTE: can't do this at compile time, need to parse the layout file
-    // and generate it here.
+    // and generate it
     .crc = 0x1234,
 };
 
@@ -42,7 +43,7 @@ AT__SETTINGS_ADDR const settings_t g_settings_storage = {
 const ROM firmware_build_settings_t g_firmware_build_settings = {
     .version_major = 0,
     .version_minor = 2,
-    .version_patch = 1,
+    .version_patch = 2,
 
     .layout_flash_size = LAYOUT_SIZE,
     .timestamp = { BUILD_TIME_STAMP },
@@ -98,36 +99,29 @@ void settings_load_from_flash(void) {
 
 
     // load rf setings into ram
-    flash_read((uint8_t*)&g_rf_settings, (flash_ptr_t)&(GET_SETTING(rf)), sizeof(rf_settings_t));
+    flash_read(
+        (uint8_t*)&g_rf_settings,
+        (flash_ptr_t)&(GET_SETTING(rf)),
+        sizeof(rf_settings_t)
+    );
 
     { // validate that the settings are (not corrupt)/(have been initilized)
         const uint16_t flash_checksum = crc16_flash_buffer(
             SETTINGS_ADDR,
-            SETTINGS_MAIN_INFO_SIZE
+            SETTINGS_MAIN_INFO_SIZE-2
         );
-        if (flash_checksum != 0) {
-            // Didn't find a valid value for CRC in the settings, so load default
-            // settings instead
-
-            // TODO: Decide what to do when settings are corrupt. If a feature
-            // could prevent reflashing the layout over the USB interface,
-            // should prefer to disable it.
-            g_runtime_settings.device_id = 0;
-            g_runtime_settings.feature_ctrl = FEATURE_CTRL_FEATURES_DISABLED_AT_BUILD_TIME;
-
-            g_scan_plan.mode = MATRIX_SCANNER_MODE_NONE;
-
-            // Should rf settings have a crc too?
+        // WARNING: this crc doesn't output 0 when appended with the
+        // datastream, so you needed to compare it with the crc value
+        if (flash_checksum != GET_SETTING(crc)) {
+            register_error(ERROR_SETTINGS_CRC_MISMATCH);
         }
     }
 
     // Don't show features as enabled that are disabled at build time
     g_runtime_settings.feature_ctrl &= FEATURE_CTRL_FEATURES_DISABLED_AT_BUILD_TIME;
 
-
-
-    // TODO: validate the settings before returning
 #ifndef CONFIG_NO_MATRIX
+    // TODO: validate the settings before returning
     g_scan_plan.mode = GET_SETTING(scan_mode);
     g_scan_plan.rows = GET_SETTING(row_count);
     g_scan_plan.cols = GET_SETTING(col_count);
