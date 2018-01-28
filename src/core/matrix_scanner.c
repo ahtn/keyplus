@@ -7,14 +7,22 @@
 
 #include <string.h>
 
-#include "core/settings.h"
-#include "core/packet.h"
 #include "core/layout.h"
+#include "core/packet.h"
+#include "core/settings.h"
+#include "core/timer.h"
 
 #define MAX_UPDATE_LIST 16
 #define MAX_DOWN_LIST 16
 
+// can probably make this static
 XRAM uint8_t g_matrix[MAX_NUM_ROWS][(MAX_NUM_COLS+7)/8];
+
+static uint8_t s_debounce_time[MAX_NUM_ROWS][MAX_NUM_COLS];
+static uint8_t s_is_debouncing[MAX_NUM_ROWS][(MAX_NUM_COLS+7)/8];
+static uint8_t s_debounce_type[MAX_NUM_ROWS][(MAX_NUM_COLS+7)/8];
+static uint8_t s_matrix_number_keys_down;
+static uint8_t s_matrix_number_keys_debouncing;
 
 XRAM matrix_scan_plan_t g_scan_plan;
 
@@ -124,4 +132,144 @@ uint8_t get_matrix_data(uint8_t *dest, bool use_deltas) {
         memcpy(dest, g_key_num_bitmap, matrix_size);
         return matrix_size+1;
     }
+}
+
+void scanner_init_debouncer(void) {
+    memset(s_is_debouncing, 0, sizeof(s_is_debouncing));
+    s_matrix_number_keys_down = 0;
+    s_matrix_number_keys_debouncing = 0;
+}
+
+bool scanner_debounce_row(
+    uint8_t row,
+    const uint8_t *old_row,
+    const uint8_t *new_row,
+    uint8_t bytes_per_row
+) {
+    const uint8_t cur_time = timer_read8_ms();
+    bool has_updated;
+
+    for (uint8_t i = 0; i < bytes_per_row; ++i) {
+        uint8_t changed_pins = old_row[i] ^ new_row[i];
+
+        if (s_is_debouncing[row][i]==0 && !changed_pins) {
+            // not debouncing and nothing changed, so nothing to do for this row
+            continue;
+        }
+
+        uint8_t pin_mask = 0x01;
+        uint8_t col = i*8;
+        for ( ; pin_mask != 0 ; col++, pin_mask<<=1 ) {
+            if (s_is_debouncing[row][i] & pin_mask) {
+                // key debouncing:
+                // check if the key has finished debouncing
+                if (s_debounce_type[row][i] & pin_mask) {
+                    // debouncing key press
+                    const uint8_t bounce_duration = (uint8_t)(cur_time - s_debounce_time[row][col]);
+                    if (!(old_row[i] & pin_mask)) {
+                        // key press not registered yet
+                        if (bounce_duration >= DEBOUNCE_PRESS_TRIGGER_TIME) {
+                            if (new_row[i] & pin_mask) {
+                                // if still down after DEBOUNCE_PRESS_TRIGGER_TIME
+                                // register the key press
+                                g_matrix[row][i] |= pin_mask;
+                                s_matrix_number_keys_down++;
+                                scanner_add_matrix_key(row, col);
+                                has_updated = 1;
+                            } else {
+                                // reject key press and reset debouncing state
+                                s_is_debouncing[row][i] &= ~pin_mask;
+                                s_matrix_number_keys_debouncing--;
+                            }
+                        }
+                    } else {
+                        // key press has already been registered, wait until the
+                        // debounce time is over
+                        if ( bounce_duration >= DEBOUNCE_PRESS_TIME) {
+                            // debounce time is now over
+                            s_is_debouncing[row][i] &= ~pin_mask;
+                            s_matrix_number_keys_debouncing--;
+                        }
+                    }
+                } else {
+                    // debouncing key release
+                    if (new_row[i] & pin_mask) {
+                        // key bounced back to the down state, reset timer
+                        s_debounce_time[row][col] = cur_time;
+                    } else {
+                        // key in up state
+                        const uint8_t bounce_duration = (uint8_t)(cur_time - s_debounce_time[row][col]);
+
+                        // if we have triggered the key release
+                        if ((old_row[i] & pin_mask) && bounce_duration >= DEBOUNCE_RELEASE_TRIGGER_TIME) {
+                            // key has been in the up state for DEBOUNCE_RELEASE_TRIGGER_TIME,
+                            // accept that the key has actual been release now
+                            g_matrix[row][i] &= ~pin_mask;
+                            s_matrix_number_keys_down--;
+                            scanner_del_matrix_key(row, col);
+                            has_updated = 1;
+                        } else if (bounce_duration >= DEBOUNCE_RELEASE_TIME ) {
+                            // debounce over
+                            s_is_debouncing[row][i] &= ~pin_mask;
+                            s_matrix_number_keys_debouncing--;
+                        }
+                    }
+                }
+            } else {
+                // not debouncing, so a key was pressed/released.
+
+                if (!(changed_pins & pin_mask)) {
+                    // ignore pins in this row that haven't changed
+                    continue;
+                }
+
+                // If the key press/release trigger time is 0, then that means
+                // we should trigger the key immediately after seeing that it
+                // has changed state.
+                bool is_key_down = new_row[i] & pin_mask;
+                if (DEBOUNCE_PRESS_TRIGGER_TIME == 0 && is_key_down) {
+                    // debounce press trigger time is 0, so register he key press
+                    // immediately. The debouncing algorithm then waits until
+                    // DEBOUNCE_PRESS_TIME has elapsed before accepting any more
+                    // changes in key state.
+                    // state.
+                    g_matrix[row][i] |= pin_mask;
+                    s_matrix_number_keys_down++;
+                    scanner_add_matrix_key(row, col);
+                    has_updated = 1;
+                } else if (DEBOUNCE_RELEASE_TRIGGER_TIME == 0 && !is_key_down) {
+                    // debounce release trigger time is 0, so register the key press
+                    // immediately. The debouncing algorithm then waits until
+                    // DEBOUNCE_RELEASE_TIME has elapsed before accepting any
+                    // more changes in key state.
+                    g_matrix[row][i] &= ~pin_mask;
+                    s_matrix_number_keys_down--;
+                    scanner_del_matrix_key(row, col);
+                    has_updated = 1;
+                }
+
+                // this pin has changed, so we start it's debounce timer
+                if (is_key_down) {
+                    s_debounce_type[row][i] |= pin_mask; // indicates key press debounce
+
+                } else {
+                    s_debounce_type[row][i] &= ~pin_mask; // indicates key release debounce
+                }
+
+                s_is_debouncing[row][i] |= pin_mask;
+                s_debounce_time[row][col] = cur_time;
+                s_matrix_number_keys_debouncing++;
+            }
+        }
+    }
+
+    return has_updated;
+}
+
+uint8_t get_matrix_num_keys_down(void) {
+    return s_matrix_number_keys_down;
+}
+
+uint8_t get_matrix_num_keys_debouncing(void) {
+    return s_matrix_number_keys_debouncing;
 }

@@ -67,5 +67,13 @@ void init_matrix_scanner_utils(void);
 void scanner_add_matrix_key(uint8_t row, uint8_t col);
 void scanner_del_matrix_key(uint8_t row, uint8_t col);
 
+void scanner_init_debouncer(void);
+bool scanner_debounce_row(
+    uint8_t row,
+    const uint8_t *old_row,
+    const uint8_t *new_row,
+    uint8_t bytes_per_row
+);
+
 // TODO
 bit_t is_matrix_active(void);

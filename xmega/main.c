@@ -278,7 +278,7 @@ void usb_mode_main_loop(void) {
             uint8_t *matrix_data = i2c_packet+1;
             const uint8_t use_deltas = true;
 
-            usb_print(matrix_data, 16);
+            // usb_print(matrix_data, 16);
 #if USE_I2C
             i2c_packet[0] = (i2c_get_active_address() << 1) | 0x01;
 #endif
@@ -292,7 +292,9 @@ void usb_mode_main_loop(void) {
             // TODO: IMPORTANT! really need to fix this
             // TODO: don't block here, add buffer for queued messages
             // while (!i2c_broadcast(i2c_packet, data_size+2));
-            i2c_broadcast(i2c_packet, data_size+2);
+
+            // TODO: I2C is broken
+            // i2c_broadcast(i2c_packet, data_size+2);
 #endif
 
 
@@ -305,20 +307,20 @@ void usb_mode_main_loop(void) {
             }
         }
 
-#if USE_I2C
-        // check for i2c data
-        {
-            uint8_t *i2c_packet = i2c_get_buffer();
-            while (i2c_packet) {
-                const uint8_t sender_i2c_address = i2c_packet[0] >> 1;
-                const uint8_t sender_device_id = i2c_address_to_device_id(sender_i2c_address);
-                keyboard_update_device_matrix(sender_device_id, i2c_packet+1);
+// #if USE_I2C
+        // // check for i2c data
+        // {
+        //     uint8_t *i2c_packet = i2c_get_buffer();
+        //     while (i2c_packet) {
+        //         const uint8_t sender_i2c_address = i2c_packet[0] >> 1;
+        //         const uint8_t sender_device_id = i2c_address_to_device_id(sender_i2c_address);
+        //         keyboard_update_device_matrix(sender_device_id, i2c_packet+1);
 
-                i2c_buffer_advance();
-                i2c_packet = i2c_get_buffer();
-            }
-        }
-#endif
+        //         i2c_buffer_advance();
+        //         i2c_packet = i2c_get_buffer();
+        //     }
+        // }
+// #endif
 
         interpret_all_keyboard_matrices();
 
