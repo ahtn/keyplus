@@ -7,7 +7,6 @@
 
 // NOTE: not the best solution, but it's good enough
 void dynamic_delay_us(uint16_t us);
-
 #define static_delay_us(x) dynamic_delay_us(x)
 #define static_delay_ms(x) dynamic_delay_ms(x)
 
@@ -42,3 +41,8 @@ void dynamic_delay_us(uint16_t us);
 #ifndef NONCE_ADDR
 #define NONCE_ADDR (BOOTLOADER_ADDR - 1*PAGE_SIZE)
 #endif
+
+// flash pointer defines
+typedef uint16_t flash_ptr_t;
+typedef uint16_t flash_size_t;
+

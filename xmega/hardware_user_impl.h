@@ -20,3 +20,12 @@
 
 
 #define PAGE_SIZE           APP_SECTION_PAGE_SIZE
+
+// define flash pointer sizes
+#if MCU_FLASH_SIZE <= 64
+typedef uint16_t flash_ptr_t;
+typedef uint16_t flash_size_t;
+#else
+typedef uint32_t flash_ptr_t;
+typedef uint32_t flash_size_t;
+#endif

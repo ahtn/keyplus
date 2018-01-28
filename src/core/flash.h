@@ -11,11 +11,6 @@
 
 #ifndef NO_FLASH_MODULE
 
-// TODO: move this to a project specific location
-
-typedef uint16_t flash_ptr_t;
-typedef uint16_t flash_size_t;
-
 #define SETTINGS_SIZE       (0x0200)
 
 #ifndef SETTINGS_ADDR

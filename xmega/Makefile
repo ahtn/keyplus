@@ -134,12 +134,12 @@ endif
 #######################################################################
 
 ifeq ($(USE_I2C), 1)
-	C_SRC += wired.c
+  C_SRC += wired.c
 endif
 
 # TODO: enable/disable nrf24 and i2c at run time using flash settings
 ifeq ($(USE_NRF24), 1)
-	C_SRC += nrf24.c
+  C_SRC += nrf24.c
 endif
 
 CDEFS += -DUSE_CHECK_PIN=$(USE_CHECK_PIN)
