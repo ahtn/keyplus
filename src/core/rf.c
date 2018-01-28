@@ -463,6 +463,10 @@ bit_t read_packet(void) REENT {
     }
 #endif
 
+    // other packet sizes are unsupported
+    if (width != AES_BUF_SIZE) {
+        return false;
+    }
 
     // All packets except unifying mouse packets are encrypted.
     aes_decrypt(packet_payload);
