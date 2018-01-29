@@ -301,9 +301,11 @@ void usb_mode_main_loop(void) {
             keyboard_update_device_matrix(GET_SETTING(device_id), matrix_data);
 
             if (is_passthrough_enabled()) {
-                g_vendor_report_in.data[0] = CMD_PASSTHROUGH_MATRIX;
-                memcpy(g_vendor_report_in.data+1, g_matrix, MATRIX_DATA_SIZE);
-                g_vendor_report_in.len = MATRIX_DATA_SIZE+1;
+                if (vendor_in_free_space() >= MATRIX_DATA_SIZE+1) {
+                    vendor_in_write_byte(MATRIX_DATA_SIZE+1);
+                    vendor_in_write_byte(CMD_PASSTHROUGH_MATRIX);
+                    vendor_in_write_buf((uint8_t*)g_matrix, MATRIX_DATA_SIZE);
+                }
             }
         }
 
