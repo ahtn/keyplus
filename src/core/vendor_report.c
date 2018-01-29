@@ -3,6 +3,7 @@
 
 #include "core/vendor_report.h"
 
+#include "core/error.h"
 #include "core/debug.h"
 
 // TODO: would be much nicer to have a buffered/pipe interfaces for accessing
@@ -32,23 +33,15 @@ void reset_vendor_report(void) {
  *********************************************************************/
 
 #if USB_BUFFERED
-static uint8_t vendor_buf_write(XRAM ring_buf128_type *buf, const XRAM uint8_t* data, uint8_t length) {
-    if (ring_buf128_free_space(buf) < length+1) {
-        return 1;
-    } else {
-        ring_buf128_put(buf, length);
-        ring_buf128_fill(buf, data, length);
-        return 0;
-    }
-}
-
-
 void vendor_out_write_byte(uint8_t byte) {
     ring_buf128_put(&s_vendor_buffer_out, byte);
 }
 
-uint8_t vendor_out_write_buf(const XRAM uint8_t* data, uint8_t length) {
-    return vendor_buf_write(&s_vendor_buffer_out, data, length);
+void vendor_out_write_buf(const XRAM uint8_t* data, uint8_t length) {
+    uint8_t i;
+    for (i = 0; i < length; ++i) {
+        vendor_out_write_byte(data[i]);
+    }
 }
 
 
@@ -75,8 +68,11 @@ void vendor_in_write_byte(uint8_t byte) {
     ring_buf128_put(&s_vendor_buffer_in, byte);
 }
 
-uint8_t vendor_in_write_buf(const XRAM uint8_t* data, uint8_t length) {
-    return vendor_buf_write(&s_vendor_buffer_in, data, length);
+void vendor_in_write_buf(const XRAM uint8_t* data, uint8_t length) {
+    uint8_t i;
+    for (i = 0; i < length; ++i) {
+        vendor_in_write_byte(data[i]);
+    }
 }
 
 uint8_t vendor_in_get_byte(void) {
@@ -84,10 +80,24 @@ uint8_t vendor_in_get_byte(void) {
 }
 
 void vendor_in_load_packet(void) {
-    const uint8_t packet_len = vendor_in_get_byte();
+    uint8_t packet_len;
+
+    if (g_vendor_report_in.len != 0) {
+        // packet already queued
+        return;
+    }
+
+    packet_len = vendor_in_get_byte();
 
     if (ring_buf128_len(&s_vendor_buffer_in) < packet_len) {
         ring_buf128_clear(&s_vendor_buffer_in);
+        register_error(11);
+        return;
+    };
+
+    if (packet_len > EP_SIZE_VENDOR) {
+        ring_buf128_clear(&s_vendor_buffer_in);
+        register_error(12);
         return;
     }
 

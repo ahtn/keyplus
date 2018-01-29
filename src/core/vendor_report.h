@@ -39,4 +39,4 @@ uint8_t vendor_in_buf_has_packet(void);
 
 void vendor_in_write_byte(uint8_t byte);
 uint8_t vendor_in_free_space(void);
-uint8_t vendor_in_write_buf(const XRAM uint8_t* data, uint8_t length);
+void vendor_in_write_buf(const XRAM uint8_t* data, uint8_t length);

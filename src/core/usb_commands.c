@@ -61,6 +61,40 @@ bit_t is_passthrough_enabled(void) {
     return passthrough_mode_on;
 }
 
+void queue_vendor_in_packet(
+    uint8_t usb_cmd,
+    const uint8_t *payload,
+    uint8_t payload_length,
+    bool is_variable_length
+) {
+    // how big the USB vendor in report length is
+    const uint8_t packet_length =
+        1 + // 1 byte for command
+        is_variable_length + // include length in packet (optional)
+        payload_length;
+
+    // how much space we need in queue to store the packet
+    const uint8_t vendor_in_queue_packet_length = packet_length+1;
+
+    if (vendor_in_free_space() >= vendor_in_queue_packet_length) {
+        // 1st byte is the amount of bytes in the payload
+        // 2nd byte is the command
+        // then payload_length bytes from the payload are loaded
+        //
+        // payload_length+2 bytes loaded into the queue. There's will be
+        // unloaded and sent in the next/future vendor_in report as a packet.
+
+        vendor_in_write_byte(packet_length);
+        vendor_in_write_byte(usb_cmd);
+        if (is_variable_length) {
+            vendor_in_write_byte(payload_length);
+        }
+        vendor_in_write_buf(payload, payload_length);
+    } else {
+        register_error(ERROR_VENDOR_IN_REPORT_CANT_KEEP_UP);
+    }
+}
+
 // TODO: probably move this elsewhere
 void reset_usb_reports(void) {
     s_vendor_state = STATE_WAIT_CMD;
@@ -77,17 +111,18 @@ void reset_usb_reports(void) {
 #define ERROR_PACKET_LENGTH 2
 void cmd_error(uint8_t code) {
 #if USB_BUFFERED
-    assert(vendor_in_free_space() > ERROR_PACKET_LENGTH);
-    vendor_in_write_byte(ERROR_PACKET_LENGTH);
-
-    vendor_in_write_byte(CMD_ERROR_CODE);
-    vendor_in_write_byte(code);
+    queue_vendor_in_packet(
+        CMD_ERROR_CODE,
+        (uint8_t*)&code,
+        sizeof(code),
+        STATIC_LENGTH_CMD
+    );
 #else
     g_vendor_report_in.len = ERROR_PACKET_LENGTH;
     g_vendor_report_in.data[0] = CMD_ERROR_CODE;
     g_vendor_report_in.data[1] = code;
-#endif
     send_vendor_report();
+#endif
 }
 
 void cmd_ok(void) {
@@ -103,27 +138,11 @@ void cmd_reset(void) {
 // send data to the host for debugging purposes
 uint8_t usb_print(const uint8_t *data, uint8_t len) {
 #if USB_BUFFERED
-    const uint8_t packet_len = len+2;
-    uint8_t i;
-
     if (usb_commands_is_locked()) {
         return 1;
     }
-    if (packet_len+1 > vendor_in_free_space()) {
-        // buffer is full, so can't accept data
-        return 1;
-    }
 
-    // The packet length
-    vendor_in_write_byte(packet_len);
-
-    vendor_in_write_byte(CMD_PRINT);
-    vendor_in_write_byte(len);
-    for (i = 0; i < len; ++i) {
-        vendor_in_write_byte(data[i]);
-    }
-    // vendor_in_write_buf(data, len);
-    send_vendor_report();
+    queue_vendor_in_packet(CMD_PRINT, data, len, VARIABLE_LENGTH_CMD);
 #else
 
     if (usb_commands_is_locked()) {
@@ -141,12 +160,6 @@ uint8_t usb_print(const uint8_t *data, uint8_t len) {
     send_vendor_report();
 #endif
     return 0;
-}
-
-void usb_blocking_print(const uint8_t *data, uint8_t len) {
-    while (!is_ready_vendor_out_report()) { send_vendor_report(); }
-    usb_print(data, len);
-    while (!is_ready_vendor_out_report()) { send_vendor_report(); }
 }
 
 void cmd_send_layer(uint8_t kb_slot_id) {

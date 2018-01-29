@@ -16,6 +16,7 @@ typedef enum error_code_type {
     ERROR_RECEIVED_TOO_LARGE_MATRIX = 3,
     ERROR_KEY_EVENT_QUEUE_FULL = 4,
     ERROR_KEY_EVENT_QUEUE_UNLOADED_DEVICE = 5,
+    ERROR_VENDOR_IN_REPORT_CANT_KEEP_UP = 6,
 
     // critical errors
     CRITICAL_ERROR_START = 64,

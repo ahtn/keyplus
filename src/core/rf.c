@@ -468,10 +468,17 @@ bit_t read_packet(void) REENT {
         return false;
     }
 
+#if DEBUG_LEVEL >= 8
+    // Print the packet before encryption
+    usb_print(packet_payload, width);
+#endif
+
+
     // All packets except unifying mouse packets are encrypted.
     aes_decrypt(packet_payload);
 
 #if DEBUG_LEVEL >= 6
+    // Print the packet after encrpytion
     usb_print(packet_payload, width);
 #endif
 

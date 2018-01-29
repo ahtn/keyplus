@@ -68,6 +68,11 @@ enum {
 };
 
 enum {
+    STATIC_LENGTH_CMD = 0,
+    VARIABLE_LENGTH_CMD = 1,
+};
+
+enum {
     INFO_MAIN_0 = 0,
     INFO_MAIN_1 = 1,
     INFO_LAYOUT = 2,
@@ -82,3 +87,10 @@ void reset_usb_reports(void);
 void cmd_send_layer(uint8_t kb_id);
 void handle_vendor_out_reports(void);
 bit_t is_passthrough_enabled(void);
+
+void queue_vendor_in_packet(
+    uint8_t usb_cmd,
+    const uint8_t *payload,
+    uint8_t payload_length,
+    bool is_variable_length
+);

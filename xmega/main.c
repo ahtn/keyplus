@@ -301,11 +301,13 @@ void usb_mode_main_loop(void) {
             keyboard_update_device_matrix(GET_SETTING(device_id), matrix_data);
 
             if (is_passthrough_enabled()) {
-                if (vendor_in_free_space() >= MATRIX_DATA_SIZE+1) {
-                    vendor_in_write_byte(MATRIX_DATA_SIZE+1);
-                    vendor_in_write_byte(CMD_PASSTHROUGH_MATRIX);
-                    vendor_in_write_buf((uint8_t*)g_matrix, MATRIX_DATA_SIZE);
-                }
+                // send the raw matrix data to the host
+                queue_vendor_in_packet(
+                    CMD_PASSTHROUGH_MATRIX,
+                    (uint8_t*)g_matrix,
+                    MATRIX_DATA_SIZE,
+                    STATIC_LENGTH_CMD // TODO: make this a variable?
+                );
             }
         }
 

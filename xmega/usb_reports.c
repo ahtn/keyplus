@@ -133,7 +133,10 @@ bit_t is_ready_vendor_in_report(void) {
 
 bit_t send_vendor_report(void) {
 #if USB_BUFFERED
-    if (g_vendor_report_in.len == 0 && vendor_in_buf_has_packet()) {
+    // if (g_vendor_report_in.len == 0 && vendor_in_buf_has_packet()) {
+    //     vendor_in_load_packet();
+    // }
+    if (is_ready_vendor_in_report() && vendor_in_buf_has_packet()) {
         vendor_in_load_packet();
     }
 #endif
