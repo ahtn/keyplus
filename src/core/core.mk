@@ -3,6 +3,10 @@
 
 CORE_PATH = core
 
+#######################################################################
+#                  firmware compile time information                  #
+#######################################################################
+
 PYTHON_CMD = /usr/bin/env python3
 
 BUILD_TIME_STAMP := $(shell $(PYTHON_CMD) -c "import datetime;\
@@ -23,6 +27,35 @@ print(res); \
 
 CDEFS += -DBUILD_TIME_STAMP="$(BUILD_TIME_STAMP)"
 CDEFS += -DGIT_HASH="$(GIT_HASH)"
+
+#######################################################################
+#                            board config                             #
+#######################################################################
+
+ifndef ID
+  ID = 0
+endif
+
+CDEFS += -DDEVICE_ID=$(ID)
+
+# Note: Specific board configs are stored in the `boards` directory.
+
+ifndef BOARD
+  BOARD = keyplus_mini
+endif
+
+ifndef LAYOUT_FILE
+  LAYOUT_FILE=../layouts/basic_split_test.yaml
+endif
+
+ifndef RF_FILE
+  RF_FILE=../layouts/test_rf_config.yaml
+endif
+
+#######################################################################
+#                            source files                             #
+#######################################################################
+
 
 C_SRC += \
 	$(CORE_PATH)/crc.c \

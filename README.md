@@ -15,7 +15,7 @@ Currently building of the firmware has been tested on Linux.
 
 ### xmega
 
-You will need the `avr-gcc` tool chain and `python`.
+You will need the `avr-gcc` tool chain and `python3`.
 
 ```bash
 git submodule init
@@ -25,10 +25,15 @@ git submodule update
 Then from the `xmega` directory, run:
 
 ```bash
-make keyplus_mini DEBUG_AES_KEY=1
+make BOARD=keyplus_mini
 ```
 
-TODO: improve build system
+You can provide the build system with layout files and it will preload them
+into the generated hex file:
+
+```bash
+make BOARD=keyplus_mini RF_FILE=rf.yaml LAYOUT_FILE=layout.yaml ID=0
+```
 
 ## Layout files
 

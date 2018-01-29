@@ -34,20 +34,6 @@ INC_PATHS += \
 #                        board config options                         #
 #######################################################################
 
-# Note: Specific board configs are stored in the `boards` directory.
-
-ifndef BOARD
-  BOARD = keyplus_mini
-endif
-
-ifndef LAYOUT_FILE
-  LAYOUT_FILE=../layouts/basic_split_test.yaml
-endif
-
-ifndef RF_FILE
-  RF_FILE=../layouts/test_rf_config.yaml
-endif
-
 include avr-makefile/boards.mk
 
 #######################################################################
@@ -124,10 +110,6 @@ CDEFS += -D'FW_VERSION=$(FW_VERSION)'
 # Place -D or -U options here for ASM sources
 ADEFS += $(USB_OPTS)
 ADEFS += -D __$(DEVICE)__
-
-ifdef ID
-  CDEFS += -DDEVICE_ID=$(ID)
-endif
 
 #######################################################################
 #                          optional imports                           #
