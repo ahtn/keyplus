@@ -3,7 +3,9 @@
 
 CORE_PATH = core
 
-BUILD_TIME_STAMP := $(shell python -c "import datetime;\
+PYTHON_CMD = /usr/bin/env python3
+
+BUILD_TIME_STAMP := $(shell $(PYTHON_CMD) -c "import datetime;\
 a = int(datetime.datetime.now().timestamp());\
 res = ','.join(['0x{:x}'.format((a >> (i*8))&0xff) for i in range(8)]); \
 print(res); \
@@ -11,7 +13,7 @@ print(res); \
 
 GIT_HASH_FULL := $(shell git rev-parse HEAD)
 
-GIT_HASH := $(shell python -c "import datetime;\
+GIT_HASH := $(shell $(PYTHON_CMD) -c "import datetime;\
 hash = '$(GIT_HASH_FULL)'; \
 b = ['0x'+hash[i*2:(i+1)*2] for i in range(8)]; \
 b.reverse(); \
