@@ -9,7 +9,8 @@
 # Slot = pyqtSlot
 # from PyQt5.QtWidgets import (
 
-from PySide.QtCore import QSize, Qt, QRectF, QPointF, QPoint, QLine, QObject
+from PySide.QtCore import QSize, Qt, QRectF, QPointF, QPoint, QLine, QObject, \
+    QTimer
 from PySide.QtGui import QPainter, QBrush, QPainterPath, QFont, QFontMetrics, \
     QColor, QPen, QTransform, QPolygonF
 from PySide.QtGui import QApplication, QWidget, QComboBox, QVBoxLayout, \
@@ -18,6 +19,7 @@ from PySide.QtGui import QApplication, QWidget, QComboBox, QVBoxLayout, \
 from PySide.QtCore import Slot, Signal
 
 import kle, json
+import random
 
 class KeycodeConfigWidget:
     pass
@@ -40,8 +42,26 @@ class KeyboardDeviceWidget(QGraphicsItem):
         self.keyList = []
         self.keySize = 30
 
-        for key in keys:
-            key = KeyWidget(key, key.get_legend_text(), parent=self)
+        for(i, key) in enumerate(keys):
+
+            # color = QColor(
+            #     random.randint(0, 255),
+            #     random.randint(0, 255),
+            #     random.randint(0, 255)
+            # )
+            color = QColor.fromHsv(
+                int(i * 255 / 70),
+                255,
+                200
+            )
+
+            key = KeyWidget(
+                key,
+                key.get_legend_text(),
+                color = color,
+                parent=self
+            )
+
             # self.updateBoundingRect(key)
             key.positionUpdateSignal.connect(self.handlePositionUpdate)
             self.keyList.append(key)
@@ -90,6 +110,47 @@ class KeyboardDeviceWidget(QGraphicsItem):
         return KeyboardDeviceWidget(keys, name)
 
     @Slot(str)
+    def updateLEDAnimation(self):
+
+        # def slide_color(key, x):
+        #     if (key.color_dir == +1):
+        #         if x >= 255:
+        #             key.color_dir = -1
+        #             return x
+        #         else:
+        #             return x+1
+        #     if (key.color_dir == -1):
+        #         if x <= 0:
+        #             key.color_dir = +1
+        #             return x
+        #         else:
+        #             return x-1
+        def slide_color(key, x):
+            if key.color_dir == +1:
+                return min(255, x + key.color_dir)
+            elif key.color_dir == -1:
+                return max(0, x + key.color_dir)
+
+        for key in self.keyList:
+            (h,s,v,a) = key.color.getHsv();
+            if h == s == 255:
+                key.color_dir = -1
+            elif h == s == 0:
+                key.color_dir = +1
+
+            h = slide_color(key, h)
+            s = slide_color(key, s)
+            new_color = QColor.fromHsv(
+                h,
+                s,
+                v
+            )
+
+            key.color = new_color
+            key.update()
+
+
+    @Slot(str)
     def handlePositionUpdate(self):
         print("child widget updated")
         self.updateBoundingRect()
@@ -101,13 +162,14 @@ class LayerWidget:
 class KeyWidget(QGraphicsItem, QObject):
     positionUpdateSignal = Signal()
 
-    def __init__(self, key, text, color=QColor(0,0,255), parent=None):
+    def __init__(self, key, text, color=QColor(0,0,0), parent=None):
         super(KeyWidget, self).__init__(parent)
         QObject.__init__(self)
 
         self.setCursor(Qt.OpenHandCursor)
 
         self.color = color
+        self.color_dir = +1
 
         self.text = text
 
@@ -344,9 +406,20 @@ class Window(QWidget):
             # ("mine-v5", "test_layouts/test-mine-v5.json"),
         ]
 
-        self.test_objs = [KeyboardDeviceWidget.from_file(kb[1], kb[0]) for kb in test_items]
+        self.test_objs = [
+            KeyboardDeviceWidget.from_file(kb[1], kb[0]) for kb in test_items
+        ]
+
         for kb in self.test_objs:
             self.scene.addItem(kb)
+
+        self.refreshEvent = QTimer()
+        self.refreshEvent.setInterval(16)
+        # self.refreshEvent.timeout.connect(self.USBUpdate)
+        self.refreshEvent.timeout.connect(self.test_objs[0].updateLEDAnimation)
+        self.refreshEvent.start()
+
+
 
         # make a view port for the scene
         self.view.show()
