@@ -20,6 +20,7 @@ from PySide.QtCore import Slot, Signal
 
 import kle, json
 import random
+import led_vm
 
 class KeycodeConfigWidget:
     pass
@@ -41,6 +42,13 @@ class KeyboardDeviceWidget(QGraphicsItem):
         self.keys = keys
         self.keyList = []
         self.keySize = 30
+
+        with open("rgb.cl") as f:
+            test_program_str = f.read()
+
+        vm_parser = led_vm.LEDEffectVMParser()
+        byte_code = vm_parser.parse_asm(test_program_str)
+        self.vm = led_vm.LEDEffectVM(byte_code=byte_code, num_pixels=64)
 
         for(i, key) in enumerate(keys):
 
@@ -109,42 +117,66 @@ class KeyboardDeviceWidget(QGraphicsItem):
         keys = layout.get_keys()
         return KeyboardDeviceWidget(keys, name)
 
+    # @Slot(str)
+    # def updateLEDAnimation(self):
+
+    #     # def slide_color(key, x):
+    #     #     if (key.color_dir == +1):
+    #     #         if x >= 255:
+    #     #             key.color_dir = -1
+    #     #             return x
+    #     #         else:
+    #     #             return x+1
+    #     #     if (key.color_dir == -1):
+    #     #         if x <= 0:
+    #     #             key.color_dir = +1
+    #     #             return x
+    #     #         else:
+    #     #             return x-1
+    #     def slide_color(key, x):
+    #         if key.color_dir == +1:
+    #             return min(255, x + key.color_dir)
+    #         elif key.color_dir == -1:
+    #             return max(0, x + key.color_dir)
+
+    #     for key in self.keyList:
+    #         (h,s,v,a) = key.color.getHsv();
+    #         if h == 255:
+    #             key.color_dir = -1
+    #         elif h == 0:
+    #             key.color_dir = +1
+
+    #         h = slide_color(key, h)
+    #         # s = slide_color(key, s)
+    #         new_color = QColor.fromHsv(
+    #             h,
+    #             s,
+    #             v
+    #         )
+
+    #         key.color = new_color
+    #         key.update()
+
     @Slot(str)
     def updateLEDAnimation(self):
+        for (i, key) in enumerate(self.keyList):
+            self.vm.execute_program(i)
 
-        # def slide_color(key, x):
-        #     if (key.color_dir == +1):
-        #         if x >= 255:
-        #             key.color_dir = -1
-        #             return x
-        #         else:
-        #             return x+1
-        #     if (key.color_dir == -1):
-        #         if x <= 0:
-        #             key.color_dir = +1
-        #             return x
-        #         else:
-        #             return x-1
-        def slide_color(key, x):
-            if key.color_dir == +1:
-                return min(255, x + key.color_dir)
-            elif key.color_dir == -1:
-                return max(0, x + key.color_dir)
+            pixel = self.vm.get_pixel(i)
+            pixel_type = self.vm.get_pixel_type(i)
 
-        for key in self.keyList:
-            (h,s,v,a) = key.color.getHsv();
-            if h == s == 255:
-                key.color_dir = -1
-            elif h == s == 0:
-                key.color_dir = +1
-
-            h = slide_color(key, h)
-            s = slide_color(key, s)
-            new_color = QColor.fromHsv(
-                h,
-                s,
-                v
-            )
+            if pixel_type == led_vm.Register.OUTPUT_TYPE_HSV:
+                new_color = QColor.fromHsv(
+                    pixel[0],
+                    pixel[1],
+                    pixel[2]
+                )
+            elif pixel_type == led_vm.Register.OUTPUT_TYPE_RGB:
+                new_color = QColor(
+                    pixel[0],
+                    pixel[1],
+                    pixel[2]
+                )
 
             key.color = new_color
             key.update()
@@ -414,7 +446,7 @@ class Window(QWidget):
             self.scene.addItem(kb)
 
         self.refreshEvent = QTimer()
-        self.refreshEvent.setInterval(16)
+        self.refreshEvent.setInterval(33)
         # self.refreshEvent.timeout.connect(self.USBUpdate)
         self.refreshEvent.timeout.connect(self.test_objs[0].updateLEDAnimation)
         self.refreshEvent.start()
