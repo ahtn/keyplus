@@ -209,11 +209,19 @@ class SettingsGenerator:
         # char device_name[32];
         # uint8_t timestamp[8]; // utc time stamp of last update
         # uint8_t default_report_mode;
-        # uint8_t scan_mode;
-        # uint8_t row_count;
-        # uint8_t col_count;
+        # struct matrix_scan_plan_t {
+        #     uint8_t mode; // scanning method
+        #     uint8_t rows; // number of rows in the scan matrix
+        #     uint8_t cols; // number of cols in the scan matrix
+        #     uint8_t debounce_time_press; // How long to debounce a key when it is pressed (ms)
+        #     uint8_t debounce_time_release; // How long to debounce a key when it is released (ms)
+        #     uint8_t trigger_time_press; // The key must be down this long before being registered (ms)
+        #     uint8_t trigger_time_release; // The key must be up this long before being registered (ms)
+        #     uint8_t parasitic_discharge_delay_idle; // How long to hold a row low before reading the columns
+        #     uint8_t parasitic_discharge_delay_debouncing; // How long to hold a row low when a key is debouncing
+        # };
         # uint8_t feature_ctrl;
-        # uint8_t _reserved[48];
+        # uint8_t _reserved[42];
         # uint16_t crc; // total size == 96
         result = bytearray(0)
 
@@ -237,7 +245,7 @@ class SettingsGenerator:
         # feature control information
         result += struct.pack('<B', 0) # TODO add feature ctrl to config file
 
-        result += bytearray(48)
+        result += bytearray(42)
 
         result += struct.pack('<H', crc16_bytes(result))
 
@@ -422,18 +430,35 @@ class SettingsGenerator:
         scan_mode = self.get_scan_mode(device_id)
         mode = try_get(scan_mode, 'mode', 'scan_mode')
 
+        result = bytearray(0)
+
         if mode == 'none' or mode == 'no_matrix':
-            return struct.pack('<BBB', MATRIX_SCANNER_MODE_NONE, 0, 0)
+            result += struct.pack('<BBB', MATRIX_SCANNER_MODE_NONE, 0, 0)
         elif mode == 'col_row':
             rows = try_get(scan_mode, 'rows', 'scan_mode')
             cols = try_get(scan_mode, 'cols', 'scan_mode')
-            return struct.pack('<BBB', MATRIX_SCANNER_MODE_COL_ROW, rows, cols)
+            result += struct.pack('<BBB', MATRIX_SCANNER_MODE_COL_ROW, rows, cols)
         elif mode == 'pins':
             # count = scan_mode['pin_count']
             # return struct.pack('<BBB', MATRIX_SCANNER_MODE_PINS, count, 0)
             raise ParseError("TODO: 'pins' scan mode not implemented yet")
         else:
             raise ParseError("Unsupported scan mode {}".format(mode))
+
+        scan_obj = ScanMode(scan_mode, device_id)
+
+        result += struct.pack('<BB BB BB',
+            scan_obj.debounce_time_press,
+            scan_obj.debounce_time_release,
+            scan_obj.trigger_time_press,
+            scan_obj.trigger_time_release,
+            int(255 * (scan_obj.parasitic_discharge_delay_idle / 48.0)),
+            int(255 * (scan_obj.parasitic_discharge_delay_debouncing / 48.0)),
+        )
+
+        return result
+
+
 
 if __name__ == "__main__":
     layout = None

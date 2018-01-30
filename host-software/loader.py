@@ -1026,6 +1026,12 @@ class Loader(QMainWindow):
             errorInfo = None
         device.close()
 
+        def ms_str(x):
+            return "{}ms".format(x)
+
+        def us_str(x):
+            return "{0:.1f}µs".format(x / 255 * 48.0)
+
         header = ["Attribute", "Value"]
         device_settings = [
             ("Device ID", settingsInfo.id),
@@ -1036,6 +1042,12 @@ class Loader(QMainWindow):
             ("Matrix scan mode", settingsInfo.scan_mode_str()),
             ("Matrix columns", settingsInfo.col_count),
             ("Matrix rows", settingsInfo.row_count),
+            ("Key debounce press time", ms_str(settingsInfo.debounce_time_press)),
+            ("Key debounce release time", ms_str(settingsInfo.debounce_time_release)),
+            ("Key press trigger time", ms_str(settingsInfo.trigger_time_press)),
+            ("Key release trigger time", ms_str(settingsInfo.trigger_time_release)),
+            ("Key discharge idle time", us_str(settingsInfo.parasitic_discharge_delay_idle)),
+            ("Key discharge debouncing time", us_str(settingsInfo.parasitic_discharge_delay_debouncing)),
             ("Settings stored CRC", hex(settingsInfo.crc)),
             ("Settings computed CRC", hex(settingsInfo.computed_crc)),
 

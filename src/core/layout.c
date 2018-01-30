@@ -375,7 +375,7 @@ void keyboard_layouts_init(void) {
     {
         // skip the key num map section, since it is in a known location at compile
         // time.
-        flash_size_t key_num_map_size = GET_SETTING(row_count) * GET_SETTING(col_count);
+        flash_size_t key_num_map_size = g_scan_plan.rows * g_scan_plan.cols;
         storage_pos += key_num_map_size;
     }
 

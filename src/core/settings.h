@@ -104,11 +104,9 @@ typedef struct settings_t { // 512 bytes
     char device_name[32];
     uint8_t timestamp[8]; // utc time stamp of last update
     uint8_t default_report_mode;
-    uint8_t scan_mode;
-    uint8_t row_count;
-    uint8_t col_count;
+    matrix_scan_plan_t scan_plan; // 9 bytes
     uint8_t feature_ctrl;
-    uint8_t _reserved[48];
+    uint8_t _reserved[42];
     uint16_t crc; // size == 96
     layout_settings_t layout; // size == 352
     rf_settings_t rf; // size == 64

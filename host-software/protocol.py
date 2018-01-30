@@ -150,7 +150,14 @@ def get_layers(device, layout_id):
 
 KBInfoMainNamedTuple = collections.namedtuple("KBInfoMain",
     "id name timestamp default_report_mode "
-    "scan_mode row_count col_count feature_ctrl reserved crc"
+    "scan_mode row_count col_count "
+    "debounce_time_press "
+    "debounce_time_release "
+    "trigger_time_press "
+    "trigger_time_release "
+    "parasitic_discharge_delay_idle "
+    "parasitic_discharge_delay_debouncing "
+    "feature_ctrl reserved crc"
 )
 
 class KBInfoMain(KBInfoMainNamedTuple):
@@ -209,16 +216,26 @@ def get_device_info(device):
     # char device_name[32];
     # uint8_t timestamp[8]; // utc time stamp of last update
     # uint8_t default_report_mode;
-    # uint8_t scan_mode;
-    # uint8_t row_count;
-    # uint8_t col_count;
+    # typedef struct matrix_scan_plan_t {
+    #     uint8_t mode; // scanning method
+    #     uint8_t rows; // number of rows in the scan matrix
+    #     uint8_t cols; // number of cols in the scan matrix
+    #     uint8_t debounce_time_press; // How long to debounce a key when it is pressed (ms)
+    #     uint8_t debounce_time_release; // How long to debounce a key when it is released (ms)
+    #     uint8_t trigger_time_press; // The key must be down this long before being registered (ms)
+    #     uint8_t trigger_time_release; // The key must be up this long before being registered (ms)
+
+    #     // Both delays are measured on a scale of 0-48µs
+    #     uint8_t parasitic_discharge_delay_idle; // How long to hold a row low before reading the columns
+    #     uint8_t parasitic_discharge_delay_debouncing; // How long to hold a row low when a key is debouncing
+    # } matrix_scan_plan_t;
     # uint8_t feature_ctrl;
-    # uint8_t _reserved[48];
+    # uint8_t _reserved[42];
     # uint16_t crc; // total size == 96
 
     crc = crc16_bytes(response[:DEVICE_INFO_SIZE-2])
 
-    x = struct.unpack("< B 32s q 5B 48s H", response)
+    x = struct.unpack("< B 32s q 11B 42s H", response)
     return KBInfoMain._make_with_crc(x, crc, is_empty)
 
 def get_layout_info(device):

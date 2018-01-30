@@ -17,6 +17,7 @@ XRAM rf_settings_t g_rf_settings;
 XRAM runtime_settings_t g_runtime_settings;
 
 #if USE_SCANNER == 0
+#include "core/matrix_scanner.h"
 XRAM matrix_scan_plan_t g_scan_plan;
 #endif
 
@@ -96,8 +97,6 @@ uint8_t device_id_to_pipe_num(const uint8_t device_id) {
 
 
 void settings_load_from_flash(void) {
-
-
     // load rf setings into ram
     flash_read(
         (uint8_t*)&g_rf_settings,
@@ -122,9 +121,11 @@ void settings_load_from_flash(void) {
 
 #ifndef CONFIG_NO_MATRIX
     // TODO: validate the settings before returning
-    g_scan_plan.mode = GET_SETTING(scan_mode);
-    g_scan_plan.rows = GET_SETTING(row_count);
-    g_scan_plan.cols = GET_SETTING(col_count);
+    flash_read(
+        (uint8_t*)&g_scan_plan,
+        ((flash_ptr_t)&GET_SETTING(scan_plan)),
+        sizeof(matrix_scan_plan_t)
+    );
 #endif
 
 }

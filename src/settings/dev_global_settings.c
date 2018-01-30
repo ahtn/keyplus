@@ -24,11 +24,21 @@
 #endif
 
 #ifdef CONFIG_NO_MATRIX
-.scan_mode = MATRIX_SCANNER_MODE_NONE, // dongle
-.row_count = 0,
-.col_count = 0,
+.scan_plan = {
+    .mode = MATRIX_SCANNER_MODE_NONE, // dongle
+    .rows = 0,
+    .cols = 0,
+},
 #else
-.scan_mode = CONFIG_MATRIX_SCAN_MODE,
-.row_count = CONFIG_MATRIX_ROW_COUNT,
-.col_count = CONFIG_MATRIX_COL_COUNT,
+.scan_plan = {
+    .mode = CONFIG_MATRIX_SCAN_MODE,
+    .rows = CONFIG_MATRIX_ROW_COUNT,
+    .cols = CONFIG_MATRIX_COL_COUNT,
+    .debounce_time_press               = DEFAULT_DEBOUNCE_PRESS_TIME,
+    .debounce_time_release             = DEFAULT_DEBOUNCE_RELEASE_TIME,
+    .trigger_time_press                 = DEFAULT_PRESS_TRIGGER_TIME,
+    .trigger_time_release               = DEFAULT_RELEASE_TRIGGER_TIME,
+    .parasitic_discharge_delay_idle       = DEFAULT_PARASITIC_DISCHARGE_DELAY_PRESS,
+    .parasitic_discharge_delay_debouncing = DEFAULT_PARASITIC_DISCHARGE_DELAY_DEBOUNCE,
+},
 #endif

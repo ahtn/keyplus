@@ -18,26 +18,6 @@
 
 // TODO: make these settings configurable from the settings module
 
-#ifndef DEBOUNCE_PRESS_TIME
-#define DEBOUNCE_PRESS_TIME 5
-#endif
-
-#ifndef DEBOUNCE_RELEASE_TIME
-#define DEBOUNCE_RELEASE_TIME (2*DEBOUNCE_TIME_PRESS)
-#endif
-
-#ifndef DEBOUNCE_RELEASE_TRIGGER_TIME
-#if DEBOUNCE_RELEASE_TIME < 3
-#define DEBOUNCE_RELEASE_TRIGGER_TIME DEBOUNCE_RELEASE_TIME
-#else
-#endif
-#define DEBOUNCE_RELEASE_TRIGGER_TIME 3
-#endif
-
-#ifndef DEBOUNCE_PRESS_TRIGGER_TIME
-#define DEBOUNCE_PRESS_TRIGGER_TIME 1
-#endif
-
 static bool has_scan_irq_triggered;
 
 #if !USE_HARDWARE_SPECIFIC_SCAN
@@ -72,6 +52,9 @@ static uint8_t row_num_pins_d;
 static uint8_t row_num_pins_c;
 
 static uint8_t bytes_per_row;
+
+static uint8_t s_parasitic_discharge_delay_idle;
+static uint8_t s_parasitic_discharge_delay_debouncing;
 
 // Setup the columns
 // As inputs with pull ups
@@ -201,6 +184,43 @@ void matrix_scanner_init(void) {
     unselect_rows();
 
     init_matrix_scanner_utils();
+
+#if F_CPU == 48000000UL
+#define PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(x) do {\
+    _delay_loop_1(x); \
+    _delay_loop_1(x); \
+    _delay_loop_1(x); \
+} while(0)
+#elif F_CPU == 32000000UL
+#define PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(x) do {\
+    _delay_loop_1(x); \
+    _delay_loop_1(x); \
+} while(0)
+#elif F_CPU == 16000000UL
+#define PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(x) do {\
+    _delay_loop_1(x); \
+} while(0)
+#else
+#error "Unsupported clock speed for PARASITIC_DISCHARGE_DELAY"
+#endif
+
+#define PARASITIC_DISCHARGE_DELAY_SLOW_CLOCK(x) do {\
+    _delay_loop_1(x); \
+} while(0)
+
+    // Configure the parasitic discharge delay based on how fast the mcu clock
+    // is running
+    if (g_slow_clock_mode) {
+        const uint8_t base_factor = (16000000/1000000);
+        const uint8_t slow_factor = (CLOCK_SPEED_SLOW/1000000);
+        s_parasitic_discharge_delay_idle =
+            (((uint16_t)g_scan_plan.parasitic_discharge_delay_idle * slow_factor) / base_factor);
+        s_parasitic_discharge_delay_debouncing =
+            (((uint16_t)g_scan_plan.parasitic_discharge_delay_debouncing * slow_factor) /base_factor);
+    } else {
+        s_parasitic_discharge_delay_idle = g_scan_plan.parasitic_discharge_delay_idle;
+        s_parasitic_discharge_delay_debouncing = g_scan_plan.parasitic_discharge_delay_debouncing;
+    }
 }
 
 static void matrix_scan_irq_clear_flags(void) {
@@ -298,7 +318,29 @@ static inline bool matrix_scan_row_col_mode(void) {
         // t = 2RC = 2 * 24_000 * (10 + 2*16) * 1e-12 == 2.016 µs
         // TODO: check if more error margin is needed
         // TODO: make this variable based on number of columns
-        static_delay_variable_clock_us(2);
+        if (get_matrix_num_keys_debouncing()) {
+            // Debouncing
+            if (g_slow_clock_mode) {
+                PARASITIC_DISCHARGE_DELAY_SLOW_CLOCK(
+                    s_parasitic_discharge_delay_debouncing
+                );
+            } else {
+                PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(
+                    s_parasitic_discharge_delay_debouncing
+                );
+            }
+        } else {
+            // not debouncing
+            if (g_slow_clock_mode) {
+                PARASITIC_DISCHARGE_DELAY_SLOW_CLOCK(
+                    s_parasitic_discharge_delay_idle
+                );
+            } else {
+                PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(
+                    s_parasitic_discharge_delay_idle
+                );
+            }
+        }
 
         scan_changed |= scan_row(row);
         unselect_rows();

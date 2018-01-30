@@ -277,7 +277,7 @@ void parse_cmd(void) {
             cmd_logitech_bootloader();
         } break;
         case CMD_SET_PASSTHROUGH_MODE: {
-            if (GET_SETTING(scan_mode) == MATRIX_SCANNER_MODE_NONE) {
+            if (g_scan_plan.mode == MATRIX_SCANNER_MODE_NONE) {
                 cmd_error(ERROR_UNSUPPORTED_COMMAND);
             } else {
                 passthrough_mode_on = g_vendor_report_out.data[1];

@@ -12,6 +12,13 @@ MATRIX_SCANNER_MODE_NONE = 0x00 # doesn't have a matrix
 MATRIX_SCANNER_MODE_COL_ROW = 0x01 # normal row,col pin matrix
 MATRIX_SCANNER_MODE_PINS = 0x02 # each pin represents a key
 
+DEFAULT_DEBOUNCE_PRESS_TIME = 5
+DEFAULT_DEBOUNCE_RELEASE_TIME = (2*DEFAULT_DEBOUNCE_PRESS_TIME)
+DEFAULT_RELEASE_TRIGGER_TIME = 3
+DEFAULT_PRESS_TRIGGER_TIME = 1
+DEFAULT_PARASITIC_DISCHARGE_DELAY_IDLE = 2.0
+DEFAULT_PARASITIC_DISCHARGE_DELAY_DEBOUNCE = 10.0
+
 class ScanMode:
     COL_ROW = 0
     PINS = 1
@@ -29,6 +36,49 @@ class ScanMode:
             self.parse_matrix_map(scan_mode_dict['matrix_map'], debug_hint)
         else:
             self.matrix_map = None
+
+    # uint8_t trigger_time_press; // The key must be down this long before being registered (ms)
+    # uint8_t trigger_time_release; // The key must be up this long before being registered (ms)
+
+    # // Both delays are measured on a scale of 0-48µs
+    # uint8_t parasitic_discharge_delay_idle; // How long to hold a row low before reading the columns
+    # uint8_t parasitic_discharge_delay_debouncing; // How long to hold a row low when a key is debouncing
+        if 'debounce_time_press' in scan_mode_dict:
+            self.debounce_time_press = scan_mode_dict['debounce_time_press']
+        else:
+            self.debounce_time_press = DEFAULT_DEBOUNCE_PRESS_TIME
+
+        if 'debounce_time_release' in scan_mode_dict:
+            self.debounce_time_release = scan_mode_dict['debounce_time_release']
+        else:
+            self.debounce_time_release = DEFAULT_DEBOUNCE_RELEASE_TIME
+
+        if 'trigger_time_press' in scan_mode_dict:
+            self.trigger_time_press = scan_mode_dict['trigger_time_press']
+        else:
+            self.trigger_time_press = DEFAULT_PRESS_TRIGGER_TIME
+
+        if 'trigger_time_release' in scan_mode_dict:
+            self.trigger_time_release = scan_mode_dict['trigger_time_release']
+        else:
+            self.trigger_time_release = DEFAULT_RELEASE_TRIGGER_TIME
+
+        if 'parasitic_discharge_delay_idle' in scan_mode_dict:
+            delay = scan_mode_dict['parasitic_discharge_delay_idle']
+            if (0 < delay > 48.0):
+                raise ParseError("parasitic_discharge_delay_idle must less than 48.0µs")
+            self.parasitic_discharge_delay_idle = delay
+        else:
+            self.parasitic_discharge_delay_idle = DEFAULT_PARASITIC_DISCHARGE_DELAY_IDLE
+
+        if 'parasitic_discharge_delay_debouncing' in scan_mode_dict:
+            delay = scan_mode_dict['parasitic_discharge_delay_debouncing']
+            if (0 < delay > 48.0):
+                raise ParseError("parasitic_discharge_delay_debouncing must less than 48.0µs")
+            self.parasitic_discharge_delay_debouncing = delay
+        else:
+            self.parasitic_discharge_delay_debouncing = DEFAULT_PARASITIC_DISCHARGE_DELAY_DEBOUNCE
+
 
     def __str__(self):
         if self.mode == ScanMode.NO_MATRIX:
