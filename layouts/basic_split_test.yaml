@@ -169,6 +169,15 @@ devices:
     scan_mode: # rf dongle, so don't need a matrix
       mode: no_matrix # options: col_row, pins, no_matrix
 
+keycodes:
+  SFTEnt:
+    keycode: KC_HOLD
+    delay: 200
+    tap_key: enter
+    hold_key: sticky_lshift
+    # options:
+
+
 layouts:
   split_layout:
     default_layer: 0

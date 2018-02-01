@@ -16,6 +16,9 @@ KEYBOARD_REPORT_MODE_6KRO = 2 # 6kro
 class ParseError(Exception):
     pass
 
+class ParseLayoutError(Exception):
+    pass
+
 class ParseKeycodeError(ParseError):
     pass
 

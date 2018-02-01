@@ -420,7 +420,7 @@ key_symbols = {
     "sticky_ralt": KC_STICKY_RALT,
     "sticky_rgui": KC_STICKY_RGUI,
 
-    "": KC_LAYER_RESET,
+    "layer_reset": KC_LAYER_RESET,
 
 }
 

@@ -3,6 +3,8 @@
 # Copyright 2017 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
+from layout.common import ParseKeycodeError
+
 KC_TYPE_L_MODKEY = 0b00
 KC_TYPE_R_MODKEY = 0b01
 KC_TYPE_L_MODKEY_FORCE = 0b10
@@ -428,6 +430,13 @@ def gen_modkey(kc, ctrl=False, shift=False, alt=False, gui=False, right=False, f
     modkey = kc | mod_mask
 
     return modkey
+
+def gen_ekc(addr):
+    assert(isinstance(addr, int))
+    if addr >= EKC_TAG:
+        raise ParseKeycodeError("Can't generate EKC at addr {}, max addr is {}"
+                                .format(addr, EKC_TAG-1))
+    return EKC_TAG | addr
 
 MODKEY_LEFT_CONTROL           = gen_modkey(KC_NONE, ctrl=True)
 MODKEY_LEFT_SHIFT             = gen_modkey(KC_NONE, shift=True)

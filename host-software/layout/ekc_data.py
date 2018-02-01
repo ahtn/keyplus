@@ -8,17 +8,20 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import struct
 from hexdump import hexdump
 
-import layout.keycodes
+import layout.keycodes as keycodes
 
 class EKCData:
     def __init__(self, data):
         self.data = data
 
+    def set_keycode_map_function(self, kc_map_function):
+        self.kc_map_function = kc_map_function
+
     def size(self):
         return len(self.data)
 
-    def to_bytes(self):
-        return bytearray(self.data)
+    # def to_bytes(self):
+    #     return bytearray(self.data)
 
 class EKCHoldKey(EKCData):
     # Layout option:
@@ -28,19 +31,22 @@ class EKCHoldKey(EKCData):
     #   1: hold_key
     #   1: tap_key
 
-    HoldKeySize = 5 * 2
+    SIZE = 5 * 2
 
-    def __init__(self, tap_key, hold_key, delay=200, options=None):
+    DEFAULT_DELAY = 200
+
+    def __init__(self, tap_key, hold_key, delay=200, options=None, kc_map_function=None):
         self.tap_key = tap_key
         self.hold_key = hold_key
         self.delay = delay
         self.options = options
+        self.kc_map_function = kc_map_function
 
     def size(self):
-        return EKCHoldKey.HoldKeySize
+        return EKCHoldKey.SIZE
 
     def to_bytes(self):
-        result = bytearray(EKCHoldKey.HoldKeySize)
+        result = bytearray(EKCHoldKey.SIZE)
 
         option_data = 0
 
@@ -53,8 +59,8 @@ class EKCHoldKey(EKCData):
             keycodes.KC_HOLD_KEY,
             self.delay,
             option_data,
-            self.hold_key,
-            self.tap_key
+            self.kc_map_function(self.hold_key),
+            self.kc_map_function(self.tap_key)
         )
 
         return result
@@ -74,8 +80,9 @@ class EKCMacroRepeatKey(EKCData):
 
 
 class EKCDataMain(EKCData):
-    def __init__(self, children=[]):
-        self.children = children
+    # def __init__(self, children=[]):
+    def __init__(self):
+        self.children = []
         self.children_addresses = []
         self.current_size = 0
 
@@ -94,15 +101,16 @@ class EKCDataMain(EKCData):
         if total_size > 0xFFFF:
             raise ValueError("EKC data section too large: {} bytes".format(total_size))
 
-        result = bytearray(total_size + 2)
+        result = bytearray(0)
 
         # first byte is the total size of the data
-        struct.pack_into('<H', result, 0, total_size)
+        result += struct.pack('<H', total_size)
 
         # after append all the children
         for (i, child) in enumerate(self.children):
-            child_addr = self.children_addresses[i]
-            result[child_addr:child_addr+child.size()] = child.to_bytes()
+            result += child.to_bytes()
+
+        hexdump(result)
 
         return result
 
