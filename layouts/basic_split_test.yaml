@@ -307,7 +307,7 @@ layouts:
       [ # layer 0 (colemak)
         [ # left hand
           tab , q   , w   , f   , p   , g   ,
-          ent , a   , r   , s   , t   , d   ,
+          SFTEnt , a   , r   , s   , t   , d   ,
           lalt, z   , x   , c   , v   , b   ,
           esc , L4  , L4  , lctl  , L3  , spc ,
         ],

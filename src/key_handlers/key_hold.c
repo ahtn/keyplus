@@ -28,6 +28,8 @@ uint8_t hold_event_list_len;
 
 void handle_hold_keycode(keycode_t keycode, key_event_t event) REENT;
 
+uint8_t data[32] = "hold key pressed";
+
 void hold_key_delete_event(uint8_t i) {
     if (i >= hold_event_list_len) {
         return;
@@ -43,8 +45,6 @@ void hold_key_delete_event(uint8_t i) {
 
     hold_event_list_len--;
 }
-
-#include "core/usb_commands.h"
 
 void hold_key_task(void) {
     uint8_t i;
@@ -120,10 +120,10 @@ void handle_hold_keycode(keycode_t keycode, key_event_t event) REENT {
         if (event == EVENT_PRESSED) {
             uint16_t delay;
             uint16_t settings;
+
             if (hold_event_list_len >= MAX_NUM_HOLD_KEYS) {
                 return;
             }
-
 
             get_ekc_data((uint8_t*)&delay, this_ekc_addr+EKC_OFFSET_DELAY, sizeof(delay));
             get_ekc_data((uint8_t*)&settings, this_ekc_addr+EKC_OFFSET_SETTINGS, sizeof(settings));

@@ -14,6 +14,8 @@
 #include "core/timer.h"
 #include "core/util.h"
 
+#include "core/usb_commands.h"
+
 XRAM keyboard_t g_keyboard_slots[MAX_NUM_KEYBOARD_SLOTS];
 XRAM uint8_t s_slot_id_map[MAX_NUM_KEYBOARDS];
 XRAM uint8_t s_slot_fifo_pos;
@@ -189,9 +191,12 @@ static void apply_event_trigger_queue(uint8_t keyboard_id) {
     key_event_queue_t XRAM* queue = &s_key_event_queues[READ_EVENT_QUEUE()];
 
     for (i = 0; i < queue->length; ++i) {
-        if (queue->events[i].keyboard_id != keyboard_id) {
-            continue;
-        }
+
+        // TODO: Should only apply the keycode the correct keyboard. Disabled
+        // for now since there is a bug in setting/obtaining the keyboard_id
+        // if (queue->events[i].keyboard_id != keyboard_id) {
+        //     continue;
+        // }
 
         keyboard_trigger_event(
             queue->events[i].keycode,
