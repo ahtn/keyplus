@@ -63,7 +63,7 @@ bit_t is_passthrough_enabled(void) {
 
 void queue_vendor_in_packet(
     uint8_t usb_cmd,
-    const uint8_t *payload,
+    const XRAM uint8_t *payload,
     uint8_t payload_length,
     bool is_variable_length
 ) {
@@ -105,6 +105,7 @@ void reset_usb_reports(void) {
     reset_vendor_report();
     reset_mouse_report();
     reset_keyboard_reports();
+
     unlock_usb_commands();
 }
 

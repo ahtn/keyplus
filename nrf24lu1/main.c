@@ -88,11 +88,6 @@ void main(void) {
             hold_key_task();
         }
 
-        if (g_error_code_table[0] == 0xff) {
-            led_testing_set(1);
-        } else {
-            led_testing_set(0);
-        }
         send_vendor_report();
         handle_vendor_out_reports();
     }

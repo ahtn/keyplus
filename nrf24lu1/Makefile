@@ -236,6 +236,7 @@ $(OBJ_DIR)/%.dep: %.c
 
 clean:
 	rm -f $(TARGET).hex
+	rm -f $(TARGET)-*.hex
 	rm -f $(TARGET)-uni.hex
 	rm -fr $(OBJ_DIR)
 	rm -fr nrfburn.txt

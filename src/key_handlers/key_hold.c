@@ -9,6 +9,7 @@
 #include "core/keycode.h"
 #include "core/matrix_interpret.h"
 #include "core/timer.h"
+#include "core/usb_commands.h"
 #include "core/util.h"
 
 // external keycode table structure:
@@ -27,8 +28,6 @@ XRAM hold_event_t hold_event_list[MAX_NUM_HOLD_KEYS];
 uint8_t hold_event_list_len;
 
 void handle_hold_keycode(keycode_t keycode, key_event_t event) REENT;
-
-uint8_t data[32] = "hold key pressed";
 
 void hold_key_delete_event(uint8_t i) {
     if (i >= hold_event_list_len) {
@@ -101,8 +100,6 @@ bit_t is_hold_keycode(keycode_t keycode) {
     return ( keycode == KC_HOLD_KEY );
 }
 
-#include "core/rf.h"
-
 void handle_hold_keycode(keycode_t keycode, key_event_t event) REENT {
     if (event == EVENT_RESET) {
         hold_event_list_len = 0;
@@ -117,6 +114,7 @@ void handle_hold_keycode(keycode_t keycode, key_event_t event) REENT {
     { // handle press and release events
         uint16_t this_ekc_addr = EKC_DATA_ADDR(keycode);
         uint8_t kb_id = get_active_keyboard_id();
+
         if (event == EVENT_PRESSED) {
             uint16_t delay;
             uint16_t settings;

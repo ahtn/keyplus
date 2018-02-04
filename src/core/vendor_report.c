@@ -121,26 +121,25 @@ uint8_t vendor_in_free_space(void) {
 
 #if !USB_BUFFERED
 
-// #include <string.h>
-// uint8_t vendor_in_free_space(void) {
-//     return VENDOR_REPORT_LEN;
-// }
+#include <string.h>
+uint8_t vendor_in_free_space(void) {
+    return VENDOR_REPORT_LEN;
+}
 
-// void vendor_in_write_byte(uint8_t byte) {
-//     assert(g_vendor_report_in.len < VENDOR_REPORT_LEN);
-//     g_vendor_report_in.data[g_vendor_report_in.len++] = byte;
-// }
+void vendor_in_write_byte(uint8_t byte) {
+    assert(g_vendor_report_in.len < VENDOR_REPORT_LEN);
+    g_vendor_report_in.data[g_vendor_report_in.len++] = byte;
+}
 
-// uint8_t vendor_in_write_buf(const XRAM uint8_t* data, uint8_t length) {
-//     assert(length < VENDOR_REPORT_LEN);
-//     memcpy(g_vendor_report_in.data, data, length);
-//     g_vendor_report_in.len = length;
-//     return true;
-// }
+void vendor_in_write_buf(const XRAM uint8_t* data, uint8_t length) {
+    assert(length < VENDOR_REPORT_LEN);
+    memcpy(g_vendor_report_in.data, data, length);
+    g_vendor_report_in.len = length;
+}
 
-// void vendor_out_write_byte(uint8_t byte) {
-//     assert(g_vendor_report_out.len < VENDOR_REPORT_LEN);
-//     g_vendor_report_out.data[g_vendor_report_out.len++] = byte;
-// }
+void vendor_out_write_byte(uint8_t byte) {
+    assert(g_vendor_report_out.len < VENDOR_REPORT_LEN);
+    g_vendor_report_out.data[g_vendor_report_out.len++] = byte;
+}
 #endif
 

@@ -141,12 +141,12 @@ static bool sticky_relase_timer_done(void) {
     return (uint16_t)(timer_read16_ms() - s_sticky_clear_start_time) > STICKY_KEY_RELEASE_DELAY;
 }
 
-uint8_t get_active_slot_id(void) {
+uint8_t get_active_slot_id(void) REENT {
     return s_active_slot;
 }
 
-uint8_t get_active_keyboard_id(void) {
-    return s_slot_id_map[s_active_slot];
+uint8_t get_active_keyboard_id(void) REENT {
+    return g_keyboard_slots[s_active_slot].kb_id;
 }
 
 void queue_keycode_event(keycode_t keycode, uint8_t event_type, uint8_t kb_id) {
@@ -157,6 +157,11 @@ void queue_keycode_event(keycode_t keycode, uint8_t event_type, uint8_t kb_id) {
 
     if (len >= MAX_EVENT_QUEUE_LENGTH) {
         register_error(ERROR_KEY_EVENT_QUEUE_FULL);
+        return;
+    }
+
+    if (kb_id == INVALID_DEVICE_ID) {
+        register_error(ERROR_INVALID_KB_ID_USED);
         return;
     }
 
@@ -192,11 +197,9 @@ static void apply_event_trigger_queue(uint8_t keyboard_id) {
 
     for (i = 0; i < queue->length; ++i) {
 
-        // TODO: Should only apply the keycode the correct keyboard. Disabled
-        // for now since there is a bug in setting/obtaining the keyboard_id
-        // if (queue->events[i].keyboard_id != keyboard_id) {
-        //     continue;
-        // }
+        if (queue->events[i].keyboard_id != keyboard_id) {
+            continue;
+        }
 
         keyboard_trigger_event(
             queue->events[i].keycode,
@@ -287,11 +290,10 @@ uint8_t acquire_slot(uint8_t kb_id) {
         return kb_slot_id;
     }
 
-    // We now need to free a slot for the keyboard.
-    // Use a first-in-first-out queue to find a slot.
+    // We now need to free a slot for the keyboard if all the slots are full.
     for (i = 0; i < MAX_NUM_KEYBOARDS; ++i) {
         if (s_slot_id_map[i] == s_slot_fifo_pos) {
-            uint8_t stale_kb_id = i;
+            const uint8_t stale_kb_id = i;
             s_slot_id_map[stale_kb_id] = INVALID_DEVICE_ID;
             // TODO: need to perform cleanup for this slot
             // TODO: release all the keys of the keyboard that we are evicting
@@ -302,6 +304,7 @@ uint8_t acquire_slot(uint8_t kb_id) {
         }
     }
 
+    // Use a first-in-first-out queue for the new slot
     kb_slot_id = s_slot_fifo_pos;
     s_slot_id_map[kb_id] = kb_slot_id;
 
@@ -322,7 +325,15 @@ void keyboards_init(void) {
     // TODO: probably set default layers
 
     keyboard_layouts_init();
-    memset(s_slot_id_map, INVALID_DEVICE_ID, MAX_NUM_KEYBOARD_SLOTS);
+    memset(s_slot_id_map, INVALID_DEVICE_ID, MAX_NUM_KEYBOARDS);
+
+    {
+        uint8_t slot_id;
+        for (slot_id = 0; slot_id < MAX_NUM_KEYBOARD_SLOTS; ++slot_id) {
+            g_keyboard_slots[slot_id].kb_id = INVALID_DEVICE_ID;
+        }
+    }
+
     s_slot_fifo_pos = 0;
     s_has_dirty_matrix = true;
 
@@ -564,6 +575,10 @@ void keyboard_interpret_matrix(uint8_t kb_slot_id) {
 
     keyboard = &g_keyboard_slots[kb_slot_id];
 
+    if (keyboard->kb_id == INVALID_DEVICE_ID) {
+        return;
+    }
+
     // exit early if no work needs to be done
     if (!keyboard->is_dirty) {
         return;
@@ -573,6 +588,8 @@ void keyboard_interpret_matrix(uint8_t kb_slot_id) {
     keyboard->is_dirty = 0;
 
     s_active_slot = kb_slot_id;
+
+
     active_layer = keyboard_get_layer_mask(kb_slot_id);
     start_layer = get_partial_layer_mask(kb_slot_id);
 
@@ -678,8 +695,11 @@ void interpret_all_keyboard_matrices(void) {
     // from the events written to the writing event queue
     s_read_event_queue = !s_read_event_queue;
 
-    for (int kb_i = 0; kb_i < MAX_NUM_KEYBOARD_SLOTS; ++kb_i) {
-        keyboard_interpret_matrix(kb_i);
+    {
+        uint8_t slot_id;
+        for (slot_id = 0; slot_id < MAX_NUM_KEYBOARD_SLOTS; ++slot_id) {
+            keyboard_interpret_matrix(slot_id);
+        }
     }
 
     // TODO: probably need to loop here until the key event queue is empty / not changed
