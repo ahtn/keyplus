@@ -43,7 +43,11 @@ ROM const usb_config_desc_keyboard_t usb_config_desc = {
         .bConfigurationValue = 1,
         .iConfiguration      = STRING_DESC_NONE,
         .bmAttributes        = USB_CONFIG_BUS_POWERED,
-        .bMaxPower           = 250, //
+#ifdef CUSTOM_USB_CURRENT_LIMIT
+        .bMaxPower           = USB_MAX_POWER(CUSTOM_USB_CURRENT_LIMIT),
+#else
+        .bMaxPower           = USB_MAX_POWER(500),
+#endif
     },
 
     // boot keyboard interface descriptor

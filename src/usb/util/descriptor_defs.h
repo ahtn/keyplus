@@ -134,3 +134,6 @@ typedef enum {
 
 // HID 1.11
 #define USB_HID_REVISION_1_11 0x0111
+
+// Macro for setting the .bMaxPower field in the device descriptor
+#define USB_MAX_POWER(current_in_ma) ((current_in_ma+1)/2)
