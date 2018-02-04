@@ -146,7 +146,7 @@ class Key(object):
 
     def set_legend(self, key, value):
         assert(key in Key.LEGEND_MAP)
-        assert(type(value) == str)
+        assert(isinstance(value, str) or isinstance(value, unicode))
         self._legends[key] = value
 
     def get_legend_list(self):
@@ -314,7 +314,8 @@ class KeyProperties:
         self.homing = False
         self.decal = False
 
-    def fromObject(obj):
+    @staticmethod
+    def from_object(obj):
         props = KeyProperties()
         if 'x' in obj:
             props.x = float(obj['x'])
@@ -444,7 +445,7 @@ class Keyboard(object):
         pos = 0
         for row in json_layout:
             for key in row:
-                if type(key) == str:
+                if isinstance(key, str) or isinstance(key, unicode):
                     x = props.x
                     y = props.y
                     w = props.w
@@ -454,8 +455,8 @@ class Keyboard(object):
                     keyboard.add_key(x, y, w, h, text=key_text, decal=d)
                     # reset properties for next key
                     props = KeyProperties()
-                elif type(key) == dict:
-                    props = KeyProperties.fromObject(key)
+                elif isinstance(key, dict):
+                    props = KeyProperties.from_object(key)
 
                     old_rx = keyboard.global_props.rx
                     old_ry = keyboard.global_props.ry

@@ -18,6 +18,7 @@ from PySide.QtGui import QApplication, QWidget, QComboBox, QVBoxLayout, \
 
 from PySide.QtCore import Slot, Signal
 
+import os
 import kle, json
 import random
 import led_vm
@@ -51,6 +52,8 @@ class KeyboardDeviceWidget(QGraphicsItem):
         self.vm = led_vm.LEDEffectVM(byte_code=byte_code, num_pixels=64)
 
         for(i, key) in enumerate(keys):
+
+            print(i)
 
             # color = QColor(
             #     random.randint(0, 255),
@@ -106,10 +109,12 @@ class KeyboardDeviceWidget(QGraphicsItem):
         painter.setPen(QPen(Qt.black, 1))
         painter.drawRect(self.keyBoundRect)
 
+    @staticmethod
     def from_file(file_name, name):
         json_layout = None
         with open(file_name) as json_file:
             json_layout = json.loads(json_file.read())
+        print(json_layout)
         # layout = kle.Layout.layout_from_json(json_layout)
         layout = kle.Keyboard.from_json(json_layout, spacing=50)
         # keys = layout.get_scaled_keys((30, 30), (-150, 0))
@@ -432,7 +437,7 @@ class Window(QWidget):
         self.view.setFont(keyFont)
 
         test_items = [
-            ("60%", "layouts/60-percent.json"),
+            ("60%", os.path.join("layouts", "60-percent.json")),
             # ("dox-left",  "test_layouts/test-dox-left.json"),
             # ("dox-right", "test_layouts/test-dox-right.json"),
             # ("mine-v5", "test_layouts/test-mine-v5.json"),
@@ -441,6 +446,9 @@ class Window(QWidget):
         self.test_objs = [
             KeyboardDeviceWidget.from_file(kb[1], kb[0]) for kb in test_items
         ]
+
+        print(test_items)
+        print(self.test_objs)
 
         for kb in self.test_objs:
             self.scene.addItem(kb)
