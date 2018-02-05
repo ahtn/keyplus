@@ -3,6 +3,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import six
 import copy
 import json
 import math, cmath
@@ -146,7 +147,7 @@ class Key(object):
 
     def set_legend(self, key, value):
         assert(key in Key.LEGEND_MAP)
-        assert(isinstance(value, str) or isinstance(value, unicode))
+        assert(isinstance(value, six.string_types))
         self._legends[key] = value
 
     def get_legend_list(self):
@@ -405,6 +406,12 @@ class Keyboard(object):
         self.cur_y = 0
         self.spacing = spacing
 
+    def set_spacing(self):
+        self.spacing = self.spacing
+
+    def get_spacing(self):
+        return self.spacing
+
     def get_keys(self):
         return iter(self.keys)
 
@@ -445,7 +452,7 @@ class Keyboard(object):
         pos = 0
         for row in json_layout:
             for key in row:
-                if isinstance(key, str) or isinstance(key, unicode):
+                if isinstance(key, six.string_types):
                     x = props.x
                     y = props.y
                     w = props.w

@@ -23,6 +23,8 @@ import kle, json
 import random
 import led_vm
 
+DEFAULT_KEY_SIZE = 50
+
 class KeycodeConfigWidget:
     pass
 
@@ -37,12 +39,13 @@ class LayoutWidget:
 
 class KeyboardDeviceWidget(QGraphicsItem):
 
-    def __init__(self, keys, name, parent=None):
+    def __init__(self, key_layout, name, key_size=DEFAULT_KEY_SIZE, parent=None):
         super(KeyboardDeviceWidget, self).__init__(parent)
 
-        self.keys = keys
+        self.key_layout = key_layout
+        self.keys = key_layout.get_keys()
         self.keyList = []
-        self.keySize = 30
+        self.keySize = self.key_layout.get_spacing()
 
         with open("rgb.cl") as f:
             test_program_str = f.read()
@@ -51,7 +54,7 @@ class KeyboardDeviceWidget(QGraphicsItem):
         byte_code = vm_parser.parse_asm(test_program_str)
         self.vm = led_vm.LEDEffectVM(byte_code=byte_code, num_pixels=64)
 
-        for(i, key) in enumerate(keys):
+        for(i, key) in enumerate(self.keys):
 
             print(i)
 
@@ -110,17 +113,16 @@ class KeyboardDeviceWidget(QGraphicsItem):
         painter.drawRect(self.keyBoundRect)
 
     @staticmethod
-    def from_file(file_name, name):
+    def from_file(file_name, name, key_size=DEFAULT_KEY_SIZE):
         json_layout = None
         with open(file_name) as json_file:
             json_layout = json.loads(json_file.read())
         print(json_layout)
         # layout = kle.Layout.layout_from_json(json_layout)
-        layout = kle.Keyboard.from_json(json_layout, spacing=50)
+        key_layout = kle.Keyboard.from_json(json_layout, spacing=key_size)
         # keys = layout.get_scaled_keys((30, 30), (-150, 0))
         # keys = layout.get_keys((30, 30), (-150, 0))
-        keys = layout.get_keys()
-        return KeyboardDeviceWidget(keys, name)
+        return KeyboardDeviceWidget(key_layout, name)
 
     # @Slot(str)
     # def updateLEDAnimation(self):
@@ -328,7 +330,7 @@ class GraphicsView(QGraphicsView):
         pass
 
 class KeyboardEditorScene(QGraphicsScene):
-    def __init__(self, x, y, w, h, parent=None):
+    def __init__(self, x, y, w, h, key_size=50, parent=None):
         super(KeyboardEditorScene, self).__init__(x, y, w, h, parent=parent)
 
         self.dragStartPos = None
@@ -342,9 +344,8 @@ class KeyboardEditorScene(QGraphicsScene):
         self.addItem(self.dragBoxRect)
 
         self.gridActive = True
-        self.keySize = 30
+        self.keySize = key_size
         self.snapSize = 0.25
-
 
     def setSnapSize(self, size):
         self.snapSize = size
@@ -422,10 +423,14 @@ class Window(QWidget):
         # layout of the widgets in the window
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.inputType)
+        self.key_size = 50
 
         self.setLayout(self.layout)
 
-        self.scene = KeyboardEditorScene(-200, -200, 1000, 600)
+        self.scene = KeyboardEditorScene(
+            -200, -200, 1000, 600,
+            key_size = self.key_size
+        )
 
         keyFont = self.font()
         keyFont.setPixelSize(20)
@@ -444,7 +449,11 @@ class Window(QWidget):
         ]
 
         self.test_objs = [
-            KeyboardDeviceWidget.from_file(kb[1], kb[0]) for kb in test_items
+            KeyboardDeviceWidget.from_file(
+                kb[1],
+                kb[0],
+                key_size=self.key_size
+            ) for kb in test_items
         ]
 
         print(test_items)
