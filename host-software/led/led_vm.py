@@ -69,24 +69,33 @@ class LEDEffectVM(object):
         Register.MOUSE_Y     : Register("MOUSE_Y",     0),
     }
 
-    def __init__(self, num_pixels, byte_code=[]):
+    def __init__(self, led_program_table={'main': []}, num_pixels=None):
         self.pixels = [(0, 0, 0)] * num_pixels
-        self.byte_code = byte_code
+        self.led_program_table = led_program_table
+        self.set_active_progarm('main')
         self.instr_ptr = 0
         self.registers = {}
         for reg in self.REGISTER_TABLE:
             self.registers[reg] = self.REGISTER_TABLE[reg].default_value
 
+    def set_active_progarm(self, name):
+        self.current_program = self.led_program_table[name]
+
     def goto_start(self):
         self.instr_ptr = 0
 
     def get_next_word(self):
-        result = self.byte_code[self.instr_ptr]
+        if self.instr_ptr >= len(self.current_program):
+            return None
+        result = self.current_program[self.instr_ptr]
         self.instr_ptr += 1
         return result
 
     def read_op_code(self):
         code = self.get_next_word()
+        if code == None:
+            return None, None
+
         assert(code in OpCode.OP_CODE_TABLE)
         op_code = OpCode.OP_CODE_TABLE[code]
 
@@ -161,7 +170,13 @@ class LEDEffectVM(object):
 
         return False
 
-    def execute_program(self, pixel_number):
+    def execute_program(self, program_name):
+        self.set_active_progarm(program_name)
+
+        for (pixel_i, _) in enumerate(self.pixels):
+            self.execute_program_pixel(pixel_i)
+
+    def execute_program_pixel(self, pixel_number):
         self.goto_start()
         self.registers[Register.PIXEL_NUM] = pixel_number
 
@@ -172,6 +187,9 @@ class LEDEffectVM(object):
 
         while is_running:
             (code, data) = self.read_op_code()
+            if code == None:
+                break;
+
             if DEBUG:
                 print("(OpCode {}, Data {})".format(code, data))
             is_running = not self.execute_op_code(code, data)
@@ -220,7 +238,7 @@ class LEDEffectVMParser(object):
         elif isinstance(ref, str):
             if ref in self.register_lookup_table:
                 ref_type = LEDEffectVM.REFERENCE_TYPE_REGISTER
-                value = ref
+                value = self.register_lookup_table[ref]
             elif ref in ('r', 'g', 'b', 'h', 's', 'v'):
                 ref_type = LEDEffectVM.REFERENCE_TYPE_PIXEL
                 value = {
@@ -285,7 +303,12 @@ class LEDEffectVMParser(object):
 
 
 if __name__ == "__main__":
-    test_str = """
+    init_prog = """
+    (
+        (LOAD_PIXEL PIXEL_NUM 255 200)
+    )
+    """
+    main_prog = """
     (
         (LOAD_PIXEL r 255 200)
         (ADD_VEC3 1 0 0)
@@ -294,13 +317,18 @@ if __name__ == "__main__":
     """
 
     vm_parser = LEDEffectVMParser()
-    byte_code = vm_parser.parse_asm(test_str)
-    vm = LEDEffectVM(byte_code=byte_code, num_pixels=64)
+    led_programs = {
+        "init": vm_parser.parse_asm(init_prog),
+        "main": vm_parser.parse_asm(main_prog),
+    }
+    vm = LEDEffectVM(led_programs, num_pixels=64)
 
-    byte_code_as_bytes = bytes([])
-    for word in byte_code:
-        byte_code_as_bytes += bytes([word & 0xff, word>>8 & 0xff])
-    hexdump.hexdump(byte_code_as_bytes)
+    for prog in led_programs:
+        print(prog)
+        byte_code_as_bytes = bytes([])
+        for word in led_programs[prog]:
+            byte_code_as_bytes += bytes([word & 0xff, word>>8 & 0xff])
+        hexdump.hexdump(byte_code_as_bytes)
 
     for i in range(300):
         vm.execute_program(0)

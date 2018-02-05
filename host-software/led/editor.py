@@ -48,11 +48,17 @@ class KeyboardDeviceWidget(QGraphicsItem):
         self.keySize = self.key_layout.get_spacing()
 
         with open("rgb.cl") as f:
-            test_program_str = f.read()
+            main_program = f.read()
+
+        with open("rgb_init.cl") as f:
+            init_program = f.read()
 
         vm_parser = led_vm.LEDEffectVMParser()
-        byte_code = vm_parser.parse_asm(test_program_str)
-        self.vm = led_vm.LEDEffectVM(byte_code=byte_code, num_pixels=64)
+        led_programs = {
+            'init': vm_parser.parse_asm(init_program),
+            'main': vm_parser.parse_asm(main_program)
+        }
+        self.vm = led_vm.LEDEffectVM(led_programs, num_pixels=64)
 
         for(i, key) in enumerate(self.keys):
 
@@ -79,6 +85,8 @@ class KeyboardDeviceWidget(QGraphicsItem):
             # self.updateBoundingRect(key)
             key.positionUpdateSignal.connect(self.handlePositionUpdate)
             self.keyList.append(key)
+
+        self.vm.execute_program('init')
 
         self.updateBoundingRect()
 
@@ -118,10 +126,7 @@ class KeyboardDeviceWidget(QGraphicsItem):
         with open(file_name) as json_file:
             json_layout = json.loads(json_file.read())
         print(json_layout)
-        # layout = kle.Layout.layout_from_json(json_layout)
         key_layout = kle.Keyboard.from_json(json_layout, spacing=key_size)
-        # keys = layout.get_scaled_keys((30, 30), (-150, 0))
-        # keys = layout.get_keys((30, 30), (-150, 0))
         return KeyboardDeviceWidget(key_layout, name)
 
     # @Slot(str)
@@ -164,10 +169,8 @@ class KeyboardDeviceWidget(QGraphicsItem):
     #         key.color = new_color
     #         key.update()
 
-    @Slot(str)
-    def updateLEDAnimation(self):
+    def updateLEDFromVM(self):
         for (i, key) in enumerate(self.keyList):
-            self.vm.execute_program(i)
 
             pixel = self.vm.get_pixel(i)
             pixel_type = self.vm.get_pixel_type(i)
@@ -187,6 +190,13 @@ class KeyboardDeviceWidget(QGraphicsItem):
 
             key.color = new_color
             key.update()
+
+    @Slot(str)
+    def updateLEDAnimation(self):
+        # self.vm.execute_program('main')
+
+        self.vm.execute_program('main')
+        self.updateLEDFromVM()
 
 
     @Slot(str)

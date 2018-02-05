@@ -1,0 +1,3 @@
+(
+    (LOAD_PIXEL PIXEL_NUM 255 200)
+)
