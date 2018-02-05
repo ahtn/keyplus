@@ -18,7 +18,8 @@ void reset_media_report(void) {
     g_report_pending_media = false;
 }
 
-static bit_t is_ready_media_report(void) {
+
+bit_t is_ready_media_report(void) {
     return is_in_endpoint_ready(EP_NUM_MEDIA);
 }
 

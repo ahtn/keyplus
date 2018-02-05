@@ -250,9 +250,12 @@ bit_t is_ready_keyboard_report(void) {
     return is_ready_boot_keyboard_report() && is_ready_nkro_keyboard_report();
 }
 
-// boot keyboard report
 bit_t is_ready_boot_keyboard_report(void) {
     return is_in_endpoint_ready(EP_NUM_BOOT_KEYBOARD);
+}
+
+bit_t is_ready_nkro_keyboard_report(void) {
+    return is_in_endpoint_ready(EP_NUM_NKRO_KEYBOARD);
 }
 
 bit_t send_boot_keyboard_report(void) {
@@ -271,12 +274,6 @@ bit_t send_boot_keyboard_report(void) {
     }
 }
 
-
-// nkro keyboard report
-bit_t is_ready_nkro_keyboard_report(void) {
-    return is_in_endpoint_ready(EP_NUM_NKRO_KEYBOARD);
-}
-
 bit_t send_nkro_keyboard_report(void) {
     if (is_ready_nkro_keyboard_report()) {
         uint8_t report_size = sizeof(hid_report_nkro_keyboard_t);
@@ -292,4 +289,3 @@ bit_t send_nkro_keyboard_report(void) {
         return true;
     }
 }
-

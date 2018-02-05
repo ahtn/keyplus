@@ -30,6 +30,9 @@ USB_REG_DECL(0xC680) uint8_t in1buf[64];
 USB_REG_DECL(0xC6C0) uint8_t out0buf[64];
 USB_REG_DECL(0xC700) uint8_t in0buf[64];
 
+#define USB_EP_IN_BUF(endpoint_num) ((XRAM uint8_t*)in0buf - (uint16_t)0x80*(uint16_t)endpoint_num)
+#define USB_EP_OUT_BUF(endpoint_num) ((XRAM uint8_t*)out0buf - (uint16_t)0x80*(uint16_t)endpoint_num)
+
 USB_REG_DECL(0xC760) uint8_t out8data;
 USB_REG_DECL(0xC768) uint8_t in8data;
 
@@ -74,6 +77,13 @@ USB_REG_DECL(0xC7BD) uint8_t in4bc;
 USB_REG_DECL(0xC7BE) uint8_t in5cs;
 USB_REG_DECL(0xC7BF) uint8_t in5bc;
 
+#define USB_EP_IN_CS(ep_num) ((uint8_t XRAM*)&ep0cs)[ep_num*2]
+#define USB_EP_IN_BC(ep_num) ((uint8_t XRAM*)&in0bc)[ep_num*2]
+
+
+USB_REG_DECL(0xC7C4) uint8_t _imaginary_out0cs[16];
+USB_REG_DECL(0xC7C5) uint8_t _imaginary_out0bc[16];
+
 USB_REG_DECL(0xC7C5) uint8_t out0bc;
 USB_REG_DECL(0xC7C6) uint8_t out1cs;
 USB_REG_DECL(0xC7C7) uint8_t out1bc;
@@ -85,6 +95,9 @@ USB_REG_DECL(0xC7CC) uint8_t out4cs;
 USB_REG_DECL(0xC7CD) uint8_t out4bc;
 USB_REG_DECL(0xC7CE) uint8_t out5cs;
 USB_REG_DECL(0xC7CF) uint8_t out5bc;
+
+#define USB_EP_OUT_BC(ep_num) (_imaginary_out0bc[ep_num*2])
+#define USB_EP_OUT_CS(ep_num) (_imaginary_out0cs[ep_num*2])
 
 USB_REG_DECL(0xC7D6) uint8_t usbcs;
 USB_REG_DECL(0xC7D7) uint8_t togctl;

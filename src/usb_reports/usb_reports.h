@@ -11,12 +11,12 @@ bit_t is_out_endpoint_ready(uint8_t endpoint_num);
 
 void usb_write_in_endpoint(
     uint8_t endpoint_num,
-    const uint8_t *data,
+    const XRAM uint8_t *data,
     uint8_t length
 );
 
 void usb_read_out_endpoint(
     uint8_t endpoint_num,
-    const uint8_t *data,
+    XRAM uint8_t *dest,
     uint8_t *length
 );

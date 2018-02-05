@@ -145,7 +145,6 @@ void vendor_out_write_byte(uint8_t byte) {
 }
 #endif
 
-#if AVR
 
 bit_t is_ready_vendor_in_report(void) {
     return is_in_endpoint_ready(EP_NUM_VENDOR);
@@ -190,4 +189,3 @@ uint8_t read_vendor_report(uint8_t *dest) {
 
     return 0;
 }
-#endif

@@ -22,7 +22,7 @@
 #include "usb_reports/mouse_report.h"
 #include "usb_reports/vendor_report.h"
 
-XRAM uint8_t has_received_usb_data;
+XRAM uint8_t g_has_received_usb_data;
 
 static XRAM uint8_t usb_current_configuration;
 static XRAM usb_state_t usb_state;
@@ -115,7 +115,7 @@ void usb_init(void) {
     out4bc = 0xff;
     out5bc = 0xff;
 
-    has_received_usb_data = false;
+    g_has_received_usb_data = 0;
 #ifdef ENABLE_USB_ISR
     USB_IRQEN = 1;
 #endif
@@ -416,7 +416,7 @@ void usb_poll(void) {
 
         case IVEC_EP4OUT: {
             out_irq = USBIRQ_EP4;
-            has_received_usb_data = true;
+            g_has_received_usb_data |= USBIRQ_EP4;
         } break;
 
 
