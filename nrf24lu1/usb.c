@@ -15,11 +15,12 @@
 
 #include "core/led.h"
 #include "core/hardware.h"
-#include "core/keyboard_report.h"
-#include "core/mouse_report.h"
-#include "core/vendor_report.h"
 #include "core/util.h"
 #include "core/usb_commands.h"
+
+#include "usb_reports/keyboard_report.h"
+#include "usb_reports/mouse_report.h"
+#include "usb_reports/vendor_report.h"
 
 XRAM uint8_t has_received_usb_data;
 

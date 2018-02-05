@@ -7,10 +7,10 @@
 /* #include "usb_regs.h" */
 #include "nrf24lu1_usb_regs.h"
 
-#include "core/keyboard_report.h"
-#include "core/media_report.h"
-#include "core/mouse_report.h"
-#include "core/vendor_report.h"
+#include "usb_reports/keyboard_report.h"
+#include "usb_reports/media_report.h"
+#include "usb_reports/mouse_report.h"
+#include "usb_reports/vendor_report.h"
 
 
 #define CS_IN_BOOT_KEYBOARD in1cs

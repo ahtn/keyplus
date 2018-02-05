@@ -1,8 +1,8 @@
 # Copyright 2017 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-CORE_PATH = $(KEYPLUS_PATH)/core
-USB_REPORTS_PATH = $(KEYPLUS_PATH)/usb_reports
+CORE_PATH = core
+USB_REPORTS_PATH = usb_reports
 
 #######################################################################
 #                  firmware compile time information                  #
@@ -140,4 +140,4 @@ else
     CDEFS += -DDEBUG_AES_KEY=0
 endif
 
-include $(USB_REPORTS_PATH)/usb_reports.mk
+include $(KEYPLUS_PATH)/$(USB_REPORTS_PATH)/usb_reports.mk

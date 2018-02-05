@@ -13,7 +13,7 @@ F_CPU	= 16000000
 # valid 16 or 32
 FLASH_SIZE = 32
 
-BASE_PATH = ../src
+KEYPLUS_PATH = ../src
 
 USE_USB := 1
 USE_NRF24 := 1
@@ -58,19 +58,19 @@ ASM_SRC = \
 	crtxinit.S \
 
 
-include $(BASE_PATH)/core/core.mk
-include $(BASE_PATH)/usb/usb.mk
-include $(BASE_PATH)/key_handlers/key_handlers.mk
+include $(KEYPLUS_PATH)/core/core.mk
+include $(KEYPLUS_PATH)/usb/usb.mk
+include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
 
 #######################################################################
 #                              c defines                              #
 #######################################################################
 
-VPATH += $(BASE_PATH)
+VPATH += $(KEYPLUS_PATH)
 
 INC_PATHS += \
 	-I. \
-	-I$(BASE_PATH) \
+	-I$(KEYPLUS_PATH) \
 
 CDEFS += \
 	-D$(MCU) \

@@ -13,11 +13,6 @@
 #include "core/usb_commands.h"
 #include "core/unifying.h"
 
-#include "core/keyboard_report.h"
-#include "core/media_report.h"
-#include "core/mouse_report.h"
-#include "core/vendor_report.h"
-
 #include "core/aes.h"
 #include "core/error.h"
 #include "core/hardware.h"
@@ -27,6 +22,14 @@
 #include "core/settings.h"
 #include "core/timer.h"
 #include "core/util.h"
+
+#include "core/macro.h"
+#include "key_handlers/key_hold.h"
+
+#include "usb_reports/keyboard_report.h"
+#include "usb_reports/media_report.h"
+#include "usb_reports/mouse_report.h"
+#include "usb_reports/vendor_report.h"
 
 #include "usb/common.h"
 
