@@ -5,7 +5,7 @@
 
 #include <string.h>
 
-#include "settings.h"
+#include "core/settings.h"
 #include "core/matrix_interpret.h"
 #include "core/mods.h"
 

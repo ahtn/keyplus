@@ -9,9 +9,10 @@
 #include "core/hardware.h"
 #include "core/timer.h"
 
-#include "core/keyboard_report.h"
-#include "core/mouse_report.h"
 #include "key_handlers/key_normal.h"
+
+#include "usb_reports/keyboard_report.h"
+#include "usb_reports/mouse_report.h"
 
 
 static void blocking_send_boot_report(void) {

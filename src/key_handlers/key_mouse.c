@@ -5,8 +5,9 @@
 
 #include <string.h>
 
-#include "core/mouse_report.h"
 #include "core/timer.h"
+
+#include "usb_reports/mouse_report.h"
 
 // /* TODO: mouse keycode */
 bit_t is_mouse_keycode(keycode_t keycode) {

@@ -5,13 +5,13 @@
 
 #include "config.h"
 
-#include "core/mouse_report.h"
-
 #include "core/keycode.h"
 #include "core/rf.h"
 #include "core/settings.h"
 #include "core/unifying.h"
 #include "core/usb_commands.h"
+
+#include "usb_reports/mouse_report.h"
 
 static const ROM char msg[] = "hello world\n";
 

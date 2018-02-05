@@ -24,16 +24,16 @@
 
 #include <string.h>
 
-#include "key_handlers/key_handlers.h"
-
 #include "core/error.h"
-#include "core/keyboard_report.h"
 #include "core/layout.h"
 #include "core/packet.h"
 #include "core/timer.h"
+#include "core/usb_commands.h"
 #include "core/util.h"
 
-#include "core/usb_commands.h"
+#include "key_handlers/key_handlers.h"
+
+#include "usb_reports/keyboard_report.h"
 
 XRAM keyboard_t g_keyboard_slots[MAX_NUM_KEYBOARD_SLOTS];
 XRAM uint8_t s_slot_id_map[MAX_NUM_KEYBOARDS];

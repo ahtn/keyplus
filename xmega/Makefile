@@ -21,14 +21,14 @@ CLOCK_SPEED_SLOW = 12000000
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex
 
-BASE_PATH=../src
+KEYPLUS_PATH=../src
 XMEGA_PATH=.
 
-VPATH += $(BASE_PATH)
+VPATH += $(KEYPLUS_PATH)
 VPATH += $(XMEGA_PATH)
 
 INC_PATHS += \
-	-I$(BASE_PATH)
+	-I$(KEYPLUS_PATH)
 
 #######################################################################
 #                        board config options                         #
@@ -40,9 +40,9 @@ include avr-makefile/boards.mk
 #                        common build settings                        #
 #######################################################################
 
-include $(BASE_PATH)/core/core.mk
-include $(BASE_PATH)/usb/usb.mk
-include $(BASE_PATH)/key_handlers/key_handlers.mk
+include $(KEYPLUS_PATH)/core/core.mk
+include $(KEYPLUS_PATH)/usb/usb.mk
+include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
 
 include $(XMEGA_PATH)/xusb/makefile
 include $(XMEGA_PATH)/xusb/xmega/makefile

@@ -5,8 +5,9 @@
 
 #include <string.h>
 
-#include "core/keyboard_report.h"
 #include "core/usb_commands.h"
+
+#include "usb_reports/keyboard_report.h"
 
 // NOTE: counts how many keys are "pressing" each modifier. Makes the behaviour
 // of modkeys nicer since multiple keyboards are all sharing the mods.

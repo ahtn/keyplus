@@ -17,10 +17,10 @@
 #include "core/matrix_scanner.h"
 #include "core/unifying.h"
 
-#include "core/keyboard_report.h"
-#include "core/media_report.h"
-#include "core/mouse_report.h"
-#include "core/vendor_report.h"
+#include "usb_reports/keyboard_report.h"
+#include "usb_reports/media_report.h"
+#include "usb_reports/mouse_report.h"
+#include "usb_reports/vendor_report.h"
 
 #include "core/debug.h"
 

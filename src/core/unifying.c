@@ -5,16 +5,16 @@
 
 #include <string.h>
 
+#include "core/hardware.h"
 #include "core/led.h"
+#include "core/matrix_interpret.h"
 #include "core/nrf24.h"
 #include "core/rf.h"
 #include "core/settings.h"
 #include "core/timer.h"
 #include "core/usb_commands.h"
 
-#include "core/matrix_interpret.h"
-#include "core/mouse_report.h"
-#include "core/hardware.h"
+#include "usb_reports/mouse_report.h"
 
 /* #include "core/.h" */
 

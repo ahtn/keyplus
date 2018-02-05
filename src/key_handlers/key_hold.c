@@ -5,7 +5,6 @@
 
 #include <string.h>
 
-#include "core/keyboard_report.h"
 #include "core/keycode.h"
 #include "core/matrix_interpret.h"
 #include "core/timer.h"

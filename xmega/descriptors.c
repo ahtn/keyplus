@@ -9,9 +9,9 @@
 #include "core/flash.h"
 #include "core/settings.h"
 
-#include "core/keyboard_report.h"
-#include "core/mouse_report.h"
-#include "core/vendor_report.h"
+#include "usb_reports/keyboard_report.h"
+#include "usb_reports/mouse_report.h"
+#include "usb_reports/vendor_report.h"
 
 #include "usb/descriptors.h"
 #include "usb/util/usb_hid.h"
