@@ -16,11 +16,4 @@ extern bit_t g_report_pending_media;
 
 void reset_media_report(void);
 
-void usb_write_endpoint_in_data(
-    uint8_t endpoint_num,
-    uint8_t *data,
-    uint8_t size
-);
-
-bit_t is_ready_media_report(void);
 bit_t send_media_report(void);

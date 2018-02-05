@@ -9,6 +9,8 @@
 #include "core/matrix_interpret.h"
 #include "core/mods.h"
 
+#include "usb_reports/usb_reports.h"
+
 #define KEY_AGE_LIST_LEN BOOT_REPORT_KEY_COUNT
 
 // Boot keyboard report (6kro)
@@ -247,3 +249,47 @@ bit_t send_keyboard_report(void) {
 bit_t is_ready_keyboard_report(void) {
     return is_ready_boot_keyboard_report() && is_ready_nkro_keyboard_report();
 }
+
+// boot keyboard report
+bit_t is_ready_boot_keyboard_report(void) {
+    return is_in_endpoint_ready(EP_NUM_BOOT_KEYBOARD);
+}
+
+bit_t send_boot_keyboard_report(void) {
+    if (is_ready_boot_keyboard_report()) {
+        uint8_t report_size = sizeof(hid_report_boot_keyboard_t);
+
+        usb_write_in_endpoint(
+            EP_NUM_BOOT_KEYBOARD,
+            (uint8_t*)&g_boot_keyboard_report,
+            report_size
+        );
+
+        return false;
+    } else {
+        return true;
+    }
+}
+
+
+// nkro keyboard report
+bit_t is_ready_nkro_keyboard_report(void) {
+    return is_in_endpoint_ready(EP_NUM_NKRO_KEYBOARD);
+}
+
+bit_t send_nkro_keyboard_report(void) {
+    if (is_ready_nkro_keyboard_report()) {
+        uint8_t report_size = sizeof(hid_report_nkro_keyboard_t);
+
+        usb_write_in_endpoint(
+            EP_NUM_NKRO_KEYBOARD,
+            (uint8_t*)&g_nkro_keyboard_report,
+            report_size
+        );
+
+        return false;
+    } else {
+        return true;
+    }
+}
+

@@ -5,6 +5,7 @@
 
 #include <string.h>
 
+#include "usb_reports/usb_reports.h"
 #include "usb/descriptors.h"
 
 XRAM hid_report_media_t g_media_report;
@@ -17,12 +18,15 @@ void reset_media_report(void) {
     g_report_pending_media = false;
 }
 
-#if AVR
+static bit_t is_ready_media_report(void) {
+    return is_in_endpoint_ready(EP_NUM_MEDIA);
+}
+
 bit_t send_media_report(void) {
     if (is_ready_media_report() && g_report_pending_media) {
         const uint8_t report_size = sizeof(hid_report_media_t);
 
-        usb_write_endpoint_in_data(
+        usb_write_in_endpoint(
             EP_NUM_MEDIA,
             (uint8_t*)&g_media_report,
             report_size
@@ -34,4 +38,3 @@ bit_t send_media_report(void) {
         return true;
     }
 }
-#endif

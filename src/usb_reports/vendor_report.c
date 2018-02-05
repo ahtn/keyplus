@@ -6,6 +6,8 @@
 #include "core/error.h"
 #include "core/debug.h"
 
+#include "usb_reports/usb_reports.h"
+
 // TODO: would be much nicer to have a buffered/pipe interfaces for accessing
 // the vendor report.
 // TODO: put this into an init function
@@ -143,3 +145,49 @@ void vendor_out_write_byte(uint8_t byte) {
 }
 #endif
 
+#if AVR
+
+bit_t is_ready_vendor_in_report(void) {
+    return is_in_endpoint_ready(EP_NUM_VENDOR);
+}
+
+bit_t send_vendor_report(void) {
+#if USB_BUFFERED
+    if (is_ready_vendor_in_report() && vendor_in_buf_has_packet()) {
+        vendor_in_load_packet();
+    }
+#endif
+
+    if (is_ready_vendor_in_report() && g_vendor_report_in.len > 0) {
+
+        usb_write_in_endpoint(
+            EP_NUM_VENDOR,
+            g_vendor_report_in.data,
+            g_vendor_report_in.len
+        );
+
+        g_vendor_report_in.len = 0;
+        return false;
+    } else {
+        return true;
+    }
+}
+
+bit_t is_ready_vendor_out_report(void) {
+    return is_out_endpoint_ready(EP_NUM_VENDOR);
+}
+
+uint8_t read_vendor_report(uint8_t *dest) {
+    if (!is_ready_vendor_out_report()) {
+        return 1;
+    }
+
+    usb_read_out_endpoint(
+        EP_NUM_VENDOR,
+        g_vendor_report_out.data,
+        &g_vendor_report_out.len
+    );
+
+    return 0;
+}
+#endif
