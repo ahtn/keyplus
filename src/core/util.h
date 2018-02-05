@@ -1,6 +1,10 @@
 // Copyright 2017 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
+/// @file core/compiler_util.h
+/// Provides compiler utility macros for different compilers and some small
+/// utility functions.
+
 #pragma once
 
 #include <stdbool.h>
@@ -16,7 +20,7 @@
 #define PRAM __pdata
 #define ROM __code
 #define WEAK __attribute__((weak))
-#define AT(addr) __at (addr)
+#define AT(address) __at (address)
 // sdcc doesn't have no return attribute.
 #define NO_RETURN_ATTR
 
@@ -30,36 +34,93 @@
 #define PRAM
 #define ROM __flash
 #define WEAK __attribute__((weak))
-#define AT(addr)
+#define AT(address)
 #define NO_RETURN_ATTR __ATTR_NORETURN__
 
 #else
-// generic
+// fallback versions
+
+/// Indicates that a function should be reentrant for the 8051 compiler.
+///
+/// Since the 8051 has limited stack space, the compiler does not use a stack
+/// like most other traditional c compilers. Instead function arguments are
+/// stored in fixed register/SRAM locations which are calculated at compile time.
+/// The
+///
+/// Refrences: [sdcc compiler manual](http://sdcc.sourceforge.net/doc/sdccman.pdf)
 #define REENT
+
+/// Indicates that a variable should be placed in external RAM on 8051 ports.
+///
+/// The 8051 has two classes or RAM: SRAM and XRAM (external RAM). SRAM is used
+/// as the default storage classes for variables as it is faster and generates
+/// smaller code.  However, SRAM is very limited on the 8051 (only 256 bytes)
+/// and is mainly used for the stack space for function calls. For this reason
+/// global variables and large variables should be placed in XRAM with the
+/// `XRAM` specifier, otherwise the compiler will run out of SRAM space.
+///
+/// Also, this specifier can be used with pointers to point to a variable or
+/// address in XRAM.
+///
+/// Refrences: [sdcc compiler manual](http://sdcc.sourceforge.net/doc/sdccman.pdf)
 #define XRAM
-#define IRAM
-#define PRAM
+
+/// Indicates that a variable should be placed in flash / read-only memory.
+///
+/// On `avr-gcc` this is equivalent to `__flash`.
+/// On `sdcc` this is equivalent to `__code`.
 #define ROM
+
+/// Functions defined with the `WEAK` attribute can be overridden by other implementations
+///
+/// Supported by: GCC
 #define WEAK
-#define ISR(x)
-#define AT(addr)
+
+/// On the 8051 compilers, this attribute can be used to place a variable at fixed address.
+///
+/// Supported by sdcc. To achieve the same affect on other compilers, it is
+/// necessary to use linker scripts.
+///
+/// Supported by: sdcc
+#define AT(address)
+
+/// Attribute used with functions that don't return.
+///
+/// Marking a function as `NO_RETURN_ATTR` will allow the compiler to make
+/// significant space optimizations. One use of this attribute is with custom
+/// `assert()` implementations in debug builds that hang the CPU when an
+/// assertion fails.
 #define NO_RETURN_ATTR
+
+// TODO: probably won't use these
+// #define IRAM
+// #define PRAM
+// #define ISR(x)
 #endif
 
 #if defined(__SDCC_mcs51)
-// using __bit instead of bool reduces code size, but it can't be accessed by a pointer
+/// Single bit or boolean variable type.
+///
+/// The 8051 compiler has access to single bit registers. Using these registers
+/// results in smaller code size.
+///
+/// On other architectures this maps to `bool`.
 #define bit_t __bit
 #else
 #define bit_t bool
 #endif
 
-#define SIGN(x) (x == 0 ? 0 : (x < 0 ? -1 : +1))
+// TODO: The names of these functions are very common and probably will cause
+// naming conflicts in the future. Should probably rename them.
+#define SIGN(x) ((x) == 0 ? 0 : ((x) < 0 ? -1 : +1))
+#define LSB(x) ((x) & 0xff)
+#define MSB(x) (((x) >> 8) & 0xff)
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
 
-#define LSB(x) (x & 0xff)
-#define MSB(x) ((x >> 8) & 0xff)
-
-#define MAX(x, y) ((x > y) ? x : y)
-
-bool bitn(uint8_t byte, uint8_t n);
+/// Returns the nth bit of `byte`
+///
+/// Note: the `sdcc` compiler has pretty bad optimizations for bit shifts. Using
+/// this function can save significant code space.
+bit_t bitn(uint8_t byte, uint8_t n);
 
 uint8_t is_buffer_zeroed(uint8_t *buffer, uint8_t len);

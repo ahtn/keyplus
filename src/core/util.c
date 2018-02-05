@@ -15,11 +15,11 @@ ROM const uint8_t bit_lookup[8] = {
     (1 << 7),
 };
 
-bool bitn(uint8_t byte, uint8_t n) {
+bit_t bitn(uint8_t byte, uint8_t n) {
     return (byte & bit_lookup[n]);
 }
 #else
-bool bitn(uint8_t byte, uint8_t n) {
+bit_t bitn(uint8_t byte, uint8_t n) {
     if (byte & (1 << n)) {
         return true;
     } else {

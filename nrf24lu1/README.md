@@ -1,4 +1,8 @@
-# nrf24lu1+ key+ dongle
+# nrf24lu1+ port
 
-The nrf24lu1+ code acts as a USB wireless dongle for other keyboards, and
-can not function as a keyboard by itself.
+The nRF24LU1+ port acts as a wireless dongle for other keyplus keyboards.
+
+## Functions support
+
+* USB
+* nRF24 wireless receiver

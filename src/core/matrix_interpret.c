@@ -1,5 +1,24 @@
 // Copyright 2017 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
+///
+/// @file core/matrix_interpret.c
+/// @brief keyplus matrix interpreter module
+///
+/// The matrix interpreter is the core module of keyplus.  The code in this
+/// module has a several jobs:
+///
+/// - Maintaining a list of all the active keyboards that are connected to the
+///   keyplus device acting as the receiver. Each keyboard's matrix, layer state,
+///   and other variables are all tracked separately to allow them to act as
+///   independent keyboards.
+/// - Provides functions for manipulating the layer state of keyboards.
+/// - Provides functions to update the matrix of keyboard devices for the rf and
+///   wired modules.
+/// - From updates in the keyboard matrices, the interpreter module computes
+///   which keys have been pressed and release with the `EVENT_PRESS` and
+///   `EVENT_RELEASED` events.
+/// - Provides functions for triggering, queuing and handling keycode events.
+///
 
 #include "core/matrix_interpret.h"
 
@@ -212,6 +231,7 @@ static void apply_event_trigger_queue(uint8_t keyboard_id) {
 //     return (s_key_event_queues[READ_EVENT_QUEUE()].length != 0);
 // }
 
+/// Reset the layer state of a keyboard current loaded into a slot
 void reset_layer_state(uint8_t kb_slot_id) {
     // TODO: set the default layer from settings
     g_keyboard_slots[kb_slot_id].default_layers = (1 << 0);
@@ -506,10 +526,13 @@ static void keyboard_trigger_event(keycode_t keycode, key_event_t event) REENT {
     register_error(ERROR_UNHANDLED_KEYCODE);
 }
 
-// Releases keys that are were down on the old layer, but that are not present
-// on the new layer. This prevents stuck keys when chaning layers.
-static void keyboard_interpret_layer_change(uint8_t kb_slot_id, layer_mask_t old_layer,
-        layer_mask_t new_layer) REENT {
+/// Releases keys that are were down on the old layer, but that are not present
+/// on the new layer. This prevents stuck keys when chaning layers.
+static void keyboard_interpret_layer_change(
+    uint8_t kb_slot_id,
+    layer_mask_t old_layer,
+    layer_mask_t new_layer
+) REENT {
     uint8_t byte, bit;
     keyboard_t XRAM* keyboard = &g_keyboard_slots[kb_slot_id];
 
@@ -539,8 +562,8 @@ static void keyboard_interpret_layer_change(uint8_t kb_slot_id, layer_mask_t old
     }
 }
 
-// This function releases keys that were PRESSED by a sticky layer/mod.
-// TODO: use a timer based event system as a nicer abstraction
+/// This function releases keys that were PRESSED by a sticky layer/mod.
+/// TODO: use a timer based event system as a nicer abstraction
 void sticky_key_task(void) {
     if (s_clear_sticky_keys && sticky_relase_timer_done()) {
         if (s_sticky_has_stuck_layer) {
@@ -560,7 +583,14 @@ void sticky_key_task(void) {
     }
 }
 
-// look at the keyboard matirx and generate key press/release events
+/// Generate key press and release events for the keyboard in the given slot.
+///
+/// This function will check the `matrix` and `matrix_prev` of the selected
+/// keyboard to find out which keys have been pressed and released.
+///
+/// Layer and modifier events will be queued until all keycodes have been
+/// processed and then applied all at once at the ended. Deleting
+/// layers and modifiers will take priority over adding them.
 void keyboard_interpret_matrix(uint8_t kb_slot_id) {
     XRAM layer_mask_t active_layer;
     XRAM layer_mask_t start_layer;

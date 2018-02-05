@@ -18,15 +18,12 @@
 
 #define MANUFACTURER_STRING "keyplus"
 
-// #define MAX_SIZE(x, y) ((x > y) ? (x) : (y))
-// #define BIGGEST_STR (MAX_SIZE(sizeof(MANUFACTURER_STRING), sizeof(PRODUCT_STRING)))
+// waste some ram
+char manufacturer_string[] = MANUFACTURER_STRING;
 
 #define MAX_STRING_LEN 32
 uint16_t string_desc_buf[MAX_STRING_LEN+1];
 char string_copy_buf[MAX_STRING_LEN];
-
-// waste some ram
-char manufacturer_string[] = MANUFACTURER_STRING;
 
 static void make_string_desc(char *str) {
     char c;
@@ -253,9 +250,6 @@ void usb_cb_completion(void) {
 
 uint8_t usbHidIdle = 0;      // forever
 uint8_t usbFrameCnt = 0;  // reset idle counter
-
-#define LSB(x) (x & 0xff)
-#define MSB(x) ((x >> 8) & 0xff)
 
 // HID request codes
 #define USB_REQ_HID_GET_REPORT    0x01
