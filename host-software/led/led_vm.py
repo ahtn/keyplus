@@ -13,6 +13,12 @@ import hexdump
 
 DEBUG = 0
 
+def u8(x):
+    return x & 0xff
+
+def i16(x):
+    return x & 0xffff
+
 class LEDVMError(Exception):
     pass
 
@@ -26,18 +32,30 @@ class OpCodeInfo(object):
     ARG_REFRENCES = 1
 
 class OpCode(object):
-    SHOW_HSV = 0
-    SHOW_RGB = 1
-    LOAD_PIXEL = 2
-    ADD_VEC3 = 3
+    SHOW_HSV   = 0x00
+    SHOW_RGB   = 0x01
+    LOAD_PIXEL = 0x02
+    ADD_VEC3   = 0x03
+    SUB_VEC3   = 0x04
+    IF_EQ      = 0x05
 
     OP_CODE_TABLE = {
         # CODE  , MENOMIC   , DATA_SIZE
-        SHOW_HSV:  OpCodeInfo("SHOW_HSV",       0, OpCodeInfo.ARG_NONE),
-        SHOW_RGB:  OpCodeInfo("SHOW_RGB",       0, OpCodeInfo.ARG_NONE),
-        LOAD_PIXEL: OpCodeInfo("LOAD_PIXEL",    3, OpCodeInfo.ARG_REFRENCES),
-        ADD_VEC3:  OpCodeInfo("ADD_VEC3",       3, OpCodeInfo.ARG_REFRENCES),
+        SHOW_HSV   : OpCodeInfo("SHOW_HSV"   , 0 , OpCodeInfo.ARG_NONE)      ,
+        SHOW_RGB   : OpCodeInfo("SHOW_RGB"   , 0 , OpCodeInfo.ARG_NONE)      ,
+        LOAD_PIXEL : OpCodeInfo("LOAD_PIXEL" , 3 , OpCodeInfo.ARG_REFRENCES) ,
+        ADD_VEC3   : OpCodeInfo("ADD_VEC3"   , 3 , OpCodeInfo.ARG_REFRENCES) ,
+        SUB_VEC3   : OpCodeInfo("SUB_VEC3"   , 3 , OpCodeInfo.ARG_REFRENCES) ,
+        IF_EQ      : OpCodeInfo("IF_EQ"      , 3 , OpCodeInfo.ARG_REFRENCES) ,
     }
+
+    @staticmethod
+    def to_string(code):
+        if code in OpCode.OP_CODE_TABLE:
+            name = OpCode.OP_CODE_TABLE[code].name
+            return "{}<{}>".format(name, code)
+        else:
+            return "{}<{}>".format("UnknownOpCode", code)
 
     def __init__(self, name, data_len=0):
         self.name = name
@@ -79,10 +97,14 @@ class LEDEffectVM(object):
             self.registers[reg] = self.REGISTER_TABLE[reg].default_value
 
     def set_active_progarm(self, name):
+        self._current_program_name = name
         self.current_program = self.led_program_table[name]
 
     def goto_start(self):
         self.instr_ptr = 0
+
+    def rel_jump(self, offset):
+        self.instr_ptr += (offset)
 
     def get_next_word(self):
         if self.instr_ptr >= len(self.current_program):
@@ -96,12 +118,20 @@ class LEDEffectVM(object):
         if code == None:
             return None, None
 
-        assert(code in OpCode.OP_CODE_TABLE)
+        self.vm_assert(code in OpCode.OP_CODE_TABLE, "Invalid OpCode: {}".format(code))
         op_code = OpCode.OP_CODE_TABLE[code]
 
         data = []
         for i in range(op_code.data_len):
             data.append(self.get_next_word())
+
+        # if DEBUG >= 1
+        if DEBUG >= 5:
+            print("Instruction: {}".format(self.instr_ptr))
+            print("Current code: {}, data:{}".format(
+                    OpCode.to_string(code), data
+                )
+            )
 
         return code, data
 
@@ -155,15 +185,27 @@ class LEDEffectVM(object):
                 self.lookup_refrence(data[2])
             )
         elif code == OpCode.ADD_VEC3:
-            def u8(x):
-                return x & 0xff
-
             old_value = self.get_current_pixel()
             self.set_current_pixel(
                 u8(old_value[0] + self.lookup_refrence(data[0])),
                 u8(old_value[1] + self.lookup_refrence(data[1])),
                 u8(old_value[2] + self.lookup_refrence(data[2]))
             )
+        elif code == OpCode.SUB_VEC3:
+            old_value = self.get_current_pixel()
+            self.set_current_pixel(
+                u8(old_value[0] - self.lookup_refrence(data[0])),
+                u8(old_value[1] - self.lookup_refrence(data[1])),
+                u8(old_value[2] - self.lookup_refrence(data[2]))
+            )
+        elif code == OpCode.IF_EQ:
+            lhs = self.lookup_refrence(data[0])
+            rhs = self.lookup_refrence(data[1])
+            jmp_pos = self.lookup_refrence(data[2])
+            if DEBUG >= 5:
+                print("lhs, rhs, == :", lhs, rhs, lhs == rhs)
+            if lhs != rhs:
+                self.rel_jump(jmp_pos)
         else:
             raise LEDVMError("Unknown opcode {}".format(code))
 
@@ -193,6 +235,29 @@ class LEDEffectVM(object):
             if DEBUG:
                 print("(OpCode {}, Data {})".format(code, data))
             is_running = not self.execute_op_code(code, data)
+
+    def vm_assert(self, exp, msg=""):
+        if exp != True:
+            self.print_core_dump(msg)
+        if msg == "":
+            LEDVMError("LEDVMError: unspecified error")
+        else:
+            LEDVMError("LEDVMError: {}".format(msg))
+
+    def print_core_dump(self, error_msg):
+        print(
+            "\n"
+            "Core dump while executing program '{}':\n"
+            "Error message: {}\n"
+            "instr_ptr: {}\n"
+            "program: {}\n"
+            .format(
+                self._current_program_name,
+                error_msg,
+                self.instr_ptr,
+                self.current_program
+            )
+        )
 
 
 class LEDEffectVMParser(object):
@@ -251,6 +316,8 @@ class LEDEffectVMParser(object):
                 }[ref]
             else:
                 raise LEDVMError("Unknown reference: {}".format(ref))
+        else:
+            return None
 
         lo_byte = (value << 0)
         hi_byte = (ref_type << 8)
@@ -272,7 +339,8 @@ class LEDEffectVMParser(object):
         # Add the op_code to the result
         result += [op_code]
 
-        data = exp[1:]
+        OP_CODE_POS = 1
+        data = exp[OP_CODE_POS:]
 
         if len(data) != op_info.data_len:
             raise LEDVMError("Expected {} arguments to opcode {}, got {}".format(
@@ -282,7 +350,31 @@ class LEDEffectVMParser(object):
                 )
             )
 
-        if op_info.arg_type == OpCodeInfo.ARG_NONE:
+        if op_code == OpCode.IF_EQ:
+            print(data)
+            print(data[0], data[1], data[2])
+            LHS_POS = 0
+            RHS_POS = 1
+            JUMP_POS = 2
+            result += self.generate_ref(data[LHS_POS])
+            result += self.generate_ref(data[RHS_POS])
+
+            if_block_exp = data[JUMP_POS]
+
+            ref_data = self.generate_ref(if_block_exp)
+            if ref_data != None:
+                result += ref_data
+            else:
+                print('ifblock:', if_block_exp)
+                if_block = self.parse_instruction_list(if_block_exp)
+
+                jmp_offset = i16(len(if_block))
+                result += [jmp_offset]
+                result += if_block
+
+            print('ifBlockResult:', result)
+
+        elif op_info.arg_type == OpCodeInfo.ARG_NONE:
             pass # Don't need to add data
         elif op_info.arg_type == OpCodeInfo.ARG_REFRENCES:
             for ref in data:
@@ -290,16 +382,18 @@ class LEDEffectVMParser(object):
 
         return result
 
+    def parse_instruction_list(self, instruction_list):
+        result = []
+        for instruction in instruction_list:
+            result += self.parse_instruction(instruction)
+        return result
+
     def parse_program(self, exp):
         if DEBUG:
             print("Parse program: ", exp)
         exp = exp[0]
         # pprint.pprint(exp)
-        result = []
-        instruction_list = exp
-        for instruction in instruction_list:
-            result += self.parse_instruction(instruction)
-        return result
+        return self.parse_instruction_list(exp)
 
 
 if __name__ == "__main__":
@@ -308,10 +402,45 @@ if __name__ == "__main__":
         (LOAD_PIXEL PIXEL_NUM 255 200)
     )
     """
+    # main_prog = """
+    # (
+    #     (LOAD_PIXEL r 255 200)
+    #     (ADD_VEC3 1 0 0)
+    #     (IF_EQ v 199
+    #         (
+    #             (ADD_VEC3 1 0 0)
+    #         )
+    #     )
+    #     (IF_EQ v 200
+    #         (
+    #             (SUB_VEC3 1 0 0)
+    #         )
+    #     )
+    #     (SHOW_HSV)
+    # )
+    # """
     main_prog = """
     (
-        (LOAD_PIXEL r 255 200)
-        (ADD_VEC3 1 0 0)
+        (IF_EQ h 0
+            (
+                (LOAD_PIXEL h 255 199)
+            )
+        )
+        (IF_EQ h 255
+            (
+                (LOAD_PIXEL h 255 200)
+            )
+        )
+        (IF_EQ v 200
+            (
+                (SUB_VEC3 1 0 0)
+            )
+        )
+        (IF_EQ v 199
+            (
+                (ADD_VEC3 1 0 0)
+            )
+        )
         (SHOW_HSV)
     )
     """
@@ -324,12 +453,13 @@ if __name__ == "__main__":
     vm = LEDEffectVM(led_programs, num_pixels=64)
 
     for prog in led_programs:
-        print(prog)
+        print(prog, led_programs[prog])
         byte_code_as_bytes = bytes([])
         for word in led_programs[prog]:
             byte_code_as_bytes += bytes([word & 0xff, word>>8 & 0xff])
         hexdump.hexdump(byte_code_as_bytes)
 
+    vm.execute_program('init')
     for i in range(300):
-        vm.execute_program(0)
+        vm.execute_program('main')
     print(vm.pixels)

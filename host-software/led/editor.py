@@ -61,24 +61,10 @@ class KeyboardDeviceWidget(QGraphicsItem):
         self.vm = led_vm.LEDEffectVM(led_programs, num_pixels=64)
 
         for(i, key) in enumerate(self.keys):
-
-            print(i)
-
-            # color = QColor(
-            #     random.randint(0, 255),
-            #     random.randint(0, 255),
-            #     random.randint(0, 255)
-            # )
-            color = QColor.fromHsv(
-                int(i * 255 / 70),
-                255,
-                200
-            )
-
             key = KeyWidget(
                 key,
                 key.get_legend_text(),
-                color = color,
+                color = QColor(0,0,0),
                 parent=self
             )
 
