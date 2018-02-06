@@ -132,4 +132,4 @@ extern ROM const uint8_t hid_desc_nkro_keyboard[];
 
 void usb_ep0_packetizer_data_set(const ROM uint8_t *data, uint16_t size);
 void usb_ep0_packetizer_data_send(void);
-void usb_get_descriptor(const usb_request_t *request);
+void usb_get_descriptor(const XRAM usb_request_t *request);

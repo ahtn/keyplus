@@ -43,21 +43,18 @@ static XRAM uint8_t tmp_buffer[32];
 static XRAM uint16_t pairing_timeout;
 static XRAM uint16_t packet_timeout;
 
-// TODO: make rf.c share this code
-static uint8_t check_checksum(const uint8_t *data, const uint8_t len) {
+uint8_t unifying_calc_checksum(const XRAM uint8_t *data, const uint8_t len) {
     uint8_t i;
     uint8_t result = 0;
+
     for (i=0; i < len; ++i) {
         result += data[i];
     }
-    return result;
+
+    return -result;
 }
 
-static uint8_t calc_checksum(const uint8_t *data, const uint8_t len) {
-    return -check_checksum(data, len);
-}
-
-void unifying_read_packet(uint8_t *nrf_packet) {
+void unifying_read_packet(XRAM uint8_t *nrf_packet) {
     const uint8_t nrf_packet_type = nrf_packet[1];
     switch (nrf_packet_type) {
         case 0xC2: {
@@ -169,7 +166,7 @@ bit_t unifying_is_pairing_active(void) {
 }
 
 // Note: Assumes all other relevant settings are in place
-void unifying_set_pairing_address(const uint8_t *target_addr, uint8_t addr_lsb) {
+void unifying_set_pairing_address(const XRAM uint8_t *target_addr, uint8_t addr_lsb) {
     // Use first three pipes
     // P0 = BB:0A:DC:A5:75
     // P1 = TARGET_ADDRESS
@@ -198,7 +195,7 @@ bit_t handle_pairing(uint8_t pipe_num) {
         return false;
     }
 
-    if ( check_checksum(tmp_buffer, width) ) {
+    if ( unifying_calc_checksum(tmp_buffer, width) ) {
         return false;
     }
 
@@ -226,7 +223,7 @@ bit_t handle_pairing(uint8_t pipe_num) {
         packet->req_1.addr[3] = pairing_target_addr[1];
         packet->req_1.addr[4] = pairing_target_addr[0];
 
-        packet->req_1.csum = calc_checksum(tmp_buffer, sizeof(unifying_req_1_t)-1);
+        packet->req_1.csum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_req_1_t)-1);
 
         nrf24_write_ack_payload(tmp_buffer, sizeof(unifying_req_1_t), pipe_num);
         //nrf24_write_ack_payload(2, tmp_buffer, sizeof(req_1_t));
@@ -241,7 +238,7 @@ bit_t handle_pairing(uint8_t pipe_num) {
 
         // TODO: something with data received here
 
-        packet->req_2.csum = calc_checksum(tmp_buffer, sizeof(unifying_req_2_t)-1);
+        packet->req_2.csum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_req_2_t)-1);
 
         /* nrf24_write_ack_payload(pipe_num, (uint8_t*)packet->req_2, sizeof(unifying_req_2_t)); */
         nrf24_write_ack_payload(tmp_buffer, sizeof(unifying_req_2_t), pipe_num);
@@ -256,7 +253,7 @@ bit_t handle_pairing(uint8_t pipe_num) {
         // TODO: do something with data received here
         //memset(resp_3->crypto, 0, 6);
 
-        packet->resp_3.csum = calc_checksum(tmp_buffer, sizeof(unifying_resp_3_t)-1);
+        packet->resp_3.csum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_resp_3_t)-1);
 
         nrf24_write_ack_payload(tmp_buffer, sizeof(unifying_resp_3_t), pipe_num);
 

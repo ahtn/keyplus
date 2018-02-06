@@ -380,15 +380,9 @@ bit_t read_packet(void) REENT {
 
     // NOTE: currently mouse pipes are disabled in passive listening mode
     if (pipe_num == 5 || pipe_num == 4) {
-        uint8_t i;
         uint8_t csum = 0;
 
-        // the unifying protocal packets use a simple arithmetic checksum
-        for (i=0; i < width; i++) {
-            csum += packet_payload[i];
-        }
-
-        if (csum != 0) {
+        if (unifying_calc_checksum(packet_payload, width) != 0) {
             return false;
         }
 

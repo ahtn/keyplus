@@ -128,9 +128,21 @@ CDEFS += -DFLASH_$(FLASH_SIZE)
 OPTIMIZATION = --opt-code-speed
 # OPTIMIZATION = --opt-code-size
 
-AS = /usr/local/bin/sdas8051
-CC = /usr/local/bin/sdcc
-PP = /usr/local/bin/sdcpp
+
+# Version of sdcc used:
+# /usr/local/bin/sdcc --version
+# SDCC : mcs51/z80/z180/r2k/r3ka/gbz80/tlcs90/ds390/pic16/pic14/TININative/ds400/hc08/s08/stm8 3.6.8 #9948 (Linux)
+
+SDCC_PATH = /usr/local/bin
+AS = $(SDCC_PATH)/sdas8051
+CC = $(SDCC_PATH)/sdcc
+PP = $(SDCC_PATH)/sdcpp
+
+# SDCC_PATH = /usr/bin
+# AS = $(SDCC_PATH)/sdas8051
+# CC = $(SDCC_PATH)/sdcc
+# PP = $(SDCC_PATH)/sdcpp
+
 CFLAGS   = \
 	$(CDEFS) \
 	$(INC_PATHS) \
@@ -249,6 +261,10 @@ program-hard: flash
 flash: $(TARGET).hex size
 	nrfburn -f $(FLASH_SIZE) -w $(MERGED_HEX)
 
+
+version:
+	$(CC) --version
+
 -include $(DEP_FILES)
 
-.PHONY: clean flash program all size
+.PHONY: clean flash program all size version

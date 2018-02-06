@@ -96,9 +96,10 @@ typedef struct unifying_mouse_state_t {
 extern XRAM unifying_mouse_state_t g_unifying_mouse_state;
 extern XRAM uint8_t g_unifying_mouse_state_changed;
 
+uint8_t unifying_calc_checksum(const XRAM uint8_t *data, const uint8_t len);
 void unifying_mouse_handle(void);
 void unifying_pairing_poll(void);
-void unifying_set_pairing_address(const uint8_t *target_addr, uint8_t addr_lsb);
-void unifying_read_packet(uint8_t *nrf_packet);
+void unifying_set_pairing_address(const XRAM uint8_t *target_addr, uint8_t addr_lsb);
+void unifying_read_packet(uint8_t XRAM *nrf_packet);
 void unifying_begin_pairing(void);
 bit_t unifying_is_pairing_active(void);
