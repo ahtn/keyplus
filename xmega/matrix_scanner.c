@@ -40,21 +40,44 @@ static uint8_t col_mask_a;
 static uint8_t col_mask_b;
 static uint8_t col_mask_c;
 
-static uint8_t col_num_pins_a;
-static uint8_t col_num_pins_b;
-static uint8_t col_num_pins_c;
-
 // row settings
 static uint8_t row_mask_d;
 static uint8_t row_mask_c;
 
-static uint8_t row_num_pins_d;
-static uint8_t row_num_pins_c;
+#define pin_mask_a col_mask_a
+#define pin_mask_b col_mask_b
+#define pin_mask_c col_mask_c
+#define pin_mask_d row_mask_d
+static uint8_t pin_mask_e;
+static uint8_t pin_mask_r;
 
 static uint8_t bytes_per_row;
 
 static uint8_t s_parasitic_discharge_delay_idle;
 static uint8_t s_parasitic_discharge_delay_debouncing;
+
+#if F_CPU == 48000000UL
+#define PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(x) do {\
+    _delay_loop_1(x); \
+    _delay_loop_1(x); \
+    _delay_loop_1(x); \
+} while(0)
+#elif F_CPU == 32000000UL
+#define PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(x) do {\
+    _delay_loop_1(x); \
+    _delay_loop_1(x); \
+} while(0)
+#elif F_CPU == 16000000UL
+#define PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(x) do {\
+    _delay_loop_1(x); \
+} while(0)
+#else
+#error "Unsupported clock speed for PARASITIC_DISCHARGE_DELAY"
+#endif
+
+#define PARASITIC_DISCHARGE_DELAY_SLOW_CLOCK(x) do {\
+    _delay_loop_1(x); \
+} while(0)
 
 // Setup the columns
 // As inputs with pull ups
@@ -90,34 +113,35 @@ static void setup_columns(void) {
     }
 }
 
-// rows are floating inputs
+/// Setup rows for matrix scaning
+///
+/// Rows will use the Wired-AND pin configuration in output mode. When an
+/// output pin is in Wired-AND mode, writting 1 to the pin disconnects it and
+/// writting 0 to the pin connects it to GND.
 static void setup_rows(void) {
     // Note: DIR: 0 -> input, 1 -> output
     if (row_mask_d) {
-        PORTD.DIRCLR = row_mask_d;
+        PORTD.DIRSET = row_mask_d;
         PORTCFG.MPCMASK = row_mask_d;
-        PORTD.PIN0CTRL = PORT_OPC_TOTEM_gc;
+        PORTD.PIN0CTRL = PORT_OPC_WIREDAND_gc;
     }
 
     if (row_mask_c) {
-        PORTC.DIRCLR = row_mask_c;
+        PORTC.DIRSET = row_mask_c;
         PORTCFG.MPCMASK = row_mask_c;
-        PORTC.PIN0CTRL = PORT_OPC_TOTEM_gc;
+        PORTC.PIN0CTRL = PORT_OPC_WIREDAND_gc;
     }
 }
 
 //  makes all rows floating inputs
 static inline void unselect_rows(void) {
-    PORTD.DIRCLR = row_mask_d;
-    PORTC.DIRCLR = row_mask_c;
+    PORTD.OUTSET = row_mask_d;
+    PORTC.OUTSET = row_mask_c;
 }
 
 // make all rows output low
 static inline void select_all_rows(void) {
-    PORTD.DIRSET = row_mask_d;
     PORTD.OUTCLR = row_mask_d;
-
-    PORTC.DIRSET = row_mask_c;
     PORTC.OUTCLR = row_mask_c;
 }
 
@@ -130,11 +154,9 @@ bool matrix_has_active_row(void) {
 // selecting a row makes it output 0
 static inline void select_row(uint8_t row) {
     if (row < 6) { // row 0-5
-        PORTD.DIRSET = (1 << row);
         PORTD.OUTCLR = (1 << row);
     } else if (row >= 6 && row < 10) { // row 6-9
         const uint8_t pin_num = 3-(row-6);
-        PORTC.DIRSET = (1 << pin_num);
         PORTC.OUTCLR = (1 << pin_num);
     }
 }
@@ -161,16 +183,16 @@ void matrix_scanner_init(void) {
 
     bytes_per_row = (g_scan_plan.cols+7)/8;
 
-    col_num_pins_a = (cols < 8) ? cols : 8;
-    col_num_pins_b = (cols < 12) ? MAX((int8_t)cols - 8, 0) : 4;
-    col_num_pins_c = (cols < 16) ? MAX((int8_t)cols - 12, 0) : 4;
+    const uint8_t col_num_pins_a = (cols < 8) ? cols : 8;
+    const uint8_t col_num_pins_b = (cols < 12) ? MAX((int8_t)cols - 8, 0) : 4;
+    const uint8_t col_num_pins_c = (cols < 16) ? MAX((int8_t)cols - 12, 0) : 4;
 
     col_mask_a = ~(0xff << col_num_pins_a);
     col_mask_b = ~(0xff << col_num_pins_b) & 0x0f;
     col_mask_c = ~(0xff << col_num_pins_c) & 0x0f;
 
-    row_num_pins_d = (rows < 6) ? rows : 6;
-    row_num_pins_c = (rows < 10) ? MAX((int8_t)rows - 6, 0) : 4;
+    const uint8_t row_num_pins_d = (rows < 6) ? rows : 6;
+    const uint8_t row_num_pins_c = (rows < 10) ? MAX((int8_t)rows - 6, 0) : 4;
 
     row_mask_d = ~(0xff << row_num_pins_d) & 0x3f;
     row_mask_c = ~(0x0f >> row_num_pins_c) & 0x0f; // R6,R7,R8,R9 <-> C3,C2,C1,C0
@@ -184,29 +206,6 @@ void matrix_scanner_init(void) {
     unselect_rows();
 
     init_matrix_scanner_utils();
-
-#if F_CPU == 48000000UL
-#define PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(x) do {\
-    _delay_loop_1(x); \
-    _delay_loop_1(x); \
-    _delay_loop_1(x); \
-} while(0)
-#elif F_CPU == 32000000UL
-#define PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(x) do {\
-    _delay_loop_1(x); \
-    _delay_loop_1(x); \
-} while(0)
-#elif F_CPU == 16000000UL
-#define PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(x) do {\
-    _delay_loop_1(x); \
-} while(0)
-#else
-#error "Unsupported clock speed for PARASITIC_DISCHARGE_DELAY"
-#endif
-
-#define PARASITIC_DISCHARGE_DELAY_SLOW_CLOCK(x) do {\
-    _delay_loop_1(x); \
-} while(0)
 
     // Configure the parasitic discharge delay based on how fast the mcu clock
     // is running
@@ -367,13 +366,6 @@ bool matrix_scan(void) {
     // values are used for scan settings etc.
     return false;
 }
-
-/* void matrix_scan_mode(uint8_t mode) { */
-/*  if (mode == SCAN_MODE_NORMAL) { */
-/*      /1* setup_columns(); *1/ */
-/*  } else if (mode == SCAN_MODE_INTERRUPT) { */
-/*  } */
-/* } */
 
 #endif
 
