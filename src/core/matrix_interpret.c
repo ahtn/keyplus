@@ -262,7 +262,7 @@ keycode_t get_keycode_from_layer(layer_mask_t layer_mask, uint8_t row, uint8_t c
             continue;
         } else {
             for (j = 7; j >= 0; --j) {
-                if(bitn(byte, j)) {
+                if(is_bitn_set(byte, j)) {
                     uint8_t layer = 8*i+j;
                     const flash_ptr_t layout = g_keyboard_slots[s_active_slot].layout;
 
@@ -545,7 +545,7 @@ static void keyboard_interpret_layer_change(
         }
 
         for (bit = 0; bit < 8; ++bit) {
-            const bit_t down = bitn(row_cur, bit);
+            const bit_t down = is_bitn_set(row_cur, bit);
             keycode_t old_keycode, new_keycode;
 
             if (!down) {
@@ -640,8 +640,8 @@ void keyboard_interpret_matrix(uint8_t kb_slot_id) {
             }
 
             for (bit = 0; bit < 8; ++bit) {
-                const bit_t current = bitn(row_cur, bit);
-                const bit_t previous = bitn(row_prev, bit);
+                const bit_t current = is_bitn_set(row_cur, bit);
+                const bit_t previous = is_bitn_set(row_prev, bit);
 
                 const bit_t pressed = current && !previous;
                 const bit_t released = !current && previous;

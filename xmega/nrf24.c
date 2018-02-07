@@ -9,6 +9,7 @@
 
 #include "core/nrf24.h"
 #include "core/debug.h"
+#include "core/io_map.h"
 
 // add a little abstraction here so that we can move the SPI port around if desired
 #define NRF24_SPI_PORT PORTC
@@ -26,6 +27,17 @@
 #define MOSI 5
 #define MISO 6
 #define SCK  7
+
+#define SPI_PIN_MASK ((1<<SS) | (1<<MOSI) | (1<<MISO) | (1<<SCK))
+
+#ifndef NRF24_IRQ_PORT
+#define NRF24_IRQ_PORT         DEF_AVR_PORT(NRF24_IRQ_PIN_PORT)
+#define NRF24_IRQ_PIN_MASK     DEF_AVR_PIN_MASK(NRF24_IRQ_PIN_NUM)
+#define NRF24_IRQ_INT_VECT     DEF_AVR_INT_VECT(NRF24_IRQ_PIN_PORT, NRF24_IRQ_INT_NUM)
+#define NRF24_IRQ_INTMASK      DEF_AVR_INT_INTMASK(NRF24_IRQ_PIN_PORT, NRF24_IRQ_INT_NUM)
+#define NRF24_IRQ_INT_LVL      DEF_AVR_INT_LVL(NRF24_IRQ_INT_NUM, LO)
+#define NRF24_IRQ_INT_LVL_MASK DEF_AVR_INT_LVL_MASK(NRF24_IRQ_INT_NUM)
+#endif
 
 #define MAX_NRF24_SPI_SPEED 10000000UL
 
@@ -121,9 +133,15 @@ void nrf24_ce(uint8_t val) {
 
 void nrf24_init(void) {
     is_nrf24_initialized = true;
+
+    io_map_claim_mask(PORT_TO_NUM(NRF24_SPI_PORT), SPI_PIN_MASK);
     spi_init(&NRF24_SPI_PORT, &NRF24_SPI);
+
     nrf24_ce_init(&NRF24_CE_PORT);
     nrf24_ce_set(&NRF24_CE_PORT, 0);
+
+    io_map_claim_mask(PORT_TO_NUM(NRF24_CE_PORT), NRF24_CE_PIN);
+    io_map_claim_mask(PORT_TO_NUM(NRF24_IRQ_PORT), NRF24_IRQ_PIN_MASK);
 }
 
 void nrf24_disable(void) {
@@ -133,17 +151,6 @@ void nrf24_disable(void) {
         NRF24_CE_PORT.DIRSET = NRF24_CE_PIN;
     }
 }
-
-#if RF_POLLING == 0
-
-#ifndef NRF24_IRQ_PORT
-#define NRF24_IRQ_PORT         DEF_AVR_PORT(NRF24_IRQ_PIN_PORT)
-#define NRF24_IRQ_PIN_MASK     DEF_AVR_PIN_MASK(NRF24_IRQ_PIN_NUM)
-#define NRF24_IRQ_INT_VECT     DEF_AVR_INT_VECT(NRF24_IRQ_PIN_PORT, NRF24_IRQ_INT_NUM)
-#define NRF24_IRQ_INTMASK      DEF_AVR_INT_INTMASK(NRF24_IRQ_PIN_PORT, NRF24_IRQ_INT_NUM)
-#define NRF24_IRQ_INT_LVL      DEF_AVR_INT_LVL(NRF24_IRQ_INT_NUM, LO)
-#define NRF24_IRQ_INT_LVL_MASK DEF_AVR_INT_LVL_MASK(NRF24_IRQ_INT_NUM)
-#endif
 
 #include <avr/interrupt.h>
 #include "core/rf.h"
@@ -191,5 +198,3 @@ ISR(NRF24_IRQ_INT_VECT) {
     rf_isr();
     debug_set(1, 1);
 }
-
-#endif

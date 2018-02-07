@@ -6,7 +6,7 @@
 #include "core/util.h"
 #include "core/layout.h"
 
-void flash_load_rom(XRAM uint8_t* dest, const ROM uint8_t* src, flash_ptr_t len) {
+void flash_load_from_rom(XRAM uint8_t* dest, const ROM uint8_t* src, flash_ptr_t len) {
     uint32_t i;
     for (i = 0; i < len; ++i) {
         dest[i] = src[i];

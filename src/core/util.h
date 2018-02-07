@@ -121,6 +121,6 @@
 ///
 /// Note: the `sdcc` compiler has pretty bad optimizations for bit shifts. Using
 /// this function can save significant code space.
-bit_t bitn(uint8_t byte, uint8_t n);
+bit_t is_bitn_set(uint8_t byte, uint8_t n);
 
 uint8_t is_buffer_zeroed(uint8_t *buffer, uint8_t len);

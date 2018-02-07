@@ -103,6 +103,7 @@ ifeq ($(USE_SCANNER), 0)
     CDEFS += -DUSE_SCANNER=0
 else
     C_SRC += \
+        $(CORE_PATH)/io_map.c \
         $(CORE_PATH)/matrix_scanner.c
     CDEFS += -DUSE_SCANNER=1
 endif

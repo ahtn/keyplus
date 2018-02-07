@@ -6,17 +6,18 @@
 #include "core/aes.h"
 #include "core/debug.h"
 #include "core/hardware.h"
+#include "core/io_map.h"
 #include "core/layout.h"
 #include "core/led.h"
+#include "core/macro.h"
 #include "core/matrix_interpret.h"
 #include "core/matrix_scanner.h"
+#include "core/nrf24.h"
 #include "core/packet.h"
 #include "core/rf.h"
 #include "core/settings.h"
 #include "core/timer.h"
 #include "core/usb_commands.h"
-#include "core/macro.h"
-#include "core/nrf24.h"
 
 #include "usb_reports/keyboard_report.h"
 #include "usb_reports/media_report.h"
@@ -54,6 +55,7 @@ void pin_init(void) {
 
 void xmega_common_init(void) {
     hardware_init();
+    io_map_init();
     pin_init();
     settings_load_from_flash();
     aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
