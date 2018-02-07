@@ -7,3 +7,6 @@
 [submodule "xmega/avr-makefile"]
 	path = xmega/avr-makefile
 	url = https://github.com/ahtn/avr-makefile
+[submodule "host-software/python-easyhid"]
+	path = host-software/python-easyhid
+	url = https://github.com/ahtn/python-easyhid
