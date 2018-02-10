@@ -5,6 +5,7 @@
 
 #include "config.h"
 
+#include "core/io_map.h"
 #include "core/util.h"
 
 // TODO: support this or not?
@@ -14,9 +15,13 @@
 // 16 bytes
 #define MAX_NUM_KEYS 128
 
+// #define MAX_NUM_COLS 16
+// #define MAX_NUM_ROWS 10
+// #define MATRIX_DATA_SIZE ((MAX_NUM_ROWS) * ((MAX_NUM_COLS+7)/8))
+
 #define MAX_NUM_COLS 16
 #define MAX_NUM_ROWS 10
-#define MATRIX_DATA_SIZE ((MAX_NUM_ROWS) * ((MAX_NUM_COLS+7)/8))
+#define MATRIX_DATA_SIZE ((MAX_NUM_ROWS) * (IO_PORT_COUNT))
 
 typedef enum matrix_scanner_mode_t {
     MATRIX_SCANNER_MODE_NONE = 0x00, // doesn't have a matrix
@@ -44,6 +49,8 @@ typedef struct matrix_scan_plan_t {
     // Both delays are measured on a scale of 0-48µs
     uint8_t parasitic_discharge_delay_idle; // How long to hold a row low before reading the columns
     uint8_t parasitic_discharge_delay_debouncing; // How long to hold a row low when a key is debouncing
+    uint8_t max_col; // maximum column pin number used
+    uint8_t max_key_num; // highest key number used
 } matrix_scan_plan_t;
 
 // setup the matrix for scanning
@@ -67,12 +74,12 @@ uint8_t get_matrix_num_keys_debouncing(void);
 
 #if SCANNER_MATRIX_DELTA
 extern uint8_t g_num_updated_keys;
-extern uint8_t g_matrix_updated_keys[MAX_NUM_ROWS][(MAX_NUM_COLS+7)/8];
+extern uint8_t g_matrix_updated_keys[MAX_NUM_ROWS][IO_PORT_COUNT];
 uint8_t get_number_updated_keys(void);
 void matrix_clear_updated_keys_list(void);
 #endif
 
-extern uint8_t g_matrix[MAX_NUM_ROWS][(MAX_NUM_COLS+7)/8];
+extern uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT];
 
 extern const ROM uint8_t *g_scan_key_map;
 extern XRAM matrix_scan_plan_t g_scan_plan;

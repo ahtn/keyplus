@@ -26,6 +26,7 @@ typedef enum error_code_type {
     ERROR_SETTINGS_CRC_MISMATCH = 66,
     ERROR_LAYOUT_STORAGE_OUT_OF_BOUNDS = 67,
     ERROR_MATRIX_PINS_CONFIG_TOO_LARGE = 68,
+    ERROR_PIN_MAPPING_CONFLICT = 69,
 } error_code_type;
 
 extern XRAM uint8_t g_error_code_table[SIZE_ERROR_CODE_TABLE];

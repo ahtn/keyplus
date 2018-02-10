@@ -5,6 +5,7 @@
 
 #include "core/aes.h"
 #include "core/debug.h"
+#include "core/error.h"
 #include "core/hardware.h"
 #include "core/io_map.h"
 #include "core/layout.h"
@@ -59,8 +60,9 @@ void xmega_common_init(void) {
     pin_init();
     settings_load_from_flash();
     aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
-    matrix_scanner_init();
     led_testing_set(0);
+
+    matrix_scanner_init();
 }
 
 #if USE_NRF24
@@ -222,16 +224,16 @@ void usb_mode_setup(void) {
     g_slow_clock_mode = 0;
     usb_configure_clock();
 
+    xmega_common_init();
+
+    reset_usb_reports();
+    keyboards_init();
+
 #if DUAL_USB
     init_bus_switches();
 #else
     usb_init();
 #endif
-
-    xmega_common_init();
-
-    reset_usb_reports();
-    keyboards_init();
 
 #if USE_I2C
     i2c_init();
@@ -259,19 +261,28 @@ void usb_mode_setup(void) {
     usb_attach();
 #endif
 
-#if USE_NRF24
-    if (s_has_usb_port) {
-        g_rf_enabled = true;
-        rf_init_receive();
-    }
-#endif
+    g_rf_enabled = false;
+// #if USE_NRF24
+//     if (s_has_usb_port) {
+//         g_rf_enabled = true;
+//         rf_init_receive();
+//     }
+// #endif
 
 
 }
 
+NO_RETURN_ATTR void recovery_mode_main_loop(void);
+extern port_mask_t s_available_pins[IO_PORT_COUNT];
+
 void usb_mode_main_loop(void) {
+    if (has_critical_error()) {
+        recovery_mode_main_loop();
+    }
+
     while (1) {
         bool scan_changed = false;
+
         scan_changed |= matrix_scan();
 
         // TODO: need to clean this up
@@ -280,7 +291,16 @@ void usb_mode_main_loop(void) {
             uint8_t *matrix_data = i2c_packet+1;
             const uint8_t use_deltas = true;
 
-            // usb_print(matrix_data, 16);
+            // usb_print(s_available_pins, 16);
+            // io_map_claim_mask(4, 0x3)
+            // io_map_claim_pins(0, PIN0_bm | PIN1_bm);
+            uint8_t data[16] = {
+                g_matrix[0][0],
+                g_matrix[1][0],
+                g_matrix[2][0],
+                g_matrix[3][0],
+            };
+            usb_print((uint8_t*)data, 4);
 #if USE_I2C
             i2c_packet[0] = (i2c_get_active_address() << 1) | 0x01;
 #endif
@@ -366,6 +386,18 @@ void usb_mode_main_loop(void) {
         enter_sleep_mode(SLEEP_MODE_IDLE);
         // debug_set(0, 0);
 #endif
+
+        wdt_kick();
+    }
+}
+
+NO_RETURN_ATTR void recovery_mode_main_loop(void) {
+    while (1) {
+        usb_print(s_available_pins, 16);
+        send_vendor_report();
+        handle_vendor_out_reports();
+
+        enter_sleep_mode(SLEEP_MODE_IDLE);
         wdt_kick();
     }
 }

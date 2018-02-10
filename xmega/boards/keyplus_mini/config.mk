@@ -9,7 +9,7 @@ C_SRC += # extra includes
 # vbus check pin
 CDEFS += -DVBUS_PIN_PORT=E
 CDEFS += -DVBUS_PIN_NUM=2
-CDEFS += -DVBUS_PIN_INT_NUM=0
+CDEFS += -DVBUS_PIN_INT_NUM=1
 
 # nrf24 pins
 CDEFS += -DNRF24_CE_PORT=PORTR

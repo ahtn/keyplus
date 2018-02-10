@@ -6,6 +6,8 @@
 #include <string.h>
 
 #include "core/aes.h"
+#include "core/debug.h"
+#include "core/error.h"
 #include "core/flash.h"
 #include "core/led.h"
 #include "core/nrf24.h"
@@ -13,17 +15,10 @@
 #include "core/ring_buf.h"
 #include "core/settings.h"
 #include "core/util.h"
-#include "core/debug.h"
 
 #include "core/usb_commands.h"
 
-#define NUM_KEYBOARD_PIPES 4
-
 #define RF_CRC_MODE (EN_CRC_bm | CRCO_bm)
-
-#define DEV_STATE_DISCONNECTED  0x00
-#define DEV_STATE_SYNCING_0     0x40
-#define DEV_STATE_SYNCED_0      0x80
 
 XRAM bool g_rf_enabled;
 
@@ -86,6 +81,9 @@ static void nrf_registers_init_sender(void) {
 
 void rf_init_send(void) {
     nrf24_init();
+    if (has_critical_error()) {
+        return;
+    }
 
     nrf_registers_init_sender();
 
@@ -190,6 +188,14 @@ static void packet_buffer_load(uint8_t len) {
 
 static bit_t auto_ack = true;
 
+#define SYNCING_RETRY_LIMIT 4
+
+enum {
+    DEV_STATE_DISCONNECTED = 0x00, // Device is disconnected
+    DEV_STATE_SYNCING_0    = 0x40, // device is in the process of syncing
+    DEV_STATE_SYNCED_0     = 0x80, //
+} dev_sync_state_t;
+
 typedef struct packet_id_t {
     uint8_t sync_state;
     uint32_t check_id;
@@ -233,6 +239,9 @@ static void init_uid_buffer_list(void) {
 
 void rf_init_receive(void) {
     nrf24_init();
+    if (has_critical_error()) {
+        return;
+    }
 
     nrf_registers_init_receiver();
     init_uid_buffer_list();
@@ -476,9 +485,11 @@ bit_t read_packet(void) REENT {
     usb_print(packet_payload, width);
 #endif
 
-    // Valitate that the packet before handling it
+    // Validate the packet before handling it
     {
         packet_t *packet = (packet_t*)packet_payload;
+        // NOTE: This is the id read from the packet, we can't guarantee that
+        // this is actually form this device until we call is_valid_packet later.
         const uint8_t device_id = packet->gen.device_id;
         const uint8_t packet_type = get_packet_type(packet);
         uint8_t state = device_uid_list[device_id].sync_state;
@@ -519,7 +530,7 @@ bit_t read_packet(void) REENT {
                 // incorrect response to the challenge
                 device_uid_list[device_id].sync_state++; // keep track of failed attempts
                 // TODO: should probably reduce retry attempts to 1?
-                if (state >= DEV_STATE_SYNCING_0 + 4) {
+                if (state >= DEV_STATE_SYNCING_0 + SYNCING_RETRY_LIMIT) {
                     // too many failed attempts, return to disconnected state
                     device_uid_list[device_id].sync_state = DEV_STATE_DISCONNECTED;
                 }
@@ -527,7 +538,7 @@ bit_t read_packet(void) REENT {
                 // reject all data until we have synced
                 return false;
             }
-        }
+        } // else assume that the claimed device_id is synced
 
         // expecting a normal data packet from the slave.
         if (!is_valid_packet(packet, pipe_num)) {

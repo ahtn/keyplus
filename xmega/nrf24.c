@@ -7,9 +7,10 @@
 
 #include "avr_util.h"
 
-#include "core/nrf24.h"
 #include "core/debug.h"
+#include "core/error.h"
 #include "core/io_map.h"
+#include "core/nrf24.h"
 
 // add a little abstraction here so that we can move the SPI port around if desired
 #define NRF24_SPI_PORT PORTC
@@ -134,14 +135,21 @@ void nrf24_ce(uint8_t val) {
 void nrf24_init(void) {
     is_nrf24_initialized = true;
 
-    io_map_claim_mask(PORT_TO_NUM(NRF24_SPI_PORT), SPI_PIN_MASK);
+    if (io_map_claim_pins(PORT_TO_NUM(NRF24_SPI_PORT), SPI_PIN_MASK)) {
+        return;
+    }
     spi_init(&NRF24_SPI_PORT, &NRF24_SPI);
+
+    io_map_claim_pins(PORT_TO_NUM(NRF24_CE_PORT), NRF24_CE_PIN);
+    io_map_claim_pins(PORT_TO_NUM(NRF24_IRQ_PORT), NRF24_IRQ_PIN_MASK);
+
+    if (has_critical_error()) {
+        return;
+    }
 
     nrf24_ce_init(&NRF24_CE_PORT);
     nrf24_ce_set(&NRF24_CE_PORT, 0);
 
-    io_map_claim_mask(PORT_TO_NUM(NRF24_CE_PORT), NRF24_CE_PIN);
-    io_map_claim_mask(PORT_TO_NUM(NRF24_IRQ_PORT), NRF24_IRQ_PIN_MASK);
 }
 
 void nrf24_disable(void) {

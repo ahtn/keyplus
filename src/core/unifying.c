@@ -58,7 +58,6 @@ void unifying_read_packet(XRAM uint8_t *nrf_packet) {
     const uint8_t nrf_packet_type = nrf_packet[1];
     switch (nrf_packet_type) {
         case 0xC2: {
-            uint16_t data[4];
             uint16_t x = ((nrf_packet[5] & 0x0f) << 8) | nrf_packet[4];
             uint16_t y = (uint16_t)((nrf_packet[6]) << 4) | (uint16_t)((nrf_packet[5] & 0xf0) >> 4);
             g_unifying_mouse_state.buttons_1 = nrf_packet[2];
@@ -68,11 +67,6 @@ void unifying_read_packet(XRAM uint8_t *nrf_packet) {
             g_unifying_mouse_state.wheel_y = nrf_packet[7];
             g_unifying_mouse_state.wheel_x = nrf_packet[8];
             g_unifying_mouse_state_changed = true;
-            data[0] = x;
-            data[1] = y;
-            data[2] = g_unifying_mouse_state.x;
-            data[3] = g_unifying_mouse_state.y;
-            /* mouse_active = true; */
         } break;
 
         /* case 0x4f: { */

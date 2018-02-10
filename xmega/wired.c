@@ -8,7 +8,8 @@
 #include "hardware/twi_master_driver.h"
 #include "hardware/twi_slave_driver.h"
 
-#include "core/settings.h"
+#include "core/error.h"
+#include "core/io_map.h"
 #include "core/settings.h"
 #include "core/matrix_scanner.h"
 #include "core/matrix_interpret.h"
@@ -40,6 +41,10 @@ void i2c_init(void) {
     our_i2c_address = device_id_to_i2c_address(GET_SETTING(device_id));
     i2c_buffer_ptr = 0;
     i2c_buffer_ptr_oldest = 0;
+
+    if (io_map_claim_pins(PORT_TO_NUM(PORTE), PIN0_bm | PIN1_bm)) {
+        return;
+    }
 
     PORTE.DIRSET = PIN0_bm | PIN1_bm;
     PORTE.OUTSET = PIN0_bm;

@@ -77,6 +77,7 @@ C_SRC += \
 	led_vm.c \
 	main.c \
 	matrix_scanner.c \
+	io_map.c \
 	nonce.c \
 	power.c \
 	timer.c \
@@ -93,7 +94,7 @@ endif
 ASM_SRC =
 
 # Optimization level, can be [0, 1, 2, 3, s].
-OPT = s
+OPT = 2
 
 # List any extra directories to look for include files here.
 EXTRAINCDIRS = $(XMEGA_PATH)/

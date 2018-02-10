@@ -32,6 +32,7 @@ typedef uint32_t flash_size_t;
 
 #define MCU_BITNESS 8
 
+typedef PORT_t io_port_t;
 
 #if XMEGA_PIN_COUNT == 44
 
@@ -48,9 +49,16 @@ typedef uint32_t flash_size_t;
 // #define PORTD    (*(PORT_t *) 0x0660)  /* I/O Ports */
 // #define PORTE    (*(PORT_t *) 0x0680)  /* I/O Ports */
 // #define PORTR    (*(PORT_t *) 0x07E0)  /* I/O Ports */
-#define PORT_TO_NUM(port) (((uint16_t)&port - (uint16_t)&PORTA) / 0x20)
+#define PORT_TO_NUM(port) ( \
+    ((uint16_t)&port == (uint16_t)&PORTA) ? (0) : \
+    ((uint16_t)&port == (uint16_t)&PORTB) ? (1) : \
+    ((uint16_t)&port == (uint16_t)&PORTC) ? (2) : \
+    ((uint16_t)&port == (uint16_t)&PORTD) ? (3) : \
+    ((uint16_t)&port == (uint16_t)&PORTE) ? (4) : \
+    ((uint16_t)&port == (uint16_t)&PORTR) ? (6) : 255 \
+)
 
-#define IO_MAP_PORT_COUNT 6
+#define IO_PORT_COUNT 6
 
 #define PORT_A_USABLE_PINS 0xff
 #define PORT_B_USABLE_PINS 0x0f
@@ -58,7 +66,7 @@ typedef uint32_t flash_size_t;
 #define PORT_D_USABLE_PINS 0x3f // Can't use 7 and 6 because they are used for USB
 #define PORT_E_USABLE_PINS 0x0f
 #define PORT_R_USABLE_PINS 0x03
-#define IO_MAP_USABLE_PINS { \
+#define IO_USABLE_PINS { \
     PORT_A_USABLE_PINS, \
     PORT_B_USABLE_PINS, \
     PORT_C_USABLE_PINS, \
