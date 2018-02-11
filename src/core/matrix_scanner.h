@@ -81,13 +81,6 @@ uint8_t get_matrix_compressed_size(void);
 uint8_t get_matrix_num_keys_down(void);
 uint8_t get_matrix_num_keys_debouncing(void);
 
-#if SCANNER_MATRIX_DELTA
-extern uint8_t g_num_updated_keys;
-extern uint8_t g_matrix_updated_keys[MAX_NUM_ROWS][IO_PORT_COUNT];
-uint8_t get_number_updated_keys(void);
-void matrix_clear_updated_keys_list(void);
-#endif
-
 extern uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT];
 
 extern const ROM uint8_t *g_scan_key_map;
@@ -95,8 +88,8 @@ extern XRAM matrix_scan_plan_t g_scan_plan;
 
 // functions to be called to update the key matrix
 void init_matrix_scanner_utils(void);
-void scanner_add_matrix_key(uint8_t row, uint8_t col);
-void scanner_del_matrix_key(uint8_t row, uint8_t col);
+void scanner_add_matrix_key(uint8_t key_num);
+void scanner_del_matrix_key(uint8_t key_num);
 
 void scanner_init_debouncer(void);
 bool scanner_debounce_row(
