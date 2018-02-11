@@ -83,62 +83,69 @@ class ScanMode:
             return "ScanMode(mode=ScanMode.NO_MATRIX)"
         elif self.mode == ScanMode.COL_ROW:
             return "ScanMode(mode=ScanMode.COL_ROW, rows={}, cols={})".format(
-                    self.rows, self.cols)
+                    self.rows, self.col_count)
 
     def parse_header(self, sm_raw, debug_hint):
         self.mode = try_get(sm_raw, 'mode', debug_hint, val_type=str)
+        mode = self.mode
+        if self.mode not in ScanMode.MODE_MAP:
+            raise ParseError("Unsupported scan mode '{}' for device '{}'"
+                             .format(self.mode, debug_hint))
         self.mode = ScanMode.MODE_MAP[self.mode]
 
-        self.rows = 0
-        self.cols = 0
+        self.col_pins = None
+        self.row_pins = None
+        self.row_count = 0
+        self.col_count = 0
 
-        if self.mode == ScanMode.COL_ROW:
+        if self.mode == ScanMode.NO_MATRIX:
+            pass
+        elif self.mode == ScanMode.COL_ROW:
             # Get the row pins
             row_data = try_get(sm_raw, 'rows', debug_hint, val_type=[int, list])
             if isinstance(row_data, int):
                 self.row_pins = None
-                self.rows = row_data
+                self.row_count = row_data
             elif isinstance(row_data, list):
                 self.row_pins = row_data
-                self.rows = len(self.row_pins)
+                self.row_count = len(self.row_pins)
 
             # Get the column pins
             col_data = try_get(sm_raw, 'cols', debug_hint, val_type=[int, list])
             if isinstance(col_data, int):
                 self.col_pins = None
-                self.cols = col_data
+                self.col_count = col_data
             elif isinstance(col_data, list):
                 self.col_pins = col_data
-                self.cols = len(self.col_pins)
-
+                self.col_count = len(self.col_pins)
         elif self.mode == ScanMode.PINS:
-            # self.rows =
-            self.cols = 1
+            # TODO:
+            # self.row_count = 1
+            # self.col_count = 10
             raise ParseError("pins not implemented")
         else:
-            pass # TODO
+            raise ParseError("InternalError: Unknown ScanMode({})".format(self.mode))
 
     def generate_pin_maps(self, target_device):
-        # TODO:
+        # TODO: don't hard code the chip id, instead obtain it from the device
         ATMEL_ID = 0x03eb0000
         self.pin_mapper = get_io_mapper_for_chip(ATMEL_ID | 0x000A)
 
         if self.row_pins == None:
-            row_pins = self.pin_mapper.get_default_rows(self.rows)
+            row_pins = self.pin_mapper.get_default_rows(self.row_count)
         else:
             row_pins =[self.pin_mapper.get_pin_number(pin) for pin in self.row_pins]
 
         if len(row_pins) < MAX_NUM_ROWS:
             row_pins += [0] * (MAX_NUM_ROWS-len(row_pins))
         elif len(row_pins) > MAX_NUM_ROWS:
-            raise ParseLayoutError("Device only supports a maximum of 10 rows, got '{}'"
+            raise ParseError("Device only supports a maximum of 10 rows, got '{}'"
                                    .format(len(row_pins)))
 
-
         if self.col_pins == None:
-            col_pins = self.pin_mapper.get_default_cols(self.cols)
+            col_pins = self.pin_mapper.get_default_cols(self.col_count)
         else:
-            col_pins = [self.pin_mapper.get_pin_number(pin) for pin in self.row_pins]
+            col_pins = [self.pin_mapper.get_pin_number(pin) for pin in self.col_pins]
 
         col_pin_masks = self.pin_mapper.get_pin_masks_as_bytes(col_pins)
 
@@ -147,19 +154,19 @@ class ScanMode:
 
     def calc_matrix_size(self):
         if self.mode == ScanMode.COL_ROW:
-            return int(math.ceil(self.rows * self.cols / 8))
+            return int(math.ceil(self.row_count * self.col_count / 8))
         elif self.mode == ScanMode.PINS:
             return int(math.ceil(self.pin_count / 8))
 
     def parse_matrix_map(self, mmap_raw, kb_name):
         """ The matrix_map is used to map the keys from how they are "visually
         arranged" to to how they are physically wired. """
-        if len(mmap_raw) > self.rows*self.cols:
+        if len(mmap_raw) > self.row_count*self.col_count:
             raise ParseError("Too many keys in matrix_map for '{}'"
                     "got {} but expected at most {} (={}*{})".format(
-                    kb_name, len(mmap_raw), self.rows*self.cols, self.rows, self.cols))
+                    kb_name, len(mmap_raw), self.row_count*self.col_count, self.row_count, self.col_count))
         matrix_map = []
-        inverse_map = [0x00] * self.rows * self.cols
+        inverse_map = [0x00] * self.row_count * self.col_count
         for (key_pos, map_key) in enumerate(mmap_raw):
             # these values can be used as spaces and are ignored
             if map_key in ['none', '_'*4, '_'*5, '_'*6, '-'*4, '-'*5, '-'*6]:
@@ -175,10 +182,10 @@ class ScanMode:
             except (ParseError, TypeError):
                 raise ParseError("Expected string of the form rXcY, but got '{}' "
                         "in matrix_map '{}'".format(map_key, kb_name))
-            key_num = self.cols*r + c
-            if r >= self.rows or c >= self.cols:
+            key_num = self.col_count*r + c
+            if r >= self.row_count or c >= self.col_count:
                 raise ParseError("Key remap {} out of bounds "
-                "rows={}, cols={} in device matrix_map '{}'".format(map_key, self.rows, self.cols, kb_name))
+                "rows={}, cols={} in device matrix_map '{}'".format(map_key, self.row_count, self.col_count, kb_name))
 
             if key_num in matrix_map:
                 raise ParseError("The key '{}' appears twice in the matrix_map "

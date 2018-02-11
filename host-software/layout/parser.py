@@ -347,9 +347,11 @@ class SettingsGenerator:
         scan_mode = self.get_scan_mode(device_id)
         mode = try_get(scan_mode, 'mode', 'scan_mode')
 
+        scan_obj = ScanMode(scan_mode, device_id)
+
         result = bytearray(0)
 
-        if mode == 'none' or mode == 'no_matrix':
+        if scan_obj.mode == MATRIX_SCANNER_MODE_NONE:
             result += struct.pack('<BBB', MATRIX_SCANNER_MODE_NONE, 0, 0)
         elif mode == 'col_row':
             rows = try_get(scan_mode, 'rows', 'scan_mode')
@@ -361,8 +363,6 @@ class SettingsGenerator:
             raise ParseError("TODO: 'pins' scan mode not implemented yet")
         else:
             raise ParseError("Unsupported scan mode {}".format(mode))
-
-        scan_obj = ScanMode(scan_mode, device_id)
 
         result += struct.pack('<BB BB BB',
             scan_obj.debounce_time_press,

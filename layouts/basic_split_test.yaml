@@ -135,8 +135,8 @@ devices:
     id: 14
     scan_mode:
       mode: col_row # options: col_row, pins, none
-      rows: 4
-      cols: 6
+      rows: [D0, D1, D2, D3]
+      cols: [A0, A1, A2, A3, A4, A5]
       # maps how keys are physically wired, to how they appear visually
       matrix_map: [
         r2c2, r2c1, r2c0, r2c3, r2c4, r2c5,
