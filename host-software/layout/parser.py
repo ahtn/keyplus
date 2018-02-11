@@ -61,25 +61,17 @@ class SettingsGenerator:
                     result += struct.pack('<H', kc)
         return result
 
-    def gen_pin_mapping_rows(self, dev_id):
-        # TODO: target_dev.get_io_port_size()
-        result = bytearray(0)
-        dev_data = self.get_device_by_id(dev_id)
-
     def gen_pin_mapping_section(self, dev_id):
         result = bytearray(0)
 
         dev_data = self.get_device_by_id(dev_id)
 
         # First up is the column map.
+        result += dev_data.scan_mode.generate_pin_maps(None)
 
-        if dev_data.scan_mode.mode == ScanMode.NO_MATRIX:
-            pass
-        # TODO: need to make layout generation take KbInfo as input
-        elif dev_data.scan_mode.mode == ScanMode.COL_ROW:
-            # Add matrix map to the layout section
-            for key_num in dev_data.scan_mode.inverse_map:
-                result += struct.pack('<B', key_num)
+        print("Pin map data: ")
+        hexdump.hexdump(result)
+        print()
 
         return result
 
@@ -94,11 +86,17 @@ class SettingsGenerator:
 
         result += self.gen_pin_mapping_section(dev_id)
 
+        dev_data = self.get_device_by_id(dev_id)
+        if dev_data.scan_mode.mode == ScanMode.NO_MATRIX:
+            pass
+        # TODO: need to make layout generation take KbInfo as input
+        elif dev_data.scan_mode.mode == ScanMode.COL_ROW:
+            # Add matrix map to the layout section
+            for key_num in dev_data.scan_mode.inverse_map:
+                result += struct.pack('<B', key_num)
+
         # Add ekc data to the layout section
         result += self.ekc_data.to_bytes()
-
-        # # TODO: shouldn't need this here:
-        # result += struct.pack('<H', 0)
 
         for layout_id in range(self.number_layouts):
             layout = self.get_layout_by_id(layout_id)

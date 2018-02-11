@@ -366,10 +366,7 @@ AT__LAYOUT_ADDR const uint8_t g_layout_storage[] = {
 void keyboard_layouts_init(void) {
     uint8_t i;
 
-    flash_ptr_t storage_pos = LAYOUT_ADDR;
-
-    // TODO: clean up this handling and make it more robust
-    /* g_keyboard_slots[0].layout = (const ROM uint16_t*) LAYOUT_ADDR; */
+    flash_ptr_t storage_pos = LAYOUT_PORT_KEY_NUM_MAP_ADDR;
 
     // key num map section
     {

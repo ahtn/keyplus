@@ -38,41 +38,15 @@ uint8_t io_map_claim_pins(uint8_t port_num, uint8_t pin_mask) {
     return 0;
 }
 
-uint8_t debug_port_masks[IO_PORT_COUNT] = {
-    0x3F,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-};
-
-uint8_t debug_row_pins[MAX_NUM_ROWS] = {
-    IO_MAP_PIN_NUMBER(PORT_D_NUM, 0),
-    IO_MAP_PIN_NUMBER(PORT_D_NUM, 1),
-    IO_MAP_PIN_NUMBER(PORT_D_NUM, 2),
-    IO_MAP_PIN_NUMBER(PORT_D_NUM, 3),
-    // IO_MAP_PIN_NUMBER(PORT_D_NUM, 4),
-    // IO_MAP_PIN_NUMBER(PORT_D_NUM, 5),
-};
-
 port_mask_t io_map_get_col_port_mask(uint8_t port_num) {
-#if 0
     return flash_read_byte(
         LAYOUT_PORT_COL_MASKS_ADDR + port_num
     );
-#else
-    return debug_port_masks[port_num];
-#endif
 }
 
 port_mask_t io_map_get_row_pin(uint8_t row) {
-#if 0
     return flash_read_byte(
         LAYOUT_PORT_ROW_PINS_ADDR + row
     );
-#else
-    return debug_row_pins[row];
-#endif
 }
 

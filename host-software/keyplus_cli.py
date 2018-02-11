@@ -6,8 +6,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import intelhex
 import argparse
 import yaml
-
-import time, math, sys, datetime
+import hexdump
+import sys
+import datetime
 
 import layout.parser
 import protocol
@@ -249,6 +250,12 @@ class PassthroughCommand(GenericDeviceCommand):
             help='Set passthrough state "on" or "off"'
         )
 
+        self.arg_parser.add_argument(
+            '-V', dest='verbose', action='store_const',
+            const=True, default=False,
+            help='Verbose output'
+        )
+
     def task(self, args):
 
         device = self.find_matching_device(args)
@@ -267,6 +274,8 @@ class PassthroughCommand(GenericDeviceCommand):
 
         while response != None:
             if response[0] == protocol.CMD_PASSTHROUGH_MATRIX:
+                if (args.verbose):
+                    hexdump.hexdump(response[1:])
                 for row in range(10):
                     for col in range(2):
                         byte = response[1 + row*2 + col]
@@ -441,8 +450,7 @@ class ProgramCommand(GenericDeviceCommand):
             return layout_data, settings_data
         except (layout.parser.ParseError, layout.parser.ParseKeycodeError) as err:
             print(
-                'Error parsing "{}": {}'.format(layout_file),
-                str(err)
+                'Error parsing "{}": {}'.format(layout_file, str(err)),
             )
             exit(EXIT_BAD_FILE)
 

@@ -21,6 +21,8 @@ DEFAULT_PRESS_TRIGGER_TIME = 1
 DEFAULT_PARASITIC_DISCHARGE_DELAY_IDLE = 2.0
 DEFAULT_PARASITIC_DISCHARGE_DELAY_DEBOUNCE = 10.0
 
+MAX_NUM_ROWS = 10
+
 class ScanMode:
     COL_ROW = 0
     PINS = 1
@@ -90,27 +92,58 @@ class ScanMode:
         self.rows = 0
         self.cols = 0
 
-        # TODO:
-        ATMEL_ID = 0x03eb0000
-        self.pin_mapper = get_io_mapper_for_chip(ATMEL_ID | 0x000A)
-        print(self.pin_mapper)
-        print(self.pin_mapper.get_pin_number)
-        print(self.pin_mapper.get_pin_number('R1'))
-
         if self.mode == ScanMode.COL_ROW:
-            self.rows = try_get(sm_raw, 'rows', debug_hint, val_type=[int, list])
-            if isinstance(self.rows, int):
-                pass
-            elif isinstance(self.rows, list):
-                pass
+            # Get the row pins
+            row_data = try_get(sm_raw, 'rows', debug_hint, val_type=[int, list])
+            if isinstance(row_data, int):
+                self.row_pins = None
+                self.rows = row_data
+            elif isinstance(row_data, list):
+                self.row_pins = row_data
+                self.rows = len(self.row_pins)
 
-            self.cols = try_get(sm_raw, 'cols', debug_hint, val_type=[int, list])
+            # Get the column pins
+            col_data = try_get(sm_raw, 'cols', debug_hint, val_type=[int, list])
+            if isinstance(col_data, int):
+                self.col_pins = None
+                self.cols = col_data
+            elif isinstance(col_data, list):
+                self.col_pins = col_data
+                self.cols = len(self.col_pins)
+
         elif self.mode == ScanMode.PINS:
             # self.rows =
             self.cols = 1
             raise ParseError("pins not implemented")
         else:
             pass # TODO
+
+    def generate_pin_maps(self, target_device):
+        # TODO:
+        ATMEL_ID = 0x03eb0000
+        self.pin_mapper = get_io_mapper_for_chip(ATMEL_ID | 0x000A)
+
+        if self.row_pins == None:
+            row_pins = self.pin_mapper.get_default_rows(self.rows)
+        else:
+            row_pins =[self.pin_mapper.get_pin_number(pin) for pin in self.row_pins]
+
+        if len(row_pins) < MAX_NUM_ROWS:
+            row_pins += [0] * (MAX_NUM_ROWS-len(row_pins))
+        elif len(row_pins) > MAX_NUM_ROWS:
+            raise ParseLayoutError("Device only supports a maximum of 10 rows, got '{}'"
+                                   .format(len(row_pins)))
+
+
+        if self.col_pins == None:
+            col_pins = self.pin_mapper.get_default_cols(self.cols)
+        else:
+            col_pins = [self.pin_mapper.get_pin_number(pin) for pin in self.row_pins]
+
+        col_pin_masks = self.pin_mapper.get_pin_masks_as_bytes(col_pins)
+
+        return bytearray(row_pins) + col_pin_masks
+
 
     def calc_matrix_size(self):
         if self.mode == ScanMode.COL_ROW:
@@ -126,7 +159,7 @@ class ScanMode:
                     "got {} but expected at most {} (={}*{})".format(
                     kb_name, len(mmap_raw), self.rows*self.cols, self.rows, self.cols))
         matrix_map = []
-        inverse_map = [0xff] * self.rows * self.cols
+        inverse_map = [0x00] * self.rows * self.cols
         for (key_pos, map_key) in enumerate(mmap_raw):
             # these values can be used as spaces and are ignored
             if map_key in ['none', '_'*4, '_'*5, '_'*6, '-'*4, '-'*5, '-'*6]:

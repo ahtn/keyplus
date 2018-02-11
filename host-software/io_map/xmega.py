@@ -7,7 +7,6 @@ import io_map.chip_id
 
 from io_map.common import IoMapper, IoMapperError, IoMapperPins
 
-
 XmegaPinsA4U = IoMapperPins(
     ports = {
         'A': 0,
@@ -24,6 +23,15 @@ XmegaPinsA4U = IoMapperPins(
         0x3f,
         0x0f,
         0x03,
+    ],
+    default_rows = [
+        'D0', 'D1', 'D2', 'D3', 'D4', 'D5',
+        'C3', 'C2', 'C1', 'C0'
+    ],
+    default_cols = [
+        'A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7',
+        'B0', 'B1', 'B2', 'B3',
+        'C0', 'C1', 'C2', 'C3',
     ],
     port_size = 8
 )
@@ -55,6 +63,7 @@ class IoMapperXmega(IoMapper):
         assert(self.chip_info != None)
         assert(self.chip_info.architecture == 'XMEGA')
         assert(self.chip_info.series in self.XMEGA_SERIES_TABLE)
+        self.pin_mapper = IoMapperXmega.XMEGA_SERIES_TABLE[self.chip_info.series]
 
     def get_pin_number(self, pin_name):
         try:
@@ -66,10 +75,9 @@ class IoMapperXmega(IoMapper):
                                 "is a letter followed by a number. E.g. C1, B0, etc"
                                 .format(pin_name))
 
-        pin_map = IoMapperXmega.XMEGA_SERIES_TABLE[self.chip_info.series]
-
-        if not pin_map.is_valid_pin(port, pin):
+        if not self.pin_mapper.is_valid_pin(port, pin):
             raise IoMapperError("The pin '{}' does not exist on the given microcontroller '{}'"
                                 .format(pin_name, self.chip_info.name))
 
-        return pin_map.get_pin_number(port, pin)
+        return self.pin_mapper.get_pin_number(port, pin)
+
