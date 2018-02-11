@@ -149,15 +149,26 @@ def get_layers(device, layout_id):
 
 
 KBInfoMainNamedTuple = collections.namedtuple("KBInfoMain",
-    "id name timestamp default_report_mode "
-    "scan_mode row_count col_count "
-    "debounce_time_press "
-    "debounce_time_release "
-    "trigger_time_press "
-    "trigger_time_release "
-    "parasitic_discharge_delay_idle "
-    "parasitic_discharge_delay_debouncing "
-    "feature_ctrl reserved crc"
+    "id "
+    "name "
+    "timestamp "
+    "default_report_mode "
+    # scan_plan_t
+        "scan_mode "
+        "row_count "
+        "col_count "
+        "max_col "
+        "max_key_num "
+        "debounce_time_press "
+        "debounce_time_release "
+        "trigger_time_press "
+        "trigger_time_release "
+        "parasitic_discharge_delay_idle "
+        "parasitic_discharge_delay_debouncing "
+    "reserved0 "
+    "feature_ctrl "
+    "reserved1 "
+    "crc "
 )
 
 class KBInfoMain(KBInfoMainNamedTuple):
@@ -220,6 +231,8 @@ def get_device_info(device):
     #     uint8_t mode; // scanning method
     #     uint8_t rows; // number of rows in the scan matrix
     #     uint8_t cols; // number of cols in the scan matrix
+    #     uint8_t max_col; // maximum column pin number used
+    #     uint8_t max_key_num; // highest key number used
     #     uint8_t debounce_time_press; // How long to debounce a key when it is pressed (ms)
     #     uint8_t debounce_time_release; // How long to debounce a key when it is released (ms)
     #     uint8_t trigger_time_press; // The key must be down this long before being registered (ms)
@@ -229,13 +242,14 @@ def get_device_info(device):
     #     uint8_t parasitic_discharge_delay_idle; // How long to hold a row low before reading the columns
     #     uint8_t parasitic_discharge_delay_debouncing; // How long to hold a row low when a key is debouncing
     # } matrix_scan_plan_t;
+    # uint8_t _reserved0[8];
     # uint8_t feature_ctrl;
-    # uint8_t _reserved[42];
+    # uint8_t _reserved1[32];
     # uint16_t crc; // total size == 96
 
     crc = crc16_bytes(response[:DEVICE_INFO_SIZE-2])
 
-    x = struct.unpack("< B 32s q 11B 42s H", response)
+    x = struct.unpack("< B 32s q 12B 8s 1B 32s H", response)
     return KBInfoMain._make_with_crc(x, crc, is_empty)
 
 def get_layout_info(device):
@@ -276,11 +290,14 @@ class KBInfoErrorSystem(object):
          4: "ERROR_KEY_EVENT_QUEUE_FULL",
          5: "ERROR_KEY_EVENT_QUEUE_UNLOADED_DEVICE",
          6: "ERROR_VENDOR_IN_REPORT_CANT_KEEP_UP",
+         7: "ERROR_INVALID_KB_ID_USED",
 
          64: "ERROR_EKC_STORAGE_TOO_LARGE",
          65: "ERROR_NUM_LAYOUTS_TOO_LARGE",
          66: "ERROR_SETTINGS_CRC_MISMATCH",
          67: "ERROR_LAYOUT_STORAGE_OUT_OF_BOUNDS",
+         68: "ERROR_MATRIX_PINS_CONFIG_TOO_LARGE",
+         69: "ERROR_PIN_MAPPING_CONFLICT",
     }
 
     def __init__(self, error_table):
@@ -340,6 +357,9 @@ KBInfoFirmwareNamedTuple = collections.namedtuple("KBInfoFirmware",
     led_support_flags
     bootloader_vid
     bootloader_pid
+    chip_id
+    board_id
+    internal_scan_method
     reserved
     """
 )
@@ -431,6 +451,34 @@ class KBInfoFirmware(KBInfoFirmwareNamedTuple):
     def has_fw_support_bluetooth(self):
         return (self.connectivity_support_flags & self.SUPPORT_BT) != 0
 
+    MATRIX_SCANNER_INTERNAL_NONE = 0x00
+    MATRIX_SCANNER_INTERNAL_FAST_ROW_COL = 0x01
+    MATRIX_SCANNER_INTERNAL_SLOW_ROW_COL = 0x02
+    MATRIX_SCANNER_INTERNAL_HARD_CODED = 0x03
+    MATRIX_SCANNER_INTERNAL_CUSTOM = 0xff
+
+    INTERNAL_SCAN_METHOD_TABLE = {
+        MATRIX_SCANNER_INTERNAL_NONE: "No matrix scanner",
+        MATRIX_SCANNER_INTERNAL_FAST_ROW_COL: "Fast row col scanner",
+        MATRIX_SCANNER_INTERNAL_SLOW_ROW_COL: "Small row col scanner",
+        MATRIX_SCANNER_INTERNAL_HARD_CODED: "Hard coded scanner",
+        MATRIX_SCANNER_INTERNAL_CUSTOM: "Custom scanner",
+    }
+
+    def get_interal_scan_method(self):
+        return self.internal_scan_method
+
+    def get_interal_scan_method_as_str(self):
+        return self.internal_scan_method_to_str(self.internal_scan_method)
+
+    def internal_scan_method_to_str(self, method):
+        assert(isinstance(method, int))
+        if method in self.INTERNAL_SCAN_METHOD_TABLE:
+            return self.INTERNAL_SCAN_METHOD_TABLE[method]
+        else:
+            return "UnknownInternalScanMethod({})".format(method)
+
+
     def has_at_least_version(self, version_str):
         (major, minor, patch) = [int(x) for x in version_str.split('.')]
 
@@ -488,12 +536,15 @@ def get_firmware_info(device):
     # uint16_t bootloader_vid;
     # uint16_t bootloader_pid;
 
+    # uint32_t chip_id;
+    # uint16_t board_id;
+    # uint8_t internal_scan_method;
 
-    # uint8_t reserved[31];
+    # uint8_t reserved[23];
 
     response = simple_command(device, CMD_GET_DEVICE_SETTINGS, [INFO_FIRMWARE])[1:]
 
-    x = struct.unpack("< 3B L Q Q 5B 2H 30s" ,response)
+    x = struct.unpack("< 3B L Q Q 5B 2H L H B 23s" ,response)
     return KBInfoFirmware._make(x)
 
 def get_rf_info(device):

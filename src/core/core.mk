@@ -29,6 +29,8 @@ print(res); \
 CDEFS += -DBUILD_TIME_STAMP="$(BUILD_TIME_STAMP)"
 CDEFS += -DGIT_HASH="$(GIT_HASH)"
 
+CDEFS += -DMCU_CHIP_ID=CHIP_ID_$(MCU_STRING)
+
 #######################################################################
 #                            board config                             #
 #######################################################################

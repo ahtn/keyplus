@@ -6,12 +6,12 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "core/util.h"
-#include "core/packet.h"
-#include "core/nrf24.h"
-#include "core/matrix_scanner.h"
-
+#include "core/chip_id.h"
 #include "core/flash.h"
+#include "core/matrix_scanner.h"
+#include "core/nrf24.h"
+#include "core/packet.h"
+#include "core/util.h"
 
 #define NUM_KEYBOARD_PIPES 4
 
@@ -129,6 +129,7 @@ typedef struct firmware_build_settings_t {
     uint32_t layout_flash_size;
     uint8_t timestamp[8]; // utc time stamp of last update
     uint8_t git_hash[8]; // git hash of the firmware
+    // offset 23
 
     // supported connectivity features
     uint8_t nrf24_support: 1;
@@ -167,10 +168,18 @@ typedef struct firmware_build_settings_t {
     uint8_t led_ws2812: 1;
     uint8_t _reserved4: 5; // 1 byte
 
+    // offset 28
     uint16_t bootloader_vid;
     uint16_t bootloader_pid;
 
-    uint8_t reserved[30]; // pad to 62 bytes
+    // offset 32
+    uint32_t chip_id;
+    // offset 36
+    uint16_t board_id;
+    // offset 38
+    uint8_t internal_scan_method;
+
+    uint8_t reserved[23]; // pad to 62 bytes
 } firmware_build_settings_t;
 
 #define GET_SETTING(x) (\

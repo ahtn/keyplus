@@ -24,6 +24,7 @@ import yaml
 import easyhid
 import protocol
 import layout.parser
+import io_map.chip_id as chip_id
 import xusb_boot
 
 STATUS_BAR_TIMEOUT=4500
@@ -1074,6 +1075,9 @@ class Loader(QMainWindow):
                 firmwareInfo.version_major, firmwareInfo.version_minor, firmwareInfo.version_patch)),
             ("Firmware build date", str(datetime.datetime.fromtimestamp(firmwareInfo.timestamp))),
             ("Firmware git hash", "{:08x}".format(firmwareInfo.git_hash)),
+            ("Microcontroller", chip_id.get_chip_name_from_id(firmwareInfo.chip_id)),
+            ("Board ID", hex(firmwareInfo.board_id)),
+            ("Internal scan method", firmwareInfo.get_interal_scan_method_as_str()),
             ("Layout storage size", firmwareInfo.layout_flash_size),
             ("Bootloader VID", "{:04x}".format(firmwareInfo.bootloader_vid)),
             ("Bootloader PID", "{:04x}".format(firmwareInfo.bootloader_pid)),

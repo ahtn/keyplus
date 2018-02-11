@@ -1,7 +1,7 @@
 // Copyright 2017 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-#include "key_custom.h"
+#include "key_handlers/key_custom.h"
 
 #include "config.h"
 

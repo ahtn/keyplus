@@ -9,6 +9,7 @@ TARGET	= nrf24lu1_keyboard
 OBJ_DIR	= obj
 MCU		= NRF24LU1
 F_CPU	= 16000000
+MCU_STRING = nRF24LU1P
 
 # valid 16 or 32
 FLASH_SIZE = 32
@@ -195,6 +196,13 @@ ALL_TARGET=$(MERGED_HEX)
 endif
 
 all: $(ALL_TARGET) size
+
+c_file_list:
+	echo $(C_SRC) > c_file_list
+
+.PHONY:
+single_file_build:
+	$(CC) $(CFLAGS) $(LFLAGS) c_file_list_merged.c
 
 $(MERGED_HEX): $(TARGET).hex
 	@echo "=== merging layout settings files ==="

@@ -89,6 +89,14 @@ const ROM firmware_build_settings_t g_firmware_build_settings = {
     .bootloader_vid = BOOTLOADER_VID,
     .bootloader_pid = BOOTLOADER_PID,
 #endif
+
+    .chip_id = MCU_CHIP_ID,
+    .board_id = 0,
+#ifdef NO_MATRIX
+    .internal_scan_method = MATRIX_SCANNER_INTERNAL_NONE,
+#else
+    .internal_scan_method = INTERNAL_SCAN_METHOD,
+#endif
 };
 
 uint8_t device_id_to_pipe_num(const uint8_t device_id) {
@@ -119,7 +127,7 @@ void settings_load_from_flash(void) {
     // Don't show features as enabled that are disabled at build time
     g_runtime_settings.feature_ctrl &= FEATURE_CTRL_FEATURES_DISABLED_AT_BUILD_TIME;
 
-#ifndef CONFIG_NO_MATRIX
+#ifndef NO_MATRIX
     // TODO: validate the settings before returning
     flash_read(
         (uint8_t*)&g_scan_plan,

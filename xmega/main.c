@@ -291,22 +291,24 @@ void usb_mode_main_loop(void) {
             uint8_t *matrix_data = i2c_packet+1;
             const uint8_t use_deltas = true;
 
-            // usb_print(s_available_pins, 16);
-            // io_map_claim_mask(4, 0x3)
-            // io_map_claim_pins(0, PIN0_bm | PIN1_bm);
-            uint8_t data[16] = {
-                g_matrix[0][0],
-                g_matrix[1][0],
-                g_matrix[2][0],
-                g_matrix[3][0],
-            };
-            usb_print((uint8_t*)data, 4);
+            // // usb_print(s_available_pins, 16);
+            // // io_map_claim_mask(4, 0x3)
+            // // io_map_claim_pins(0, PIN0_bm | PIN1_bm);
+            // uint8_t data[16] = {
+            //     g_matrix[0][0],
+            //     g_matrix[1][0],
+            //     g_matrix[2][0],
+            //     g_matrix[3][0],
+            // };
+            // usb_print((uint8_t*)data, 4);
+            //
 #if USE_I2C
             i2c_packet[0] = (i2c_get_active_address() << 1) | 0x01;
 #endif
 
             const uint8_t data_size = get_matrix_data(matrix_data, use_deltas);
 
+#if 0
 #if USE_I2C
             i2c_packet[data_size+1] = i2c_calculate_checksum(i2c_packet, data_size+1);
 
@@ -318,7 +320,7 @@ void usb_mode_main_loop(void) {
             // TODO: I2C is broken
             // i2c_broadcast(i2c_packet, data_size+2);
 #endif
-
+#endif
 
             keyboard_update_device_matrix(GET_SETTING(device_id), matrix_data);
 

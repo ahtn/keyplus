@@ -96,7 +96,6 @@ static void setup_columns(void) {
             PORTCFG.MPCMASK = col_mask;
             port->PIN0CTRL = PORT_OPC_PULLUP_gc | PORT_ISC_BOTHEDGES_gc;
             port->INT0MASK |= col_mask;
-            // port->OUTSET = col_mask;
         }
     }
 }
@@ -136,13 +135,6 @@ static void setup_rows(void) {
         }
     }
 
-    // // Hardware setup for the pin
-    // {
-    //     PORTD.DIRSET = 0x0f; // output
-    //     PORTCFG.MPCMASK = 0x0f;
-    //     PORTD.PIN0CTRL = PORT_OPC_WIREDAND_gc;
-    //     PORTD.OUTSET = 0x0f;
-    // }
 }
 
 //  makes all rows floating inputs
@@ -321,6 +313,9 @@ static inline uint8_t scan_row(uint8_t row) {
     // usb_print(s_col_masks, 10);
     // usb_print(s_row_masks, 10);
     // usb_print(s_row_pin_mask, 10);
+    // if (row == 2) {
+    //     usb_print(new_row, 10);
+    // }
 
     return scanner_debounce_row(row, old_row, new_row, s_bytes_per_row);
 }
@@ -381,15 +376,6 @@ static inline bool matrix_scan_row_col_mode(void) {
         scan_changed |= scan_row(row);
         unselect_row(row);
     }
-
-    uint8_t data[4] = {
-        g_matrix[0][0],
-        g_matrix[1][0],
-        g_matrix[2][0],
-        g_matrix[3][0],
-    };
-
-    usb_print(data, 4);
 
     return scan_changed;
 }

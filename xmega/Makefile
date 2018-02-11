@@ -40,6 +40,8 @@ include avr-makefile/boards.mk
 #                        common build settings                        #
 #######################################################################
 
+include avr-makefile/avr-xmega.mk
+
 include $(KEYPLUS_PATH)/core/core.mk
 include $(KEYPLUS_PATH)/usb/usb.mk
 include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
@@ -150,8 +152,6 @@ MAKEFILE_INC += Makefile
 
 # LD_SCRIPT_DIR = /usr/lib/ldscripts
 LD_SCRIPT_DIR = ./ld-scripts
-
-include avr-makefile/avr-xmega.mk
 
 ifeq ($(MCU_FLASH_SIZE), 32)
   SETTING_ADDR := 0x6E00

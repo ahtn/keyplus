@@ -80,7 +80,6 @@ USB_REG_DECL(0xC7BF) uint8_t in5bc;
 #define USB_EP_IN_CS(ep_num) ((uint8_t XRAM*)&ep0cs)[ep_num*2]
 #define USB_EP_IN_BC(ep_num) ((uint8_t XRAM*)&in0bc)[ep_num*2]
 
-
 USB_REG_DECL(0xC7C4) uint8_t _imaginary_out0cs[16];
 USB_REG_DECL(0xC7C5) uint8_t _imaginary_out0bc[16];
 

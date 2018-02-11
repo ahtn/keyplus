@@ -5,6 +5,11 @@
 
 #include "nrf24lu1.h"
 
+#define MCU_BITNESS 8
+#define IO_PORT_SIZE 8
+typedef uint8_t io_port_t;
+#define IO_PORT_COUNT 1
+
 // NOTE: not the best solution, but it's good enough
 void dynamic_delay_us(uint16_t us);
 #define static_delay_us(x) dynamic_delay_us(x)

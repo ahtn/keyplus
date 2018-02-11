@@ -30,7 +30,7 @@ void usb_write_in_endpoint(
 extern XRAM uint8_t g_has_received_usb_data;
 
 bit_t is_out_endpoint_ready(uint8_t endpoint_num) {
-    return bitn(g_has_received_usb_data, endpoint_num);
+    return is_bitn_set(g_has_received_usb_data, endpoint_num);
 }
 
 void usb_read_out_endpoint(

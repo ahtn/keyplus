@@ -1,7 +1,7 @@
 // Copyright 2017 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-#include "keyboard_report.h"
+#include "usb_reports/keyboard_report.h"
 
 #include <string.h>
 

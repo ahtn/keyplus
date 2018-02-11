@@ -8,6 +8,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from layout.common import try_get, ParseError
 import re, math
 
+from io_map.io_mapper import get_io_mapper_for_chip
+
 MATRIX_SCANNER_MODE_NONE = 0x00 # doesn't have a matrix
 MATRIX_SCANNER_MODE_COL_ROW = 0x01 # normal row,col pin matrix
 MATRIX_SCANNER_MODE_PINS = 0x02 # each pin represents a key
@@ -32,10 +34,16 @@ class ScanMode:
     def __init__(self, scan_mode_dict, debug_hint):
         self.parse_header(scan_mode_dict, debug_hint)
 
+        self.debounce_time_press = DEFAULT_DEBOUNCE_PRESS_TIME
+        self.matrix_map = None
+        self.debounce_time_release = DEFAULT_DEBOUNCE_RELEASE_TIME
+        self.trigger_time_press = DEFAULT_PRESS_TRIGGER_TIME
+        self.trigger_time_release = DEFAULT_RELEASE_TRIGGER_TIME
+        self.parasitic_discharge_delay_idle = DEFAULT_PARASITIC_DISCHARGE_DELAY_IDLE
+        self.parasitic_discharge_delay_debouncing = DEFAULT_PARASITIC_DISCHARGE_DELAY_DEBOUNCE
+
         if 'matrix_map' in scan_mode_dict:
             self.parse_matrix_map(scan_mode_dict['matrix_map'], debug_hint)
-        else:
-            self.matrix_map = None
 
     # uint8_t trigger_time_press; // The key must be down this long before being registered (ms)
     # uint8_t trigger_time_release; // The key must be up this long before being registered (ms)
@@ -45,39 +53,27 @@ class ScanMode:
     # uint8_t parasitic_discharge_delay_debouncing; // How long to hold a row low when a key is debouncing
         if 'debounce_time_press' in scan_mode_dict:
             self.debounce_time_press = scan_mode_dict['debounce_time_press']
-        else:
-            self.debounce_time_press = DEFAULT_DEBOUNCE_PRESS_TIME
 
         if 'debounce_time_release' in scan_mode_dict:
             self.debounce_time_release = scan_mode_dict['debounce_time_release']
-        else:
-            self.debounce_time_release = DEFAULT_DEBOUNCE_RELEASE_TIME
 
         if 'trigger_time_press' in scan_mode_dict:
             self.trigger_time_press = scan_mode_dict['trigger_time_press']
-        else:
-            self.trigger_time_press = DEFAULT_PRESS_TRIGGER_TIME
 
         if 'trigger_time_release' in scan_mode_dict:
             self.trigger_time_release = scan_mode_dict['trigger_time_release']
-        else:
-            self.trigger_time_release = DEFAULT_RELEASE_TRIGGER_TIME
 
         if 'parasitic_discharge_delay_idle' in scan_mode_dict:
             delay = scan_mode_dict['parasitic_discharge_delay_idle']
             if (0 < delay > 48.0):
                 raise ParseError("parasitic_discharge_delay_idle must less than 48.0µs")
             self.parasitic_discharge_delay_idle = delay
-        else:
-            self.parasitic_discharge_delay_idle = DEFAULT_PARASITIC_DISCHARGE_DELAY_IDLE
 
         if 'parasitic_discharge_delay_debouncing' in scan_mode_dict:
             delay = scan_mode_dict['parasitic_discharge_delay_debouncing']
             if (0 < delay > 48.0):
                 raise ParseError("parasitic_discharge_delay_debouncing must less than 48.0µs")
             self.parasitic_discharge_delay_debouncing = delay
-        else:
-            self.parasitic_discharge_delay_debouncing = DEFAULT_PARASITIC_DISCHARGE_DELAY_DEBOUNCE
 
 
     def __str__(self):
@@ -94,9 +90,21 @@ class ScanMode:
         self.rows = 0
         self.cols = 0
 
+        # TODO:
+        ATMEL_ID = 0x03eb0000
+        self.pin_mapper = get_io_mapper_for_chip(ATMEL_ID | 0x000A)
+        print(self.pin_mapper)
+        print(self.pin_mapper.get_pin_number)
+        print(self.pin_mapper.get_pin_number('R1'))
+
         if self.mode == ScanMode.COL_ROW:
-            self.rows = try_get(sm_raw, 'rows', debug_hint, val_type=int)
-            self.cols = try_get(sm_raw, 'cols', debug_hint, val_type=int)
+            self.rows = try_get(sm_raw, 'rows', debug_hint, val_type=[int, list])
+            if isinstance(self.rows, int):
+                pass
+            elif isinstance(self.rows, list):
+                pass
+
+            self.cols = try_get(sm_raw, 'cols', debug_hint, val_type=[int, list])
         elif self.mode == ScanMode.PINS:
             # self.rows =
             self.cols = 1

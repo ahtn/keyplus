@@ -7,6 +7,8 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 
+#include "board_config.h"
+
 #define static_delay_us(x) _delay_us(x)
 #define static_delay_ms(x) _delay_ms(x)
 
@@ -66,6 +68,8 @@ typedef PORT_t io_port_t;
 #define PORT_D_USABLE_PINS 0x3f // Can't use 7 and 6 because they are used for USB
 #define PORT_E_USABLE_PINS 0x0f
 #define PORT_R_USABLE_PINS 0x03
+
+#ifndef IO_USABLE_PINS
 #define IO_USABLE_PINS { \
     PORT_A_USABLE_PINS, \
     PORT_B_USABLE_PINS, \
@@ -74,6 +78,7 @@ typedef PORT_t io_port_t;
     PORT_E_USABLE_PINS, \
     PORT_R_USABLE_PINS, \
 }
+#endif
 
 #else
 #error "Message unsupported xmega size"

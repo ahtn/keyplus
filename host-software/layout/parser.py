@@ -42,40 +42,12 @@ class SettingsGenerator:
                 kc_map = None
                 size = 0
 
-                # # Check for 'matrix_maps'. It is a list of device names with
-                # # one for each sub-matrix in the layout. The matrix_map is
-                # # used to map the keys from how they are "visually arranged" to
-                # # to how they are physically wired.
-                # # The matrix_maps is optional. If it is not given, then the
-                # # list of keys in the matrix will match how they are physically
-                # # wired.
-                # if layout.matrix_maps != None:
-                #     map_name = layout.matrix_maps[kb_i]
-                #     try:
-                #         map_device = self.get_device_by_name(map_name)
-                #         kc_map = map_device.scan_mode.matrix_map
-                #         sm = map_device.scan_mode
-                #         size = sm.rows * sm.cols
-                #         size = int(math.ceil(len(kb)/8))*8 # pad to multiple of 8
-                #     except:
-                #         raise ParseError("Couldn't find matrix_map for '{}' in"
-                #                 " layout '{}'".format(map_name, layout.name))
-
-                #     if len(kc_map) != len(kb):
-                #         raise ParseError("The matrix_map for '{}' has '{}' "
-                #             "keys, but the corresponding matrix in the layout "
-                #             "'{}' has '{}' keys".format(
-                #                 map_name, len(kc_map),
-                #                 layout.name, len(kb)))
-                # else:
-                #     # no map given, so generate a list that is a 1-to-1 mapping
-                #     kc_map = list(range(len(kb)))
-                #     size = int(math.ceil(len(kb)/8))*8 # pad to multiple of 8
-
                 size = int(math.ceil(len(kb)/8))*8 # pad to multiple of 8
                 keycodes = [0] * size
 
                 for (kc_i, kc_str) in enumerate(kb):
+                    if isinstance(kc_str, int):
+                        kc_str = str(kc_str)
                     if kc_str.lower() in self.user_keycodes.user_keycode_table:
                         print(kc_str, self.user_keycodes.user_keycode_table)
                         kc = self.user_keycodes.get_ekc_keycode_value(kc_str)
@@ -89,6 +61,28 @@ class SettingsGenerator:
                     result += struct.pack('<H', kc)
         return result
 
+    def gen_pin_mapping_rows(self, dev_id):
+        # TODO: target_dev.get_io_port_size()
+        result = bytearray(0)
+        dev_data = self.get_device_by_id(dev_id)
+
+    def gen_pin_mapping_section(self, dev_id):
+        result = bytearray(0)
+
+        dev_data = self.get_device_by_id(dev_id)
+
+        # First up is the column map.
+
+        if dev_data.scan_mode.mode == ScanMode.NO_MATRIX:
+            pass
+        # TODO: need to make layout generation take KbInfo as input
+        elif dev_data.scan_mode.mode == ScanMode.COL_ROW:
+            # Add matrix map to the layout section
+            for key_num in dev_data.scan_mode.inverse_map:
+                result += struct.pack('<B', key_num)
+
+        return result
+
     def gen_layout_section(self, dev_id):
         # Layout section has the format
         # matrix_keynumber_map for this specific device[rows * cols]
@@ -98,12 +92,7 @@ class SettingsGenerator:
 
         result = bytearray(0)
 
-        dev_data = self.get_device_by_id(dev_id)
-
-        if dev_data.scan_mode.mode != ScanMode.NO_MATRIX:
-            # Add matrix map to the layout section
-            for key_num in dev_data.scan_mode.inverse_map:
-                result += struct.pack('<B', key_num)
+        result += self.gen_pin_mapping_section(dev_id)
 
         # Add ekc data to the layout section
         result += self.ekc_data.to_bytes()
@@ -172,15 +161,15 @@ class SettingsGenerator:
         return result
 
     def parse_keycodes(self):
+        self.user_keycodes = UserKeycodes([])
+
         if 'keycodes' not in self.layout:
             return
 
-        self.user_keycodes = None
         self.user_keycodes = UserKeycodes(self.layout['keycodes'])
         ekc_data = self.user_keycodes.generate_ekc_data()
         self.ekc_data = ekc_data
         print("ekc_data:", ekc_data)
-
 
     def parse_layouts(self):
         self.layout_data = {}

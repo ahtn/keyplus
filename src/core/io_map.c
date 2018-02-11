@@ -11,17 +11,25 @@
 #include "core/layout.h"
 #include "core/util.h"
 
-const static ROM port_mask_t s_usable_pins[IO_PORT_COUNT] = IO_USABLE_PINS;
+
+const ROM io_map_info_t g_io_map_info = {
+    .usable_pins = IO_USABLE_PINS,
+};
+
 port_mask_t s_available_pins[IO_PORT_COUNT];
 
 void io_map_init(void) {
-    flash_load_from_rom(s_available_pins, s_usable_pins, sizeof(s_usable_pins));
+    flash_load_from_rom(
+        s_available_pins,
+        g_io_map_info.usable_pins,
+        sizeof(port_mask_t)*IO_PORT_COUNT
+    );
 }
 
 // return non-zero on error
 uint8_t io_map_claim_pins(uint8_t port_num, uint8_t pin_mask) {
     const uint8_t free_pins = s_available_pins[port_num];
-    if ( (free_pins & pin_mask) != pin_mask ) {
+    if ( (free_pins & pin_mask) != pin_mask || port_num >= IO_PORT_COUNT) {
         // Some of the pins in the mask are in use
         register_error(ERROR_PIN_MAPPING_CONFLICT);
         return -1;

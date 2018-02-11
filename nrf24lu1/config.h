@@ -30,7 +30,7 @@
 #define RF_POLLING 0
 #define USB_BUFFERED 0
 
-#define CONFIG_NO_MATRIX
+#define NO_MATRIX
 
 // nRF24LU1+ dongle only needs 50mA max current
 #define CUSTOM_USB_CURRENT_LIMIT 50

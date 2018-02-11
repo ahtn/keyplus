@@ -23,7 +23,7 @@
 .device_name = "nRF24LU1+ dongle - 1",
 #endif
 
-#ifdef CONFIG_NO_MATRIX
+#ifdef NO_MATRIX
 .scan_plan = {
     .mode = MATRIX_SCANNER_MODE_NONE, // dongle
     .rows = 0,

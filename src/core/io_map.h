@@ -17,11 +17,19 @@
 
 #if IO_PORT_SIZE == 8
 typedef uint8_t port_mask_t;
+#elif IO_PORT_SIZE == 16
+typedef uint16_t port_mask_t;
 #elif IO_PORT_SIZE == 32
 typedef uint32_t port_mask_t;
 #else
 #error "IO_PORT_SIZE is bad"
 #endif
+
+typedef struct io_map_info_t {
+    uint8_t usable_pins[16];
+    uint8_t reserved[16];
+} io_map_info_t;
+
 
 #define IO_MAP_PIN_NUMBER(port, pin) (port * MCU_BITNESS + pin)
 #define IO_MAP_GET_PIN_PORT(pin_num) (pin_num / MCU_BITNESS)
@@ -29,6 +37,7 @@ typedef uint32_t port_mask_t;
 
 #define IO_MAP_GET_PORT(port_num) (g_io_port_map[port_num])
 
+extern const ROM io_map_info_t g_io_map_info;
 extern io_port_t * const g_io_port_map[IO_PORT_COUNT];
 
 void io_map_init(void);

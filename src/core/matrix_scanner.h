@@ -30,6 +30,15 @@ typedef enum matrix_scanner_mode_t {
     MATRIX_SCANNER_MODE_PINS = 0x03, // each pin represents a key
 } matrix_scanner_mode_t;
 
+typedef enum matrix_internal_scan_method_t {
+    MATRIX_SCANNER_INTERNAL_NONE = 0x00,
+    MATRIX_SCANNER_INTERNAL_FAST_ROW_COL = 0x01,
+    MATRIX_SCANNER_INTERNAL_SLOW_ROW_COL = 0x02,
+    MATRIX_SCANNER_INTERNAL_HARD_CODED = 0x03,
+    // MATRIX_SCANNER_INTERNAL_IO_EXPANDER = 0x03,
+    MATRIX_SCANNER_INTERNAL_CUSTOM = 0xff,
+} matrix_internal_scan_method_t;
+
 #define DEFAULT_DEBOUNCE_PRESS_TIME 5
 #define DEFAULT_DEBOUNCE_RELEASE_TIME (2*DEFAULT_DEBOUNCE_PRESS_TIME)
 #define DEFAULT_RELEASE_TRIGGER_TIME 3

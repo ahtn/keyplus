@@ -29,7 +29,17 @@ def try_get(dictionary, key, default=None, hint="", ignore_case=True, val_type=N
     try:
         value = dictionary[key]
 
-        if val_type != None and type(value) != val_type:
+        has_matching_type = True
+        if val_type == None:
+            pass
+        elif isinstance(val_type, list):
+            # a list of valid types
+            has_matching_type = type(value) in val_type
+        else:
+            # only one valid type
+            has_matching_type = isinstance(value, val_type)
+
+        if not has_matching_type:
             raise ParseTypeError("Expected an '{}' for '{}' but got '{}' which is a '{}'"
                     .format(
                         val_type,
