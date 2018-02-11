@@ -369,23 +369,26 @@ bit_t read_packet(void) REENT {
     static XRAM uint8_t packet_payload[PACKET_BUFFER_MAX_LEN];
 
     // get the packet pipe and size from the buffer
-    const uint8_t pipe_num = packet_buffer_get();
-    const uint8_t width = packet_buffer_get();
+    uint8_t pipe_num;
+    uint8_t width;
 
-    if (width > PACKET_BUFFER_MAX_LEN)  {
+    // Disable the rf IRQ while access the packet buffer
+    rf_disable_receive_irq();
+
+    pipe_num = packet_buffer_get();
+    width = packet_buffer_get();
+    if (width > PACKET_BUFFER_MAX_LEN || width > packet_buffer_len())  {
         debug_toggle(4);
         packet_buffer_clear();
-        return false;
-    }
 
-    if (width > packet_buffer_len()) {
-        debug_toggle(5);
-        packet_buffer_clear();
+        rf_enable_receive_irq();
         return false;
     }
 
     // read out the packet payload into the buffer
     ring_buf128_take(&s_rx_buffer, packet_payload, width);
+
+    rf_enable_receive_irq();
 
     // NOTE: currently mouse pipes are disabled in passive listening mode
     if (pipe_num == 5 || pipe_num == 4) {
