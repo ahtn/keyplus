@@ -277,14 +277,16 @@ void parse_cmd(void) {
         case CMD_LOGITECH_BOOTLOADER: {
             cmd_logitech_bootloader();
         } break;
+#ifndef NO_MATRIX
         case CMD_SET_PASSTHROUGH_MODE: {
-            if (g_scan_plan.mode == MATRIX_SCANNER_MODE_NONE) {
+            if (g_scan_plan.mode == MATRIX_SCANNER_MODE_NO_MATRIX ) {
                 cmd_error(ERROR_UNSUPPORTED_COMMAND);
             } else {
                 passthrough_mode_on = g_vendor_report_out.data[1];
                 cmd_ok();
             }
         } break;
+#endif
 
         // TODO: before using this command on XMEGA, need to fix flash locations
         case CMD_UPDATE_SETTINGS: {

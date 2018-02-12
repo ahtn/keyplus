@@ -117,6 +117,13 @@
 #define MSB(x) (((x) >> 8) & 0xff)
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
+/// Perform integer division and round up instead of down
+///
+/// Let x,y be integers, then INT_DIV_ROUND_UP(x,y) = ceil(x/y)
+#define INT_DIV_ROUND_UP(dividend, divisor) (\
+    ( (dividend) + ((divisor)-1) ) / (divisor) \
+)
+
 /// Returns the nth bit of `byte`
 ///
 /// Note: the `sdcc` compiler has pretty bad optimizations for bit shifts. Using

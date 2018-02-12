@@ -87,16 +87,16 @@ typedef struct rf_settings_t { // 64 bytes
     (!USE_UNIFYING << 3) | \
     (!USE_BLUETOOTH << 4)
 
-// typedef struct feature_ctrl_t {
-//     uint8_t usb_disable: 1;
-//     uint8_t wired_disable: 1;
-//     uint8_t rf_disable: 1;
-//     uint8_t rf_mouse_disable: 1;
-//     uint8_t bt_disable: 1;
-//     uint8_t reserved_0: 1;
-//     uint8_t reserved_1: 1;
-//     uint8_t reserved_2: 1;
-// } feature_ctrl_t;
+typedef struct feature_ctrl_t {
+    uint8_t usb_disabled: 1;
+    uint8_t wired_disabled: 1;
+    uint8_t rf_disabled: 1;
+    uint8_t rf_mouse_disabled: 1;
+    uint8_t bt_disabled: 1;
+    uint8_t reserved_0: 1;
+    uint8_t reserved_1: 1;
+    uint8_t reserved_2: 1;
+} feature_ctrl_t;
 
 #define SETTINGS_MAIN_INFO_SIZE 96
 typedef struct settings_t { // 512 bytes
@@ -116,7 +116,10 @@ typedef struct settings_t { // 512 bytes
 // Settings that are loaded from flash and/or changeable at run time
 typedef struct runtime_settings_t {
     uint8_t device_id;
-    uint8_t feature_ctrl;
+    union {
+        uint8_t ctrl_raw;
+        feature_ctrl_t ctrl;
+    } feature;
 } runtime_settings_t;
 
 /*********************************************************************

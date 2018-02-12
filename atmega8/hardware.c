@@ -55,6 +55,7 @@ CREATE_BIT_SETTER(nrf24_csn, B, CSN);
 #endif
 
 void nrf24_init(void) {
+
     /* TODO: change this define to an appropriate one for the promicro */
     ddr_nrf24_csn(1);
     ddr_nrf24_ce(1);

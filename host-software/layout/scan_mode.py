@@ -6,13 +6,18 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from layout.common import try_get, ParseError
-import re, math
+
+import re
+import math
+import struct
+import hexdump
 
 from io_map.io_mapper import get_io_mapper_for_chip
 
-MATRIX_SCANNER_MODE_NONE = 0x00 # doesn't have a matrix
-MATRIX_SCANNER_MODE_COL_ROW = 0x01 # normal row,col pin matrix
-MATRIX_SCANNER_MODE_PINS = 0x02 # each pin represents a key
+MATRIX_SCANNER_MODE_NO_MATRIX = 0x00
+MATRIX_SCANNER_MODE_COL_ROW = 0x01
+MATRIX_SCANNER_MODE_ROW_COL = 0x02
+MATRIX_SCANNER_MODE_PINS = 0x03
 
 DEFAULT_DEBOUNCE_PRESS_TIME = 5
 DEFAULT_DEBOUNCE_RELEASE_TIME = (2*DEFAULT_DEBOUNCE_PRESS_TIME)
@@ -24,13 +29,13 @@ DEFAULT_PARASITIC_DISCHARGE_DELAY_DEBOUNCE = 10.0
 MAX_NUM_ROWS = 10
 
 class ScanMode:
-    COL_ROW = 0
-    PINS = 1
-    NO_MATRIX = 2
+    NO_MATRIX = MATRIX_SCANNER_MODE_NO_MATRIX
+    COL_ROW = MATRIX_SCANNER_MODE_COL_ROW
+    PINS = MATRIX_SCANNER_MODE_PINS
     MODE_MAP = {
+        'no_matrix': NO_MATRIX,
         'col_row': COL_ROW,
         'pins': PINS,
-        'no_matrix': NO_MATRIX
     }
 
     def __init__(self, scan_mode_dict, debug_hint):
@@ -76,6 +81,8 @@ class ScanMode:
             if (0 < delay > 48.0):
                 raise ParseError("parasitic_discharge_delay_debouncing must less than 48.0µs")
             self.parasitic_discharge_delay_debouncing = delay
+
+        self.get_pin_numbers_for_device(None)
 
 
     def __str__(self):
@@ -126,7 +133,7 @@ class ScanMode:
         else:
             raise ParseError("InternalError: Unknown ScanMode({})".format(self.mode))
 
-    def generate_pin_maps(self, target_device):
+    def get_pin_numbers_for_device(self, target_device):
         # TODO: don't hard code the chip id, instead obtain it from the device
         ATMEL_ID = 0x03eb0000
         self.pin_mapper = get_io_mapper_for_chip(ATMEL_ID | 0x000A)
@@ -147,13 +154,54 @@ class ScanMode:
         else:
             col_pins = [self.pin_mapper.get_pin_number(pin) for pin in self.col_pins]
 
-        col_pin_masks = self.pin_mapper.get_pin_masks_as_bytes(col_pins)
+        self.col_pin_numbers = col_pins
+        self.row_pin_numbers = row_pins
 
         if self.mode != ScanMode.NO_MATRIX:
-            self.max_col_num = max(col_pins)
+            self.max_col_pin_num = max(self.col_pin_numbers)
+            self.max_key_num = max(self.inverse_map)
+        else:
+            self.max_col_pin_num = 0
+            self.max_key_num = 0
 
-        return bytearray(row_pins) + col_pin_masks
 
+    def generate_pin_maps(self, target_device):
+        col_pin_masks = self.pin_mapper.get_pin_masks_as_bytes(self.col_pin_numbers)
+
+        return bytearray(self.row_pin_numbers) + col_pin_masks
+
+    def generate_scan_mode_info(self):
+        return struct.pack('<B BB BB BB BB BB',
+            self.mode,
+            self.row_count,
+            self.col_count,
+            self.debounce_time_press,
+            self.debounce_time_release,
+            self.trigger_time_press,
+            self.trigger_time_release,
+            int(255 * (self.parasitic_discharge_delay_idle / 48.0)),
+            int(255 * (self.parasitic_discharge_delay_debouncing / 48.0)),
+            self.max_col_pin_num,
+            self.max_key_num,
+        )
+
+    def generate_key_number_map(self, dev_id):
+        result = bytearray(0)
+
+        # print("FAST_ROW_COL map:")
+        for row in range(self.row_count):
+            row_columns = [0] * (self.max_col_pin_num+1)
+            for col in range(self.col_count):
+                pin_num = self.col_pin_numbers[col]
+                key_map_pos = self.col_count*row + col
+                row_columns[pin_num] = self.inverse_map[key_map_pos]
+            result += bytearray(row_columns)
+
+        # # Add matrix map to the layout section
+        # for key_num in self.inverse_map:
+        #     result += struct.pack('<B', key_num)
+
+        return result
 
     def calc_matrix_size(self):
         if self.mode == ScanMode.COL_ROW:

@@ -68,8 +68,8 @@ static void setup_columns(void) {
     // It is cleared automatically after any PINnCTRL register is written
     // Note: If MPCMASK=0, then its function is disabled, so writing to PIN0CTRL
     // would actually affect update PIN0CTRL instead of updating no pins.
-    const uint8_t max_col_num = g_scan_plan.max_col;
-    const uint8_t max_port_num = (max_col_num + (IO_PORT_SIZE-1)) / IO_PORT_SIZE;
+    const uint8_t max_col_pin_num = g_scan_plan.max_col_pin_num;
+    const uint8_t max_port_num = (max_col_pin_num + (IO_PORT_SIZE-1)) / IO_PORT_SIZE;
     uint8_t port_ii;
     for (port_ii = 0; port_ii < max_port_num; ++port_ii) {
         io_port_t *port = IO_MAP_GET_PORT(port_ii);
@@ -181,39 +181,23 @@ static inline void unselect_row(uint8_t row) {
 }
 
 void matrix_scanner_init(void) {
-#if 1
-    g_scan_plan.mode = MATRIX_SCANNER_MODE_COL_ROW;
-    g_scan_plan.cols = 6;
-    g_scan_plan.rows = 4;
-    g_scan_plan.debounce_time_press = 5;
-    g_scan_plan.debounce_time_release = 5;
-    g_scan_plan.trigger_time_press = 3;
-    g_scan_plan.trigger_time_release = 3;
-    g_scan_plan.parasitic_discharge_delay_idle = 20;
-    g_scan_plan.parasitic_discharge_delay_debouncing = 40;
-    g_scan_plan.max_col = 6;
-    g_scan_plan.max_key_num = 24;
-#endif
-
-    int8_t cols = g_scan_plan.cols;
-    int8_t rows = g_scan_plan.rows;
+    const int8_t cols = g_scan_plan.cols;
+    const int8_t rows = g_scan_plan.rows;
 
     if (
-        cols > MAX_NUM_COLS ||
-        rows > MAX_NUM_ROWS ||
-        g_scan_plan.max_col > MAX_NUM_COLS
+        // g_scan_plan.cols > MAX_NUM_COLS ||
+        g_scan_plan.rows > MAX_NUM_ROWS ||
+        g_scan_plan.max_col_pin_num > IO_PORT_MAX_PIN_NUM
     ) {
         memset((uint8_t*)&g_scan_plan, 0, sizeof(matrix_scan_plan_t));
         register_error(ERROR_MATRIX_PINS_CONFIG_TOO_LARGE);
         return;
     }
 
-    s_bytes_per_row = (g_scan_plan.max_col+7)/8;
+    s_bytes_per_row = INT_DIV_ROUND_UP(g_scan_plan.max_col_pin_num, 8);
 
     setup_rows();
     setup_columns();
-
-    scanner_init_debouncer();
 
     // set the rows and columns to their inital state.
     matrix_scan_irq_disable();
@@ -249,6 +233,10 @@ bool matrix_scan_irq_has_triggered(void) {
     return has_scan_irq_triggered;
 }
 
+void matrix_scan_irq_clear(void) {
+    has_scan_irq_triggered = 0;
+}
+
 // Pins are set like this while scanner is initialized:
 // columns: input pull-up
 // rows: output-low
@@ -260,7 +248,7 @@ void matrix_scan_irq_enable(void) {
     select_all_rows();
     static_delay_variable_clock_us(2); // TODO: check if more error margin is needed
     matrix_scan_irq_clear_flags();
-    has_scan_irq_triggered = 0;
+    matrix_scan_irq_clear();
     PORTA.INTCTRL = (PORTA.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_LO_gc;
     PORTB.INTCTRL = (PORTB.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_LO_gc;
     PORTC.INTCTRL = (PORTC.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_LO_gc;
@@ -292,15 +280,6 @@ ISR(PORTE_INT0_vect) { matrix_scan_irq(); }
 ISR(PORTR_INT0_vect) { matrix_scan_irq(); }
 
 static inline uint8_t scan_row(uint8_t row) {
-    const uint8_t old_row[IO_PORT_COUNT] = {
-        g_matrix[row][PORT_A_NUM],
-        g_matrix[row][PORT_B_NUM],
-        g_matrix[row][PORT_C_NUM],
-        g_matrix[row][PORT_D_NUM],
-        g_matrix[row][PORT_E_NUM],
-        g_matrix[row][PORT_R_NUM],
-    };
-
     const uint8_t new_row[IO_PORT_COUNT] = {
         ~PORTA.IN & s_col_masks[PORT_A_NUM],
         ~PORTB.IN & s_col_masks[PORT_B_NUM],
@@ -310,14 +289,7 @@ static inline uint8_t scan_row(uint8_t row) {
         ~PORTR.IN & s_col_masks[PORT_R_NUM],
     };
 
-    // usb_print(s_col_masks, 10);
-    // usb_print(s_row_masks, 10);
-    // usb_print(s_row_pin_mask, 10);
-    // if (row == 2) {
-    //     usb_print(new_row, 10);
-    // }
-
-    return scanner_debounce_row(row, old_row, new_row, s_bytes_per_row);
+    return scanner_debounce_row(row, new_row, s_bytes_per_row);
 }
 
 static inline bool matrix_scan_row_col_mode(void) {
@@ -405,56 +377,8 @@ bool matrix_scan(void) {
  *           Hardware specific implementation for scanner            *
  *********************************************************************/
 
-// 2 key
-// TODO: improve the build system for building for different hardware
-#if 0
-// #if USE_HARDWARE_SPECIFIC_SCAN
+#if USE_HARDWARE_SPECIFIC_SCAN
 
-static uint8_t s_bytes_per_row;
-
-// setup the matrix for scanning
-void matrix_scanner_init(void) {
-    // A3 and D2 are the pins used for the two switches
-    PORTA.DIRSET |= PIN3_bm;
-    PORTCFG.MPCMASK = PIN3_bm;
-    PORTA.PIN0CTRL = PORT_OPC_PULLUP_gc;
-    PORTA.OUTSET = PIN3_bm;
-
-    PORTD.DIRSET |= PIN2_bm;
-    PORTCFG.MPCMASK = PIN2_bm;
-    PORTD.PIN0CTRL = PORT_OPC_PULLUP_gc;
-    PORTD.OUTSET = PIN2_bm;
-
-    s_bytes_per_row = 1;
-}
-
-#include "core/usb_commands.h"
-
-// scan the whole matrix
-bool matrix_scan(void) {
-    bool key0 = (~PORTA.IN & PIN3_bm);
-    bool key1 = (~PORTD.IN & PIN2_bm);
-    uint8_t new_row_data = (key0 << 0) | (key1 << 1);
-
-    const uint8_t row = 0;
-
-    const uint8_t old_row[1] = {
-        g_matrix[row][0],
-    };
-
-    const uint8_t new_row[1] = {
-        new_row_data,
-    };
-
-    return scanner_debounce_row(row, old_row, new_row, 1);
-}
-
-uint8_t get_matrix_num_keys_down(void) {
-    return s_matrix_number_keys_down;
-}
-
-uint8_t get_matrix_num_keys_debouncing(void) {
-    return s_matrix_number_keys_debouncing;
-}
+/// TODO: move this to a separate file in the boards directory
 
 #endif

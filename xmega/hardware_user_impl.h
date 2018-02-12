@@ -57,10 +57,11 @@ typedef PORT_t io_port_t;
     ((uint16_t)&port == (uint16_t)&PORTC) ? (2) : \
     ((uint16_t)&port == (uint16_t)&PORTD) ? (3) : \
     ((uint16_t)&port == (uint16_t)&PORTE) ? (4) : \
-    ((uint16_t)&port == (uint16_t)&PORTR) ? (6) : 255 \
+    ((uint16_t)&port == (uint16_t)&PORTR) ? (5) : 255 \
 )
 
 #define IO_PORT_COUNT 6
+#define IO_PORT_MAX_PIN_NUM ( IO_MAP_PIN_NUMBER(PORT_R_NUM, 1) )
 
 #define PORT_A_USABLE_PINS 0xff
 #define PORT_B_USABLE_PINS 0x0f

@@ -11,6 +11,10 @@
 #error "MCU_BITNESS is not defined"
 #endif
 
+#ifndef IO_PORT_MAX_PIN_NUM
+#error "IO_PORT_MAX_PIN_NUM needs to be defined"
+#endif
+
 #ifndef IO_PORT_SIZE
 #define IO_PORT_SIZE MCU_BITNESS
 #endif

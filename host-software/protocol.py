@@ -163,7 +163,7 @@ KBInfoMainNamedTuple = collections.namedtuple("KBInfoMain",
         "trigger_time_release "
         "parasitic_discharge_delay_idle "
         "parasitic_discharge_delay_debouncing "
-        "max_col "
+        "max_col_pin_num "
         "max_key_num "
     "reserved0 "
     "feature_ctrl "
@@ -240,7 +240,7 @@ def get_device_info(device):
     #     uint8_t parasitic_discharge_delay_idle; // How long to hold a row low before reading the columns
     #     uint8_t parasitic_discharge_delay_debouncing; // How long to hold a row low when a key is debouncing
 
-    #     uint8_t max_col; // maximum column pin number used
+    #     uint8_t max_col_pin_num; // maximum column pin number used
     #     uint8_t max_key_num; // highest key number used
     # } matrix_scan_plan_t;
     # uint8_t _reserved0[8];

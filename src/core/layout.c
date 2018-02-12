@@ -371,10 +371,20 @@ void keyboard_layouts_init(void) {
 #ifndef NO_MATRIX
     // key num map section
     {
+#if INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL
+        // skip the key num map section, since it is in a known location at compile
+        // time.
+        flash_size_t key_num_map_size = g_scan_plan.rows * (g_scan_plan.max_col_pin_num+1);
+        storage_pos += key_num_map_size;
+
+#elif INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_SLOW_ROW_COL
         // skip the key num map section, since it is in a known location at compile
         // time.
         flash_size_t key_num_map_size = g_scan_plan.rows * g_scan_plan.cols;
         storage_pos += key_num_map_size;
+#else
+#error "Unknown scan method" INTERNAL_SCAN_METHOD
+#endif
     }
 #endif
 

@@ -80,7 +80,12 @@ static void nrf_registers_init_sender(void) {
 }
 
 void rf_init_send(void) {
+    if (g_runtime_settings.feature.ctrl.rf_disabled) {
+        return;
+    }
+
     nrf24_init();
+
     if (has_critical_error()) {
         return;
     }
@@ -238,7 +243,12 @@ static void init_uid_buffer_list(void) {
 }
 
 void rf_init_receive(void) {
+    if (g_runtime_settings.feature.ctrl.rf_disabled) {
+        return;
+    }
+
     nrf24_init();
+
     if (has_critical_error()) {
         return;
     }
@@ -262,6 +272,7 @@ void rf_init_receive(void) {
 
     // enable the receiver
     nrf24_ce(1);
+    g_rf_enabled = true;
 }
 
 // To disable sending auto ack packets as a receiver, we need to disable
@@ -393,6 +404,10 @@ bit_t read_packet(void) REENT {
     // NOTE: currently mouse pipes are disabled in passive listening mode
     if (pipe_num == 5 || pipe_num == 4) {
         uint8_t csum = 0;
+
+        if (g_runtime_settings.feature.ctrl.rf_mouse_disabled) {
+            return false;
+        }
 
         if (unifying_calc_checksum(packet_payload, width) != 0) {
             return false;

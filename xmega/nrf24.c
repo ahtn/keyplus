@@ -11,17 +11,18 @@
 #include "core/error.h"
 #include "core/io_map.h"
 #include "core/nrf24.h"
+#include "core/settings.h"
 
 // add a little abstraction here so that we can move the SPI port around if desired
 #define NRF24_SPI_PORT PORTC
 #define NRF24_SPI SPIC
 
 #ifndef NRF24_CE_PORT
-#define NRF24_CE_PORT PORTR
+#error "Need to define CE port"
 #endif
 
 #ifndef NRF24_CE_PIN
-#define NRF24_CE_PIN PIN0_bm
+#error "Need to define CE pin"
 #endif
 
 #define SS   4
@@ -132,18 +133,44 @@ void nrf24_ce(uint8_t val) {
     nrf24_ce_set(&NRF24_CE_PORT, val);
 }
 
+#define SPI_TIMEOUT_COUNTER 32000
+/// Test if the SPI connection is working.
+///
+/// @return non-zero on error
+static uint8_t nrf24_test_spi_connection(SPI_t *spi) {
+    uint16_t counter = 0;
+    spi->DATA = NRF_NOP;
+    while (!(spi->STATUS & SPI_IF_bm)) {
+        counter += 1;
+        if (counter > SPI_TIMEOUT_COUNTER) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 void nrf24_init(void) {
+    if (is_nrf24_initialized) {
+        return;
+    }
+
     is_nrf24_initialized = true;
 
     if (io_map_claim_pins(PORT_TO_NUM(NRF24_SPI_PORT), SPI_PIN_MASK)) {
         return;
     }
+
     spi_init(&NRF24_SPI_PORT, &NRF24_SPI);
 
     io_map_claim_pins(PORT_TO_NUM(NRF24_CE_PORT), NRF24_CE_PIN);
     io_map_claim_pins(PORT_TO_NUM(NRF24_IRQ_PORT), NRF24_IRQ_PIN_MASK);
 
     if (has_critical_error()) {
+        return;
+    }
+
+    if (nrf24_test_spi_connection(&NRF24_SPI)) {
+        register_error(ERROR_NRF24_BAD_SPI_CONNECTION);
         return;
     }
 
@@ -157,6 +184,7 @@ void nrf24_disable(void) {
         nrf24_power_set(0);
         NRF24_SPI_PORT.DIRCLR = (1<<SS) | (1<<MOSI) | (1<<SCK); // inputs
         NRF24_CE_PORT.DIRSET = NRF24_CE_PIN;
+        is_nrf24_initialized = false;
     }
 }
 

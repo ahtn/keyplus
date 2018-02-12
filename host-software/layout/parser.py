@@ -91,9 +91,7 @@ class SettingsGenerator:
         # TODO: need to make layout generation take KbInfo as input
         elif dev_data.scan_mode.mode == ScanMode.COL_ROW:
             result += self.gen_pin_mapping_section(dev_id)
-            # Add matrix map to the layout section
-            for key_num in dev_data.scan_mode.inverse_map:
-                result += struct.pack('<B', key_num)
+            result += dev_data.scan_mode.generate_key_number_map(dev_id)
 
         # Add ekc data to the layout section
         result += self.ekc_data.to_bytes()
@@ -116,7 +114,7 @@ class SettingsGenerator:
         # char device_name[32];
         # uint8_t timestamp[8]; // utc time stamp of last update
         # uint8_t default_report_mode;
-        # struct matrix_scan_plan_t {
+        # typedef struct matrix_scan_plan_t {
         #     uint8_t mode; // scanning method
         #     uint8_t rows; // number of rows in the scan matrix
         #     uint8_t cols; // number of cols in the scan matrix
@@ -124,11 +122,17 @@ class SettingsGenerator:
         #     uint8_t debounce_time_release; // How long to debounce a key when it is released (ms)
         #     uint8_t trigger_time_press; // The key must be down this long before being registered (ms)
         #     uint8_t trigger_time_release; // The key must be up this long before being registered (ms)
+
+        #     // Both delays are measured on a scale of 0-48µs
         #     uint8_t parasitic_discharge_delay_idle; // How long to hold a row low before reading the columns
         #     uint8_t parasitic_discharge_delay_debouncing; // How long to hold a row low when a key is debouncing
-        # };
+
+        #     uint8_t max_col_pin_num; // maximum column pin number used
+        #     uint8_t max_key_num; // highest key number used
+        # } matrix_scan_plan_t;
+        # uint8_t _reserved0[8];
         # uint8_t feature_ctrl;
-        # uint8_t _reserved[42];
+        # uint8_t _reserved1[32];
         # uint16_t crc; // total size == 96
         result = bytearray(0)
 
@@ -149,10 +153,13 @@ class SettingsGenerator:
         # scan mode information
         result += self.gen_scan_mode_info(device_id)
 
+        # resreved0
+        result += bytearray(8)
+
         # feature control information
         result += struct.pack('<B', 0) # TODO add feature ctrl to config file
 
-        result += bytearray(42)
+        result += bytearray(32)
 
         result += struct.pack('<H', crc16_bytes(result))
 
@@ -345,21 +352,13 @@ class SettingsGenerator:
 
     def gen_scan_mode_info(self, device_id):
         scan_mode = self.get_scan_mode(device_id)
-        mode = try_get(scan_mode, 'mode', 'scan_mode')
 
         scan_obj = ScanMode(scan_mode, device_id)
 
-        return struct.pack('<B BB BB BB BB',
-            scan_obj.mode,
-            scan_obj.row_count,
-            scan_obj.col_count,
-            scan_obj.debounce_time_press,
-            scan_obj.debounce_time_release,
-            scan_obj.trigger_time_press,
-            scan_obj.trigger_time_release,
-            int(255 * (scan_obj.parasitic_discharge_delay_idle / 48.0)),
-            int(255 * (scan_obj.parasitic_discharge_delay_debouncing / 48.0)),
-        )
+        result = scan_obj.generate_scan_mode_info()
+        print("ScanModeInfo:")
+        hexdump.hexdump(result)
+        return result
 
 
 if __name__ == "__main__":

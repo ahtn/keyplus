@@ -95,6 +95,15 @@ void battery_mode_main_loop(void) {
     bool scan_changed = false;
     bool deep_sleep_resync_packet = false;
 
+    if (g_runtime_settings.feature.ctrl.rf_disabled) {
+        // If we are running in battery mode, there's nothing we can do if
+        // the rf module is disabled. So go into deep sleep until the VBUS
+        // check pin wakes us up.
+        while (1) {
+            deep_sleep();
+        }
+    }
+
     while (1) {
 #if ADAPTIVE_SCAN
         scan_changed = false;
@@ -262,12 +271,11 @@ void usb_mode_setup(void) {
 #endif
 
     g_rf_enabled = false;
-// #if USE_NRF24
-//     if (s_has_usb_port) {
-//         g_rf_enabled = true;
-//         rf_init_receive();
-//     }
-// #endif
+#if USE_NRF24
+    if (s_has_usb_port) {
+        rf_init_receive();
+    }
+#endif
 
 
 }
@@ -291,35 +299,24 @@ void usb_mode_main_loop(void) {
             uint8_t *matrix_data = i2c_packet+1;
             const uint8_t use_deltas = true;
 
-            // // usb_print(s_available_pins, 16);
-            // // io_map_claim_mask(4, 0x3)
-            // // io_map_claim_pins(0, PIN0_bm | PIN1_bm);
-            // uint8_t data[16] = {
-            //     g_matrix[0][0],
-            //     g_matrix[1][0],
-            //     g_matrix[2][0],
-            //     g_matrix[3][0],
-            // };
-            // usb_print((uint8_t*)data, 4);
-            //
 #if USE_I2C
             i2c_packet[0] = (i2c_get_active_address() << 1) | 0x01;
 #endif
 
             const uint8_t data_size = get_matrix_data(matrix_data, use_deltas);
 
-#if 0
 #if USE_I2C
-            i2c_packet[data_size+1] = i2c_calculate_checksum(i2c_packet, data_size+1);
+            if (!g_runtime_settings.feature.ctrl.wired_disabled) {
+                i2c_packet[data_size+1] = i2c_calculate_checksum(i2c_packet, data_size+1);
 
 
-            // TODO: IMPORTANT! really need to fix this
-            // TODO: don't block here, add buffer for queued messages
-            // while (!i2c_broadcast(i2c_packet, data_size+2));
+                // TODO: IMPORTANT! really need to fix this
+                // TODO: don't block here, add buffer for queued messages
+                // while (!i2c_broadcast(i2c_packet, data_size+2));
 
-            // TODO: I2C is broken
-            // i2c_broadcast(i2c_packet, data_size+2);
-#endif
+                // TODO: I2C is broken
+                // i2c_broadcast(i2c_packet, data_size+2);
+            }
 #endif
 
             keyboard_update_device_matrix(GET_SETTING(device_id), matrix_data);
@@ -360,8 +357,8 @@ void usb_mode_main_loop(void) {
             } else {
                 rf_task();
             }
+            unifying_mouse_handle();
         }
-        unifying_mouse_handle();
 #endif
         macro_task();
 
@@ -395,7 +392,7 @@ void usb_mode_main_loop(void) {
 
 NO_RETURN_ATTR void recovery_mode_main_loop(void) {
     while (1) {
-        usb_print(s_available_pins, 16);
+        usb_print((uint8_t*)"Critical Error", sizeof("Critical Error"));
         send_vendor_report();
         handle_vendor_out_reports();
 
