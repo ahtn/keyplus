@@ -54,9 +54,10 @@ enum chip_id_controller_type {
  *                     Nordic Semiconductor                          *
  *********************************************************************/
 
-    CHIP_ID_nRF24LU1  = CHIP_ID_NORDIC | 0x0001,
-    CHIP_ID_nRF24LU1P = CHIP_ID_NORDIC | 0x0002,
-    // CHIP_ID_nRF52840 = CHIP_ID_NORDIC | 0x0001,
+    CHIP_ID_nRF24LU1_F16  = CHIP_ID_NORDIC | 0x0001,
+    CHIP_ID_nRF24LU1P_F16 = CHIP_ID_NORDIC | 0x0002,
+    CHIP_ID_nRF24LU1P_F32 = CHIP_ID_NORDIC | 0x0003,
+    // CHIP_ID_nRF52840 = CHIP_ID_NORDIC | 0x5200,
 
 };
 

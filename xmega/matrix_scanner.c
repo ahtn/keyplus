@@ -185,14 +185,14 @@ void matrix_scanner_init(void) {
     g_scan_plan.mode = MATRIX_SCANNER_MODE_COL_ROW;
     g_scan_plan.cols = 6;
     g_scan_plan.rows = 4;
-    g_scan_plan.max_col = 6;
-    g_scan_plan.max_key_num = 24;
     g_scan_plan.debounce_time_press = 5;
     g_scan_plan.debounce_time_release = 5;
     g_scan_plan.trigger_time_press = 3;
     g_scan_plan.trigger_time_release = 3;
     g_scan_plan.parasitic_discharge_delay_idle = 20;
     g_scan_plan.parasitic_discharge_delay_debouncing = 40;
+    g_scan_plan.max_col = 6;
+    g_scan_plan.max_key_num = 24;
 #endif
 
     int8_t cols = g_scan_plan.cols;

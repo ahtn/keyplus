@@ -368,6 +368,7 @@ void keyboard_layouts_init(void) {
 
     flash_ptr_t storage_pos = LAYOUT_PORT_KEY_NUM_MAP_ADDR;
 
+#ifndef NO_MATRIX
     // key num map section
     {
         // skip the key num map section, since it is in a known location at compile
@@ -375,6 +376,7 @@ void keyboard_layouts_init(void) {
         flash_size_t key_num_map_size = g_scan_plan.rows * g_scan_plan.cols;
         storage_pos += key_num_map_size;
     }
+#endif
 
     // extended keycode section
     {

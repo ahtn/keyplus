@@ -84,13 +84,13 @@ class SettingsGenerator:
 
         result = bytearray(0)
 
-        result += self.gen_pin_mapping_section(dev_id)
 
         dev_data = self.get_device_by_id(dev_id)
         if dev_data.scan_mode.mode == ScanMode.NO_MATRIX:
             pass
         # TODO: need to make layout generation take KbInfo as input
         elif dev_data.scan_mode.mode == ScanMode.COL_ROW:
+            result += self.gen_pin_mapping_section(dev_id)
             # Add matrix map to the layout section
             for key_num in dev_data.scan_mode.inverse_map:
                 result += struct.pack('<B', key_num)
@@ -349,22 +349,10 @@ class SettingsGenerator:
 
         scan_obj = ScanMode(scan_mode, device_id)
 
-        result = bytearray(0)
-
-        if scan_obj.mode == MATRIX_SCANNER_MODE_NONE:
-            result += struct.pack('<BBB', MATRIX_SCANNER_MODE_NONE, 0, 0)
-        elif mode == 'col_row':
-            rows = try_get(scan_mode, 'rows', 'scan_mode')
-            cols = try_get(scan_mode, 'cols', 'scan_mode')
-            result += struct.pack('<BBB', MATRIX_SCANNER_MODE_COL_ROW, rows, cols)
-        elif mode == 'pins':
-            # count = scan_mode['pin_count']
-            # return struct.pack('<BBB', MATRIX_SCANNER_MODE_PINS, count, 0)
-            raise ParseError("TODO: 'pins' scan mode not implemented yet")
-        else:
-            raise ParseError("Unsupported scan mode {}".format(mode))
-
-        result += struct.pack('<BB BB BB',
+        return struct.pack('<B BB BB BB BB',
+            scan_obj.mode,
+            scan_obj.row_count,
+            scan_obj.col_count,
             scan_obj.debounce_time_press,
             scan_obj.debounce_time_release,
             scan_obj.trigger_time_press,
@@ -372,9 +360,6 @@ class SettingsGenerator:
             int(255 * (scan_obj.parasitic_discharge_delay_idle / 48.0)),
             int(255 * (scan_obj.parasitic_discharge_delay_debouncing / 48.0)),
         )
-
-        return result
-
 
 
 if __name__ == "__main__":

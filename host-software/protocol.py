@@ -157,14 +157,14 @@ KBInfoMainNamedTuple = collections.namedtuple("KBInfoMain",
         "scan_mode "
         "row_count "
         "col_count "
-        "max_col "
-        "max_key_num "
         "debounce_time_press "
         "debounce_time_release "
         "trigger_time_press "
         "trigger_time_release "
         "parasitic_discharge_delay_idle "
         "parasitic_discharge_delay_debouncing "
+        "max_col "
+        "max_key_num "
     "reserved0 "
     "feature_ctrl "
     "reserved1 "
@@ -231,8 +231,6 @@ def get_device_info(device):
     #     uint8_t mode; // scanning method
     #     uint8_t rows; // number of rows in the scan matrix
     #     uint8_t cols; // number of cols in the scan matrix
-    #     uint8_t max_col; // maximum column pin number used
-    #     uint8_t max_key_num; // highest key number used
     #     uint8_t debounce_time_press; // How long to debounce a key when it is pressed (ms)
     #     uint8_t debounce_time_release; // How long to debounce a key when it is released (ms)
     #     uint8_t trigger_time_press; // The key must be down this long before being registered (ms)
@@ -241,6 +239,9 @@ def get_device_info(device):
     #     // Both delays are measured on a scale of 0-48µs
     #     uint8_t parasitic_discharge_delay_idle; // How long to hold a row low before reading the columns
     #     uint8_t parasitic_discharge_delay_debouncing; // How long to hold a row low when a key is debouncing
+
+    #     uint8_t max_col; // maximum column pin number used
+    #     uint8_t max_key_num; // highest key number used
     # } matrix_scan_plan_t;
     # uint8_t _reserved0[8];
     # uint8_t feature_ctrl;

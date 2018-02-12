@@ -22,6 +22,16 @@ ChipInfo = namedtuple(
     ])
 )
 
+def _create_nrf24(flash_size, name):
+    return ChipInfo(
+        name = name,
+        architecture = "8051",
+        series = 'nRF24',
+        flash_size = flash_size,
+        ram_size = 2,
+        usb = True,
+    )
+
 def _create_xmega(flash_size, series):
     pins, usb_support = {
         'A4': (44, False),
@@ -104,6 +114,10 @@ CHIP_ID_TABLE = {
     ATMEL_ID | 0x001C : _create_xmega(192, 'C3'),
     ATMEL_ID | 0x001D : _create_xmega(256, 'C3'),
     ATMEL_ID | 0x001E : _create_xmega(384, 'C3'),
+
+    NORDIC_ID | 0x0001 : _create_nrf24(16, 'nRF24LU1-F16'),
+    NORDIC_ID | 0x0002 : _create_nrf24(16, 'nRF24LU1P-F16'),
+    NORDIC_ID | 0x0003 : _create_nrf24(32, 'nRF24LU1P-F32'),
 }
 
 if __name__ == '__main__':

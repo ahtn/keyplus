@@ -149,6 +149,9 @@ class ScanMode:
 
         col_pin_masks = self.pin_mapper.get_pin_masks_as_bytes(col_pins)
 
+        if self.mode != ScanMode.NO_MATRIX:
+            self.max_col_num = max(col_pins)
+
         return bytearray(row_pins) + col_pin_masks
 
 
