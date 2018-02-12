@@ -19,6 +19,8 @@ devices:
 
   left_split:
     id: 0
+    wireless_split: true
+    wired_split: false
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -35,6 +37,8 @@ devices:
 
   right_split:
     id: 1
+    wireless_split: true
+    wired_split: false
     scan_mode:
       mode: col_row # options: col_row, pins, no_matrix
       rows: 4
@@ -51,6 +55,8 @@ devices:
   # separate numpad
   numpad:
     id: 2
+    wireless_split: true
+    wired_split: false
     scan_mode:
       mode: col_row # options: col_row, pins, no_matrix
       rows: 5
@@ -67,6 +73,8 @@ devices:
 
   "XMEGA test board left":
     id: 10
+    wireless_split: true
+    wired_split: true
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -83,6 +91,8 @@ devices:
 
   "XMEGA test board right":
     id: 11
+    wireless_split: true
+    wired_split: true
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -101,6 +111,8 @@ devices:
 
   "blue gamma split - left":
     id: 12
+    wireless_split: true
+    wired_split: true
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -117,6 +129,8 @@ devices:
 
   "blue gamma split - right":
     id: 13
+    wireless_split: true
+    wired_split: true
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -133,6 +147,8 @@ devices:
 
   "orange gamma split - left":
     id: 14
+    wireless_split: true
+    wired_split: true
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: [D0, D1, D2, D3]
@@ -149,6 +165,8 @@ devices:
 
   "orange gamma split - right":
     id: 15
+    wireless_split: true
+    wired_split: false
     scan_mode: # wireless only
       mode: col_row # options: col_row, pins, none
       rows: 4

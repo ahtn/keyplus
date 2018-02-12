@@ -12,63 +12,7 @@ DEFAULT_PID = 0x1111
 DEFAULT_VID = 0x6666
 DEFAULT_INTERFACE = 3
 
-EP_VENDOR_SIZE = 64
-
-CMD_ERROR_CODE = 0x00
-CMD_GET_DEVICE_SETTINGS = 0x01
-CMD_LED_CONTROL = 0x02
-CMD_RESET = 0x03
-CMD_BOOTLOADER = 0x04
-CMD_GET_LAYER = 0x05
-CMD_LOGITECH_BOOTLOADER = 0x06
-CMD_PRINT = 0x07
-CMD_SET_PASSTHROUGH_MODE = 0x08
-CMD_PASSTHROUGH_MATRIX = 0x09
-CMD_UPDATE_SETTINGS = 0x0A
-CMD_UPDATE_LAYOUT = 0x0B
-
-CMD_UNIFYING_PAIR = 0x10
-
-INFO_MAIN_0 = 0
-INFO_MAIN_1 = 1
-INFO_LAYOUT = 2
-INFO_RF = 3
-INFO_FIRMWARE = 4
-INFO_ERROR_SYSTEM = 5
-INFO_UNSUPPORTED = 0xff
-
-KEYBOARD_REPORT_MODE_AUTO = 0 # 6kro -> nkro if more than 6 keys pressed
-KEYBOARD_REPORT_MODE_NKRO = 1 # nkro
-KEYBOARD_REPORT_MODE_6KRO = 2 # 6kro
-
-MATRIX_SCANNER_MODE_NONE = 0x00 # doesn't have a matrix
-MATRIX_SCANNER_MODE_COL_ROW = 0x01 # normal col -->|-- row pin matrix
-MATRIX_SCANNER_MODE_ROW_COL = 0x02 # normal row -->|-- col pin matrix
-MATRIX_SCANNER_MODE_PINS = 0x03 # each pin represents a key
-
-PWR_NEG_18DB = 0x00
-PWR_NEG_12DB = 0x01
-PWR_NEG_6DB = 0x02
-PWR_0DB = 0x03
-
-RF_DR_LOW = 5
-RF_DR_HIGH = 3
-RF_DR_250KBPS  = (1 << RF_DR_LOW)
-RF_DR_1MBPS    = 0
-RF_DR_2MBPS    = (1 << RF_DR_HIGH)
-
-MAX_NUMBER_LAYOUTS = 64
-MAX_NUMBER_DEVICES = 64
-
-FEATURE_CTRL_USB_DISABLE      = (1 << 0)
-FEATURE_CTRL_WIRED_DISABLE    = (1 << 1)
-FEATURE_CTRL_RF_DISABLE       = (1 << 2)
-FEATURE_CTRL_RF_MOUSE_DISABLE = (1 << 3)
-FEATURE_CTRL_BT_DISABLE       = (1 << 4)
-FEATURE_CTRL_RESERVED_0       = (1 << 5)
-FEATURE_CTRL_RESERVED_1       = (1 << 6)
-FEATURE_CTRL_RESERVED_2       = (1 << 7)
-
+from keyplus import *
 
 class ProtocolError:
     ERROR_CODE_NONE = 0
@@ -271,36 +215,6 @@ class KBInfoErrorSystem(object):
     SIZE_ERROR_CODE_TABLE = NUM_ERROR_CODES // 8
     CRITICAL_ERROR_START = 64
 
-    # ERROR_EKC_OUT_OF_BOUNDS_ACCESS = 0
-    # ERROR_UNHANDLED_KEYCODE = 1
-    # ERROR_RECEIVED_TOO_LARGE_DEVICE_ID = 2
-    # ERROR_RECEIVED_TOO_LARGE_MATRIX = 3
-    # ERROR_KEY_EVENT_QUEUE_FULL = 4
-    # ERROR_KEY_EVENT_QUEUE_UNLOADED_DEVICE = 5
-
-    # ERROR_EKC_STORAGE_TOO_LARGE = 64
-    # ERROR_NUM_LAYOUTS_TOO_LARGE = 65
-    # ERROR_SETTINGS_CRC_MISMATCH = 66
-    # ERROR_LAYOUT_STORAGE_OUT_OF_BOUNDS = 67
-
-    ERROR_CODE_MAP = {
-         0: "ERROR_EKC_OUT_OF_BOUNDS_ACCESS",
-         1: "ERROR_UNHANDLED_KEYCODE",
-         2: "ERROR_RECEIVED_TOO_LARGE_DEVICE_ID",
-         3: "ERROR_RECEIVED_TOO_LARGE_MATRIX",
-         4: "ERROR_KEY_EVENT_QUEUE_FULL",
-         5: "ERROR_KEY_EVENT_QUEUE_UNLOADED_DEVICE",
-         6: "ERROR_VENDOR_IN_REPORT_CANT_KEEP_UP",
-         7: "ERROR_INVALID_KB_ID_USED",
-
-         64: "ERROR_EKC_STORAGE_TOO_LARGE",
-         65: "ERROR_NUM_LAYOUTS_TOO_LARGE",
-         66: "ERROR_SETTINGS_CRC_MISMATCH",
-         67: "ERROR_LAYOUT_STORAGE_OUT_OF_BOUNDS",
-         68: "ERROR_MATRIX_PINS_CONFIG_TOO_LARGE",
-         69: "ERROR_PIN_MAPPING_CONFLICT",
-    }
-
     def __init__(self, error_table):
         self._error_table = error_table;
 
@@ -326,8 +240,8 @@ class KBInfoErrorSystem(object):
         return result
 
     def error_code_to_name(self, code):
-        if code in self.ERROR_CODE_MAP:
-            return self.ERROR_CODE_MAP[code]
+        if code in ERROR_CODE_MAP:
+            return ERROR_CODE_MAP[code]
         else:
             return "<UNKNOWN_ERROR_CODE>"
 
@@ -366,105 +280,64 @@ KBInfoFirmwareNamedTuple = collections.namedtuple("KBInfoFirmware",
 )
 
 class KBInfoFirmware(KBInfoFirmwareNamedTuple):
-    SUPPORT_SCANNING_MASK = 0x01
-    SUPPORT_SCANNING_COL_ROW_MASK = 0x02
-    SUPPORT_SCANNING_ROW_COL_MASK = 0x04
-    SUPPORT_SCANNING_PINS_MASK = 0x08
-    SUPPORT_SCANNING_ARBITRARY_MASK = 0x10
-    SUPPORT_SCANNING_BUILT_IN_MASK = 0x20
-
     def has_fw_support_scanning(self):
-        return (self.scan_support_flags & self.SUPPORT_SCANNING_MASK) != 0
+        return (self.scan_support_flags & SUPPORT_SCANNING_MASK) != 0
 
     def has_fw_support_scanning_row_col(self):
-        return (self.scan_support_flags & self.SUPPORT_SCANNING_ROW_COL_MASK) != 0
+        return (self.scan_support_flags & SUPPORT_SCANNING_ROW_COL_MASK) != 0
 
     def has_fw_support_scanning_col_row(self):
-        return (self.scan_support_flags & self.SUPPORT_SCANNING_COL_ROW_MASK) != 0
+        return (self.scan_support_flags & SUPPORT_SCANNING_COL_ROW_MASK) != 0
 
     def has_fw_support_scanning_pins(self):
-        return (self.scan_support_flags & self.SUPPORT_SCANNING_PINS_MASK) != 0
+        return (self.scan_support_flags & SUPPORT_SCANNING_PINS_MASK) != 0
 
     def has_fw_support_scanning_arbitrary(self):
-        return (self.scan_support_flags & self.SUPPORT_SCANNING_ARBITRARY_MASK) != 0
+        return (self.scan_support_flags & SUPPORT_SCANNING_ARBITRARY_MASK) != 0
 
     def has_fw_support_scanning_built_in(self):
-        return (self.scan_support_flags & self.SUPPORT_SCANNING_BUILT_IN_MASK) != 0
-
-    SUPPORT_KEY_MEDIA = 0x01
-    SUPPORT_KEY_MOUSE = 0x02
-    SUPPORT_KEY_LAYERS = 0x04
-    SUPPORT_KEY_STICKY = 0x08
-    SUPPORT_KEY_TAP = 0x10
-    SUPPORT_KEY_HOLD = 0x20
+        return (self.scan_support_flags & SUPPORT_SCANNING_BUILT_IN_MASK) != 0
 
     def has_fw_support_key_media(self):
-        return (self.keyhandler_support_flags & self.SUPPORT_KEY_MEDIA) != 0
+        return (self.keyhandler_support_flags & SUPPORT_KEY_MEDIA) != 0
 
     def has_fw_support_key_mouse(self):
-        return (self.keyhandler_support_flags & self.SUPPORT_KEY_MOUSE) != 0
+        return (self.keyhandler_support_flags & SUPPORT_KEY_MOUSE) != 0
 
     def has_fw_support_key_layers(self):
-        return (self.keyhandler_support_flags & self.SUPPORT_KEY_LAYERS) != 0
+        return (self.keyhandler_support_flags & SUPPORT_KEY_LAYERS) != 0
 
     def has_fw_support_key_sticky(self):
-        return (self.keyhandler_support_flags & self.SUPPORT_KEY_STICKY) != 0
+        return (self.keyhandler_support_flags & SUPPORT_KEY_STICKY) != 0
 
     def has_fw_support_key_tap(self):
-        return (self.keyhandler_support_flags & self.SUPPORT_KEY_TAP) != 0
+        return (self.keyhandler_support_flags & SUPPORT_KEY_TAP) != 0
 
     def has_fw_support_key_hold(self):
-        return (self.keyhandler_support_flags & self.SUPPORT_KEY_HOLD) != 0
-
-    SUPPORT_KRO_N = 0x01;
-    SUPPORT_KRO_6 = 0x02;
+        return (self.keyhandler_support_flags & SUPPORT_KEY_HOLD) != 0
 
     def has_fw_support_nkro(self):
-        return (self.kb_support_flags & self.SUPPORT_KRO_N) != 0
+        return (self.kb_support_flags & SUPPORT_KRO_N) != 0
     def has_fw_support_6kro(self):
-        return (self.kb_support_flags & self.SUPPORT_KRO_6) != 0
-
-    SUPPORT_LED_INDICATORS = 0x01
-    SUPPORT_LED_BACKLIGHTING = 0x02
-    SUPPORT_LED_WS2812 = 0x04
+        return (self.kb_support_flags & SUPPORT_KRO_6) != 0
 
     def has_fw_support_led_indicators(self):
-        return (self.led_support_flags & self.SUPPORT_LED_INDICATORS) != 0
+        return (self.led_support_flags & SUPPORT_LED_INDICATORS) != 0
     def has_fw_support_led_backlighting(self):
-        return (self.led_support_flags & self.SUPPORT_LED_BACKLIGHTING) != 0
+        return (self.led_support_flags & SUPPORT_LED_BACKLIGHTING) != 0
     def has_fw_support_led_ws2812(self):
-        return (self.led_support_flags & self.SUPPORT_LED_WS2812) != 0
-
-    SUPPORT_NRF24 = 0x01
-    SUPPORT_I2C = 0x02
-    SUPPORT_UNIFYING = 0x04
-    SUPPORT_USB = 0x08
-    SUPPORT_BT = 0x10
+        return (self.led_support_flags & SUPPORT_LED_WS2812) != 0
 
     def has_fw_support_nrf24(self):
-        return (self.connectivity_support_flags & self.SUPPORT_NRF24) != 0
+        return (self.connectivity_support_flags & SUPPORT_NRF24) != 0
     def has_fw_support_i2c(self):
-        return (self.connectivity_support_flags & self.SUPPORT_I2C) != 0
+        return (self.connectivity_support_flags & SUPPORT_I2C) != 0
     def has_fw_support_unifying(self):
-        return (self.connectivity_support_flags & self.SUPPORT_UNIFYING) != 0
+        return (self.connectivity_support_flags & SUPPORT_UNIFYING) != 0
     def has_fw_support_usb(self):
-        return (self.connectivity_support_flags & self.SUPPORT_USB) != 0
+        return (self.connectivity_support_flags & SUPPORT_USB) != 0
     def has_fw_support_bluetooth(self):
-        return (self.connectivity_support_flags & self.SUPPORT_BT) != 0
-
-    MATRIX_SCANNER_INTERNAL_NONE = 0x00
-    MATRIX_SCANNER_INTERNAL_FAST_ROW_COL = 0x01
-    MATRIX_SCANNER_INTERNAL_SLOW_ROW_COL = 0x02
-    MATRIX_SCANNER_INTERNAL_HARD_CODED = 0x03
-    MATRIX_SCANNER_INTERNAL_CUSTOM = 0xff
-
-    INTERNAL_SCAN_METHOD_TABLE = {
-        MATRIX_SCANNER_INTERNAL_NONE: "No matrix scanner",
-        MATRIX_SCANNER_INTERNAL_FAST_ROW_COL: "Fast row col scanner",
-        MATRIX_SCANNER_INTERNAL_SLOW_ROW_COL: "Small row col scanner",
-        MATRIX_SCANNER_INTERNAL_HARD_CODED: "Hard coded scanner",
-        MATRIX_SCANNER_INTERNAL_CUSTOM: "Custom scanner",
-    }
+        return (self.connectivity_support_flags & SUPPORT_BT) != 0
 
     def get_interal_scan_method(self):
         return self.internal_scan_method
@@ -474,8 +347,8 @@ class KBInfoFirmware(KBInfoFirmwareNamedTuple):
 
     def internal_scan_method_to_str(self, method):
         assert(isinstance(method, int))
-        if method in self.INTERNAL_SCAN_METHOD_TABLE:
-            return self.INTERNAL_SCAN_METHOD_TABLE[method]
+        if method in INTERNAL_SCAN_METHOD_TABLE:
+            return INTERNAL_SCAN_METHOD_TABLE[method]
         else:
             return "UnknownInternalScanMethod({})".format(method)
 
@@ -621,9 +494,6 @@ def get_chunks(data, chunk_size, pad=0xff):
         chunk_data = data
     return [bytes(chunk_data[i*chunk_size:(i+1)*chunk_size]) for i in range(len(chunk_data)//chunk_size)]
 
-RF_INFO_SIZE = 64
-SETTINGS_SIZE = 512
-
 def update_settings_section(device, settings_data, keep_rf=0):
     simple_command(device, CMD_UPDATE_SETTINGS, [keep_rf])
 
@@ -645,47 +515,24 @@ def update_layout_section(device, layout_data):
         device.write(chunk)
         response = device.read()
 
-REPORT_MODE_STR_MAP = {
-    KEYBOARD_REPORT_MODE_AUTO: "Auto NKRO",
-    KEYBOARD_REPORT_MODE_6KRO: "6KRO",
-    KEYBOARD_REPORT_MODE_NKRO: "NKRO",
-}
-
 def report_mode_to_str(mode):
     if mode in REPORT_MODE_STR_MAP:
         return REPORT_MODE_STR_MAP[mode]
     else:
         return "Unknown({})".format(mode)
 
-SCAN_MODE_STR_MAP = {
-    MATRIX_SCANNER_MODE_NONE: "none",
-    MATRIX_SCANNER_MODE_COL_ROW: "diodes column to row",
-    MATRIX_SCANNER_MODE_ROW_COL: "diodes row to column",
-    MATRIX_SCANNER_MODE_PINS: "pins",
-}
 def scan_mode_to_str(mode):
     if mode in SCAN_MODE_STR_MAP:
         return SCAN_MODE_STR_MAP[mode]
     else:
         return "Unknown({})".format(mode)
 
-POWER_STR_MAP = {
-    PWR_NEG_18DB: "-18dB",
-    PWR_NEG_12DB: "-12dB",
-    PWR_NEG_6DB: "-6dB",
-    PWR_0DB: "0dB",
-}
 def power_to_str(mode):
     if mode in POWER_STR_MAP:
         return POWER_STR_MAP[mode]
     else:
         return "Unknown({})".format(mode)
 
-DATA_RATE_STR_MAP = {
-    RF_DR_250KBPS: "250kbps",
-    RF_DR_1MBPS: "1mbps",
-    RF_DR_2MBPS: "2mbps",
-}
 def data_rate_to_str(rate):
     if rate in DATA_RATE_STR_MAP:
         return DATA_RATE_STR_MAP[rate]

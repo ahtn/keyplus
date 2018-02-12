@@ -13,22 +13,26 @@ devices:
     id: 0
     scan_mode:
       mode: col_row
+      wireless_split: false
+      wired_split: false
       rows: [D0, D1, D2, D3, D4, D5]
       cols: [
         A0, A1, A2, A3, A4, A5, A6, A7,
         B0, B1, B2, B3,
-        C0, C1, C2, C3,
-        E3
+        C0, C1, C2, C3, C4, C5, C6, C7,
+        E0, E1, E3,
+        R0, R1
       ]
 
       # maps how keys are physically wired, to how they appear visually
       matrix_map: [
-        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5, r0c6, r0c7, r0c8, r0c9, r0c10, r0c11, r0c12, r0c13, r0c14, r0c15, r0c16,
-        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5, r1c6, r1c7, r1c8, r1c9, r1c10, r1c11, r1c12, r1c13, r1c14, r1c15, r1c16,
-        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5, r2c6, r2c7, r2c8, r2c9, r2c10, r2c11, r2c12, r2c13, r2c14, r2c15, r2c16,
-        r3c0, r3c1, r3c2, r3c3, r3c4, r3c5, r3c6, r3c7, r3c8, r3c9, r3c10, r3c11, r3c12, r3c13, r3c14, r3c15, r3c16,
-        r4c0, r4c1, r4c2, r4c3, r4c4, r4c5, r4c6, r4c7, r4c8, r4c9, r4c10, r4c11, r4c12, r4c13, r4c14, r4c15, r4c16,
-        r5c0, r5c1, r5c2, r5c3, r5c4, r5c5, r5c6, r5c7, r5c8, r5c9, r5c10, r5c11, r5c12, r5c13, r5c14, r5c15, r5c16
+        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5, r0c6, r0c7, r0c8, r0c9, r0c10, r0c11, r0c12, r0c13, r0c14, r0c15, r0c16, r0c17, r0c18, r0c19, r0c20, r0c21, r0c22, r0c23, r0c24,
+        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5, r1c6, r1c7, r1c8, r1c9, r1c10, r1c11, r1c12, r1c13, r1c14, r1c15, r1c16, r1c17, r1c18, r1c19, r1c20, r1c21, r1c22, r1c23, r1c24,
+        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5, r2c6, r2c7, r2c8, r2c9, r2c10, r2c11, r2c12, r2c13, r2c14, r2c15, r2c16, r2c17, r2c18, r2c19, r2c20, r2c21, r2c22, r2c23, r2c24,
+        r3c0, r3c1, r3c2, r3c3, r3c4, r3c5, r3c6, r3c7, r3c8, r3c9, r3c10, r3c11, r3c12, r3c13, r3c14, r3c15, r3c16, r3c17, r3c18, r3c19, r3c20, r3c21, r3c22, r3c23, r3c24,
+        r4c0, r4c1, r4c2, r4c3, r4c4, r4c5, r4c6, r4c7, r4c8, r4c9, r4c10, r4c11, r4c12, r4c13, r4c14, r4c15, r4c16, r4c17, r4c18, r4c19, r4c20, r4c21, r4c22, r4c23, r4c24,
+        r5c0, r5c1, # NOTE: Can only support upto 127 keys, so have to stop early
+        # r5c0, r5c1, r5c2, r5c3, r5c4, r5c5, r5c6, r5c7, r5c8, r5c9, r5c10, r5c11, r5c12, r5c13, r5c14, r5c15, r5c16, r5c17, r5c18, r5c19, r5c20, r5c21, r5c22, r5c23, r5c24,
       ]
 
       # # maps how keys are physically wired, to how they appear visually
@@ -48,18 +52,13 @@ layouts:
     layers: [
       [ # layer 0
         [ # offset: 0
-            0, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p,
-            1, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p,
-            2, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p,
-            3, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p,
-            4, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p,
-            5, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p,
+            0, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x,
+            1, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x,
+            2, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x,
+            3, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x,
+            4, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x,
+            5, y,
+            # 5, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x,
         ]
-        # [ # offset: 0
-        #     0, a, b, c, d, e,
-        #     1, a, b, c, d, e,
-        #     2, a, b, c, d, e,
-        #     3, a, b, c, d, e,
-        # ]
       ]
     ]

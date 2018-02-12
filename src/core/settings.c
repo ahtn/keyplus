@@ -126,7 +126,7 @@ void settings_load_from_flash(void) {
 
     // Don't show features as enabled that are disabled at build time
     g_runtime_settings.feature.ctrl_raw = GET_SETTING(feature_ctrl);
-    g_runtime_settings.feature.ctrl_raw &= FEATURE_CTRL_FEATURES_DISABLED_AT_BUILD_TIME;
+    g_runtime_settings.feature.ctrl_raw &= ~FEATURE_CTRL_FEATURES_DISABLED_AT_BUILD_TIME;
 
 #ifndef NO_MATRIX
     // TODO: validate the settings before returning

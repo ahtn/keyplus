@@ -205,7 +205,8 @@ class ScanMode:
 
     def calc_matrix_size(self):
         if self.mode == ScanMode.COL_ROW:
-            return int(math.ceil(self.row_count * self.col_count / 8))
+            # return int(math.ceil(self.row_count * self.col_count / 8))
+            return int(math.ceil(self.max_key_num /8))
         elif self.mode == ScanMode.PINS:
             return int(math.ceil(self.pin_count / 8))
 

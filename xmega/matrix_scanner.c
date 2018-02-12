@@ -82,6 +82,7 @@ static void setup_columns(void) {
 
         // Try to claim the pins
         if (io_map_claim_pins(port_ii, col_mask)) {
+            register_error(ERROR_PIN_MAPPING_CONFLICT_COL);
             return; // return on error
         }
 
@@ -119,6 +120,7 @@ static void setup_rows(void) {
 
         if (io_map_claim_pins(row_port_num, row_bit_mask)) {
             // failed to claim
+            register_error(ERROR_PIN_MAPPING_CONFLICT_ROW);
             return;
         }
 

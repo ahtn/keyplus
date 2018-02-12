@@ -157,7 +157,7 @@ class SettingsGenerator:
         result += bytearray(8)
 
         # feature control information
-        result += struct.pack('<B', 0) # TODO add feature ctrl to config file
+        result += device.feature_ctrl.to_bytes()
 
         result += bytearray(32)
 
@@ -314,9 +314,13 @@ class SettingsGenerator:
                     break;
                 matrix_offset += int(math.ceil(size / 8))
 
+
             if matrix_offset + matrix_size > layout.matrix_size:
-                raise ParseError("The matrix for device '{}' doesn't fit in "
-                        "layout '{}'".format(device.name, layout.name))
+                raise ParseError("The matrix for device '{}' (size {}) doesn't fit in "
+                        "layout '{}' (size {})".format(
+                            device.name, matrix_size,
+                            layout.name, layout.matrix_size
+                        ))
 
             result += struct.pack('<B', layout_id)
             result += struct.pack('<B', matrix_offset)

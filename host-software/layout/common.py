@@ -25,7 +25,7 @@ class ParseKeycodeError(ParseError):
 class ParseTypeError(ParseError):
     pass
 
-def try_get(dictionary, key, default=None, hint="", ignore_case=True, val_type=None):
+def try_get(dictionary, key, hint="", default=None, ignore_case=True, val_type=None):
     try:
         value = dictionary[key]
 

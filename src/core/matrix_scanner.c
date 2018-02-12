@@ -22,7 +22,6 @@
 // can probably make this static
 XRAM uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT];
 
-// static XRAM uint8_t s_is_debouncing[MAX_NUM_ROWS][IO_PORT_COUNT];
 static XRAM uint8_t s_is_debouncing[MAX_NUM_ROWS][IO_PORT_COUNT];
 static XRAM uint8_t s_debounce_time[MAX_NUM_KEYS];
 static XRAM uint8_t s_debounce_type[KEY_NUMBER_BITMAP_SIZE];
@@ -53,7 +52,7 @@ static inline uint8_t get_key_number(uint8_t row, uint8_t col) {
     );
 #elif INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_SLOW_ROW_COL
     return flash_read_byte(
-        LAYOUT_PORT_KEY_NUM_MAP_ADDR + row*g_scan_plan.cols) + col
+        LAYOUT_PORT_KEY_NUM_MAP_ADDR + row*g_scan_plan.cols + col
     );
 #endif
 }

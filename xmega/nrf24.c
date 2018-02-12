@@ -150,13 +150,14 @@ static uint8_t nrf24_test_spi_connection(SPI_t *spi) {
 }
 
 void nrf24_init(void) {
-    if (is_nrf24_initialized) {
+    if (is_nrf24_initialized || g_runtime_settings.feature.ctrl.rf_disabled) {
         return;
     }
 
     is_nrf24_initialized = true;
 
     if (io_map_claim_pins(PORT_TO_NUM(NRF24_SPI_PORT), SPI_PIN_MASK)) {
+        register_error(ERROR_PIN_MAPPING_CONFLICT_NRF24);
         return;
     }
 
@@ -166,6 +167,7 @@ void nrf24_init(void) {
     io_map_claim_pins(PORT_TO_NUM(NRF24_IRQ_PORT), NRF24_IRQ_PIN_MASK);
 
     if (has_critical_error()) {
+        register_error(ERROR_PIN_MAPPING_CONFLICT_NRF24);
         return;
     }
 
