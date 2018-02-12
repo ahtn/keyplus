@@ -158,6 +158,7 @@ class SettingsGenerator:
 
         # feature control information
         result += device.feature_ctrl.to_bytes()
+        # result += bytearray([0xff])
 
         result += bytearray(32)
 

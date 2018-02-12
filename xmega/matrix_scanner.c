@@ -1,5 +1,6 @@
 // Copyright 2017 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
+/// @file xmega/matrix_scanner.c
 
 #include "core/matrix_scanner.h"
 

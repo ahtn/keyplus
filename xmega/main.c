@@ -276,8 +276,6 @@ void usb_mode_setup(void) {
         rf_init_receive();
     }
 #endif
-
-
 }
 
 NO_RETURN_ATTR void recovery_mode_main_loop(void);

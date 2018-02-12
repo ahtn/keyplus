@@ -142,20 +142,20 @@ class KBInfoMain(KBInfoMainNamedTuple):
     def scan_mode_str(self):
         return scan_mode_to_str(self.scan_mode)
 
-    def has_usb_disabled(self):
-        return bool(self.feature_ctrl & FEATURE_CTRL_USB_DISABLE)
+    def has_usb(self):
+        return not bool(self.feature_ctrl & FEATURE_CTRL_USB_DISABLE)
 
-    def has_i2c_disabled(self):
-        return bool(self.feature_ctrl & FEATURE_CTRL_WIRED_DISABLE)
+    def has_i2c(self):
+        return not bool(self.feature_ctrl & FEATURE_CTRL_WIRED_DISABLE)
 
-    def has_nrf24_disabled(self):
-        return bool(self.feature_ctrl & FEATURE_CTRL_RF_DISABLE)
+    def has_nrf24(self):
+        return not bool(self.feature_ctrl & FEATURE_CTRL_RF_DISABLE)
 
-    def has_unifying_mouse_disabled(self):
-        return bool(self.feature_ctrl & FEATURE_CTRL_RF_MOUSE_DISABLE)
+    def has_unifying_mouse(self):
+        return not bool(self.feature_ctrl & FEATURE_CTRL_RF_MOUSE_DISABLE)
 
-    def has_bluetooth_disabled(self):
-        return bool(self.feature_ctrl & FEATURE_CTRL_BT_DISABLE)
+    def has_bluetooth(self):
+        return not bool(self.feature_ctrl & FEATURE_CTRL_BT_DISABLE)
 
 
 def get_device_info(device):

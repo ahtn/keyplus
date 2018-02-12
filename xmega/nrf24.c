@@ -157,7 +157,7 @@ void nrf24_init(void) {
     is_nrf24_initialized = true;
 
     if (io_map_claim_pins(PORT_TO_NUM(NRF24_SPI_PORT), SPI_PIN_MASK)) {
-        register_error(ERROR_PIN_MAPPING_CONFLICT_NRF24);
+        register_error(ERROR_PIN_MAPPING_CONFLICT_NRF24_SPI);
         return;
     }
 

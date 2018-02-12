@@ -11,10 +11,12 @@ report_mode: auto_nkro # options: auto_nkro, 6kro, nkro
 devices:
   "Matrix Tester - arbitrary row/cols":
     id: 0
+    layout: matrix_tester
+    layout_offset: 0
+    wireless_split: false
+    wired_split: false
     scan_mode:
       mode: col_row
-      wireless_split: false
-      wired_split: false
       rows: [D0, D1, D2, D3, D4, D5]
       cols: [
         A0, A1, A2, A3, A4, A5, A6, A7,
@@ -34,17 +36,6 @@ devices:
         r5c0, r5c1, # NOTE: Can only support upto 127 keys, so have to stop early
         # r5c0, r5c1, r5c2, r5c3, r5c4, r5c5, r5c6, r5c7, r5c8, r5c9, r5c10, r5c11, r5c12, r5c13, r5c14, r5c15, r5c16, r5c17, r5c18, r5c19, r5c20, r5c21, r5c22, r5c23, r5c24,
       ]
-
-      # # maps how keys are physically wired, to how they appear visually
-      # matrix_map: [
-      #   r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
-      #   r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
-      #   r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
-      #   r3c0, r3c1, r3c2, r3c3, r3c4, r3c5,
-      # ]
-
-    layout: matrix_tester
-    layout_offset: 0
 
 layouts:
   matrix_tester:

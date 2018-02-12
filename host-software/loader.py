@@ -890,7 +890,7 @@ class Loader(QMainWindow):
 
             try:
                 settings_gen = layout.parser.SettingsGenerator(layout_json_obj, rf_json_obj)
-            except ParseError as err:
+            except layout.parser.ParseError as err:
                 error_msg_box("Error Generating RF settings data: " + str(err))
                 self.abort_update(target_device)
                 return
@@ -1034,6 +1034,7 @@ class Loader(QMainWindow):
             return "{0:.1f}µs".format(x / 255 * 48.0)
 
         header = ["Attribute", "Value"]
+
         device_settings = [
             ("Device ID", settingsInfo.id),
             ("Device name", settingsInfo.device_name_str()),
@@ -1052,11 +1053,11 @@ class Loader(QMainWindow):
             ("Settings stored CRC", hex(settingsInfo.crc)),
             ("Settings computed CRC", hex(settingsInfo.computed_crc)),
 
-            ("USB", not (settingsInfo.has_usb_disabled() or not firmwareInfo.has_fw_support_usb())),
-            ("I2C", not (settingsInfo.has_i2c_disabled() or not firmwareInfo.has_fw_support_i2c())),
-            ("nRF24 wireless", not (settingsInfo.has_nrf24_disabled() or not firmwareInfo.has_fw_support_nrf24())),
-            ("Unifying mouse", not (settingsInfo.has_unifying_mouse_disabled() or not firmwareInfo.has_fw_support_unifying())),
-            ("Bluetooth", not (settingsInfo.has_bluetooth_disabled() or not firmwareInfo.has_fw_support_bluetooth())),
+            ("USB", (settingsInfo.has_usb() and firmwareInfo.has_fw_support_usb())),
+            ("I2C", (settingsInfo.has_i2c() and firmwareInfo.has_fw_support_i2c())),
+            ("nRF24 wireless", (settingsInfo.has_nrf24() and firmwareInfo.has_fw_support_nrf24())),
+            ("Unifying mouse", (settingsInfo.has_unifying_mouse() and firmwareInfo.has_fw_support_unifying())),
+            ("Bluetooth", (settingsInfo.has_bluetooth() and firmwareInfo.has_fw_support_bluetooth())),
 
             ("RF pipe0", binascii.hexlify(rfInfo.pipe0).decode('ascii')),
             ("RF pipe1", binascii.hexlify(rfInfo.pipe1).decode('ascii')),

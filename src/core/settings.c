@@ -62,7 +62,7 @@ const ROM firmware_build_settings_t g_firmware_build_settings = {
     .scan_col_row = (1) && USE_SCANNER && !USE_HARDWARE_SPECIFIC_SCAN,
     .scan_row_col = 0 && USE_SCANNER && !USE_HARDWARE_SPECIFIC_SCAN,
     .scan_pins = 0 && USE_SCANNER && !USE_HARDWARE_SPECIFIC_SCAN,
-    .scan_arbitrary = 0 && USE_SCANNER && !USE_HARDWARE_SPECIFIC_SCAN,
+    .scan_arbitrary = 1 && USE_SCANNER && !USE_HARDWARE_SPECIFIC_SCAN,
     .scan_built_in = USE_HARDWARE_SPECIFIC_SCAN && USE_SCANNER,
 
     // generic keyboard features

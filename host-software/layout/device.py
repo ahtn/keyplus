@@ -56,13 +56,13 @@ class FeatureControl(object):
 
 class Device(object):
     def __init__(self, id, name, scan_mode, layout_name, layout_offset,
-                 feature_ctrl=FeatureControl()):
+                 feature_ctrl=DEFAULT_FEATURE_MASK):
         self.id = id
         self.name = name
         self.scan_mode = scan_mode
         self.layout_name = layout_name
         self.layout_offset = layout_offset
-        self.feature_ctrl = feature_ctrl
+        self.feature_ctrl = FeatureControl(feature_ctrl)
 
     @staticmethod
     def from_json_obj(dev, device_name):
@@ -82,13 +82,13 @@ class Device(object):
         else:
             result = Device(dev_id, device_name, scan_mode, None, None)
 
-        wireless = try_get(dev, 'enable_wireless_split', device_name, default=False, val_type=bool)
+        wireless = try_get(dev, 'wireless_split', device_name, default=False, val_type=bool)
         result.feature_ctrl.set_feature('wireless', wireless)
 
-        wireless = try_get(dev, 'enable_wireless_split', device_name, default=False, val_type=bool)
-        result.feature_ctrl.set_feature('wireless', wireless)
+        wired = try_get(dev, 'wired_split', device_name, default=False, val_type=bool)
+        result.feature_ctrl.set_feature('wired', wired)
 
-        mouse = try_get(dev, 'enable_wireless_mouse', device_name, default=False, val_type=bool)
+        mouse = try_get(dev, 'wireless_mouse', device_name, default=False, val_type=bool)
         result.feature_ctrl.set_feature('wireless_mouse', mouse)
 
         return result

@@ -11,7 +11,6 @@ report_mode: auto_nkro # options: auto_nkro, 6kro, nkro
 # NOTE: rf settings and encryption key are stored in a separate file
 
 # TODO: add more settings to control global configuration
-# TODO: add USB/I2C/RF settings on a per device bases
 # TODO: add LED configuration settings
 # TODO: add mouse configuration
 
@@ -20,7 +19,10 @@ devices:
   left_split:
     id: 0
     wireless_split: true
+    wireless_mouse: true
     wired_split: false
+    layout: split_layout
+    layout_offset: 0
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -32,13 +34,14 @@ devices:
         r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
         ____, r3c3, r3c4, r3c5, r3c2, r3c1,
       ]
-    layout: split_layout
-    layout_offset: 0
 
   right_split:
     id: 1
     wireless_split: true
+    wireless_mouse: true
     wired_split: false
+    layout: split_layout
+    layout_offset: 1
     scan_mode:
       mode: col_row # options: col_row, pins, no_matrix
       rows: 4
@@ -49,14 +52,15 @@ devices:
         r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
         r3c4, r3c3, r3c0, r3c1, r3c2, ____,
       ]
-    layout: split_layout
-    layout_offset: 1
 
   # separate numpad
   numpad:
     id: 2
     wireless_split: true
-    wired_split: false
+    wireless_mouse: true
+    wired_split: true
+    layout: numpad_layout
+    layout_offset: 0
     scan_mode:
       mode: col_row # options: col_row, pins, no_matrix
       rows: 5
@@ -68,13 +72,14 @@ devices:
         r3c0, r3c1, r3c2, r3c3,
         r4c0, ____, r4c2, ____,
       ]
-    layout: numpad_layout
-    layout_offset: 0
 
   "XMEGA test board left":
     id: 10
     wireless_split: true
+    wireless_mouse: true
     wired_split: true
+    layout: split_layout
+    layout_offset: 0
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -86,13 +91,14 @@ devices:
         r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
         r3c3, r3c4, r3c5, r3c2, r3c1
       ]
-    layout: split_layout
-    layout_offset: 0
 
   "XMEGA test board right":
     id: 11
     wireless_split: true
+    wireless_mouse: true
     wired_split: true
+    layout: split_layout
+    layout_offset: 1
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -104,15 +110,14 @@ devices:
         r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
         r3c3, r3c4, r3c5, r3c2, r3c1
       ]
-    layout: split_layout
-    layout_offset: 1
-
-
 
   "blue gamma split - left":
     id: 12
     wireless_split: true
+    wireless_mouse: true
     wired_split: true
+    layout: gamma_split
+    layout_offset: 0
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -124,13 +129,14 @@ devices:
         r1c2, r1c1, r1c0, r1c3, r1c4, r1c5,
         r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
       ]
-    layout: gamma_split
-    layout_offset: 0
 
   "blue gamma split - right":
     id: 13
     wireless_split: true
+    wireless_mouse: true
     wired_split: true
+    layout: gamma_split
+    layout_offset: 1
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -142,13 +148,14 @@ devices:
         r1c2, r1c1, r1c0, r1c3, r1c4, r1c5,
         r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
       ]
-    layout: gamma_split
-    layout_offset: 1
 
   "orange gamma split - left":
     id: 14
     wireless_split: true
+    wireless_mouse: true
     wired_split: true
+    layout: gamma_split
+    layout_offset: 0
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: [D0, D1, D2, D3]
@@ -160,13 +167,14 @@ devices:
         r1c2, r1c1, r1c0, r1c3, r1c4, r1c5,
         r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
       ]
-    layout: gamma_split
-    layout_offset: 0
 
   "orange gamma split - right":
     id: 15
     wireless_split: true
+    wireless_mouse: false
     wired_split: false
+    layout: gamma_split
+    layout_offset: 1
     scan_mode: # wireless only
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -178,12 +186,12 @@ devices:
         r1c2, r1c1, r1c0, r1c3, r1c4, r1c5,
         r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
       ]
-    layout: gamma_split
-    layout_offset: 1
 
   # rf dongle
   nrf_dongle:
     id: 48
+    wireless_split: true
+    wireless_mouse: true
     scan_mode: # rf dongle, so don't need a matrix
       mode: no_matrix # options: col_row, pins, no_matrix
 
