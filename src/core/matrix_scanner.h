@@ -22,7 +22,8 @@ typedef enum matrix_scanner_mode_t {
     MATRIX_SCANNER_MODE_NO_MATRIX = 0x00, ///< doesn't have a matrix
     MATRIX_SCANNER_MODE_COL_ROW = 0x01, ///< normal col -->|-- row pin matrix
     MATRIX_SCANNER_MODE_ROW_COL = 0x02, ///< normal row -->|-- col pin matrix
-    MATRIX_SCANNER_MODE_PINS = 0x03, ///< each pin represents a key
+    MATRIX_SCANNER_MODE_PIN_GND = 0x03, ///< each pin represents a key (active low)
+    MATRIX_SCANNER_MODE_PIN_VCC = 0x04, ///< each pin represents a key (active high)
 } matrix_scanner_mode_t;
 
 /// Device information about the in-built scanning method used by the device.

@@ -33,7 +33,7 @@ void add_timed_event(keycode_t keycode, uint16_t time, uint8_t event);
 /*  } */
 /* } */
 
-XRAM keycode_callbacks_t *XRAM  callbacks[] = {
+XRAM keycode_callbacks_t *XRAM g_keyhandler_list[] WEAK = {
     &modkey_keycodes,
     &layer_keycodes,
     &hold_keycodes,

@@ -47,7 +47,7 @@ void i2c_init(void) {
     i2c_buffer_ptr_oldest = 0;
 
     if (io_map_claim_pins(PORT_TO_NUM(PORTE), PIN0_bm | PIN1_bm)) {
-        register_error(ERROR_PIN_MAPPING_CONFLICT_I2C);
+        register_error(ERROR_PIN_MAPPING_CONFLICT);
         return;
     }
 

@@ -1,6 +1,8 @@
 // Copyright 2017 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
-// @file core/rf.c
+/// @file core/rf.c
+///
+/// @brief Functions used for the nRF24 wireless protocol.
 
 #include "core/rf.h"
 

@@ -1,5 +1,9 @@
 // Copyright 2017 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
+/// @dir xmega
+/// @file xmega/main.c
+///
+/// @brief Main function and setup code for the xmega port.
 
 #include <string.h>
 

@@ -12,7 +12,7 @@
 #include <stddef.h>
 
 // compiler
-#ifdef SDCC
+#if defined(__SDCC_mcs51)
 // sdcc
 #define REENT __reentrant
 #define XRAM __xdata
@@ -24,7 +24,7 @@
 // sdcc doesn't have no return attribute.
 #define NO_RETURN_ATTR
 
-#elif AVR
+#elif defined(AVR) && defined(__GNUC__)
 
 #include "avr/pgmspace.h"
 

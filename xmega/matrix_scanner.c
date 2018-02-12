@@ -1,6 +1,8 @@
 // Copyright 2017 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 /// @file xmega/matrix_scanner.c
+///
+/// @brief Xmega default matrix scanner module
 
 #include "core/matrix_scanner.h"
 
@@ -61,7 +63,7 @@ static uint8_t s_bytes_per_row;
 static uint8_t s_parasitic_discharge_delay_idle;
 static uint8_t s_parasitic_discharge_delay_debouncing;
 
-// Setup the columns as inputs with pull ups
+/// Setup the columns as inputs with pull ups
 static void setup_columns(void) {
     // Note: DIR: 0 -> input, 1 -> output
 
@@ -83,7 +85,7 @@ static void setup_columns(void) {
 
         // Try to claim the pins
         if (io_map_claim_pins(port_ii, col_mask)) {
-            register_error(ERROR_PIN_MAPPING_CONFLICT_COL);
+            register_error(ERROR_PIN_MAPPING_CONFLICT);
             return; // return on error
         }
 
@@ -95,9 +97,36 @@ static void setup_columns(void) {
         // enable the interrupts on both rising/falling edges
         {
             port->DIRCLR = col_mask;
-            PORTCFG.MPCMASK = col_mask;
-            port->PIN0CTRL = PORT_OPC_PULLUP_gc | PORT_ISC_BOTHEDGES_gc;
             port->INT0MASK |= col_mask;
+            PORTCFG.MPCMASK = col_mask;
+            switch (g_scan_plan.mode) {
+                // These modes need a pull-down resistor and non-inverted input
+                case MATRIX_SCANNER_MODE_ROW_COL:
+                case MATRIX_SCANNER_MODE_PIN_VCC: {
+                    // Diodes are facing from row to column ( row -->|-- col)
+                    // Or pins are connected GPIO --switch--> VCC
+                    port->PIN0CTRL =
+                        // non-inverted input
+                        PORT_OPC_PULLDOWN_gc | // pull-down resistor
+                        PORT_ISC_BOTHEDGES_gc;
+                } break;
+
+                // These cases need a pull-up resistor and inverted input
+                case MATRIX_SCANNER_MODE_COL_ROW:
+                case MATRIX_SCANNER_MODE_PIN_GND: {
+                    // Diodes are facing from column to row ( col -->|-- row)
+                    // Or pins are connected GPIO --switch--> GND
+                    port->PIN0CTRL =
+                        PORT_INVEN_bm | // invert input
+                        PORT_OPC_PULLUP_gc |  // pull-up resistor
+                        PORT_ISC_BOTHEDGES_gc;
+                } break;
+
+                default: {
+                    register_error(ERROR_UNSUPPORTED_SCAN_MODE);
+                    return;
+                } break;
+            }
         }
     }
 }
@@ -121,7 +150,7 @@ static void setup_rows(void) {
 
         if (io_map_claim_pins(row_port_num, row_bit_mask)) {
             // failed to claim
-            register_error(ERROR_PIN_MAPPING_CONFLICT_ROW);
+            register_error(ERROR_PIN_MAPPING_CONFLICT);
             return;
         }
 
@@ -130,17 +159,40 @@ static void setup_rows(void) {
         s_row_ports[row_pin_i] = port;
 
         // Hardware setup for the pin
-        {
-            port->DIRSET = row_bit_mask; // output
-            PORTCFG.MPCMASK = row_bit_mask;
-            port->PIN0CTRL = PORT_OPC_WIREDAND_gc;
-            port->OUTSET = row_bit_mask;
+        port->DIRSET = row_bit_mask; // output
+        port->OUTSET = row_bit_mask;
+        PORTCFG.MPCMASK = row_bit_mask;
+        switch (g_scan_plan.mode) {
+            // These modes need a pull-down resistor and non-inverted input
+            case MATRIX_SCANNER_MODE_ROW_COL:
+            case MATRIX_SCANNER_MODE_PIN_VCC: {
+                // Inverted output
+                // Disconnected when writting 0 to PORT
+                // Note: WiredOR disconnects the pin when written to 0
+                port->PIN0CTRL =
+                    PORT_INVEN_bm | // inverted output
+                    PORT_OPC_WIREDOR_gc;
+            } break;
+
+            // These cases need a pull-up resistor and inverted input
+            case MATRIX_SCANNER_MODE_COL_ROW:
+            case MATRIX_SCANNER_MODE_PIN_GND: {
+                // Non-inverted output
+                // Disconnected when writting 1 to PORT
+                // Note: WiredAND disconnects the pin when written to 1
+                port->PIN0CTRL = PORT_OPC_WIREDAND_gc;
+            } break;
+
+            default: {
+                register_error(ERROR_UNSUPPORTED_SCAN_MODE);
+                return;
+            } break;
         }
     }
 
 }
 
-//  makes all rows floating inputs
+///  makes all rows floating inputs
 static inline void unselect_all_rows(void) {
     PORTA.OUTSET = s_row_port_masks[PORT_A_NUM];
     PORTB.OUTSET = s_row_port_masks[PORT_B_NUM];
@@ -150,7 +202,7 @@ static inline void unselect_all_rows(void) {
     PORTR.OUTSET = s_row_port_masks[PORT_R_NUM];
 }
 
-// make all rows output low
+/// make all rows output low
 static inline void select_all_rows(void) {
     PORTA.OUTCLR = s_row_port_masks[PORT_A_NUM];
     PORTB.OUTCLR = s_row_port_masks[PORT_B_NUM];
@@ -160,16 +212,18 @@ static inline void select_all_rows(void) {
     PORTR.OUTCLR = s_row_port_masks[PORT_R_NUM];
 }
 
+/// When `select_all_rows()` has been called, this function can be used to
+/// check if any key is down in any row.
 bool matrix_has_active_row(void) {
-    return (~PORTA.IN & s_row_port_masks[PORT_A_NUM]) ||
-           (~PORTB.IN & s_row_port_masks[PORT_B_NUM]) ||
-           (~PORTC.IN & s_row_port_masks[PORT_C_NUM]) ||
-           (~PORTD.IN & s_row_port_masks[PORT_D_NUM]) ||
-           (~PORTE.IN & s_row_port_masks[PORT_E_NUM]) ||
-           (~PORTR.IN & s_row_port_masks[PORT_R_NUM]);
+    return (PORTA.IN & s_col_masks[PORT_A_NUM]) ||
+           (PORTB.IN & s_col_masks[PORT_B_NUM]) ||
+           (PORTC.IN & s_col_masks[PORT_C_NUM]) ||
+           (PORTD.IN & s_col_masks[PORT_D_NUM]) ||
+           (PORTE.IN & s_col_masks[PORT_E_NUM]) ||
+           (PORTR.IN & s_col_masks[PORT_R_NUM]);
 }
 
-// selecting a row makes it output 0
+/// Selecting a row makes it outputs
 static inline void select_row(uint8_t row) {
     io_port_t *port = s_row_ports[row];
     const uint8_t mask = s_row_pin_mask[row];
@@ -184,9 +238,6 @@ static inline void unselect_row(uint8_t row) {
 }
 
 void matrix_scanner_init(void) {
-    const int8_t cols = g_scan_plan.cols;
-    const int8_t rows = g_scan_plan.rows;
-
     if (
         // g_scan_plan.cols > MAX_NUM_COLS ||
         g_scan_plan.rows > MAX_NUM_ROWS ||
@@ -197,9 +248,15 @@ void matrix_scanner_init(void) {
         return;
     }
 
+
     s_bytes_per_row = INT_DIV_ROUND_UP(g_scan_plan.max_col_pin_num, 8);
 
-    setup_rows();
+    if (
+        g_scan_plan.mode == MATRIX_SCANNER_MODE_COL_ROW ||
+        g_scan_plan.mode == MATRIX_SCANNER_MODE_ROW_COL
+    ) {
+        setup_rows();
+    }
     setup_columns();
 
     // set the rows and columns to their inital state.
@@ -284,12 +341,12 @@ ISR(PORTR_INT0_vect) { matrix_scan_irq(); }
 
 static inline uint8_t scan_row(uint8_t row) {
     const uint8_t new_row[IO_PORT_COUNT] = {
-        ~PORTA.IN & s_col_masks[PORT_A_NUM],
-        ~PORTB.IN & s_col_masks[PORT_B_NUM],
-        ~PORTC.IN & s_col_masks[PORT_C_NUM],
-        ~PORTD.IN & s_col_masks[PORT_D_NUM],
-        ~PORTE.IN & s_col_masks[PORT_E_NUM],
-        ~PORTR.IN & s_col_masks[PORT_R_NUM],
+        PORTA.IN & s_col_masks[PORT_A_NUM],
+        PORTB.IN & s_col_masks[PORT_B_NUM],
+        PORTC.IN & s_col_masks[PORT_C_NUM],
+        PORTD.IN & s_col_masks[PORT_D_NUM],
+        PORTE.IN & s_col_masks[PORT_E_NUM],
+        PORTR.IN & s_col_masks[PORT_R_NUM],
     };
 
     return scanner_debounce_row(row, new_row, s_bytes_per_row);
@@ -356,21 +413,21 @@ static inline bool matrix_scan_row_col_mode(void) {
 }
 
 static inline bool matrix_scan_pin_mode(void) {
-    bool scan_changed = false;
-
-    return scan_changed;
+    return scan_row(0);
 }
 
 bool matrix_scan(void) {
-    if (g_scan_plan.mode == MATRIX_SCANNER_MODE_COL_ROW) {
-        return matrix_scan_row_col_mode();
-    } else if (g_scan_plan.mode == MATRIX_SCANNER_MODE_PINS) {
-        return matrix_scan_pin_mode();
+    switch (g_scan_plan.mode) {
+        case MATRIX_SCANNER_MODE_COL_ROW:
+        case MATRIX_SCANNER_MODE_ROW_COL: {
+            return matrix_scan_row_col_mode();
+        }
+
+        case MATRIX_SCANNER_MODE_PIN_GND:
+        case MATRIX_SCANNER_MODE_PIN_VCC: {
+            return matrix_scan_pin_mode();
+        }
     }
-
-
-    // TODO: add an error event that can be sent over USB for when invalid
-    // values are used for scan settings etc.
     return false;
 }
 
@@ -382,6 +439,6 @@ bool matrix_scan(void) {
 
 #if USE_HARDWARE_SPECIFIC_SCAN
 
-/// TODO: move this to a separate file in the boards directory
+// TODO: move this to a separate file in the boards directory
 
 #endif
