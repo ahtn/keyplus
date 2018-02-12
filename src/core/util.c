@@ -3,7 +3,7 @@
 
 #include "core/util.h"
 
-#ifdef INTEL_8052
+#ifdef __SDCC_mcs51
 ROM const uint8_t bit_lookup[8] = {
     (1 << 0),
     (1 << 1),
@@ -18,23 +18,20 @@ ROM const uint8_t bit_lookup[8] = {
 bit_t is_bitn_set(uint8_t byte, uint8_t n) {
     return (byte & bit_lookup[n]);
 }
-#else
-bit_t is_bitn_set(uint8_t byte, uint8_t n) {
-    if (byte & (1 << n)) {
-        return true;
-    } else {
-        return false;
-    }
+
+uint8_t bitn_mask(uint8_t n) {
+    return bit_lookup[n];
+}
+
+bit_t bitmap_get_bit(uint8_t *array, uint8_t n) {
+    return is_bitn_set(array[n / 8], n%8);
+}
+
+void bitmap_set_bit(uint8_t *array, uint8_t n) {
+    array[n / 8] |= (bitn_mask(n % 8));
+}
+
+void bitmap_clear_bit(uint8_t *array, uint8_t n) {
+    array[n / 8] &= ~(bitn_mask(n % 8));
 }
 #endif
-
-uint8_t is_buffer_zeroed(uint8_t *buffer, uint8_t len) {
-    uint8_t i;
-    for (i = 0; i < len; ++i) {
-        if (buffer[i] != 0) {
-            return 0;
-        }
-    }
-    return 1;
-}
-

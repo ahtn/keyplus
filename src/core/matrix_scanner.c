@@ -17,16 +17,18 @@
 #define MAX_UPDATE_LIST 16
 #define MAX_DOWN_LIST 16
 
+#define KEY_NUMBER_BITMAP_SIZE (MAX_NUM_KEYS/8)
+
 // can probably make this static
 XRAM uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT];
 
-static XRAM uint8_t s_debounce_time[MAX_NUM_KEYS];
+// static XRAM uint8_t s_is_debouncing[MAX_NUM_ROWS][IO_PORT_COUNT];
 static XRAM uint8_t s_is_debouncing[MAX_NUM_ROWS][IO_PORT_COUNT];
-static XRAM uint8_t s_debounce_type[MAX_NUM_ROWS][IO_PORT_COUNT];
+static XRAM uint8_t s_debounce_time[MAX_NUM_KEYS];
+static XRAM uint8_t s_debounce_type[KEY_NUMBER_BITMAP_SIZE];
 static XRAM uint8_t s_matrix_number_keys_down;
 static XRAM uint8_t s_matrix_number_keys_debouncing;
 
-#define KEY_NUMBER_BITMAP_SIZE (MAX_NUM_KEYS/8)
 static XRAM uint8_t g_key_num_bitmap[KEY_NUMBER_BITMAP_SIZE];
 
 XRAM matrix_scan_plan_t g_scan_plan;
@@ -173,7 +175,7 @@ bool scanner_debounce_row(
                 const uint8_t key_num = get_key_number(row, col);
                 // key debouncing:
                 // check if the key has finished debouncing
-                if (s_debounce_type[row][i] & pin_mask) {
+                if (bitmap_get_bit(s_debounce_type, key_num)) {
                     // debouncing key press
                     const uint8_t bounce_duration = (uint8_t)(
                         cur_time - s_debounce_time[key_num]
@@ -265,14 +267,13 @@ bool scanner_debounce_row(
 
                 // this pin has changed, so we start it's debounce timer
                 if (is_key_down) {
-                    s_debounce_type[row][i] |= pin_mask; // indicates key press debounce
+                    bitmap_set_bit(s_debounce_type, key_num); // indicates key press debounce
 
                 } else {
-                    s_debounce_type[row][i] &= ~pin_mask; // indicates key release debounce
+                    bitmap_clear_bit(s_debounce_type, key_num); // indicates key release debounce
                 }
 
                 s_is_debouncing[row][i] |= pin_mask;
-                // s_debounce_time[row][col] = cur_time;
                 s_debounce_time[key_num] = cur_time;
                 s_matrix_number_keys_debouncing++;
             }

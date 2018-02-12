@@ -1,5 +1,6 @@
 // Copyright 2017 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
+// @file core/rf.c
 
 #include "core/rf.h"
 
@@ -114,6 +115,17 @@ void rf_send_matrix_packet(void) {
 
     aes_encrypt((uint8_t*)&packet);
     nrf24_write_tx_payload((uint8_t*)&packet, AES_BUF_SIZE);
+}
+
+/// Check if a buffer is set to zero
+uint8_t is_buffer_zeroed(uint8_t *buffer, uint8_t len) {
+    uint8_t i;
+    for (i = 0; i < len; ++i) {
+        if (buffer[i] != 0) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 void rf_handle_ack_payloads(void) {

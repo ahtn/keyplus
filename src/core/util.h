@@ -1,7 +1,7 @@
 // Copyright 2017 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-/// @file core/compiler_util.h
+/// @file core/util.h
 /// Provides compiler utility macros for different compilers and some small
 /// utility functions.
 
@@ -98,7 +98,7 @@
 // #define ISR(x)
 #endif
 
-#if defined(__SDCC_mcs51)
+#if defined(__SDCC_mcs51) || defined(DOXYGEN)
 /// Single bit or boolean variable type.
 ///
 /// The 8051 compiler has access to single bit registers. Using these registers
@@ -124,10 +124,38 @@
     ( (dividend) + ((divisor)-1) ) / (divisor) \
 )
 
-/// Returns the nth bit of `byte`
+#if defined(__SDCC_mcs51) || defined(DOXYGEN)
+// #if 1
+
+/// Returns the `n`th bit of `byte`
 ///
 /// Note: the `sdcc` compiler has pretty bad optimizations for bit shifts. Using
 /// this function can save significant code space.
 bit_t is_bitn_set(uint8_t byte, uint8_t n);
 
-uint8_t is_buffer_zeroed(uint8_t *buffer, uint8_t len);
+/// Gets a bit mask for the `n`th bit;
+///
+/// Note: the `sdcc` compiler has pretty bad optimizations for bit shifts. Using
+/// this function can save significant code space.
+uint8_t bitn_mask(uint8_t n);
+
+/// Get bit `n` in a bitmap array.
+bit_t bitmap_get_bit(uint8_t *array, uint8_t n);
+
+/// Set bit `n` in a bitmap array.
+void bitmap_set_bit(uint8_t *array, uint8_t n);
+
+/// Clear bit `n` in a bitmap array.
+void bitmap_clear_bit(uint8_t *array, uint8_t n);
+
+#else
+
+#define is_bitn_set(byte, n) ((byte) & (1 << (n)))
+#define bitn_mask(n) (1 << (n))
+
+#define bitmap_get_bit(array, n) is_bitn_set(array[n / 8], n%8)
+#define bitmap_set_bit(array, n) (array[n / 8] |= (bitn_mask(n % 8)))
+#define bitmap_clear_bit(array, n) (array[n / 8] &= ~(bitn_mask(n % 8)))
+
+#endif
+
