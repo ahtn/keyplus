@@ -82,6 +82,8 @@ enum {
     INFO_UNSUPPORTED = 0xff,
 };
 
+#define USB_PRINT_TEXT(text) (usb_print((uint8_t*)text, sizeof(text)))
+
 uint8_t usb_print(const uint8_t *data, uint8_t len);
 void reset_usb_reports(void);
 void cmd_send_layer(uint8_t kb_id);

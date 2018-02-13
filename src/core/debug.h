@@ -17,8 +17,8 @@ void debug_set(uint8_t x, uint8_t val);
 #endif
 
 #if defined(DEBUG_LEVEL) && DEBUG_LEVEL >= 4
-#define assert(x) ((x) ? (void)0 : assert_fail())
-void assert_fail(void) NO_RETURN_ATTR;
+#define assert(x) ((x) ? (void)0 : assert_fail(__LINE__))
+void assert_fail(uint16_t line_num) NO_RETURN_ATTR;
 #else
 #define assert(x) ((void)0)
 #endif

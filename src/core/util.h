@@ -19,7 +19,7 @@
 #define IRAM __idata
 #define PRAM __pdata
 #define ROM __code
-#define WEAK __attribute__((weak))
+#define WEAK
 #define AT(address) __at (address)
 // sdcc doesn't have no return attribute.
 #define NO_RETURN_ATTR

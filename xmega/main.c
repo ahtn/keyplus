@@ -65,7 +65,6 @@ void xmega_common_init(void) {
     settings_load_from_flash();
     aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
     led_testing_set(0);
-
     matrix_scanner_init();
 }
 
@@ -99,7 +98,7 @@ void battery_mode_main_loop(void) {
     bool scan_changed = false;
     bool deep_sleep_resync_packet = false;
 
-    if (g_runtime_settings.feature.ctrl.rf_disabled) {
+    if (g_runtime_settings.feature.ctrl.rf_disabled || has_critical_error()) {
         // If we are running in battery mode, there's nothing we can do if
         // the rf module is disabled. So go into deep sleep until the VBUS
         // check pin wakes us up.

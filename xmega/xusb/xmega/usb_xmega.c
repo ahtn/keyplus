@@ -295,12 +295,14 @@ bool has_usb_connection(void) {
     return usb_connection_established;
 }
 
-#ifdef USE_USB_POLLING
+#if (defined(DEBUG_LEVEL) && DEBUG_LEVEL >= 4) || !defined(USE_USB_POLLING)
 void usb_poll(void) {
     busevent_vect();
     trncompl_vect();
 }
-#else
+#endif
+
+#ifndef USE_USB_POLLING
 // use interrupt handlers if polling is not used
 ISR(USB_BUSEVENT_vect) {
     busevent_vect();

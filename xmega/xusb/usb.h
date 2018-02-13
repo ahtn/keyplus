@@ -90,7 +90,7 @@ void usb_init(void);
 /// Configure pull resistor to be detected by the host
 void usb_attach(void);
 
-#ifdef USE_USB_POLLING
+#if (defined(DEBUG_LEVEL) && DEBUG_LEVEL >= 4) || !defined(USE_USB_POLLING)
 /// Polling handler for USB when interrupts handlers are not used
 void usb_poll(void);
 #endif

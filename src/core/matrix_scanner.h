@@ -6,8 +6,11 @@
 
 #include "config.h"
 
-#include "core/io_map.h"
 #include "core/util.h"
+
+#if USE_SCANNER
+#include "core/io_map.h"
+#endif
 
 /// Max number of keys a split keyboard device can use (16 bytes)
 #define MAX_NUM_KEYS 128

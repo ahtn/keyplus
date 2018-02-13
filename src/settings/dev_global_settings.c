@@ -32,7 +32,7 @@
 
 #ifdef NO_MATRIX
 .scan_plan = {
-    .mode = MATRIX_SCANNER_MODE_NONE, // dongle
+    .mode = MATRIX_SCANNER_MODE_NO_MATRIX, // dongle
     .rows = 0,
     .cols = 0,
 },

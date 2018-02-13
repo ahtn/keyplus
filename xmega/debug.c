@@ -7,12 +7,15 @@
 
 #include "core/hardware.h"
 #include "core/debug.h"
+#include "core/usb_commands.h"
+#include "usb_reports/vendor_report.h"
+#include "power.h"
 
 #if defined(DEBUG_LEVEL) && DEBUG_LEVEL >= 4
 __ATTR_NORETURN__ void hang(void) {
-    cli();
     wdt_disable();
 
+    cli();
 
     while (1) {
     }
@@ -26,7 +29,17 @@ ISR(BADISR_vect) {
     debug_set(2, 1);
     debug_set(3, 0);
 
-    hang();
+    while (1) {
+        USB_PRINT_TEXT("unhandled irq");
+
+        send_vendor_report();
+        handle_vendor_out_reports();
+
+        enter_sleep_mode(SLEEP_MODE_IDLE);
+        wdt_kick();
+
+        usb_poll();
+    }
 }
 
 // void assert_fn (const char *func, const char *file, int line, const char *failedexpr) {
@@ -40,7 +53,7 @@ ISR(BADISR_vect) {
 	// 	     failedexpr, func, file, line);
     // }
 
-__ATTR_NORETURN__ void assert_fail(void) {
+__ATTR_NORETURN__ void assert_fail(uint16_t line_num) {
 
     static_delay_ms(1);
 
@@ -49,7 +62,25 @@ __ATTR_NORETURN__ void assert_fail(void) {
     debug_set(2, 1);
     debug_set(3, 0);
 
-    hang();
+    cli();
+
+#define digit(x) ((x) + '0')
+    while (1) {
+        uint8_t message[] = "assert failed line: 00000";
+        message[14] = digit(line_num / 10000 % 10);
+        message[15] = digit(line_num / 1000 % 10);
+        message[16] = digit(line_num / 100 % 10);
+        message[17] = digit(line_num / 10 % 10);
+        message[18] = digit(line_num / 1 % 10);
+        usb_print(message, sizeof(message));
+
+        send_vendor_report();
+        handle_vendor_out_reports();
+
+        enter_sleep_mode(SLEEP_MODE_IDLE);
+        wdt_kick();
+        usb_poll();
+    }
 }
 
 
