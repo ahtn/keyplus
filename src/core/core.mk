@@ -137,10 +137,4 @@ else
     CDEFS += -DUSE_BLUETOOTH=0
 endif
 
-ifeq ($(DEBUG_AES_KEY), 1)
-    CDEFS += -DDEBUG_AES_KEY=1
-else
-    CDEFS += -DDEBUG_AES_KEY=0
-endif
-
 include $(KEYPLUS_PATH)/$(USB_REPORTS_PATH)/usb_reports.mk
