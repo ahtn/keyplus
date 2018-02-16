@@ -44,7 +44,5 @@ void rf_disable_receive_irq(void) {
 }
 
 void nrf24lu1_rf_isr(void) __interrupt (ISR_RFIRQ) {
-    // toggle indicator led
-    P03 = !P03;
     rf_isr();
 }

@@ -477,12 +477,12 @@ def begin_pairing(device):
     response = simple_command(device, CMD_UNIFYING_PAIR, receive=False)
     return response
 
-def set_indicator_led(device, state):
-    response = simple_command(device, CMD_LED_CONTROL, [state], receive=False)
+def set_indicator_led(device, led_num, state):
+    response = simple_command(device, CMD_LED_CONTROL, [led_num, state], receive=False)
     return response
 
-def reset_device(device):
-    response = simple_command(device, CMD_RESET, receive=False)
+def reset_device(device, reset_type=RESET_TYPE_HARDWARE):
+    response = simple_command(device, CMD_RESET, [reset_type], receive=False)
     return response
 
 def get_chunks(data, chunk_size, pad=0xff):

@@ -82,6 +82,11 @@ enum {
     INFO_UNSUPPORTED = 0xff,
 };
 
+enum {
+    RESET_TYPE_HARDWARE = 0,
+    RESET_TYPE_SOFTWARE = 1,
+};
+
 #define USB_PRINT_TEXT(text) (usb_print((uint8_t*)text, sizeof(text)))
 
 uint8_t usb_print(const uint8_t *data, uint8_t len);

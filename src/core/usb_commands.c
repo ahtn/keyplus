@@ -131,9 +131,12 @@ void cmd_ok(void) {
 }
 
 /* TODO: abstract */
-void cmd_reset(void) {
-    reset_mcu();
-    while (1);
+void cmd_reset(uint8_t reset_type) {
+    if (reset_type == RESET_TYPE_HARDWARE) {
+        reset_mcu();
+    } else if (reset_type == RESET_TYPE_SOFTWARE) {
+        // TODO: software reset
+    }
 }
 
 // send data to the host for debugging purposes
@@ -254,7 +257,9 @@ static void cmd_get_info(void) {
 }
 
 void parse_cmd(void) {
-    uint8_t cmd = g_vendor_report_out.data[0];
+    const uint8_t cmd = g_vendor_report_out.data[0];
+    const uint8_t data1 = g_vendor_report_out.data[1];
+    const uint8_t data2 = g_vendor_report_out.data[2];
     debug_toggle(1);
     switch (cmd) {
         case CMD_BOOTLOADER: {
@@ -265,14 +270,15 @@ void parse_cmd(void) {
             cmd_get_info();
         } break;
         case CMD_RESET: {
-            cmd_reset();
+            cmd_reset(data1);
         } break;
         case CMD_LED_CONTROL: {
-            const uint8_t led_on = g_vendor_report_out.data[1];
-            led_testing_set(led_on);
+            const uint8_t led_number = data1;
+            const uint8_t state = data2;
+            led_testing_set(led_number, state);
         } break;
         case CMD_LAYER_STATE: {
-            cmd_send_layer(g_vendor_report_out.data[1]);
+            cmd_send_layer(data1);
         } break;
         case CMD_LOGITECH_BOOTLOADER: {
             cmd_logitech_bootloader();
@@ -282,7 +288,7 @@ void parse_cmd(void) {
             if (g_scan_plan.mode == MATRIX_SCANNER_MODE_NO_MATRIX ) {
                 cmd_error(ERROR_UNSUPPORTED_COMMAND);
             } else {
-                passthrough_mode_on = g_vendor_report_out.data[1];
+                passthrough_mode_on = data1;
                 cmd_ok();
             }
         } break;
@@ -290,7 +296,7 @@ void parse_cmd(void) {
 
         // TODO: before using this command on XMEGA, need to fix flash locations
         case CMD_UPDATE_SETTINGS: {
-            uint8_t update_type = g_vendor_report_out.data[1];
+            uint8_t update_type = data1;
 
             flash_layout.counter = 0;
             flash_layout.addr = SETTINGS_ADDR;
@@ -326,7 +332,7 @@ void parse_cmd(void) {
         } break;
         case CMD_UPDATE_LAYOUT: {
             uint16_t number_pages;
-            flash_layout.num_packets = g_vendor_report_out.data[1];
+            flash_layout.num_packets = data1;
             flash_layout.counter = 0;
             flash_layout.addr = LAYOUT_ADDR;
 

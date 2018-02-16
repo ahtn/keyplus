@@ -33,6 +33,9 @@ INFO_FIRMWARE = 4
 INFO_ERROR_SYSTEM = 5
 INFO_UNSUPPORTED = 0xff
 
+RESET_TYPE_HARDWARE = 0
+RESET_TYPE_SOFTWARE = 1
+
 KEYBOARD_REPORT_MODE_AUTO = 0 # 6kro -> nkro if more than 6 keys pressed
 KEYBOARD_REPORT_MODE_NKRO = 1 # nkro
 KEYBOARD_REPORT_MODE_6KRO = 2 # 6kro
@@ -92,6 +95,15 @@ FEATURE_CTRL_BT_DISABLE       = (1 << 4)
 FEATURE_CTRL_RESERVED_0       = (1 << 5)
 FEATURE_CTRL_RESERVED_1       = (1 << 6)
 FEATURE_CTRL_RESERVED_2       = (1 << 7)
+
+
+# TODO: might need to make this data device dependant since the efm8 port
+# might need to use a different endpoint configuration
+INTERFACE_BOOT_KEYBOARD = 0
+INTERFACE_MOUSE = 1
+INTERFACE_MEDIA = 2
+INTERFACE_VENDOR = 3
+INTERFACE_NKRO_KEYBOARD = 4
 
 ###############################################################################
 #                            error code constants                             #

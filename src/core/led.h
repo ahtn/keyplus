@@ -6,5 +6,5 @@
 #include "core/util.h"
 
 void led_init(void);
-void led_testing_set(uint8_t state);
+void led_testing_set(uint8_t led_number, uint8_t state);
 void led_testing_toggle(void);

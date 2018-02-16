@@ -7,14 +7,14 @@ from setuptools import setup
 
 setup(
     name = 'keyplus',
-    version = '0.0.0',
+    version = '0.0.1',
     description = "Python library for interfacing with keyplus keyboards.",
     url = "http://github.com/ahtn/keyplus",
     author = "jem",
     author_email = "jem@seethis.link",
     license = 'MIT',
     packages = ['keyplus'],
-    install_requires = ['hexdump', 'intelhex', 'easyhid', 'pyyaml'],
+    install_requires = ['hexdump', 'intelhex', 'easyhid', 'pyyaml', 'pyusb'],
     keywords = ['keyboard', 'usb', 'hid'],
     zip_safe = False
 )
