@@ -13,12 +13,18 @@ import easyhid
 from keyplus.crc16 import crc16_bytes
 import keyplus.cdata_types
 from keyplus.constants import *
+import keyplus.usb_ids
+from keyplus.error_table import KeyplusErrorTable
 
 class KeyplusKeyboardError(Exception):
     pass
 
 class KeyplusKeyboardConnectError(KeyplusKeyboardError):
     pass
+
+def is_keyplus_usb_id(vendor_id, product_id):
+    return (vendor_id, product_id) in keyplus.usb_ids.KEYPLUS_USB_IDS
+
 
 def _get_similar_serial_number(dev_list, serial_num):
     partial_match = None
@@ -49,6 +55,21 @@ def _get_similar_serial_number(dev_list, serial_num):
 
 def find_devices(name=None, serial_number=None, vid_pid=None, dev_id=None,
                  hid_enumeration=None):
+    """
+    Returns a list of keyplus keyboards that are currently connected to the
+    computer. The arguments can be used to filter result.
+
+    Args:
+        name: filter list by the device name
+        serial_number: filter list by the devices serial number. Tries for an
+            exact match, but will accept a partial match if an exact match is
+            not found.
+        vid_pid: filter list by the USB vendor and product id for the device in
+            the format 'VID:PID'.
+        dev_id: filter list by device id
+        hid_enumeration: an enumeration of USB devices to test. If this argument
+            is not set, the function will call `easyhid.Enumeration()` itself.
+    """
     if not hid_enumeration:
         hid_enumeration = easyhid.Enumeration()
 
@@ -91,6 +112,12 @@ def find_devices(name=None, serial_number=None, vid_pid=None, dev_id=None,
     matching_dev_list = []
     for hid_dev in matching_devices:
         try:
+            if ((target_vid == 0 and target_pid == 0) and
+                not is_keyplus_usb_id(hid_dev.vendor_id, hid_dev.product_id)
+            ):
+                # Ignore devices that don't use the keyplus vendor IDs
+                continue
+
             new_kb = KeyplusKeyboard(hid_dev)
             if dev_id != None and dev_id != new_kb.get_device_id():
                 continue
@@ -100,7 +127,7 @@ def find_devices(name=None, serial_number=None, vid_pid=None, dev_id=None,
             matching_dev_list.append(new_kb)
         except Exception as err:
             # Couldn't open the device. Could be in use by another program or
-            #
+            # do not have correct permissions to read from it.
             print("Warning: couldn't open device: " + str(err), file=sys.stderr)
             hid_dev.close()
 
@@ -236,6 +263,12 @@ class KeyplusKeyboard(object):
             receive=False
         )
         return response
+
+    def get_error_info(device):
+        """ Read the error code table from the device. """
+        response = self.simple_command(CMD_GET_DEVICE_SETTINGS, [INFO_ERROR_SYSTEM])[1:]
+        error_table_data = response[:KeyplusErrorTable.SIZE_ERROR_CODE_TABLE]
+        return KeyplusErrorTable(error_table_data)
 
     def reset(self, reset_type=RESET_TYPE_HARDWARE):
         """

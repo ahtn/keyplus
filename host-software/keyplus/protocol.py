@@ -173,16 +173,6 @@ class KBInfoErrorSystem(object):
     def has_critical_error(self):
         return self._has_critical_error
 
-def get_error_info(device):
-    response = simple_command(device, CMD_GET_DEVICE_SETTINGS, [INFO_ERROR_SYSTEM])[1:]
-
-    x = KBInfoErrorSystem.SIZE_ERROR_CODE_TABLE
-    error_table = response[:KBInfoErrorSystem.SIZE_ERROR_CODE_TABLE]
-
-    return KBInfoErrorSystem(error_table)
-
-
-
 KBInfoFirmwareNamedTuple = collections.namedtuple("KBInfoFirmware",
     """
     version_major version_minor version_patch
