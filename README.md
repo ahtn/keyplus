@@ -15,6 +15,8 @@ Currently building of the firmware has been tested on Linux.
 
 ### xmega
 
+#### Installing dependencies
+
 To compile the code on Linux, you will need the following programs installed:
 `avr-gcc`, `avr-libc`, `avr-binutils`, `python3`, `make` and `hidapi`. On Arch
 Linux:
@@ -23,20 +25,29 @@ Linux:
 sudo pacman -S avr-gcc avr-libc avr-binutils python3 make hidapi
 ```
 
-Also, the build scripts needs some python libraries installed. You should get
+The build scripts need some python libraries installed. You should get
 all the necessary packages if you install the `keyplus` python library with:
 
 ```
 sudo pip install keyplus
+
+Make sure that you have a relatively recent version of
+`avr-gcc`. Some older versions do not have support for xmega chips (e.g. avr-gcc
+included in Ubuntu 14.04). If the build commands fail with an error like
+`warning "device type not defined"`, then you probably need a newer version
+of `avr-gcc` and `avr-libc`.
+
 ```
 
-Also, you to initialize the git submodules run
+Also, you need to initialize the git submodules:
 
 ```bash
 git submodule update --init --recursive
 ```
 
-Then from the `xmega` directory, run:
+#### Building the firmware
+
+From the `xmega` directory, run:
 
 ```bash
 make BOARD=keyplus_mini
@@ -55,11 +66,11 @@ You should then be able to program the board using the bootloader using:
 make BOARD=keyplus_mini program-boot
 ```
 
-#### Program bootloader
+#### Programming the bootloader
 
 If you have a board that you made yourself, then you will need to flash the
-bootloader before you can use the `program-boot` command. To do this, you
-will first need to build and flash the bootloader.
+bootloader before you can use the `program-boot` command. To do this, you will
+first need to build and flash the bootloader.
 
 To build the bootloader, first enter the `xmega/xusb-boot/` directory, and
 run:
