@@ -9,13 +9,12 @@ import sys
 import easyhid
 import struct
 
-from keyplus.crc16 import crc16_bytes
-import keyplus.cdata_types
 from keyplus.constants import *
 from keyplus.usb_ids import is_keyplus_usb_id
 from keyplus.error_table import KeyplusErrorTable
 import keyplus.exceptions
 from keyplus.exceptions import *
+from keyplus.device_info import *
 
 def _get_similar_serial_number(dev_list, serial_num):
     partial_match = None
@@ -72,7 +71,7 @@ def find_devices(name=None, serial_number=None, vid_pid=None, dev_id=None,
             try:
                 target_vid = int(matches[0], base=16)
             except TypeError:
-                KeyplusKeyboardError("Bad VID/PID pair: " + vid_pid)
+                KeyplusError("Bad VID/PID pair: " + vid_pid)
         elif len(matches) == 2:
             try:
                 if matches[0] == '':
@@ -84,7 +83,7 @@ def find_devices(name=None, serial_number=None, vid_pid=None, dev_id=None,
                 else:
                     target_pid = target_pid = int(matches[1], base=16)
             except TypeError:
-                raise KeyplusKeyboardError("Bad VID/PID pair: " + vid_pid)
+                raise KeyplusError("Bad VID/PID pair: " + vid_pid)
 
     assert(target_vid <= 0xffff)
     assert(target_pid <= 0xffff)
@@ -115,7 +114,7 @@ def find_devices(name=None, serial_number=None, vid_pid=None, dev_id=None,
                 continue
 
             matching_dev_list.append(new_kb)
-        except Exception as err:
+        except (KeyplusError, easyhid.HIDException) as err:
             # Couldn't open the device. Could be in use by another program or
             # do not have correct permissions to read from it.
             print("Warning: couldn't open device: " + str(err), file=sys.stderr)
@@ -128,11 +127,11 @@ class KeyplusKeyboard(object):
     def __init__(self, hid_device):
         self.hid_dev = hid_device
 
-        self.hid_dev.open()
-        self.get_device_info()
-        self.get_firmware_info()
-        self.get_layout_info()
-        self.hid_dev.close()
+        with self.hid_dev:
+            self.get_device_info()
+            self.get_firmware_info()
+            self.get_layout_info()
+            self.get_rf_info()
 
         self._is_connected = False
 
@@ -304,23 +303,17 @@ class KeyplusKeyboard(object):
         response = self.simple_command(CMD_GET_LAYER, [layout_id])
         return struct.unpack_from("<B HHH", response)
 
+    def get_rf_info(self):
+        response = self.simple_command(CMD_GET_INFO, [INFO_RF])[1:]
 
-class KeyboardSettingsInfo(keyplus.cdata_types.settings_t):
-    def has_valid_crc(self):
-        return self.crc == self.compute_crc()
+        rf_info = KeyboardRFInfo()
+        rf_info.unpack(response[0:SETTINGS_RF_INFO_HEADER_SIZE] + bytearray(AES_KEY_LEN*2))
+        self.rf_info = rf_info
 
-    def compute_crc(self):
-        return crc16_bytes(self.pack()[:-2])
+        print(rf_info)
 
-    def is_empty(self):
-        # check if the flash has been initialized
-        return sum([1 for byte in response if byte != 0xff]) == 0
+        return rf_info
 
-class KeyboardLayoutInfo(keyplus.cdata_types.layout_settings_header_t):
-    pass
-
-class KeyboardFirmwareInfo(keyplus.cdata_types.firmware_info_t):
-    pass
 
 if __name__ == '__main__':
     Keyboard()

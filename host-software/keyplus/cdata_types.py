@@ -7,7 +7,7 @@ import six
 
 import cstruct
 from cstruct import define, typedef, CStruct
-# from keyplus.constants import *
+from keyplus.constants import *
 
 typedef('uint8', 'uint8_t')
 typedef('uint16', 'uint16_t')
@@ -19,6 +19,8 @@ typedef('int32', 'int32_t')
 
 define('MAX_NUM_KEYBOARDS', 64)
 define('MAX_NUM_DEVICES', 64)
+define('AES_KEY_LEN', 16)
+define('NRF_ADDR_LEN', 5)
 
 class scan_plan_t(CStruct):
     __byte_order__ = cstruct.LITTLE_ENDIAN
@@ -103,4 +105,22 @@ class firmware_info_t(CStruct):
     uint16_t board_id;
     uint8_t internal_scan_method;
     uint8_t reserved[23];
+    """
+
+class rf_settings_t(CStruct):
+    __byte_order__ = cstruct.LITTLE_ENDIAN
+    __struct__ = """
+    uint8_t pipe_addr_0[NRF_ADDR_LEN];
+    uint8_t pipe_addr_1[NRF_ADDR_LEN];
+    uint8_t pipe_addr_2;
+    uint8_t pipe_addr_3;
+    uint8_t pipe_addr_4;
+    uint8_t pipe_addr_5;
+    uint8_t channel;
+    uint8_t arc;
+    uint8_t data_rate;
+    uint8_t power;
+    uint8_t _reserved[14];
+    uint8_t ekey[AES_KEY_LEN];
+    uint8_t dkey[AES_KEY_LEN];
     """

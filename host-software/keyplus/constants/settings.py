@@ -5,8 +5,10 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+AES_KEY_LEN = 16
 EP_VENDOR_SIZE = 64
-RF_INFO_SIZE = 64
+SETTINGS_RF_INFO_SIZE = 64
+SETTINGS_RF_INFO_HEADER_SIZE = (SETTINGS_RF_INFO_SIZE - AES_KEY_LEN*2)
 SETTINGS_SIZE = 512
 
 MAX_NUMBER_KEYBOARDS = 64
