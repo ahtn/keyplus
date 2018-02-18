@@ -5,34 +5,32 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-class KeyplusError(Exception):
-    pass
+from keyplus.constants import *
 
-class KeyplusProtocolError(KeyplusError):
+class KeyplusError(Exception):
     pass
 
 class KeyplusConnectError(KeyplusError):
     pass
 
+class KeyplusProtocolError(KeyplusError):
+    pass
 
-class ProtocolError:
-    def get_string(code):
-        for (key, value) in ProtocolError.__dict__.items():
-            if code == value:
-                return key
-        return "<Undefined error code>"
-
-class KBProtocolException(Exception):
+class KeyplusUSBCommandError(KeyplusError):
     def __init__(self, message="", code=None):
         if code:
-            message = ProtocolError.get_string(code)
+            message = self.get_string(code)
         super(Exception, self).__init__(message)
-        self.error_code = code
+        self.code = code
+
+    def get_string(self, code):
+        if code in CMD_ERROR_CODE_TABLE:
+            return CMD_ERROR_CODE_TABLE[code]
+        else:
+            return "UnknownCmdErrorCode({})".format(code)
 
 def raise_error_code(code):
-    if code == ProtocolError.ERROR_CODE_NONE:
+    if code == CMD_ERROR_CODE_NONE:
         pass
     else:
-        raise KBProtocolException(code=code)
-
-
+        raise KeyplusUSBCommandError(code=code)

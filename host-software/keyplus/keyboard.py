@@ -7,12 +7,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import sys
 import easyhid
+import struct
 
 from keyplus.crc16 import crc16_bytes
 import keyplus.cdata_types
 from keyplus.constants import *
 from keyplus.usb_ids import is_keyplus_usb_id
 from keyplus.error_table import KeyplusErrorTable
+import keyplus.exceptions
 from keyplus.exceptions import *
 
 def _get_similar_serial_number(dev_list, serial_num):
@@ -206,7 +208,7 @@ class KeyplusKeyboard(object):
 
 
             if response[0] == CMD_ERROR_CODE:
-                keyplus.protocol.raise_error_code(response[1])
+                keyplus.exceptions.raise_error_code(response[1])
             elif response[0] != cmd_id:
                 raise KeyplusProtocolError("Unexpected packet with packet_id: {}"
                         .format(response[0]))
@@ -297,6 +299,10 @@ class KeyplusKeyboard(object):
         layout_info.unpack(response[0:KeyboardLayoutInfo.__size__])
         self.layout_info = layout_info
         return layout_info
+
+    def get_layers(self, layout_id):
+        response = self.simple_command(CMD_GET_LAYER, [layout_id])
+        return struct.unpack_from("<B HHH", response)
 
 
 class KeyboardSettingsInfo(keyplus.cdata_types.settings_t):

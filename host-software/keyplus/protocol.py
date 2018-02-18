@@ -56,14 +56,6 @@ def simple_command(device, cmd_id, data=None, receive=True):
     else:
         return None
 
-def get_supported_features(device):
-    pass
-
-def get_layers(device, layout_id):
-    response = simple_command(device, CMD_GET_LAYER, [layout_id])
-    return struct.unpack_from("<B HHH", response)
-
-
 class KBInfoMain(KBInfoMainNamedTuple):
     @staticmethod
     def _make_with_crc(fields, crc, is_empty):
