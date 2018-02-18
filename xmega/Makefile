@@ -215,7 +215,7 @@ program-boot-2: $(MERGED_HEX)
 
 # program a board using an external programmer
 program-hard: $(MERGED_HEX)
-	$(AVRDUDE_CMD) -U flash:w:$<:i -E noreset
+	$(AVRDUDE_CMD) -U flash:w:$<:i -e -E noreset
 
 #######################################################################
 #                     fuse and lock bit settings                      #

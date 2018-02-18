@@ -15,11 +15,25 @@ Currently building of the firmware has been tested on Linux.
 
 ### xmega
 
-You will need the `avr-gcc` tool chain and `python3`.
+To compile the code on Linux, you will need the following programs installed:
+`avr-gcc`, `avr-libc`, `avr-binutils`, `python3`, `make` and `hidapi`. On Arch
+Linux:
+
+```
+sudo pacman -S avr-gcc avr-libc avr-binutils python3 make hidapi
+```
+
+Also, the build scripts needs some python libraries installed. You should get
+all the necessary packages if you install the `keyplus` python library with:
+
+```
+sudo pip install keyplus
+```
+
+Also, you to initialize the git submodules run
 
 ```bash
-git submodule init
-git submodule update
+git submodule update --init --recursive
 ```
 
 Then from the `xmega` directory, run:
@@ -34,6 +48,53 @@ into the generated hex file:
 ```bash
 make BOARD=keyplus_mini RF_FILE=rf.yaml LAYOUT_FILE=layout.yaml ID=0
 ```
+
+You should then be able to program the board using the bootloader using:
+
+```bash
+make BOARD=keyplus_mini program-boot
+```
+
+#### Program bootloader
+
+If you have a board that you made yourself, then you will need to flash the
+bootloader before you can use the `program-boot` command. To do this, you
+will first need to build and flash the bootloader.
+
+To build the bootloader, first enter the `xmega/xusb-boot/` directory, and
+run:
+
+```bash
+make BOARD=keyplus_mini
+```
+
+To program the bootloader, you will need a PDI programmer. Based on which
+programmer you are using you will need to change the `AVRDUDE_CMD` variable
+in the `Makefile`. The default is set for AVRISP MkII, so if you are using
+this programmer, you don't need to change anything.
+
+Then once the programmer is configured and connected to the board correctly,
+you should be able to run:
+```
+make program-fuses
+make BOARD=keyplus_mini program-hard
+make program-lock
+```
+
+#### Working with different XMEGA chips
+
+There are several different versions of xmega microcontrollers, with different
+flash and package sizes. The build system assumes that you are using an
+`ATxmega32a4u` by default. If you are not using this chip, then you will need
+to tell the build system which one you are using by setting the `MCU` variable.
+For example, to build the bootloader or firmware for the `ATxmega64a4u` you
+would need to call the `make` like this:
+
+```bash
+make MCU=atxmega64a4u BOARD=keyplus_mini
+```
+
+You will also need to set the `MCU` variable when calling the programming commands.
 
 ## Layout files
 
