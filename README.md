@@ -25,18 +25,17 @@ Linux:
 sudo pacman -S avr-gcc avr-libc avr-binutils python3 make hidapi
 ```
 
-The build scripts need some python libraries installed. You should get
-all the necessary packages if you install the `keyplus` python library with:
-
-```
-sudo pip install keyplus
-
 Make sure that you have a relatively recent version of
 `avr-gcc`. Some older versions do not have support for xmega chips (e.g. avr-gcc
 included in Ubuntu 14.04). If the build commands fail with an error like
 `warning "device type not defined"`, then you probably need a newer version
 of `avr-gcc` and `avr-libc`.
 
+The build scripts need some python libraries installed. You should get
+all the necessary packages if you install the `keyplus` python library with:
+
+```
+sudo pip install keyplus
 ```
 
 Also, you need to initialize the git submodules:
