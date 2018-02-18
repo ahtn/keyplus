@@ -166,17 +166,22 @@ uint8_t usb_print(const uint8_t *data, uint8_t len) {
     return 0;
 }
 
-void cmd_send_layer(uint8_t kb_slot_id) {
-    if (!is_keyboard_active(kb_slot_id)) {
+void cmd_send_layer(uint8_t kb_id) {
+    if (!is_keyboard_active(kb_id)) {
         cmd_error(CMD_ERROR_KEYBOARD_INACTIVE);
         return;
     }
 
+
+
     g_vendor_report_in.data[0] = CMD_LAYER_STATE;
-    g_vendor_report_in.data[1] = kb_slot_id;
-    memcpy(g_vendor_report_in.data + 2, (uint8_t*)&g_keyboard_slots[kb_slot_id].active_layers, 2),
-    memcpy(g_vendor_report_in.data + 4, (uint8_t*)&g_keyboard_slots[kb_slot_id].sticky_layers, 2),
-    memcpy(g_vendor_report_in.data + 6, (uint8_t*)&g_keyboard_slots[kb_slot_id].default_layers, 2),
+    g_vendor_report_in.data[1] = kb_id;
+    {
+        const uint8_t kb_slot_id = get_slot_id(kb_id);
+        memcpy(g_vendor_report_in.data + 2, (uint8_t*)&g_keyboard_slots[kb_slot_id].active_layers, 2);
+        memcpy(g_vendor_report_in.data + 4, (uint8_t*)&g_keyboard_slots[kb_slot_id].sticky_layers, 2);
+        memcpy(g_vendor_report_in.data + 6, (uint8_t*)&g_keyboard_slots[kb_slot_id].default_layers, 2);
+    }
     g_vendor_report_in.len = 8;
     send_vendor_report();
 }
