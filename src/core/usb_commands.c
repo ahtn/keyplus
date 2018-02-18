@@ -236,10 +236,11 @@ static void cmd_get_info(void) {
             SETTINGS_LAYOUT_INFO_SIZE
         );
     } else if (info_type == INFO_RF) {
+        // NOTE: this command doesn't return the AES keys
         flash_read(
             g_vendor_report_in.data+2,
             SETTINGS_ADDR + SETTINGS_RF_INFO_OFFSET,
-            SETTINGS_RF_INFO_SIZE
+            SETTINGS_RF_INFO_HEADER_SIZE
         );
     } else if (info_type == INFO_FIRMWARE) {
         flash_read(

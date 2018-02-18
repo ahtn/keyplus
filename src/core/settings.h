@@ -53,6 +53,7 @@ typedef struct {
 } layout_settings_t;
 
 #define SETTINGS_RF_INFO_SIZE 64
+#define SETTINGS_RF_INFO_HEADER_SIZE (SETTINGS_RF_INFO_SIZE - AES_KEY_LEN*2)
 #define SETTINGS_RF_INFO_OFFSET (offsetof(settings_t, rf))
 typedef struct rf_settings_t { // 64 bytes
     uint8_t pipe_addr_0[NRF_ADDR_LEN];
