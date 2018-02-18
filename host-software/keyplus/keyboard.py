@@ -15,12 +15,7 @@ import keyplus.cdata_types
 from keyplus.constants import *
 import keyplus.usb_ids
 from keyplus.error_table import KeyplusErrorTable
-
-class KeyplusKeyboardError(Exception):
-    pass
-
-class KeyplusKeyboardConnectError(KeyplusKeyboardError):
-    pass
+from keyplus.exceptions import *
 
 def is_keyplus_usb_id(vendor_id, product_id):
     return (vendor_id, product_id) in keyplus.usb_ids.KEYPLUS_USB_IDS
@@ -81,8 +76,7 @@ def find_devices(name=None, serial_number=None, vid_pid=None, dev_id=None,
         if len(matches) == 1:
             try:
                 target_vid = int(matches[0], base=16)
-                if target_vid > 0xffff: raise Exception
-            except:
+            except TypeError:
                 KeyplusKeyboardError("Bad VID/PID pair: " + vid_pid)
         elif len(matches) == 2:
             try:
@@ -94,10 +88,11 @@ def find_devices(name=None, serial_number=None, vid_pid=None, dev_id=None,
                     target_pid = None
                 else:
                     target_pid = target_pid = int(matches[1], base=16)
-                if target_vid and target_vid > 0xffff: raise Exception
-                if target_pid and target_pid > 0xffff: raise Exception
-            except:
+            except TypeError:
                 raise KeyplusKeyboardError("Bad VID/PID pair: " + vid_pid)
+
+    assert(target_vid <= 0xffff)
+    assert(target_pid <= 0xffff)
 
     if serial_number != None:
         serial_number = _get_similar_serial_number(hid_enumeration, serial_number)
@@ -137,11 +132,13 @@ def find_devices(name=None, serial_number=None, vid_pid=None, dev_id=None,
 class KeyplusKeyboard(object):
     def __init__(self, hid_device):
         self.hid_dev = hid_device
+
         self.hid_dev.open()
         self.get_device_info()
         self.get_firmware_info()
         self.get_layout_info()
         self.hid_dev.close()
+
         self._is_connected = False
 
     def _copy_device_info(self, other):
@@ -186,7 +183,7 @@ class KeyplusKeyboard(object):
             The bytes read from the command if `receive` is True
 
         Raises:
-            HIDException, KBProtocolException
+            HIDException, KeyplusProtocolError
         """
         cmd_packet = bytearray(EP_VENDOR_SIZE)
         cmd_packet[0] = cmd_id
@@ -195,7 +192,7 @@ class KeyplusKeyboard(object):
         if cmd_data != None:
             cmd_data = bytearray(cmd_data)
             if len(cmd_data) > (EP_VENDOR_SIZE-1):
-                raise KBProtocolException("Data can't fit in one packet. Got {} "
+                raise KeyplusProtocolError("Data can't fit in one packet. Got {} "
                     "bytes, max is {}".format(len(cmd_data), EP_VENDOR_SIZE))
             for i, byte in enumerate(cmd_data):
                 cmd_packet[i+1] = byte
@@ -218,7 +215,7 @@ class KeyplusKeyboard(object):
             if response[0] == CMD_ERROR_CODE:
                 keyplus.protocol.raise_error_code(response[1])
             elif response[0] != cmd_id:
-                raise KBProtocolException("Unexpected packet with packet_id: {}"
+                raise KeyplusProtocolError("Unexpected packet with packet_id: {}"
                         .format(response[0]))
             return response[1:]
         else:

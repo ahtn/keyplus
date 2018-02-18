@@ -5,6 +5,9 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from keyplus.exceptions import KeyplusProtocolError
+from keyplus.constants import ERROR_CODE_MAP
+
 class KeyplusErrorTable(object):
     NUM_ERROR_CODES = 128
     SIZE_ERROR_CODE_TABLE = NUM_ERROR_CODES // 8
@@ -14,7 +17,7 @@ class KeyplusErrorTable(object):
         self._error_table = error_table;
 
         if len(error_table) != self.SIZE_ERROR_CODE_TABLE:
-            raise KBProtocolException(
+            raise KeyplusProtocolError(
                 "Invalid size for error table, expected {} bytes but got {}"
                 .format(self.SIZE_ERROR_CODE_TABLE, len(error_table))
             )
@@ -38,7 +41,7 @@ class KeyplusErrorTable(object):
         if code in ERROR_CODE_MAP:
             return ERROR_CODE_MAP[code]
         else:
-            return "<UNKNOWN_ERROR_CODE>"
+            return "UnknownErrorCode({})".format(code)
 
 
     def has_critical_error(self):
