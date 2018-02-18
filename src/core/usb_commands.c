@@ -127,7 +127,7 @@ void cmd_error(uint8_t code) {
 }
 
 void cmd_ok(void) {
-    cmd_error(ERROR_CODE_NONE);
+    cmd_error(CMD_ERROR_CODE_NONE);
 }
 
 /* TODO: abstract */
@@ -168,7 +168,7 @@ uint8_t usb_print(const uint8_t *data, uint8_t len) {
 
 void cmd_send_layer(uint8_t kb_slot_id) {
     if (!is_keyboard_active(kb_slot_id)) {
-        cmd_error(ERROR_KEYBOARD_INACTIVE);
+        cmd_error(CMD_ERROR_KEYBOARD_INACTIVE);
         return;
     }
 
@@ -286,7 +286,7 @@ void parse_cmd(void) {
 #ifndef NO_MATRIX
         case CMD_SET_PASSTHROUGH_MODE: {
             if (g_scan_plan.mode == MATRIX_SCANNER_MODE_NO_MATRIX ) {
-                cmd_error(ERROR_UNSUPPORTED_COMMAND);
+                cmd_error(CMD_ERROR_UNSUPPORTED_COMMAND);
             } else {
                 passthrough_mode_on = data1;
                 cmd_ok();
@@ -306,7 +306,7 @@ void parse_cmd(void) {
             } else if (update_type == SETTING_UPDATE_KEEP_RF) {
                 flash_layout.num_packets = (SETTINGS_SIZE - SETTINGS_RF_INFO_SIZE) / EP_SIZE_VENDOR;
             } else {
-                cmd_error(ERROR_INVALID_VALUE);
+                cmd_error(CMD_ERROR_INVALID_VALUE);
                 return;
             }
 
@@ -338,7 +338,7 @@ void parse_cmd(void) {
 
             number_pages = (flash_layout.num_packets+(CHUNKS_PER_PAGE-1))/CHUNKS_PER_PAGE;
             if (number_pages > LAYOUT_PAGE_COUNT) {
-                cmd_error(ERROR_CODE_TOO_MUCH_DATA);
+                cmd_error(CMD_ERROR_CODE_TOO_MUCH_DATA);
                 return;
             }
 
@@ -358,7 +358,7 @@ void parse_cmd(void) {
             cmd_unifying_pairing();
         } break;
         default: {
-            cmd_error(ERROR_UNKNOWN_CMD);
+            cmd_error(CMD_ERROR_UNKNOWN_CMD);
         } break;
     }
 }

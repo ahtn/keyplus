@@ -64,7 +64,7 @@ void xmega_common_init(void) {
     pin_init();
     settings_load_from_flash();
     aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
-    led_testing_set(0);
+    led_testing_set(0, 0);
     matrix_scanner_init();
 }
 
@@ -112,324 +112,324 @@ void battery_mode_main_loop(void) {
         scan_changed = false;
         if (matrix_needs_scanning) {
 #else
-        {
+            {
 #endif
-            // TODO: Add an optimization to skip matrix scanning all together if
-            // no keys are down. If no keys are down or debouncing, then we can set
-            // the matrix in interrupt mode. Then as long as no matrix interrupts
-            // are generated, we don't need to scan th matrix.
-            scan_changed = matrix_scan();
-        }
+                // TODO: Add an optimization to skip matrix scanning all together if
+                // no keys are down. If no keys are down or debouncing, then we can set
+                // the matrix in interrupt mode. Then as long as no matrix interrupts
+                // are generated, we don't need to scan th matrix.
+                scan_changed = matrix_scan();
+            }
 
-        uint8_t nrf_status = nrf24_read_status();
+            uint8_t nrf_status = nrf24_read_status();
 
-        // TODO: add queue of messages.
-        // try process messages based on order in queue.
-        // drop messages if queued for too long
-        if (nrf_status & (STATUS_MAX_RT_bm)) {
-            // TODO: Probably want to do this differently.
-            // Instead, when we write an RF packet, we should check if the TX
-            // buffer is full, then, if it is we should queue the packet for
-            // a time when it is not full.
-            //
-            // Then if we have lots of failed attempts, we should clear
-            // messages from the queue.
-            err_count++;
+            // TODO: add queue of messages.
+            // try process messages based on order in queue.
+            // drop messages if queued for too long
+            if (nrf_status & (STATUS_MAX_RT_bm)) {
+                // TODO: Probably want to do this differently.
+                // Instead, when we write an RF packet, we should check if the TX
+                // buffer is full, then, if it is we should queue the packet for
+                // a time when it is not full.
+                //
+                // Then if we have lots of failed attempts, we should clear
+                // messages from the queue.
+                err_count++;
 
-            if (err_count > MAX_RETRY_COUNT) {
-                nrf24_flush_tx();
+                if (err_count > MAX_RETRY_COUNT) {
+                    nrf24_flush_tx();
+                    err_count = 0;
+                } else {
+                    nrf24_send_one();
+                }
+                nrf24_write_reg(NRF_STATUS, STATUS_MAX_RT_bm);
+            }
+
+            if (scan_changed) {
+                rf_send_matrix_packet();
+                idle_time_start = timer_read16_ms();
+            }
+
+            if (NRF24_STATUS_RX_PIPE(nrf_status) != STATUS_RX_FIFO_EMPTY ) {
+                rf_handle_ack_payloads();
+            }
+
+            // TODO: We can combine getting the FIFO_STATUS and STATUS register
+            // into one SPI transaction.
+            uint8_t fifo_status = nrf24_read_reg(FIFO_STATUS);
+
+            if (fifo_status & FIFO_TX_EMPTY_bm) {
+                // empty
                 err_count = 0;
             } else {
+                // not empty
                 nrf24_send_one();
             }
-            nrf24_write_reg(NRF_STATUS, STATUS_MAX_RT_bm);
-        }
 
-        if (scan_changed) {
-            rf_send_matrix_packet();
-            idle_time_start = timer_read16_ms();
-        }
-
-        if (NRF24_STATUS_RX_PIPE(nrf_status) != STATUS_RX_FIFO_EMPTY ) {
-            rf_handle_ack_payloads();
-        }
-
-        // TODO: We can combine getting the FIFO_STATUS and STATUS register
-        // into one SPI transaction.
-        uint8_t fifo_status = nrf24_read_reg(FIFO_STATUS);
-
-        if (fifo_status & FIFO_TX_EMPTY_bm) {
-            // empty
-            err_count = 0;
-        } else {
-            // not empty
-            nrf24_send_one();
-        }
-
-        if (get_matrix_num_keys_down() == 0 &&
-            (uint16_t)(timer_read16_ms() - idle_time_start) > DEEP_SLEEP_TIME &&
-            get_matrix_num_keys_debouncing() == 0 &&
-            !scan_changed &&
-            (fifo_status & FIFO_TX_EMPTY_bm)
-            ) {
-            deep_sleep();
-            idle_time_start = timer_read16_ms();
-            matrix_needs_scanning = true;
-            deep_sleep_resync_packet = true;
-        } else {
+            if (get_matrix_num_keys_down() == 0 &&
+                (uint16_t)(timer_read16_ms() - idle_time_start) > DEEP_SLEEP_TIME &&
+                get_matrix_num_keys_debouncing() == 0 &&
+                !scan_changed &&
+                (fifo_status & FIFO_TX_EMPTY_bm)
+               ) {
+                deep_sleep();
+                idle_time_start = timer_read16_ms();
+                matrix_needs_scanning = true;
+                deep_sleep_resync_packet = true;
+            } else {
 
 #if ADAPTIVE_SCAN
-            uint8_t num_keys = get_matrix_num_keys_down();
+                uint8_t num_keys = get_matrix_num_keys_down();
 
-            if (num_keys == 0 && get_matrix_num_keys_debouncing() == 0) {
-                matrix_scan_irq_enable();
+                if (num_keys == 0 && get_matrix_num_keys_debouncing() == 0) {
+                    matrix_scan_irq_enable();
 
-                // this wakes up everytime the timer ticks, or when a key is
-                // pressed
-                enter_sleep_mode(SLEEP_MODE_PWR_SAVE);
+                    // this wakes up everytime the timer ticks, or when a key is
+                    // pressed
+                    enter_sleep_mode(SLEEP_MODE_PWR_SAVE);
 
-                if (matrix_has_active_row()) {
-                    matrix_needs_scanning = true;
-                    matrix_scan_irq_disable();
+                    if (matrix_has_active_row()) {
+                        matrix_needs_scanning = true;
+                        matrix_scan_irq_disable();
+                    } else {
+                        matrix_needs_scanning = false;
+                    }
                 } else {
-                    matrix_needs_scanning = false;
+                    // this wakes up everytime the timer ticks
+                    enter_sleep_mode(SLEEP_MODE_PWR_SAVE);
+                    matrix_needs_scanning = true;
                 }
-            } else {
-                // this wakes up everytime the timer ticks
-                enter_sleep_mode(SLEEP_MODE_PWR_SAVE);
-                matrix_needs_scanning = true;
-            }
 #else
-        enter_sleep_mode(SLEEP_MODE_PWR_SAVE);
+                enter_sleep_mode(SLEEP_MODE_PWR_SAVE);
 #endif
 
-            // NOTE: This sends an additional packet after wakeup from deep
-            // sleep. This is done because in the nRF ESB protocl we can only
-            // receive data immediately after we send a packet (i.e. in ACK
-            // payloads). We might need to resync our AES counter when
-            // waking from deep sleep, so we need to be able to receive an ACK
-            // payload after wakeup from deep sleep.
-            // If this is not done, an unsynced device might not be able to
-            // register a key press until a second key is pressed.
-            if (deep_sleep_resync_packet) {
-                rf_send_matrix_packet();
-                deep_sleep_resync_packet = false;
+                // NOTE: This sends an additional packet after wakeup from deep
+                // sleep. This is done because in the nRF ESB protocl we can only
+                // receive data immediately after we send a packet (i.e. in ACK
+                // payloads). We might need to resync our AES counter when
+                // waking from deep sleep, so we need to be able to receive an ACK
+                // payload after wakeup from deep sleep.
+                // If this is not done, an unsynced device might not be able to
+                // register a key press until a second key is pressed.
+                if (deep_sleep_resync_packet) {
+                    rf_send_matrix_packet();
+                    deep_sleep_resync_packet = false;
+                }
             }
         }
     }
-}
 #endif
 
-/*********************************************************************
- *                             USB Mode                              *
- *********************************************************************/
+    /*********************************************************************
+     *                             USB Mode                              *
+     *********************************************************************/
 
 #if USE_USB
 
-void usb_mode_setup(void) {
-    set_power_mode(MODE_USB);
+    void usb_mode_setup(void) {
+        set_power_mode(MODE_USB);
 
-    timer_init();
+        timer_init();
 
-    wdt_init();
+        wdt_init();
 
-    g_slow_clock_mode = 0;
-    usb_configure_clock();
+        g_slow_clock_mode = 0;
+        usb_configure_clock();
 
-    xmega_common_init();
+        xmega_common_init();
 
-    reset_usb_reports();
-    keyboards_init();
+        reset_usb_reports();
+        keyboards_init();
 
 #if DUAL_USB
-    init_bus_switches();
+        init_bus_switches();
 #else
-    usb_init();
-#endif
-
-#if USE_I2C
-    i2c_init();
-#endif
-
-    // enable all interrupt levels
-    PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
-
-    // Enable USB interrupts
-    USB.INTCTRLA = USB_SOFIE_bm | USB_BUSEVIE_bm | USB_INTLVL_MED_gc;
-    USB.INTCTRLB = USB_TRNIE_bm | USB_SETUPIE_bm;
-
-    sei();
-
-#if DUAL_USB
-    const uint8_t s_has_usb_port = usb_find_port();
-    if (s_has_usb_port) {
         usb_init();
-        usb_attach();
-    }
+#endif
+
+#if USE_I2C
+        i2c_init();
+#endif
+
+        // enable all interrupt levels
+        PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
+
+        // Enable USB interrupts
+        USB.INTCTRLA = USB_SOFIE_bm | USB_BUSEVIE_bm | USB_INTLVL_MED_gc;
+        USB.INTCTRLB = USB_TRNIE_bm | USB_SETUPIE_bm;
+
+        sei();
+
+#if DUAL_USB
+        const uint8_t s_has_usb_port = usb_find_port();
+        if (s_has_usb_port) {
+            usb_init();
+            usb_attach();
+        }
 #else
-    // TODO: when we don't have the dual USB feature, need to check if we are
-    // have a USB connection as well
-    const uint8_t s_has_usb_port = true;
-    usb_attach();
+        // TODO: when we don't have the dual USB feature, need to check if we are
+        // have a USB connection as well
+        const uint8_t s_has_usb_port = true;
+        usb_attach();
 #endif
 
-    g_rf_enabled = false;
+        g_rf_enabled = false;
 #if USE_NRF24
-    if (s_has_usb_port) {
-        rf_init_receive();
-    }
-#endif
-}
-
-NO_RETURN_ATTR void recovery_mode_main_loop(void);
-extern port_mask_t s_available_pins[IO_PORT_COUNT];
-
-void usb_mode_main_loop(void) {
-    if (has_critical_error()) {
-        recovery_mode_main_loop();
-    }
-
-    while (1) {
-        bool scan_changed = false;
-
-        scan_changed |= matrix_scan();
-
-        // TODO: need to clean this up
-        if (scan_changed) {
-            uint8_t i2c_packet[32];
-            uint8_t *matrix_data = i2c_packet+1;
-            const uint8_t use_deltas = true;
-
-#if USE_I2C
-            i2c_packet[0] = (i2c_get_active_address() << 1) | 0x01;
-#endif
-
-            const uint8_t data_size = get_matrix_data(matrix_data, use_deltas);
-
-#if USE_I2C
-            if (!g_runtime_settings.feature.ctrl.wired_disabled) {
-                i2c_packet[data_size+1] = i2c_calculate_checksum(i2c_packet, data_size+1);
-
-
-                // TODO: IMPORTANT! really need to fix this
-                // TODO: don't block here, add buffer for queued messages
-                // while (!i2c_broadcast(i2c_packet, data_size+2));
-
-                // TODO: I2C is broken
-                // i2c_broadcast(i2c_packet, data_size+2);
-            }
-#endif
-
-            keyboard_update_device_matrix(GET_SETTING(device_id), matrix_data);
-
-            if (is_passthrough_enabled()) {
-                // send the raw matrix data to the host
-                queue_vendor_in_packet(
-                    CMD_PASSTHROUGH_MATRIX,
-                    (uint8_t*)g_matrix,
-                    MATRIX_DATA_SIZE,
-                    STATIC_LENGTH_CMD // TODO: make this a variable?
-                );
-            }
-        }
-
-// #if USE_I2C
-        // // check for i2c data
-        // {
-        //     uint8_t *i2c_packet = i2c_get_buffer();
-        //     while (i2c_packet) {
-        //         const uint8_t sender_i2c_address = i2c_packet[0] >> 1;
-        //         const uint8_t sender_device_id = i2c_address_to_device_id(sender_i2c_address);
-        //         keyboard_update_device_matrix(sender_device_id, i2c_packet+1);
-
-        //         i2c_buffer_advance();
-        //         i2c_packet = i2c_get_buffer();
-        //     }
-        // }
-// #endif
-
-        interpret_all_keyboard_matrices();
-
-#if USE_NRF24
-        if (g_rf_enabled) {
-            // TODO: might want to implement a scheduling system for tasks
-            if (unifying_is_pairing_active()) {
-                unifying_pairing_poll();
-            } else {
-                rf_task();
-            }
-            unifying_mouse_handle();
+        if (s_has_usb_port) {
+            rf_init_receive();
         }
 #endif
-        macro_task();
+    }
 
-        send_keyboard_report();
-        send_media_report();
-        send_mouse_report();
-        send_vendor_report();
+    NO_RETURN_ATTR void recovery_mode_main_loop(void);
+    extern port_mask_t s_available_pins[IO_PORT_COUNT];
 
-        // usb out reports
-        handle_vendor_out_reports();
+    void usb_mode_main_loop(void) {
+        if (has_critical_error()) {
+            recovery_mode_main_loop();
+        }
 
-        sticky_key_task();
-        hold_key_task();
+        while (1) {
+            bool scan_changed = false;
 
-        // led_task();
+            scan_changed |= matrix_scan();
+
+            // TODO: need to clean this up
+            if (scan_changed) {
+                uint8_t i2c_packet[32];
+                uint8_t *matrix_data = i2c_packet+1;
+                const uint8_t use_deltas = true;
+
+#if USE_I2C
+                i2c_packet[0] = (i2c_get_active_address() << 1) | 0x01;
+#endif
+
+                const uint8_t data_size = get_matrix_data(matrix_data, use_deltas);
+
+#if USE_I2C
+                if (!g_runtime_settings.feature.ctrl.wired_disabled) {
+                    i2c_packet[data_size+1] = i2c_calculate_checksum(i2c_packet, data_size+1);
+
+
+                    // TODO: IMPORTANT! really need to fix this
+                    // TODO: don't block here, add buffer for queued messages
+                    // while (!i2c_broadcast(i2c_packet, data_size+2));
+
+                    // TODO: I2C is broken
+                    // i2c_broadcast(i2c_packet, data_size+2);
+                }
+#endif
+
+                keyboard_update_device_matrix(GET_SETTING(device_id), matrix_data);
+
+                if (is_passthrough_enabled()) {
+                    // send the raw matrix data to the host
+                    queue_vendor_in_packet(
+                        CMD_PASSTHROUGH_MATRIX,
+                        (uint8_t*)g_matrix,
+                        MATRIX_DATA_SIZE,
+                        STATIC_LENGTH_CMD // TODO: make this a variable?
+                        );
+                }
+            }
+
+            // #if USE_I2C
+            // // check for i2c data
+            // {
+            //     uint8_t *i2c_packet = i2c_get_buffer();
+            //     while (i2c_packet) {
+            //         const uint8_t sender_i2c_address = i2c_packet[0] >> 1;
+            //         const uint8_t sender_device_id = i2c_address_to_device_id(sender_i2c_address);
+            //         keyboard_update_device_matrix(sender_device_id, i2c_packet+1);
+
+            //         i2c_buffer_advance();
+            //         i2c_packet = i2c_get_buffer();
+            //     }
+            // }
+            // #endif
+
+            interpret_all_keyboard_matrices();
+
+#if USE_NRF24
+            if (g_rf_enabled) {
+                // TODO: might want to implement a scheduling system for tasks
+                if (unifying_is_pairing_active()) {
+                    unifying_pairing_poll();
+                } else {
+                    rf_task();
+                }
+                unifying_mouse_handle();
+            }
+#endif
+            macro_task();
+
+            send_keyboard_report();
+            send_media_report();
+            send_mouse_report();
+            send_vendor_report();
+
+            // usb out reports
+            handle_vendor_out_reports();
+
+            sticky_key_task();
+            hold_key_task();
+
+            // led_task();
 
 #if USE_NRF24 && RF_POLLING
-        // Don't have RF IRQ, so don't sleep to reduce chance that packets are
-        // dropped
-        // debug_toggle(0);
+            // Don't have RF IRQ, so don't sleep to reduce chance that packets are
+            // dropped
+            // debug_toggle(0);
 #else
-        // okay to sleep if we have RF IRQ
-        // debug_set(0, 1);
-        enter_sleep_mode(SLEEP_MODE_IDLE);
-        // debug_set(0, 0);
+            // okay to sleep if we have RF IRQ
+            // debug_set(0, 1);
+            enter_sleep_mode(SLEEP_MODE_IDLE);
+            // debug_set(0, 0);
 #endif
 
-        wdt_kick();
+            wdt_kick();
+        }
     }
-}
 
-NO_RETURN_ATTR void recovery_mode_main_loop(void) {
-    while (1) {
-        usb_print((uint8_t*)"Critical Error", sizeof("Critical Error"));
-        send_vendor_report();
-        handle_vendor_out_reports();
+    NO_RETURN_ATTR void recovery_mode_main_loop(void) {
+        while (1) {
+            usb_print((uint8_t*)"Critical Error", sizeof("Critical Error"));
+            send_vendor_report();
+            handle_vendor_out_reports();
 
-        enter_sleep_mode(SLEEP_MODE_IDLE);
-        wdt_kick();
+            enter_sleep_mode(SLEEP_MODE_IDLE);
+            wdt_kick();
+        }
     }
-}
 
 #endif
 
-int main(void) {
-    // Disable the wdt incase it was running
-    wdt_disable();
-    init_debug();
+    int main(void) {
+        // Disable the wdt incase it was running
+        wdt_disable();
+        init_debug();
 
 #if USE_CHECK_PIN
-    // Enable VBUS pin so we can check USB voltage
-    vbus_pin_init();
+        // Enable VBUS pin so we can check USB voltage
+        vbus_pin_init();
 #endif
 
 #if USE_NRF24 && USE_CHECK_PIN
-    if (has_vbus_power())
-    {
-        usb_mode_setup();
-        usb_mode_main_loop();
-    } else {
+        if (has_vbus_power())
+        {
+            usb_mode_setup();
+            usb_mode_main_loop();
+        } else {
+            battery_mode_setup();
+            battery_mode_main_loop();
+        }
+#elif !USE_CHECK_PIN && USE_NRF24
         battery_mode_setup();
         battery_mode_main_loop();
-    }
-#elif !USE_CHECK_PIN && USE_NRF24
-    battery_mode_setup();
-    battery_mode_main_loop();
 #else
-    usb_mode_setup();
-    usb_mode_main_loop();
+        usb_mode_setup();
+        usb_mode_main_loop();
 #endif
 
-    return 0;
-}
+        return 0;
+    }

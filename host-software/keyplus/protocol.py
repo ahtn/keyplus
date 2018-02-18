@@ -14,34 +14,6 @@ DEFAULT_INTERFACE = 3
 
 from keyplus import *
 
-class ProtocolError:
-    ERROR_CODE_NONE = 0
-    ERROR_CODE_TOO_MUCH_DATA = 1
-    ERROR_INVALID_VALUE = 2
-    ERROR_KEYBOARD_INACTIVE = 3
-    ERROR_UNKNOWN_CMD = 4
-    ERROR_UNSUPPORTED_COMMAND = 5
-
-    def get_string(code):
-        for (key, value) in ProtocolError.__dict__.items():
-            if code == value:
-                return key
-        return "<Undefined error code>"
-
-class KBProtocolException(Exception):
-    def __init__(self, message="", code=None):
-        if code:
-            message = ProtocolError.get_string(code)
-        super(Exception, self).__init__(message)
-        self.error_code = code
-
-def raise_error_code(code):
-    if code == ProtocolError.ERROR_CODE_NONE:
-        pass
-    else:
-        raise KBProtocolException(code=code)
-
-
 def simple_command(device, cmd_id, data=None, receive=True):
     """
     Raises:

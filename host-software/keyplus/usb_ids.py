@@ -5,6 +5,10 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+###############################################################################
+#                                   classes                                   #
+###############################################################################
+
 class USBDeviceInfo(object):
     def __init__(self, vid, pid, description):
         self.vid = vid
@@ -27,6 +31,9 @@ class USBBootloaderInfo(USBDeviceInfo):
             vid, pid, description
         )
 
+###############################################################################
+#                                  constants                                  #
+###############################################################################
 
 KEYPLUS_USB_IDS = {
     (0x6666, 0x1111): USBKeyplusKeyboardInfo(
@@ -79,3 +86,10 @@ BOOTLOADER_USB_IDS = {
         description = "Nordic nRF24LU1+ factory bootloader",
     ),
 }
+
+###############################################################################
+#                                  functions                                  #
+###############################################################################
+
+def is_keyplus_usb_id(vendor_id, product_id):
+    return (vendor_id, product_id) in KEYPLUS_USB_IDS

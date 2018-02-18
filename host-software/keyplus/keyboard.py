@@ -5,21 +5,15 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import six
 import sys
-
 import easyhid
 
 from keyplus.crc16 import crc16_bytes
 import keyplus.cdata_types
 from keyplus.constants import *
-import keyplus.usb_ids
+from keyplus.usb_ids import is_keyplus_usb_id
 from keyplus.error_table import KeyplusErrorTable
 from keyplus.exceptions import *
-
-def is_keyplus_usb_id(vendor_id, product_id):
-    return (vendor_id, product_id) in keyplus.usb_ids.KEYPLUS_USB_IDS
-
 
 def _get_similar_serial_number(dev_list, serial_num):
     partial_match = None
@@ -46,7 +40,6 @@ def _get_similar_serial_number(dev_list, serial_num):
         return partial_match
     else:
         return serial_num
-
 
 def find_devices(name=None, serial_number=None, vid_pid=None, dev_id=None,
                  hid_enumeration=None):
@@ -263,7 +256,7 @@ class KeyplusKeyboard(object):
 
     def get_error_info(device):
         """ Read the error code table from the device. """
-        response = self.simple_command(CMD_GET_DEVICE_SETTINGS, [INFO_ERROR_SYSTEM])[1:]
+        response = self.simple_command(CMD_GET_INFO, [INFO_ERROR_SYSTEM])[1:]
         error_table_data = response[:KeyplusErrorTable.SIZE_ERROR_CODE_TABLE]
         return KeyplusErrorTable(error_table_data)
 
@@ -282,8 +275,8 @@ class KeyplusKeyboard(object):
 
     def get_device_info(self):
         DEVICE_INFO_SIZE = 96
-        response = self.simple_command(CMD_GET_DEVICE_SETTINGS, [INFO_MAIN_0])[1:]
-        response += self.simple_command(CMD_GET_DEVICE_SETTINGS, [INFO_MAIN_1])[1:]
+        response = self.simple_command(CMD_GET_INFO, [INFO_MAIN_0])[1:]
+        response += self.simple_command(CMD_GET_INFO, [INFO_MAIN_1])[1:]
         response = response[0:DEVICE_INFO_SIZE]
 
         dev_info = KeyboardSettingsInfo()
@@ -292,14 +285,14 @@ class KeyplusKeyboard(object):
         return dev_info
 
     def get_firmware_info(self):
-        response = self.simple_command(CMD_GET_DEVICE_SETTINGS, [INFO_FIRMWARE])[1:]
+        response = self.simple_command(CMD_GET_INFO, [INFO_FIRMWARE])[1:]
         fw_info = KeyboardFirmwareInfo()
         fw_info.unpack(response)
         self.fw_info = fw_info
         return fw_info
 
     def get_layout_info(self):
-        response = self.simple_command(CMD_GET_DEVICE_SETTINGS, [INFO_LAYOUT])[1:]
+        response = self.simple_command(CMD_GET_INFO, [INFO_LAYOUT])[1:]
         layout_info = KeyboardLayoutInfo()
         layout_info.unpack(response[0:KeyboardLayoutInfo.__size__])
         self.layout_info = layout_info
