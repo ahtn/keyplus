@@ -26,14 +26,14 @@ REPORT_MODE_STR_MAP = {
 }
 
 # FEATURE_CTRL bit mask values
-FEATURE_CTRL_USB        = (1 << 0)
-FEATURE_CTRL_WIRED      = (1 << 1)
-FEATURE_CTRL_RF         = (1 << 2)
-FEATURE_CTRL_RF_MOUSE   = (1 << 3)
-FEATURE_CTRL_BT         = (1 << 4)
-FEATURE_CTRL_RESERVED_0 = (1 << 5)
-FEATURE_CTRL_RESERVED_1 = (1 << 6)
-FEATURE_CTRL_RESERVED_2 = (1 << 7)
+FEATURE_CTRL_USB_DISABLE      = (1 << 0)
+FEATURE_CTRL_WIRED_DISABLE    = (1 << 1)
+FEATURE_CTRL_RF_DISABLE       = (1 << 2)
+FEATURE_CTRL_RF_MOUSE_DISABLE = (1 << 3)
+FEATURE_CTRL_BT_DISABLE       = (1 << 4)
+FEATURE_CTRL_RESERVED_0       = (1 << 5)
+FEATURE_CTRL_RESERVED_1       = (1 << 6)
+FEATURE_CTRL_RESERVED_2       = (1 << 7)
 
 ###############################################################################
 #                           firmware info constants                           #

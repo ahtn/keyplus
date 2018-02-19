@@ -43,7 +43,7 @@ def _get_similar_serial_number(dev_list, serial_num):
     else:
         return serial_num
 
-def find_devices(name=None, serial_number=None, vid_pid=None, dev_id=None,
+def find_devices(name=None, serial_number=None, vid_pid=None, device_id=None,
                  hid_enumeration=None):
     """
     Returns a list of keyplus keyboards that are currently connected to the
@@ -56,7 +56,7 @@ def find_devices(name=None, serial_number=None, vid_pid=None, dev_id=None,
             not found.
         vid_pid: filter list by the USB vendor and product id for the device in
             the format 'VID:PID'.
-        dev_id: filter list by device id
+        device_id: filter list by device id
         hid_enumeration: an enumeration of USB devices to test. If this argument
             is not set, the function will call `easyhid.Enumeration()` itself.
     """
@@ -109,7 +109,7 @@ def find_devices(name=None, serial_number=None, vid_pid=None, dev_id=None,
                 continue
 
             new_kb = KeyplusKeyboard(hid_dev)
-            if dev_id != None and dev_id != new_kb.get_device_id():
+            if device_id != None and device_id != new_kb.get_device_id():
                 continue
             if name != None and (name not in new_kb.get_device_name()):
                 continue

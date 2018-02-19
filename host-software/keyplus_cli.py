@@ -14,6 +14,8 @@ import layout.parser
 import protocol
 import easyhid
 
+import keyplus
+
 __version_info__ = (0, 0, 1)
 __version__ = '.'.join([str(i) for i in __version_info__])
 
@@ -104,7 +106,7 @@ class GenericDeviceCommand(GenericCommand):
         super(GenericDeviceCommand, self).__init__(description)
 
         self.arg_parser.add_argument(
-            '-i', '--id', dest='dev_id', type=int, default=None,
+            '-i', '--id', dest='device_id', type=int, default=None,
             help='The id of the device to program'
         )
 
@@ -123,98 +125,20 @@ class GenericDeviceCommand(GenericCommand):
             help='Name of the USB device to use. Can be a partial match.'
         )
 
-    def get_similar_serial_number(self, dev_list, serial):
-        partial_match = None
-        partial_match_pos = None
-        for dev in dev_list.find():
-            if dev.serial_number == serial:
-                # found an exact match
-                return serial
-            elif partial_match == None:
-                # didn't find an exact match, so keep track of partial matches
-                match_pos = dev.serial_number.find(serial)
-
-                # no match, ignore
-                if match_pos == -1:
-                    continue
-
-                # update the best match we found, prioritize serial numbers
-                # that match near the start of the string
-                if partial_match_pos == None or match_pos < partial_match_pos:
-                    partial_match = dev.serial_number
-                    partial_match_pos = match_pos
-
-        if partial_match:
-            return partial_match
-        else:
-            return serial
-
     def find_matching_device(self, args):
-        hid_list = easyhid.Enumeration()
-
-        target_vid = protocol.DEFAULT_VID
-        target_pid = None
-
-        if args.vid_pid:
-            matches = args.vid_pid.split(":")
-            if len(matches) == 1:
-                try:
-                    target_vid = int(matches[0], base=16)
-                    if target_vid > 0xffff: raise Exception
-                except:
-                    print("Bad VID/PID pair: " + args.vid_pid, file=sys.stderr)
-                    exit(EXIT_MATCH_DEVICE)
-            elif len(matches) == 2:
-                try:
-                    if matches[0] == '':
-                        target_vid = None
-                    else:
-                        target_vid = target_vid = int(matches[0], base=16)
-                    if matches[1] == '':
-                        target_pid = None
-                    else:
-                        target_pid = target_pid = int(matches[1], base=16)
-                    if target_vid and target_vid > 0xffff: raise Exception
-                    if target_pid and target_pid > 0xffff: raise Exception
-                except:
-                    print("Bad VID/PID pair: " + args.vid_pid, file=sys.stderr)
-                    exit(EXIT_MATCH_DEVICE)
-
-        if args.serial != None:
-            args.serial = self.get_similar_serial_number(hid_list, args.serial)
-
-        matching_devices = hid_list.find(
-            vid=target_vid,
-            pid=target_pid,
-            serial=args.serial,
-            interface=3
+        matching_devices = keyplus.find_devices(
+            name = args.name,
+            device_id = args.device_id,
+            vid_pid = args.vid_pid,
+            serial_number = args.serial,
         )
-
-        if len(matching_devices) == 0:
-            print("Couldn't find a matching device to open", file=sys.stderr)
-            exit(EXIT_MATCH_DEVICE)
-
-        if args.dev_id != None:
-            matching_id_list = []
-            for dev in matching_devices:
-                try:
-                    dev.open()
-                    dev_info = protocol.get_device_info(dev)
-                    dev.close()
-                    if dev_info.id == args.dev_id:
-                        matching_id_list.append(dev)
-                except:
-                    print("Warning: couldn't open device: " + str(dev), file=sys.stderr)
-                    dev.close()
-            matching_devices = matching_id_list
-
         num_matches = len(matching_devices)
 
         if num_matches== 0:
             print("Couldn't find any matching devices.", file=sys.stderr)
             exit(EXIT_MATCH_DEVICE)
         elif num_matches == 1:
-            return matching_devices[0]
+            return matching_devices[0].hid_dev
         elif num_matches > 1:
             print("Error: found {} matching devices, select a specifc device or "
                   "disconnect the other devices".format(num_matches), file=sys.stderr)

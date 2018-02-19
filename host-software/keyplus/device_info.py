@@ -90,11 +90,11 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_t):
         return scan_mode_to_str(self.scan_mode)
 
 _make_bit_field_variables(KeyboardSettingsInfo, [
-    ("feature_ctrl" , "has_usb"       , FEATURE_CTRL_USB)      ,
-    ("feature_ctrl" , "has_i2c"       , FEATURE_CTRL_WIRED)    ,
-    ("feature_ctrl" , "has_nrf24"     , FEATURE_CTRL_RF)       ,
-    ("feature_ctrl" , "has_unifying"  , FEATURE_CTRL_RF_MOUSE) ,
-    ("feature_ctrl" , "has_bluetooth" , FEATURE_CTRL_BT)       ,
+    ("feature_ctrl" , "usb_disabled"       , FEATURE_CTRL_USB_DISABLE)      ,
+    ("feature_ctrl" , "i2c_disabled"       , FEATURE_CTRL_WIRED_DISABLE)    ,
+    ("feature_ctrl" , "nrf24_disabled"     , FEATURE_CTRL_RF_DISABLE)       ,
+    ("feature_ctrl" , "unifying_disabled"  , FEATURE_CTRL_RF_MOUSE_DISABLE) ,
+    ("feature_ctrl" , "bluetooth_disabled" , FEATURE_CTRL_BT_DISABLE)       ,
 ])
 
 class KeyboardLayoutInfo(keyplus.cdata_types.layout_settings_header_t):
