@@ -15,6 +15,7 @@ from keyplus.error_table import KeyplusErrorTable
 import keyplus.exceptions
 from keyplus.exceptions import *
 from keyplus.device_info import *
+import keyplus.io_map
 
 def _get_similar_serial_number(dev_list, serial_num):
     partial_match = None
@@ -142,15 +143,6 @@ class KeyplusKeyboard(object):
         self.fw_info = other.fw_info
         # self.layout_info = other.layout_info
 
-    def get_serial_number(self):
-        return self.hid_dev.serial_number
-
-    def get_device_id(self):
-        return self.dev_info.id
-
-    def get_device_name(self):
-        return self.dev_info.name
-
     def reconnect(self):
         """ Reconnect to a device after it has been reset.  """
         if self.get_serial_number() not in ["", None]:
@@ -273,6 +265,16 @@ class KeyplusKeyboard(object):
             receive=False
         )
         return response
+
+    def listen_raw(self):
+        # TODO: better way to interface with this
+        while True:
+            response = self.hid_dev.read()
+            if (response[0] == CMD_PRINT):
+                length = response[1]
+                hexdump.hexdump(bytes(response[2:length+2]))
+            else:
+                hexdump.hexdump(bytes(response))
 
     def get_device_info(self):
         DEVICE_INFO_SIZE = 96
