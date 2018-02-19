@@ -25,6 +25,12 @@ REPORT_MODE_STR_MAP = {
     KEYBOARD_REPORT_MODE_NKRO: "NKRO",
 }
 
+def report_mode_to_str(mode):
+    if mode in REPORT_MODE_STR_MAP:
+        return REPORT_MODE_STR_MAP[mode]
+    else:
+        return "Unknown({})".format(mode)
+
 # FEATURE_CTRL bit mask values
 FEATURE_CTRL_USB_DISABLE      = (1 << 0)
 FEATURE_CTRL_WIRED_DISABLE    = (1 << 1)

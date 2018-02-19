@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import sys
 import easyhid
 import struct
+import hexdump
 
 from keyplus.constants import *
 from keyplus.usb_ids import is_keyplus_usb_id
@@ -100,15 +101,15 @@ def find_devices(name=None, serial_number=None, vid_pid=None, device_id=None,
     )
 
     matching_dev_list = []
-    for hid_dev in matching_devices:
+    for hid_device in matching_devices:
         try:
             if ((target_vid == 0 and target_pid == 0) and
-                not is_keyplus_usb_id(hid_dev.vendor_id, hid_dev.product_id)
+                not is_keyplus_usb_id(hid_device.vendor_id, hid_device.product_id)
             ):
                 # Ignore devices that don't use the keyplus vendor IDs
                 continue
 
-            new_kb = KeyplusKeyboard(hid_dev)
+            new_kb = KeyplusKeyboard(hid_device)
             if device_id != None and device_id != new_kb.get_device_id():
                 continue
             if name != None and (name not in new_kb.get_device_name()):
@@ -119,16 +120,16 @@ def find_devices(name=None, serial_number=None, vid_pid=None, device_id=None,
             # Couldn't open the device. Could be in use by another program or
             # do not have correct permissions to read from it.
             print("Warning: couldn't open device: " + str(err), file=sys.stderr)
-            hid_dev.close()
+            hid_device.close()
 
     return matching_dev_list
 
 
 class KeyplusKeyboard(object):
     def __init__(self, hid_device):
-        self.hid_dev = hid_device
+        self.hid_device = hid_device
 
-        with self.hid_dev:
+        with self.hid_device:
             self.get_device_info()
             self.get_firmware_info()
             self.get_layout_info()
@@ -136,17 +137,23 @@ class KeyplusKeyboard(object):
 
         self._is_connected = False
 
+    def __enter__(self):
+        self.connect()
+
+    def __exit__(self, err_type, err_value, traceback):
+        self.disconnect()
+
     def _copy_device_info(self, other):
         """ Copy the internal device information to the object """
-        self.hid_dev = other.hid_dev
-        self.dev_info = other.dev_info
-        self.fw_info = other.fw_info
+        self.hid_device = other.hid_device
+        self.device_info = other.device_info
+        self.firmware_info = other.firmware_info
         # self.layout_info = other.layout_info
 
     def reconnect(self):
         """ Reconnect to a device after it has been reset.  """
         if self.get_serial_number() not in ["", None]:
-            self.hid_dev.close()
+            self.hid_device.close()
             new_kb = find_devices(
                 serial_number=self.get_serial_number()
             )[0]
@@ -155,13 +162,19 @@ class KeyplusKeyboard(object):
 
     def connect(self):
         """ Establish a connection with the keyboard """
-        self.hid_dev.open()
+        self.hid_device.open()
         self._is_connected = True
 
     def disconnect(self):
         """ Disconnect a device.  """
-        self.hid_dev.close()
+        self.hid_device.close()
         self._is_connected = False
+
+    def read(self, timeout=0):
+        return self.hid_device.read(
+            size = 64,
+            timeout = timeout,
+        )
 
     def simple_command(self, cmd_id, cmd_data=None, receive=True):
         """
@@ -183,17 +196,17 @@ class KeyplusKeyboard(object):
             for i, byte in enumerate(cmd_data):
                 cmd_packet[i+1] = byte
 
-        self.hid_dev.write(cmd_packet)
+        self.hid_device.write(cmd_packet)
 
         if receive:
-            response = self.hid_dev.read()
+            response = self.hid_device.read()
 
             packet_type = response[0]
 
             while packet_type != cmd_id and packet_type != CMD_ERROR_CODE: # ignore other packets
-                response = self.hid_dev.read(timeout=2)
+                response = self.hid_device.read(timeout=3)
                 if response == None:
-                    self.hid_dev.write(cmd_packet)
+                    self.hid_device.write(cmd_packet)
                 else:
                     packet_type = response[0]
 
@@ -228,9 +241,9 @@ class KeyplusKeyboard(object):
             CMD_BOOTLOADER,
             receive=False
         )
-        return (self.fw_info.bootloader_vid, self.fw_info.bootloader_pid)
+        return (self.firmware_info.bootloader_vid, self.firmware_info.bootloader_pid)
 
-    def begin_pairing(self):
+    def enter_pairing_mode(self):
         """ Enter pairing mode for connecting to a unifying mouse """
         response = self.simple_command(
             CMD_UNIFYING_PAIR,
@@ -269,7 +282,7 @@ class KeyplusKeyboard(object):
     def listen_raw(self):
         # TODO: better way to interface with this
         while True:
-            response = self.hid_dev.read()
+            response = self.hid_device.read()
             if (response[0] == CMD_PRINT):
                 length = response[1]
                 hexdump.hexdump(bytes(response[2:length+2]))
@@ -282,17 +295,17 @@ class KeyplusKeyboard(object):
         response += self.simple_command(CMD_GET_INFO, [INFO_MAIN_1])[1:]
         response = response[0:DEVICE_INFO_SIZE]
 
-        dev_info = KeyboardSettingsInfo()
-        dev_info.unpack(response)
-        self.dev_info = dev_info
-        return dev_info
+        device_info = KeyboardSettingsInfo()
+        device_info.unpack(response)
+        self.device_info = device_info
+        return device_info
 
     def get_firmware_info(self):
         response = self.simple_command(CMD_GET_INFO, [INFO_FIRMWARE])[1:]
-        fw_info = KeyboardFirmwareInfo()
-        fw_info.unpack(response)
-        self.fw_info = fw_info
-        return fw_info
+        firmware_info = KeyboardFirmwareInfo()
+        firmware_info.unpack(response)
+        self.firmware_info = firmware_info
+        return firmware_info
 
     def get_layout_info(self):
         response = self.simple_command(CMD_GET_INFO, [INFO_LAYOUT])[1:]
@@ -311,8 +324,6 @@ class KeyplusKeyboard(object):
         rf_info = KeyboardRFInfo()
         rf_info.unpack(response[0:SETTINGS_RF_INFO_HEADER_SIZE] + bytearray(AES_KEY_LEN*2))
         self.rf_info = rf_info
-
-        print(rf_info)
 
         return rf_info
 

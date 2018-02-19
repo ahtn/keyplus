@@ -8,75 +8,27 @@ import argparse
 import yaml
 import hexdump
 import sys
-import datetime
 
 import layout.parser
 import protocol
-import easyhid
 
 import keyplus
 
-__version_info__ = (0, 0, 1)
+from keyplus.exceptions import KeyplusUSBCommandError
+from keyplus.constants import *
+
+from keyplus_cli.common import *
+
+__version_info__ = (0, 2, 2)
 __version__ = '.'.join([str(i) for i in __version_info__])
-
-EXIT_COMMAND_ERROR = 1
-EXIT_MATCH_DEVICE = 2
-EXIT_UNSUPPORTED_FEATURE = 3
-EXIT_BAD_FILE = 4
-EXIT_INSUFFICIENT_SPACE = 5
-
-def print_hid_info(device):
-    print("{:x}:{:x} | {} | {} | {}"
-        .format(
-            device.vendor_id,
-            device.product_id,
-            device.manufacturer_string,
-            device.product_string,
-            device.serial_number,
-        )
-    )
-
-def timestamp_to_string(tstamp):
-    timestamp_str = "<Unavailable>"
-    if tstamp != 0:
-        build_date = datetime.datetime.fromtimestamp(tstamp)
-        timestamp_str = str(build_date)
-    return timestamp_str
-
-def print_device_info(device, indent="  "):
-    dev_info = protocol.get_device_info(device)
-    print(indent, "id: ", dev_info.id)
-    print(indent, "name: '{}'".format(dev_info.device_name_str()) )
-    print(indent, "layout last updated: ", dev_info.timestamp_str())
-    print(indent, "default_report_mode: ", dev_info.default_report_mode_str())
-    print(indent, "scan_mode: ", dev_info.scan_mode)
-    print(indent, "row_count: ", dev_info.row_count)
-    print(indent, "col_count: ", dev_info.col_count)
-
-def print_layout_info(device, indent="  "):
-    layout_info = protocol.get_layout_info(device)
-    print(indent, "number_devices: ", layout_info.number_devices)
-    print(indent, "number_layouts: ", layout_info.number_layouts)
-
-def print_firmware_info(device, indent="  "):
-    fw_info = protocol.get_firmware_info(device)
-    print(indent, "build time: ", timestamp_to_string(fw_info.timestamp))
-    print(indent, "git_hash: {:08x}".format(fw_info.git_hash))
-
-def print_all_info(device):
-    print_hid_info(device)
-    print_device_info(device)
-    print_layout_info(device)
-    print("firmware info:")
-    print_firmware_info(device)
 
 # Generic Command
 class GenericCommand(object):
     def __init__(self, description):
 
         command_name = ""
-        for name in Keyer.COMMAND_NAME_MAP:
-            if Keyer.COMMAND_NAME_MAP[name] == self.__class__:
+        for name in KeyplusCLI.COMMAND_NAME_MAP:
+            if KeyplusCLI.COMMAND_NAME_MAP[name] == self.__class__:
                 command_name = name
 
         command_name = sys.argv[0] + " " + command_name
@@ -125,7 +77,7 @@ class GenericDeviceCommand(GenericCommand):
             help='Name of the USB device to use. Can be a partial match.'
         )
 
-    def find_matching_device(self, args):
+    def find_matching_device(self, args, multiple_matches=False):
         matching_devices = keyplus.find_devices(
             name = args.name,
             device_id = args.device_id,
@@ -134,11 +86,14 @@ class GenericDeviceCommand(GenericCommand):
         )
         num_matches = len(matching_devices)
 
+        if multiple_matches:
+            return matching_devices
+
         if num_matches== 0:
             print("Couldn't find any matching devices.", file=sys.stderr)
             exit(EXIT_MATCH_DEVICE)
         elif num_matches == 1:
-            return matching_devices[0].hid_dev
+            return matching_devices[0]
         elif num_matches > 1:
             print("Error: found {} matching devices, select a specifc device or "
                   "disconnect the other devices".format(num_matches), file=sys.stderr)
@@ -146,6 +101,7 @@ class GenericDeviceCommand(GenericCommand):
 
     def task(self, args):
         pass
+
 
 # Hexdump of raw debug output
 class DebugCommand(GenericDeviceCommand):
@@ -155,11 +111,11 @@ class DebugCommand(GenericDeviceCommand):
         )
 
     def task(self, args):
-        device = self.find_matching_device(args)
+        kb = self.find_matching_device(args)
+        print_all_info(kb)
 
-        device.open()
-        print_all_info(device)
-        protocol.listen_raw(device)
+        with kb:
+            kb.listen_raw()
 
 
 # Prints matrix (row,col) pairs of pressed keys to stdout of a connected USB device
@@ -182,44 +138,42 @@ class PassthroughCommand(GenericDeviceCommand):
 
     def task(self, args):
 
-        device = self.find_matching_device(args)
-        device.open()
+        kb = self.find_matching_device(args)
 
-        try:
-            protocol.set_passthrough_mode(device, 1)
-        except protocol.KBProtocolException as err:
-            if err.error_code == protocol.ProtocolError.ERROR_UNSUPPORTED_COMMAND:
-                print("Target device doesn't support matrix scanning", file=sys.stderr)
-                exit(EXIT_UNSUPPORTED_FEATURE)
-            raise err
-        passthrough_timeout = 10000
+        with kb:
+            try:
+                kb.set_passthrough_mode(True)
+            except KeyplusUSBCommandError as err:
+                if err.error_code == KeyplusUSBCommandError.ERROR_UNSUPPORTED_COMMAND:
+                    print("Target device doesn't support matrix scanning", file=sys.stderr)
+                    exit(EXIT_UNSUPPORTED_FEATURE)
+                raise err
+            passthrough_timeout = 10000
 
-        response = device.read(timeout=passthrough_timeout)
+            response = kb.read(timeout=passthrough_timeout)
 
-        while response != None:
-            if response[0] == protocol.CMD_PASSTHROUGH_MATRIX:
-                if (args.verbose):
-                    hexdump.hexdump(response[1:])
-                for row in range(10):
-                    for col in range(2):
-                        byte = response[1 + row*2 + col]
-                        if byte == 0:
-                            continue
-                        else:
-                            for i in range(8):
-                                if byte & (1 << i):
-                                    row_num = row
-                                    col_num = col * 8 + i
-                                    print("r{}c{} ".format(row_num, col_num), end="")
-                print("")
+            while response != None:
+                if response[0] == CMD_PASSTHROUGH_MATRIX:
+                    if (args.verbose):
+                        hexdump.hexdump(response[1:])
+                    for row in range(10):
+                        for col in range(2):
+                            byte = response[1 + row*2 + col]
+                            if byte == 0:
+                                continue
+                            else:
+                                for i in range(8):
+                                    if byte & (1 << i):
+                                        row_num = row
+                                        col_num = col * 8 + i
+                                        print("r{}c{} ".format(row_num, col_num), end="")
+                    print("")
+                response = kb.read(timeout=passthrough_timeout)
 
-            response = device.read(timeout=passthrough_timeout)
-
-        protocol.set_passthrough_mode(device, 0)
-        device.close()
+            kb.set_passthrough_mode(False)
 
 # List connected USB devices
-class ListCommand(GenericCommand):
+class ListCommand(GenericDeviceCommand):
     def __init__(self):
         super(ListCommand, self).__init__(
             'List the connected keyplus devices'
@@ -231,17 +185,14 @@ class ListCommand(GenericCommand):
         )
 
     def task(self, args):
-        dev_list = easyhid.Enumeration().find(
-            interface=3
-        )
-        for dev in dev_list:
-            print_hid_info(dev)
+        kb_devices = self.find_matching_device(args, multiple_matches=True)
+
+        for kb_device in kb_devices:
+            print_hid_info(kb_device.hid_device)
             if args.verbosity != None:
-                dev.open()
                 if args.verbosity >= 1:
-                    print_device_info(dev)
-                    print_layout_info(dev)
-                dev.close()
+                    print_device_info(kb_device.device_info)
+                    # print_layout_info(kb_device.layout_info)
 
 # Test command for controlling LEDs
 class LEDCommand(GenericDeviceCommand):
@@ -251,15 +202,19 @@ class LEDCommand(GenericDeviceCommand):
         )
 
         self.arg_parser.add_argument(
+            'led_number', type=int,
+            help="Led number to set"
+        )
+
+        self.arg_parser.add_argument(
             'led_state', type=int,
             help="State to set the led: 0->off, 1->on"
         )
 
     def task(self, args):
-        device = self.find_matching_device(args)
-        device.open()
-        protocol.set_indicator_led(device, args.led_state)
-        device.close()
+        kb = self.find_matching_device(args)
+        with kb:
+            kb.set_indicator_led(args.led_number, args.led_state)
 
 # Test command for controlling LEDs
 class ResetCommand(GenericDeviceCommand):
@@ -269,10 +224,9 @@ class ResetCommand(GenericDeviceCommand):
         )
 
     def task(self, args):
-        device = self.find_matching_device(args)
-        device.open()
-        protocol.reset_device(device)
-        device.close()
+        kb = self.find_matching_device(args)
+        with kb:
+            kb.reset()
 
 # Enter the devices bootloader
 class BootloaderCommand(GenericDeviceCommand):
@@ -282,10 +236,9 @@ class BootloaderCommand(GenericDeviceCommand):
         )
 
     def task(self, args):
-        device = self.find_matching_device(args)
-        device.open()
-        protocol.enter_bootloader(device)
-        device.close()
+        kb = self.find_matching_device(args)
+        with kb:
+            kb.enter_bootloader()
 
 class HelpCommand(GenericCommand):
     def __init__(self):
@@ -303,8 +256,8 @@ class HelpCommand(GenericCommand):
             self.arg_parser.print_help()
             exit(0)
 
-        if args.command_name in Keyer.COMMAND_NAME_MAP:
-            cmd = Keyer.COMMAND_NAME_MAP[args.command_name]()
+        if args.command_name in KeyplusCLI.COMMAND_NAME_MAP:
+            cmd = KeyplusCLI.COMMAND_NAME_MAP[args.command_name]()
             cmd.arg_parser.print_help()
         else:
             print("Error: Can't find help for unknown command " +
@@ -536,12 +489,11 @@ class PairCommand(GenericDeviceCommand):
         )
 
     def task(self, args):
-        device = self.find_matching_device(args)
-        device.open()
-        protocol.begin_pairing(device)
-        device.close()
+        kb = self.find_matching_device(args)
+        with kb:
+            kb.enter_pairing_mode()
 
-class Keyer(object):
+class KeyplusCLI(object):
     COMMAND_NAME_MAP = {
         "bootloader": BootloaderCommand,
         "debug": DebugCommand,
@@ -598,4 +550,4 @@ class Keyer(object):
 
 
 if __name__ == "__main__":
-    Keyer()
+    KeyplusCLI()

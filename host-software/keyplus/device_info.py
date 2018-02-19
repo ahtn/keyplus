@@ -5,6 +5,9 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import datetime
+import struct
+
 import keyplus.cdata_types
 from keyplus.crc16 import crc16_bytes
 from keyplus.constants import *
@@ -70,7 +73,15 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_t):
         # check if the flash has been initialized
         return sum([1 for byte in self.pack() if byte != 0xff]) == 0
 
-    def get_name(self):
+    @property
+    def timestamp_raw(self):
+        return struct.unpack("<Q", bytearray(self.timestamp))[0]
+
+    @timestamp_raw.setter
+    def timestamp_raw(self, value):
+        self.timestamp = struct.pack("<Q", value)
+
+    def get_name_str(self):
         if self.is_empty():
             return ""
         else:
@@ -80,14 +91,11 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_t):
                 result = str(self.device_name)
             return result
 
-    def get_timestamp_str(self):
-        return timestamp_to_str(self.timestamp)
-
     def get_default_report_mode_str(self):
         return report_mode_to_str(self.default_report_mode)
 
     def get_scan_mode_str(self):
-        return scan_mode_to_str(self.scan_mode)
+        return scan_mode_to_str(self.scan_plan.mode)
 
 _make_bit_field_variables(KeyboardSettingsInfo, [
     ("feature_ctrl" , "usb_disabled"       , FEATURE_CTRL_USB_DISABLE)      ,
@@ -104,6 +112,13 @@ class KeyboardRFInfo(keyplus.cdata_types.rf_settings_t):
     pass
 
 class KeyboardFirmwareInfo(keyplus.cdata_types.firmware_info_t):
+    @property
+    def timestamp_raw(self):
+        return struct.unpack("<Q", bytearray(self.timestamp))[0]
+
+    @timestamp_raw.setter
+    def timestamp_raw(self, value):
+        self.timestamp = struct.pack("<Q", value)
 
     def get_interal_scan_method(self):
         return self.internal_scan_method
