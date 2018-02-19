@@ -16,6 +16,9 @@ class KeyplusConnectError(KeyplusError):
 class KeyplusProtocolError(KeyplusError):
     pass
 
+class KeyplusParseError(KeyplusError):
+    pass
+
 class KeyplusUSBCommandError(KeyplusError):
     def __init__(self, message="", code=None):
         if code:

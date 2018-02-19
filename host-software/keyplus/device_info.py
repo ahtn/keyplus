@@ -14,8 +14,8 @@ from keyplus.constants import *
 
 def _make_bit_field_variables(class_obj, field_list):
     """
-    This function can be used to create property is in a given class for
-    getting and setting the values in a bit mask.
+    This function uses the python built-in `property()` to create attributes
+    to access the bit fields of a function directly.
 
     The tuple should contain a list of properties where each property is
     defined as a tuple of the form:

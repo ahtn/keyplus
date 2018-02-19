@@ -499,7 +499,7 @@ def update_settings_section(device, settings_data, keep_rf=0):
 
     size = SETTINGS_SIZE
     if (keep_rf):
-        size = SETTINGS_SIZE - RF_INFO_SIZE
+        size = SETTINGS_SIZE - SETTINGS_RF_INFO_SIZE
     chunk_list = get_chunks(settings_data[0:size], EP_VENDOR_SIZE)
 
     for chunk in chunk_list:
