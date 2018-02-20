@@ -30,7 +30,8 @@ enum {
     KEYBOARD_REPORT_MODE_UPGRADE, // transitioning 6kro -> nkro
 };
 
-#define INVALID_LAYOUT_ID 0xff
+#define LAYOUT_ID_NONE 0xfe
+#define LAYOUT_ID_INVALID 0xff
 
 typedef struct device_info_t {
     uint8_t layout_id; // the keyboard layout that this device maps to

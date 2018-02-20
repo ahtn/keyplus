@@ -296,9 +296,11 @@ class SettingsGenerator:
         #     uint8_t matrix_size; // the size of this component == ceil(rows*cols/8)
         # } [64]
         for device_id in range(MAX_DEVICE_ID):
-            if not device_id in self.device_data or \
-                    self.device_data[device_id].scan_mode.mode == ScanMode.NO_MATRIX:
-                result += bytearray([INVALID_LAYOUT_ID, 0x00, 0x00])
+            if not device_id in self.device_data:
+                result += bytearray([LAYOUT_ID_INVALID, 0x00, 0x00])
+                continue
+            if self.device_data[device_id].scan_mode.mode == ScanMode.NO_MATRIX:
+                result += bytearray([LAYOUT_ID_NONE, 0x00, 0x00])
                 continue
             device = self.device_data[device_id]
 

@@ -138,7 +138,8 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
         return scan_mode_to_str(self.scan_plan.mode)
 
 class KeyboardLayoutInfo(keyplus.cdata_types.layout_settings_header_t):
-    pass
+    def get_device_info(self, device_id):
+        return self.devices[device_id]
 
 class KeyboardRFInfo(keyplus.cdata_types.rf_settings_t):
     pass

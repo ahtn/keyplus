@@ -22,15 +22,18 @@ class LayoutDevice(object):
                  scan_mode=None, layout_offset=0):
         self.device_id = device_id
         self.name = name
-        self.layout_name = layout_name
+        self.layout_id = layout_id
         self.scan_mode = scan_mode or ScanMode()
-        self.layout_name = layout_name
         self.layout_offset = layout_offset
         self.feature_ctrl = feacture_ctrl_t()
         self.feature_ctrl.feature_ctrl = DEFAULT_FEATURE_MASK
 
-    def load_raw_data(self, settings_header, device_target):
-        pass
+    def load_raw_data(self, device_info, layout_info, pin_mapping):
+        self.name = device_info.get_name_str()
+
+        device_layout_info = layout_info.get_device_info(device_info.device_id)
+        self.layout_id = device_layout_info.layout_id
+        self.scan_mode.load_raw_data(device_info.scan_plan, pin_mapping)
 
 class Device(object):
     def __init__(self, id, name, scan_mode, layout_name, layout_offset,
