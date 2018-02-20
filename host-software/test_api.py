@@ -13,7 +13,7 @@ import keyplus
 from keyplus.constants import *
 from keyplus.exceptions import KeyplusUSBCommandError
 
-from keyplus.layout import ScanMode
+from keyplus.layout import ScanMode, LayoutDevice
 from keyplus.device_info import KeyboardPinMapping
 
 import keyplus.cdata_types
@@ -97,6 +97,13 @@ if __name__ == '__main__':
     hexdump(layout_settings.pack())
     pprint(vars(layout_settings))
 
+
+    layout_device = LayoutDevice()
+    layout_device.load_raw_data(
+        kb.device_info, layout_settings, new_pin_mapping
+    )
+
+    pprint(vars(layout_device))
 
     # kb.set_passthrough_mode(True)
     kb.disconnect()

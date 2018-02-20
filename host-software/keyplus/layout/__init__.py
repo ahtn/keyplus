@@ -6,3 +6,4 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from keyplus.layout.scan_mode import ScanMode
+from keyplus.layout.device import LayoutDevice

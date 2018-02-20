@@ -126,7 +126,7 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
             return ""
         else:
             try:
-                result = self.device_name.decode('utf-8')
+                result = self.device_name.strip(b'\x00').decode('utf-8')
             except UnicodeDecodeError:
                 result = str(self.device_name)
             return result
@@ -137,9 +137,56 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
     def get_scan_mode_str(self):
         return scan_mode_to_str(self.scan_plan.mode)
 
-class KeyboardLayoutInfo(keyplus.cdata_types.layout_settings_header_t):
+class KeyboardLayoutInfo(keyplus.cdata_types.layout_settings_t):
+    def __init__(self):
+        super(KeyboardLayoutInfo, self).__init__()
+        self.has_built_lookup_table = False
+
     def get_device_info(self, device_id):
         return self.devices[device_id]
+
+    def _build_lookup_table(self):
+        self.lookup_table = {}
+        # Build a lookup table that maps layout_id to a list of devices that
+        # use that layout
+        for (dev_id, device) in enumerate(self.devices):
+            if device.layout_id >= MAX_NUMBER_LAYOUTS:
+                # Ignore devices that have an invalid/no_matrix layout.
+                continue
+
+            if device.layout_id not in self.lookup_table:
+                self.lookup_table[device.layout_id] = [device]
+            else:
+                self.lookup_table[device.layout_id].append(device)
+
+        # Sort each device list by its matrix offset
+        for layout_id in self.lookup_table:
+            self.lookup_table[layout_id].sort(key = lambda x: x.matrix_offset)
+
+        self.has_built_lookup_table = True
+
+    def get_devices_in_layout(self, layout_id):
+        """ For a given `layout_id`, find all the devices using that layout """
+        if not self.has_built_lookup_table:
+            self._build_lookup_table()
+
+        if layout_id not in self.lookup_table:
+            return None
+        else:
+            return self.lookup_table[layout_id]
+
+    def get_split_device_number(self, device_id):
+        """
+        Given a `device_id`, find this devices realtive position in the
+        layout
+        """
+        device_info = self.devices[device_id]
+        assert(device_info.layout_id < MAX_NUMBER_LAYOUTS)
+        devices = self.get_devices_in_layout(device_info.layout_id)
+        offsets = sorted(list(set([dev.matrix_offset for dev in devices])))
+        return offsets.index(device_info.matrix_offset)
+
+
 
 class KeyboardRFInfo(keyplus.cdata_types.rf_settings_t):
     pass

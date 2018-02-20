@@ -346,7 +346,7 @@ class KeyplusKeyboard(object):
         for i in range(INFO_NUM_LAYOUT_DATA_PAGES):
             response = response + self.get_info_cmd(INFO_LAYOUT_DATA_0 + i)
 
-        layout_settings = layout_settings_t()
+        layout_settings = KeyboardLayoutInfo()
 
         layout_settings.unpack(response[:layout_settings_t.__size__])
         self.layout_settings = layout_settings
