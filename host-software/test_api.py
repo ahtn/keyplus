@@ -5,14 +5,11 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import hexdump
 import time
+from pprint import pprint
+from hexdump import hexdump
 
 import keyplus
-
-from pprint import pprint
-
-
 from keyplus.constants import *
 from keyplus.exceptions import KeyplusUSBCommandError
 
@@ -77,23 +74,28 @@ if __name__ == '__main__':
     target = kb.get_device_target()
     scan_plan = scan_mode.generate_scan_plan(target)
     scan_plan_bytes = scan_plan.pack()
-    hexdump.hexdump(scan_plan_bytes)
+    hexdump(scan_plan_bytes)
     new_scan_plan = keyplus.cdata_types.scan_plan_t()
     new_scan_plan.unpack(scan_plan_bytes)
     pprint(("Matches: {}".format(scan_plan == new_scan_plan), new_scan_plan))
 
     pin_mapping = scan_mode.generate_pin_mapping(target)
     pin_mapping_raw = pin_mapping.pack()
-    hexdump.hexdump(pin_mapping_raw)
+    hexdump(pin_mapping_raw)
 
     new_pin_mapping = KeyboardPinMapping()
     new_pin_mapping.unpack(pin_mapping_raw, new_scan_plan, target)
-    hexdump.hexdump(new_pin_mapping.pack())
+    hexdump(new_pin_mapping.pack())
 
     new_scan_mode = ScanMode()
     new_scan_mode.load_raw_data(new_scan_plan, new_pin_mapping)
     pprint(vars(scan_mode))
     pprint(vars(new_scan_mode))
+
+
+    layout_settings = kb.get_layout_info()
+    hexdump(layout_settings.pack())
+    pprint(vars(layout_settings))
 
 
     # kb.set_passthrough_mode(True)

@@ -30,6 +30,8 @@ enum {
     KEYBOARD_REPORT_MODE_UPGRADE, // transitioning 6kro -> nkro
 };
 
+#define INVALID_LAYOUT_ID 0xff
+
 typedef struct device_info_t {
     uint8_t layout_id; // the keyboard layout that this device maps to
     uint8_t matrix_offset; // the component byte offset into the given keyboard
@@ -42,7 +44,7 @@ typedef struct layout_info_t {
     uint8_t layer_count;
 } keyboard_info_t;
 
-#define SETTINGS_LAYOUT_INFO_SIZE 32
+#define SETTINGS_LAYOUT_INFO_HEADER_SIZE 32
 #define SETTINGS_LAYOUT_INFO_OFFSET (offsetof(settings_t, layout))
 typedef struct {
     uint8_t number_layouts;

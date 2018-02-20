@@ -18,6 +18,8 @@ from keyplus.exceptions import *
 from keyplus.device_info import *
 import keyplus.io_map
 
+from keyplus.cdata_types import layout_settings_t
+
 def _get_similar_serial_number(dev_list, serial_num):
     partial_match = None
     partial_match_pos = None
@@ -132,7 +134,6 @@ class KeyplusKeyboard(object):
         with self.hid_device:
             self.get_device_info()
             self.get_firmware_info()
-            self.get_layout_info()
             self.get_rf_info()
 
         self._is_connected = False
@@ -187,7 +188,7 @@ class KeyplusKeyboard(object):
 #                                USB Commands                                 #
 ###############################################################################
 
-    def simple_command(self, cmd_id, cmd_data=None, receive=True):
+    def simple_command(self, cmd_id, cmd_data=None, receive=True, match_data=None):
         """
         Returns:
             The bytes read from the command if `receive` is True
@@ -300,10 +301,25 @@ class KeyplusKeyboard(object):
             else:
                 hexdump.hexdump(bytes(response))
 
+    def get_info_cmd(self, info_page_number):
+        response = self.simple_command(CMD_GET_INFO, [info_page_number])
+        if response[0] == INFO_UNSUPPORTED:
+            raise KeyplusUnsupportedError(
+                "Device doesn't have any data for info page number '{}'"
+                .format(info_page_number)
+            )
+        if response[0] != info_page_number:
+            raise KeyplusProtocolError(
+                "Error while getting info from device. "
+                "Expected data for info page: {}, but got from {}."
+                .format(info_page_number, response[0])
+            )
+        return response[1:]
+
     def get_device_info(self):
         DEVICE_INFO_SIZE = 96
-        response = self.simple_command(CMD_GET_INFO, [INFO_MAIN_0])[1:]
-        response += self.simple_command(CMD_GET_INFO, [INFO_MAIN_1])[1:]
+        response = self.get_info_cmd(INFO_MAIN_0)
+        response += self.get_info_cmd(INFO_MAIN_1)
         response = response[0:DEVICE_INFO_SIZE]
 
         device_info = KeyboardSettingsInfo()
@@ -312,30 +328,42 @@ class KeyplusKeyboard(object):
         return device_info
 
     def get_firmware_info(self):
-        response = self.simple_command(CMD_GET_INFO, [INFO_FIRMWARE])[1:]
+        response = self.get_info_cmd(INFO_FIRMWARE)
         firmware_info = KeyboardFirmwareInfo()
         firmware_info.unpack(response)
         self.firmware_info = firmware_info
         return firmware_info
 
-    def get_layout_info(self):
-        response = self.simple_command(CMD_GET_INFO, [INFO_LAYOUT])[1:]
+    def get_layout_info_header(self):
+        response = self.get_info_cmd(INFO_LAYOUT)
         layout_info = KeyboardLayoutInfo()
         layout_info.unpack(response[0:KeyboardLayoutInfo.__size__])
         self.layout_info = layout_info
         return layout_info
 
-    def get_layers(self, layout_id):
-        response = self.simple_command(CMD_GET_LAYER, [layout_id])
-        return struct.unpack_from("<B HHH", response)
+    def get_layout_info(self):
+        response = bytearray(0)
+        for i in range(INFO_NUM_LAYOUT_DATA_PAGES):
+            response = response + self.get_info_cmd(INFO_LAYOUT_DATA_0 + i)
+
+        layout_settings = layout_settings_t()
+
+        layout_settings.unpack(response[:layout_settings_t.__size__])
+        self.layout_settings = layout_settings
+        return layout_settings
 
     def get_rf_info(self):
-        response = self.simple_command(CMD_GET_INFO, [INFO_RF])[1:]
+        response = self.get_info_cmd(INFO_RF)
 
         rf_info = KeyboardRFInfo()
         rf_info.unpack(response[0:SETTINGS_RF_INFO_HEADER_SIZE] + bytearray(AES_KEY_LEN*2))
         self.rf_info = rf_info
         return rf_info
+
+    def get_layers(self, layout_id):
+        response = self.simple_command(CMD_GET_LAYER, [layout_id])
+        return struct.unpack_from("<B HHH", response)
+
 
 
 if __name__ == '__main__':

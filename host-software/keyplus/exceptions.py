@@ -16,6 +16,9 @@ class KeyplusConnectError(KeyplusError):
 class KeyplusProtocolError(KeyplusError):
     pass
 
+class KeyplusUnsupportedError(KeyplusError):
+    pass
+
 class KeyplusParseError(KeyplusError):
     pass
 

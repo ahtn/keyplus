@@ -55,9 +55,6 @@ class ScanMode(object):
 
         self.max_number_supported_keys = 127
 
-    def parse_yaml(self, yaml_dict):
-        pass
-
     @property
     def number_columns(self):
         """ The number of columns in the matrix """
@@ -301,6 +298,5 @@ class ScanMode(object):
             scan_plan.parasitic_discharge_delay_debouncing
         )
 
-
-    def parse_json(self, parser_info=None):
+    def parse_json_object(self, parser_info=None):
         pass

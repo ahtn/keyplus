@@ -7,6 +7,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from collections import namedtuple
 
+from keyplus.exceptions import KeyplusSettingsError
+
 ATMEL_ID = 0x03eb0000
 NORDIC_ID = 0x19150000
 
@@ -69,7 +71,7 @@ def get_chip_name_from_id(chip_id):
     if chip_id in CHIP_ID_TABLE:
         return CHIP_ID_TABLE[chip_id].name
     else:
-        return "UnknownChipID({})".format(hex(chip_id))
+        raise KeyplusSettingsError("UnknownChipID({})".format(hex(chip_id)))
 
 def lookup_chip_id(chip_id):
     if chip_id in CHIP_ID_TABLE:

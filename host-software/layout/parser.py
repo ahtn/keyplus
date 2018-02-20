@@ -298,7 +298,7 @@ class SettingsGenerator:
         for device_id in range(MAX_DEVICE_ID):
             if not device_id in self.device_data or \
                     self.device_data[device_id].scan_mode.mode == ScanMode.NO_MATRIX:
-                result += bytearray(3)
+                result += bytearray([INVALID_LAYOUT_ID, 0x00, 0x00])
                 continue
             device = self.device_data[device_id]
 

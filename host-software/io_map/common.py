@@ -16,7 +16,13 @@ class IoMapper(object):
         self.pin_mapper = None
 
     def get_pin_number(self, pin_name):
-        raise Exception("get_pin_number() not implemented")
+        raise Exception("InternalError: get_pin_number() not implemented")
+
+    def get_pin_name(self, pin_number):
+        raise Exception("InternalError: get_pin_name() not implemented")
+
+    def get_pin_numbers(self, pin_names):
+        return [self.get_pin_number(pin) for pin in pin_names]
 
     def get_pin(self, pin_name):
         pin_num = self.get_pin_number(pin_name)

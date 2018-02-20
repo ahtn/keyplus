@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from layout.common import try_get, ParseError, check_range, MAX_DEVICE_ID
 
 from layout.scan_mode import *
+from keyplus.cdata_types import feacture_ctrl_t
 
 from keyplus import *
 
@@ -16,43 +17,20 @@ import struct
 DEFAULT_FEATURE_MASK = FEATURE_CTRL_RF_DISABLE | FEATURE_CTRL_RF_MOUSE_DISABLE \
     | FEATURE_CTRL_WIRED_DISABLE;
 
-class FeatureControl(object):
+class LayoutDevice(object):
+    def __init__(self, device_id=0, name=None, layout_name=None,
+                 scan_mode=None, layout_offset=0):
+        self.device_id = device_id
+        self.name = name
+        self.layout_name = layout_name
+        self.scan_mode = scan_mode or ScanMode()
+        self.layout_name = layout_name
+        self.layout_offset = layout_offset
+        self.feature_ctrl = feacture_ctrl_t()
+        self.feature_ctrl.feature_ctrl = DEFAULT_FEATURE_MASK
 
-    FEATURE_NAME_MAP = {
-        'usb': FEATURE_CTRL_USB_DISABLE,
-        'wired': FEATURE_CTRL_WIRED_DISABLE,
-        'wireless': FEATURE_CTRL_RF_DISABLE,
-        'wireless_mouse': FEATURE_CTRL_RF_MOUSE_DISABLE,
-        'bluetooth': FEATURE_CTRL_BT_DISABLE,
-    }
-
-    def __init__(self, feature_mask=DEFAULT_FEATURE_MASK):
-        self.feature_ctrl = feature_mask
-
-    def _lookup_feature(self, name):
-        if (name in self.FEATURE_NAME_MAP):
-            return self.FEATURE_NAME_MAP[name]
-        else:
-            raise ParseError("Unknown feature '{}'".format(feature_name))
-
-    def enable_feature(self, feature_name):
-        self.feature_ctrl &= ~self._lookup_feature(feature_name)
-
-    def disable_feature(self, feature_name):
-        self.feature_ctrl |= self._lookup_feature(feature_name)
-
-    def set_feature(self, feature_name, state):
-        if state:
-            self.enable_feature(feature_name)
-        else:
-            self.disable_feature(feature_name)
-
-    def has_feature(self):
-        feature = self._lookup_feature(feature_name)
-        return not bool(self.feature_ctrl & feature)
-
-    def to_bytes(self):
-        return struct.pack('< B', self.feature_ctrl)
+    def load_raw_data(self, settings_header, device_target):
+        pass
 
 class Device(object):
     def __init__(self, id, name, scan_mode, layout_name, layout_offset,

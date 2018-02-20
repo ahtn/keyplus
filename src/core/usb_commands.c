@@ -227,11 +227,11 @@ static void cmd_get_info(void) {
             SETTINGS_ADDR + (EP_SIZE_VENDOR-2),
             SETTINGS_MAIN_INFO_SIZE - (EP_SIZE_VENDOR-2)
         );
-    } else if (info_type == INFO_LAYOUT) {
+    } else if (info_type == INFO_LAYOUT_HEADER) {
         flash_read(
             g_vendor_report_in.data+2,
             SETTINGS_ADDR + SETTINGS_LAYOUT_INFO_OFFSET,
-            SETTINGS_LAYOUT_INFO_SIZE
+            SETTINGS_LAYOUT_INFO_HEADER_SIZE
         );
     } else if (info_type == INFO_RF) {
         // NOTE: this command doesn't return the AES keys
@@ -251,6 +251,17 @@ static void cmd_get_info(void) {
             g_vendor_report_in.data+2,
             g_error_code_table,
             SIZE_ERROR_CODE_TABLE
+        );
+    } else if (INFO_LAYOUT_DATA_0 <= info_type && info_type <= INFO_LAYOUT_DATA_5) {
+        const uint16_t offset = 62 * (info_type - INFO_LAYOUT_DATA_0);
+        uint8_t size = 62;
+        if (info_type == INFO_LAYOUT_DATA_5) {
+            size = sizeof(layout_settings_t) - 62 * (INFO_NUM_LAYOUT_DATA_PAGES - 1);
+        }
+        flash_read(
+            g_vendor_report_in.data+2,
+            (flash_ptr_t)(SETTINGS_ADDR + SETTINGS_LAYOUT_INFO_OFFSET + offset),
+            size
         );
     } else {
         g_vendor_report_in.data[1] = INFO_UNSUPPORTED;

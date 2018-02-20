@@ -75,12 +75,20 @@ enum {
 enum {
     INFO_MAIN_0 = 0,
     INFO_MAIN_1 = 1,
-    INFO_LAYOUT = 2,
+    INFO_LAYOUT_HEADER = 2, // TODO: deprecate this
     INFO_RF = 3,
     INFO_FIRMWARE = 4,
     INFO_ERROR_SYSTEM = 5,
+    INFO_LAYOUT_DATA_0 = 6, // 62
+    INFO_LAYOUT_DATA_1 = 7, // 124
+    INFO_LAYOUT_DATA_2 = 8, // 186
+    INFO_LAYOUT_DATA_3 = 9, // 248
+    INFO_LAYOUT_DATA_4 = 10, // 310
+    INFO_LAYOUT_DATA_5 = 11, // 372
     INFO_UNSUPPORTED = 0xff,
 };
+
+#define INFO_NUM_LAYOUT_DATA_PAGES (INFO_LAYOUT_DATA_5 - INFO_LAYOUT_DATA_0 + 1)
 
 enum {
     RESET_TYPE_HARDWARE = 0,

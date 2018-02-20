@@ -386,6 +386,10 @@ void keyboard_update_device_matrix(uint8_t device_id, const uint8_t *matrix_pack
 
     uint8_t kb_slot_id = get_slot_id(kb_id);
 
+    if (kb_id == INVALID_LAYOUT_ID) {
+        return;
+    }
+
     if (kb_slot_id == INVALID_DEVICE_ID) {
         kb_slot_id = acquire_slot(kb_id);
     }
