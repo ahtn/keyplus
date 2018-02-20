@@ -5,4 +5,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from keyplus.layout.scan_mode import ScanMode
+from keyplus.cdata_types import settings_t
+
+class KeyplusSettings(settings_t):
+    pass

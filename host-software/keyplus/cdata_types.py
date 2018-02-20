@@ -38,7 +38,7 @@ class scan_plan_t(CStruct):
         uint8_t max_key_num;
     """
 
-class settings_t(CStruct):
+class settings_header_t(CStruct):
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __struct__ = """
     uint8_t device_id;
@@ -124,3 +124,11 @@ class rf_settings_t(CStruct):
     uint8_t ekey[AES_KEY_LEN];
     uint8_t dkey[AES_KEY_LEN];
     """
+
+class settings_t(CStruct): #
+    __byte_order__ = cstruct.LITTLE_ENDIAN
+    __struct__ = """
+    struct settings_header_t header; /* size == 96 */
+    struct layout_settings_t layout; /* size == 352 */
+    struct rf_settings_t rf; /* size == 64 */
+    """ # size == 512 bytes

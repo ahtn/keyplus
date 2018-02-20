@@ -19,6 +19,9 @@ class KeyplusProtocolError(KeyplusError):
 class KeyplusParseError(KeyplusError):
     pass
 
+class KeyplusSettingsError(KeyplusError):
+    pass
+
 class KeyplusUSBCommandError(KeyplusError):
     def __init__(self, message="", code=None):
         if code:
@@ -37,3 +40,13 @@ def raise_error_code(code):
         pass
     else:
         raise KeyplusUSBCommandError(code=code)
+
+def assert_equal(lhs, rhs):
+    assert lhs == rhs, AssertionError(
+        "Assertion failed lhs '{}' not equal to rhs '{}'".format(lhs, rhs)
+    )
+
+def assert_less_than(lhs, rhs):
+    assert lhs < rhs, AssertionError(
+        "Assertion failed lhs '{}' is not less than rhs '{}'".format(lhs, rhs)
+    )

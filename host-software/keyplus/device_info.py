@@ -5,19 +5,20 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import datetime
 import struct
 
 import keyplus.cdata_types
-from keyplus.crc16 import crc16_bytes
+from keyplus.utility import crc16_bytes
 from keyplus.constants import *
+from keyplus.exceptions import *
+from keyplus.io_map.io_mapper import get_io_mapper_for_chip
 
 def _make_bit_field_variables(class_obj, field_list):
     """
     This function uses the python built-in `property()` to create attributes
     to access the bit fields of a function directly.
 
-    The tuple should contain a list of properties where each property is
+    The field_list should contain a list of properties where each property is
     defined as a tuple of the form:
         (bit_mask_variable, bit_field_name, bit_field_mask)
 
@@ -61,8 +62,96 @@ def _make_bit_field_variables(class_obj, field_list):
             )
         )
 
+class KeyboardPinMapping(object):
+    def __init__(self):
+        self.mode = MATRIX_SCANNER_MODE_NO_MATRIX
+        self.internal_scan_method = MATRIX_SCANNER_INTERNAL_NONE
+        self.row_pins = None
+        self.column_pins = None
+        self.key_number_map = None
+        self.io_mapper = None
 
-class KeyboardSettingsInfo(keyplus.cdata_types.settings_t):
+    def pack(self):
+        result = bytearray(0)
+
+        if self.internal_scan_method == MATRIX_SCANNER_INTERNAL_NONE:
+            pass
+        elif self.internal_scan_method == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL:
+            # NOTE: This should work for both the matrix and direct wiring
+            # pin scanning modes, since the pin mode emulates matrix scanning
+            # with one row.
+            assert_less_than(len(self.row_pins), MAX_NUM_ROWS)
+            row_pin_padding = MAX_NUM_ROWS - len(self.row_pins)
+            result += bytearray(self.row_pins) + bytearray([0]*row_pin_padding)
+            result += self.io_mapper.get_pin_masks_as_bytes(self.column_pins)
+            result += bytearray(self.key_number_map)
+
+            # Check that the resulting object has the correct size
+            column_mask_size = self.io_mapper.get_storage_size()
+            row_size = max(self.column_pins) + 1
+            total_size = (
+                MAX_NUM_ROWS +
+                column_mask_size +
+                len(self.row_pins) * row_size
+            )
+            assert_equal(len(result), total_size)
+        elif self.internal_scan_method == MATRIX_SCANNER_INTERNAL_SLOW_ROW_COL:
+            raise KeyplusSettingsError("Unimplemented internal scan method")
+        else:
+            raise KeyplusSettingsError(
+                "Unknown internal scan method '{}'".format(self.internal_scan_method)
+            )
+
+        return result
+
+    def unpack(self, raw_data, scan_plan, device_target):
+        self.internal_scan_method = device_target.firmware_info.internal_scan_method
+        self.mode = scan_plan.mode
+        io_mapper = device_target.get_io_mapper()
+        self.io_mapper = io_mapper
+        if self.internal_scan_method == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL:
+            # row_data
+            pos = 0
+            row_size = MAX_NUM_ROWS
+            row_data = raw_data[:MAX_NUM_ROWS]
+            pos += MAX_NUM_ROWS
+            # column_data
+            column_storage_size = io_mapper.get_storage_size()
+            column_data = raw_data[pos:pos+column_storage_size]
+            pos += column_storage_size
+            # matrix_map_data
+            map_size = (scan_plan.max_col_pin_num+1) * scan_plan.rows
+            matrix_map_data = raw_data[pos:pos+map_size]
+
+            self.row_pins = row_data[:scan_plan.rows]
+            self.column_pins = io_mapper.get_pins_from_mask_bytes(column_data)
+            self.key_number_map = matrix_map_data
+        else:
+            raise KeyplusSettingsError(
+                "Unknown internal scan method '{}'".format(self.internal_scan_method)
+            )
+
+
+
+class KeyboardDeviceTarget(object):
+    """
+    To correctly generate the layout settings, it is necessary to know what
+    device is being targeted. This class stores the necessary information
+    needed to instruct the settings generation commands for a specific device
+    type.
+    """
+    def __init__(self, device_id=None, firmware_info=None):
+        self.device_id = device_id
+        if firmware_info == None:
+            self.firmware_info = keyplus.cdata_types.firmware_info_t()
+        else:
+            self.firmware_info = firmware_info
+
+    def get_io_mapper(self):
+        return get_io_mapper_for_chip(self.firmware_info.chip_id)
+
+
+class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
     def has_valid_crc(self):
         return self.crc == self.compute_crc()
 
@@ -127,7 +216,7 @@ class KeyboardFirmwareInfo(keyplus.cdata_types.firmware_info_t):
         return self.internal_scan_method_to_str(self.internal_scan_method)
 
     def internal_scan_method_to_str(self, method):
-        assert(isinstance(method, int))
+        assert_equal(type(method), int)
         if method in INTERNAL_SCAN_METHOD_TABLE:
             return INTERNAL_SCAN_METHOD_TABLE[method]
         else:

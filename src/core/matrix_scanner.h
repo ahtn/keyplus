@@ -20,6 +20,8 @@
 /// How much ram is needed to store the matrix in the matrix scanner module
 #define MATRIX_DATA_SIZE ((MAX_NUM_ROWS) * (IO_PORT_COUNT))
 
+#define INVALID_KEY_NUMBER 0xff
+
 /// Different scanning methods that can be loaded from the configuration file
 typedef enum matrix_scanner_mode_t {
     MATRIX_SCANNER_MODE_NO_MATRIX = 0x00, ///< doesn't have a matrix

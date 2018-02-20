@@ -3,9 +3,9 @@
 # Copyright 2018 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-import io_map.chip_id
+import keyplus.io_map.chip_id
 
-from io_map.common import IoMapper, IoMapperError, IoMapperPins
+from keyplus.io_map.common import *
 
 XmegaPinsA4U = IoMapperPins(
     ports = {
@@ -38,13 +38,13 @@ XmegaPinsA4U = IoMapperPins(
 
 
 XmegaPinsA3U = IoMapperPins(
-    ports = None,
+    ports = {},
     pins = None,
     port_size = 8
 )
 
 XmegaPinsA1U = IoMapperPins(
-    ports = None,
+    ports = {},
     pins = None,
     port_size = 8
 )
@@ -59,7 +59,8 @@ class IoMapperXmega(IoMapper):
     }
 
     def __init__(self, chip_id):
-        self.chip_info = io_map.chip_id.lookup_chip_id(chip_id)
+        super(IoMapperXmega, self).__init__()
+        self.chip_info = keyplus.io_map.chip_id.lookup_chip_id(chip_id)
 
         assert(self.chip_info != None)
         assert(self.chip_info.architecture == 'XMEGA')
@@ -82,3 +83,12 @@ class IoMapperXmega(IoMapper):
 
         return self.pin_mapper.get_pin_number(port, pin)
 
+    def get_pin_name(self, pin_number):
+        port_number, pin_bit = self.get_pin_port_and_bit(pin_number)
+        if pin_number > self.pin_mapper.get_highest_pin_number():
+            raise IoMapperError("Pin number '{}' doesn't exist on this mcu"
+                                .format(pin_number))
+        return "{port_name}{pin_bit}".format(
+            port_name = self.pin_mapper.port_num_to_name[port_number],
+            pin_bit = pin_bit,
+        )

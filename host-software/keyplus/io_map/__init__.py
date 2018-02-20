@@ -5,4 +5,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from keyplus.layout.scan_mode import ScanMode
+# from keyplus.io_map.common import *
+# from keyplus.io_map.chip_id import *
+# from keyplus.io_map.io_mapper import get_io_mapper_for_chip

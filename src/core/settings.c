@@ -12,6 +12,11 @@
 #include "core/flash.h"
 #include "core/util.h"
 
+#ifndef NO_MATRIX
+#include "core/io_map.h"
+#include "core/matrix_scanner.h"
+#endif
+
 // settings loaded into ram
 XRAM rf_settings_t g_rf_settings;
 XRAM runtime_settings_t g_runtime_settings;
@@ -135,6 +140,45 @@ void settings_load_from_flash(void) {
         ((flash_ptr_t)&GET_SETTING(scan_plan)),
         sizeof(matrix_scan_plan_t)
     );
+
+#if 0
+    { // Compute the highest column pin number used
+        uint8_t port_num;
+        uint8_t max_column_pin_number = 0;
+        uint8_t pos = 0;
+        for (port_num = 0; port_num < IO_PORT_COUNT; ++port_num) {
+            const uint8_t columns = io_map_get_col_port_mask(port_num);
+            uint8_t bit_mask = 1;
+            while (bit_mask) {
+                if (columns & bit_mask) {
+                    max_column_pin_number = pos;
+                }
+                bit_mask <<= 1;
+                pos += 1;
+            }
+        }
+        g_scan_plan.max_col_pin_num = max_column_pin_number;
+    }
+
+    { // Compute the highest key number used
+        uint8_t row = 0;
+        uint8_t col = 0;
+        uint8_t max_key_number = 0;
+        for (row = 0; row < g_scan_plan.rows; ++row) {
+            for (col = 0; col < g_scan_plan.cols; col++) {
+                const uint8_t key_number = get_key_number(row, col);
+                if (key_number > max_key_number) {
+                    max_key_number = key_number;
+                }
+            }
+        }
+        if (max_key_number > MAX_NUM_KEYS) {
+            register_error(ERROR_MAXIMUM_KEY_NUMBER_EXCEEDED);
+        }
+        g_scan_plan.max_key_num = max_key_number;
+    }
+#endif
+
 #endif
 
 }

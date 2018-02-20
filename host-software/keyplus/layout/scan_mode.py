@@ -5,19 +5,12 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from layout.common import try_get, ParseError
+from collections import namedtuple
 
-import re
-import math
-import struct
-import hexdump
+from keyplus.device_info import KeyboardPinMapping
+import keyplus.cdata_types
 
-from io_map.io_mapper import get_io_mapper_for_chip
-
-MATRIX_SCANNER_MODE_NO_MATRIX = 0x00
-MATRIX_SCANNER_MODE_COL_ROW = 0x01
-MATRIX_SCANNER_MODE_ROW_COL = 0x02
-MATRIX_SCANNER_MODE_PINS = 0x03
+from keyplus.constants import *
 
 DEFAULT_DEBOUNCE_PRESS_TIME = 5
 DEFAULT_DEBOUNCE_RELEASE_TIME = (2*DEFAULT_DEBOUNCE_PRESS_TIME)
@@ -26,224 +19,288 @@ DEFAULT_PRESS_TRIGGER_TIME = 1
 DEFAULT_PARASITIC_DISCHARGE_DELAY_IDLE = 2.0
 DEFAULT_PARASITIC_DISCHARGE_DELAY_DEBOUNCE = 10.0
 
-MAX_NUM_ROWS = 10
+MatrixPosition = namedtuple("MatrixPosition", "row col")
 
-class ScanMode:
-    NO_MATRIX = MATRIX_SCANNER_MODE_NO_MATRIX
-    COL_ROW = MATRIX_SCANNER_MODE_COL_ROW
-    PINS = MATRIX_SCANNER_MODE_PINS
+NO_MATRIX = MATRIX_SCANNER_MODE_NO_MATRIX
+COL_ROW = MATRIX_SCANNER_MODE_COL_ROW
+ROW_COL = MATRIX_SCANNER_MODE_ROW_COL
+PIN_GND = MATRIX_SCANNER_MODE_PIN_GND
+PIN_VCC = MATRIX_SCANNER_MODE_PIN_VCC
+
+class ScanMode(object):
     MODE_MAP = {
         'no_matrix': NO_MATRIX,
         'col_row': COL_ROW,
-        'pins': PINS,
+        'row_col': ROW_COL,
+        'pin_gnd': PIN_GND,
+        'pin_vcc': PIN_VCC,
     }
 
-    def __init__(self, scan_mode_dict, debug_hint):
-        self.parse_header(scan_mode_dict, debug_hint)
+    def __init__(self):
+        self.mode = NO_MATRIX
+
+        self.column_pins = []
+        self.direct_wiring_pins = []
+        self.row_pins = []
+
+        self.matrix_map = {}
+        self.matrix_pin_map = {}
 
         self.debounce_time_press = DEFAULT_DEBOUNCE_PRESS_TIME
-        self.matrix_map = None
         self.debounce_time_release = DEFAULT_DEBOUNCE_RELEASE_TIME
         self.trigger_time_press = DEFAULT_PRESS_TRIGGER_TIME
         self.trigger_time_release = DEFAULT_RELEASE_TRIGGER_TIME
         self.parasitic_discharge_delay_idle = DEFAULT_PARASITIC_DISCHARGE_DELAY_IDLE
         self.parasitic_discharge_delay_debouncing = DEFAULT_PARASITIC_DISCHARGE_DELAY_DEBOUNCE
 
-        if 'matrix_map' in scan_mode_dict:
-            self.parse_matrix_map(scan_mode_dict['matrix_map'], debug_hint)
+        self.max_number_supported_keys = 127
 
-    # uint8_t trigger_time_press; // The key must be down this long before being registered (ms)
-    # uint8_t trigger_time_release; // The key must be up this long before being registered (ms)
+    def parse_yaml(self, yaml_dict):
+        pass
 
-    # // Both delays are measured on a scale of 0-48µs
-    # uint8_t parasitic_discharge_delay_idle; // How long to hold a row low before reading the columns
-    # uint8_t parasitic_discharge_delay_debouncing; // How long to hold a row low when a key is debouncing
-        if 'debounce_time_press' in scan_mode_dict:
-            self.debounce_time_press = scan_mode_dict['debounce_time_press']
+    @property
+    def number_columns(self):
+        """ The number of columns in the matrix """
+        return len(self.column_pins)
 
-        if 'debounce_time_release' in scan_mode_dict:
-            self.debounce_time_release = scan_mode_dict['debounce_time_release']
+    @property
+    def number_rows(self):
+        """ The number of rows in the matrix """
+        return len(self.row_pins)
 
-        if 'trigger_time_press' in scan_mode_dict:
-            self.trigger_time_press = scan_mode_dict['trigger_time_press']
+    @property
+    def number_direct_wiring_pins(self):
+        """ The number of direct wiring pins """
+        return len(self.direct_wiring_pins)
 
-        if 'trigger_time_release' in scan_mode_dict:
-            self.trigger_time_release = scan_mode_dict['trigger_time_release']
+    @property
+    def max_column_key_number(self):
+        return max(self.matrix_map.values())
 
-        if 'parasitic_discharge_delay_idle' in scan_mode_dict:
-            delay = scan_mode_dict['parasitic_discharge_delay_idle']
-            if (0 < delay > 48.0):
-                raise ParseError("parasitic_discharge_delay_idle must less than 48.0µs")
-            self.parasitic_discharge_delay_idle = delay
+    @property
+    def max_pin_key_number(self):
+        return max(self.matrix_pin_map.values())
 
-        if 'parasitic_discharge_delay_debouncing' in scan_mode_dict:
-            delay = scan_mode_dict['parasitic_discharge_delay_debouncing']
-            if (0 < delay > 48.0):
-                raise ParseError("parasitic_discharge_delay_debouncing must less than 48.0µs")
-            self.parasitic_discharge_delay_debouncing = delay
-
-        self.get_pin_numbers_for_device(None)
-
-
-    def __str__(self):
-        if self.mode == ScanMode.NO_MATRIX:
-            return "ScanMode(mode=ScanMode.NO_MATRIX)"
-        elif self.mode == ScanMode.COL_ROW:
-            return "ScanMode(mode=ScanMode.COL_ROW, rows={}, cols={})".format(
-                    self.rows, self.col_count)
-
-    def parse_header(self, sm_raw, debug_hint):
-        self.mode = try_get(sm_raw, 'mode', debug_hint, val_type=str)
-        mode = self.mode
-        if self.mode not in ScanMode.MODE_MAP:
-            raise ParseError("Unsupported scan mode '{}' for device '{}'"
-                             .format(self.mode, debug_hint))
-        self.mode = ScanMode.MODE_MAP[self.mode]
-
-        self.col_pins = None
-        self.row_pins = None
-        self.row_count = 0
-        self.col_count = 0
-
-        if self.mode == ScanMode.NO_MATRIX:
-            pass
-        elif self.mode == ScanMode.COL_ROW:
-            # Get the row pins
-            row_data = try_get(sm_raw, 'rows', debug_hint, val_type=[int, list])
-            if isinstance(row_data, int):
-                self.row_pins = None
-                self.row_count = row_data
-            elif isinstance(row_data, list):
-                self.row_pins = row_data
-                self.row_count = len(self.row_pins)
-
-            # Get the column pins
-            col_data = try_get(sm_raw, 'cols', debug_hint, val_type=[int, list])
-            if isinstance(col_data, int):
-                self.col_pins = None
-                self.col_count = col_data
-            elif isinstance(col_data, list):
-                self.col_pins = col_data
-                self.col_count = len(self.col_pins)
-        elif self.mode == ScanMode.PINS:
-            # TODO:
-            # self.row_count = 1
-            # self.col_count = 10
-            raise ParseError("pins not implemented")
-        else:
-            raise ParseError("InternalError: Unknown ScanMode({})".format(self.mode))
-
-    def get_pin_numbers_for_device(self, target_device):
-        # TODO: don't hard code the chip id, instead obtain it from the device
-        ATMEL_ID = 0x03eb0000
-        self.pin_mapper = get_io_mapper_for_chip(ATMEL_ID | 0x000A)
-
-        if self.row_pins == None:
-            row_pins = self.pin_mapper.get_default_rows(self.row_count)
-        else:
-            row_pins =[self.pin_mapper.get_pin_number(pin) for pin in self.row_pins]
-
-        if len(row_pins) < MAX_NUM_ROWS:
-            row_pins += [0] * (MAX_NUM_ROWS-len(row_pins))
-        elif len(row_pins) > MAX_NUM_ROWS:
-            raise ParseError("Device only supports a maximum of 10 rows, got '{}'"
-                                   .format(len(row_pins)))
-
-        if self.col_pins == None:
-            col_pins = self.pin_mapper.get_default_cols(self.col_count)
-        else:
-            col_pins = [self.pin_mapper.get_pin_number(pin) for pin in self.col_pins]
-
-        self.col_pin_numbers = col_pins
-        self.row_pin_numbers = row_pins
-
-        if self.mode != ScanMode.NO_MATRIX:
-            self.max_col_pin_num = max(self.col_pin_numbers)
-            self.max_key_num = max(self.inverse_map)
-        else:
-            self.max_col_pin_num = 0
-            self.max_key_num = 0
-
-
-    def generate_pin_maps(self, target_device):
-        col_pin_masks = self.pin_mapper.get_pin_masks_as_bytes(self.col_pin_numbers)
-
-        return bytearray(self.row_pin_numbers) + col_pin_masks
-
-    def generate_scan_mode_info(self):
-        return struct.pack('<B BB BB BB BB BB',
-            self.mode,
-            self.row_count,
-            self.col_count,
-            self.debounce_time_press,
-            self.debounce_time_release,
-            self.trigger_time_press,
-            self.trigger_time_release,
-            int(255 * (self.parasitic_discharge_delay_idle / 48.0)),
-            int(255 * (self.parasitic_discharge_delay_debouncing / 48.0)),
-            self.max_col_pin_num,
-            self.max_key_num,
+    def is_pin_in_use(self, pin_name):
+        """ Returns True if the pin has already been assigned for matrix scanning """
+        return (
+            (pin_name in self.column_pins) or
+            (pin_name in self.row_pins) or
+            (pin_name in self.direct_wiring_pins)
         )
 
-    def generate_key_number_map(self, dev_id):
-        result = bytearray(0)
+    def _check_pin_not_in_use(self, pin_name):
+        if self.is_pin_in_use(pin_name):
+            raise KeyplusSettingsError(
+                "Duplicate use of '{}' pin in row/column pins".format(pin_name)
+            )
 
-        # print("FAST_ROW_COL map:")
-        for row in range(self.row_count):
-            row_columns = [0] * (self.max_col_pin_num+1)
-            for col in range(self.col_count):
-                pin_num = self.col_pin_numbers[col]
-                key_map_pos = self.col_count*row + col
-                row_columns[pin_num] = self.inverse_map[key_map_pos]
-            result += bytearray(row_columns)
+    def _check_key_number(self, key_number):
+        if key_number > self.max_number_supported_keys:
+            raise KeyplusSettingsError(
+                "Can't assign anymore keys to the matrix map. The maximum number "
+                "is {} keys.".format(self.max_number_supported_keys)
+            )
 
-        # # Add matrix map to the layout section
-        # for key_num in self.inverse_map:
-        #     result += struct.pack('<B', key_num)
+    def add_direct_wiring_pin(self, pin_name):
+        """ Add a pin to the list of column pins for direct wiring """
+        self._check_pin_not_in_use(pin_name)
+        self.direct_wiring_pins.append(pin_name)
+
+    def add_column_pins(self, pin_names):
+        """ Add a pin to the list of column pins for matrix scanning """
+        if isinstance(pin_names, str):
+            pin_names = [pin_names]
+        for pin_name in pin_names:
+            self._check_pin_not_in_use(pin_name)
+            self.column_pins.append(pin_name)
+
+    def add_row_pins(self, pin_names):
+        """ Add a pin to the list of row pins for matrix scanning """
+        if isinstance(pin_names, str):
+            pin_names = [pin_names]
+        for pin_name in pin_names:
+            self._check_pin_not_in_use(pin_name)
+            self.row_pins.append(pin_name)
+
+    def add_key_to_matrix_map(self, key_number, row, col):
+        """ Assign a key number to (row,column) position in the matrix """
+        self._check_key_number(key_number)
+        self.matrix_map[MatrixPosition(row, col)] = key_number
+
+    def add_pin_to_matrix_map(self, key_number, pin_number):
+        """ Assign a key number to a pin used in direct wiring """
+        self._check_key_number(key_number)
+        self.matrix_pin_map[pin_number] = key_number
+
+    def set_scan_mode(self, mode):
+        """
+        Set the scan mode
+
+        Args:
+            mode: a string with one of the values 'row_col', 'col_row',
+                'pin_gnd', or 'pin_vcc'.
+        """
+        if mode.lower() not in self.MODE_MAP:
+            raise KeyplusSettingsError("Unknown scan mode '{}'".format(mode))
+        self.mode = self.MODE_MAP[mode.lower()]
+
+    def _scale_microseconds(self, value):
+        """
+        Parasitic discharge values are store on a scale of 0-48μs. This function
+        scales a value in this range and scales it to an integer in the range
+        0-255
+        """
+        return int(255 * (value / 48.0))
+
+    def _to_microseconds(self, value):
+        """
+        Parasitic discharge values are store on a scale of 0-48μs. This function
+        converts a value on the scale of 0-255 value to a value in 0-48μs.
+        """
+        return (value / 255 * 48.0)
+
+    def generate_scan_plan(self, device_target):
+        scan_plan = keyplus.cdata_types.scan_plan_t()
+        scan_plan.mode = self.mode
+
+        if self.mode != NO_MATRIX:
+            io_mapper = device_target.get_io_mapper()
+
+        if self.mode == NO_MATRIX:
+            # If no matrix is set, then all values can be set to zero
+            scan_plan.pack(bytearray(keyplus.cdata_type.scan_plan_t.__size__))
+            return scan_plan
+        elif self.mode in [COL_ROW, ROW_COL]:
+            scan_plan.rows = self.number_rows
+            scan_plan.cols = self.number_columns
+            scan_plan.max_key_num = self.max_column_key_number;
+
+            # Find the maximum column pin number used
+            max_column_pin = 0
+            for pin_name in self.column_pins:
+                pin_number = io_mapper.get_pin_number(pin_name)
+                max_column_pin = max(max_column_pin, pin_number)
+            scan_plan.max_col_pin_num = max_column_pin
+        elif self.mode == [PIN_GND, PIN_VCC]:
+            scan_plan.cols = self.number_direct_wiring_pins
+            scan_plan.rows = 0
+            scan_plan.max_key_num = self.max_pin_key_number;
+
+            # Find the maximum direct wiring pin number used
+            max_pin = 0
+            for pin_name in self.direct_wiring_pins:
+                pin_number = io_mapper.get_pin_number(pin_name)
+                max_pin = max(max_pin, pin_number)
+            scan_plan.max_col_pin_num = max_pin
+        else:
+            raise KeyplusSettingsError("Unknown scan mode '{}'".format(self.mode))
+
+        # Copy debounce settings over
+        scan_plan.debounce_time_press = self.debounce_time_press
+        scan_plan.debounce_time_release = self.debounce_time_release
+        scan_plan.trigger_time_press = self.trigger_time_press
+        scan_plan.trigger_time_release = self.trigger_time_release
+        scan_plan.parasitic_discharge_delay_idle = \
+            self._scale_microseconds(self.parasitic_discharge_delay_idle)
+        scan_plan.parasitic_discharge_delay_debouncing = \
+            self._scale_microseconds(self.parasitic_discharge_delay_debouncing)
+
+        return scan_plan
+
+    def _generate_key_number_map(self, column_pins, pin_mode=False):
+        num_column_positions = max(column_pins) + 1
+        if pin_mode == True:
+            num_rows = 1
+        else:
+            num_rows = self.number_rows
+        result = [0xff] * num_rows * num_column_positions
+
+        for matrix_pos in self.matrix_map:
+            row = matrix_pos.row
+            col = matrix_pos.col
+            # The FAST_ROW_COL internal scan method assumes a fixed
+            # ordering for the column pin numbers. Where col=0 is the
+            # lowest pin number on the device, col=1 the next lowest, etc.
+            # Since the ScanMode object can supply the pins in an arbitrary
+            # order, we need to remapped them the their fixed column
+            # positions.
+            mapped_col_num = column_pins[col]
+
+            # Store the key number at the correct (row,col) position.
+            key_number = self.matrix_map[matrix_pos]
+            result[row*num_column_positions + mapped_col_num] = key_number
 
         return result
 
-    def calc_matrix_size(self):
-        if self.mode == ScanMode.COL_ROW:
-            # return int(math.ceil(self.row_count * self.col_count / 8))
-            return int(math.ceil(self.max_key_num /8))
-        elif self.mode == ScanMode.PINS:
-            return int(math.ceil(self.pin_count / 8))
+    def generate_pin_mapping(self, device_target):
+        pin_mapping = KeyboardPinMapping()
 
-    def parse_matrix_map(self, mmap_raw, kb_name):
-        """ The matrix_map is used to map the keys from how they are "visually
-        arranged" to to how they are physically wired. """
-        if len(mmap_raw) > self.row_count*self.col_count:
-            raise ParseError("Too many keys in matrix_map for '{}'"
-                    "got {} but expected at most {} (={}*{})".format(
-                    kb_name, len(mmap_raw), self.row_count*self.col_count, self.row_count, self.col_count))
-        matrix_map = []
-        inverse_map = [0x00] * self.row_count * self.col_count
-        for (key_pos, map_key) in enumerate(mmap_raw):
-            # these values can be used as spaces and are ignored
-            if map_key in ['none', '_'*4, '_'*5, '_'*6, '-'*4, '-'*5, '-'*6]:
-                continue
+        internal_scan_method = device_target.firmware_info.internal_scan_method
 
-            r, c = None, None
-            try:
-                results = re.match('r(\d+)c(\d+)', map_key)
-                if results == None:
-                    raise ParseError
-                r, c = results.groups()
-                r, c = int(r), int(c)
-            except (ParseError, TypeError):
-                raise ParseError("Expected string of the form rXcY, but got '{}' "
-                        "in matrix_map '{}'".format(map_key, kb_name))
-            key_num = self.col_count*r + c
-            if r >= self.row_count or c >= self.col_count:
-                raise ParseError("Key remap {} out of bounds "
-                "rows={}, cols={} in device matrix_map '{}'".format(map_key, self.row_count, self.col_count, kb_name))
+        pin_mapping.mode = self.mode
+        pin_mapping.internal_scan_method = internal_scan_method
 
-            if key_num in matrix_map:
-                raise ParseError("The key '{}' appears twice in the matrix_map "
-                "of '{}'".format(map_key, kb_name))
-            matrix_map.append(key_num)
-            inverse_map[key_num] = key_pos
+        io_mapper = device_target.get_io_mapper()
+        pin_mapping.io_mapper = io_mapper
 
-        self.matrix_map = matrix_map
-        self.inverse_map = inverse_map
+        if self.mode == NO_MATRIX:
+            pass
+        elif self.mode in [ROW_COL, COL_ROW]:
+            row_pin_numbers = io_mapper.get_pin_numbers(self.row_pins)
+            column_pin_numbers = io_mapper.get_pin_numbers(self.column_pins)
+            pin_mapping.row_pins = row_pin_numbers
+            pin_mapping.column_pins = column_pin_numbers
+            pin_mapping.key_number_map = self._generate_key_number_map(column_pin_numbers)
+        elif self.mode in [PIN_VCC, PIN_GND]:
+            # NOTE: The direct wiring pins are treated the same way as column
+            # pins
+            direct_pins = io_mapper.get_pin_numbers(self.direct_wiring_pins)
+            pin_mapping.column_pins = direct_pins
+            pin_mapping.key_number_map = self._generate_key_number_map(direct_pins, pin_mode = True)
+
+        return pin_mapping
+
+    def load_raw_data(self, scan_plan, pin_mapping):
+        """ Load data into the ScanMode object form its serialized form.  """
+        if not is_valid_scan_mode(scan_plan.mode):
+            raise KeyplusSettingsError("Unknown scan mode '{}'".format(scan_plan.mode))
+        self.mode = scan_plan.mode
+
+        io_mapper = pin_mapping.io_mapper
+
+        if pin_mapping.internal_scan_method == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL:
+            self.row_pins = io_mapper.get_pin_names(pin_mapping.row_pins)
+            self.column_pins = io_mapper.get_pin_names(pin_mapping.column_pins)
+
+            self.matrix_map = {}
+            num_col_positions = scan_plan.max_col_pin_num+1
+            for row in range(scan_plan.rows):
+                actual_column_number = 0
+                for col in range(num_col_positions):
+                    # Ignore columns that aren't in the
+                    if col not in pin_mapping.column_pins:
+                        continue
+                    raw_matrix_map_pos = row * num_col_positions + col
+                    key_number = pin_mapping.key_number_map[raw_matrix_map_pos]
+                    if key_number == INVALID_KEY_NUMBER:
+                        continue
+                    actual_matrix_pos = MatrixPosition(row, actual_column_number)
+                    self.matrix_map[actual_matrix_pos] = key_number
+                    actual_column_number += 1
+
+
+        self.debounce_time_press = scan_plan.debounce_time_press
+        self.debounce_time_release = scan_plan.debounce_time_release
+        self.trigger_time_press = scan_plan.trigger_time_press
+        self.trigger_time_release = scan_plan.trigger_time_release
+        self.parasitic_discharge_delay_idle = self._to_microseconds(
+            scan_plan.parasitic_discharge_delay_idle
+        )
+        self.parasitic_discharge_delay_debouncing = self._to_microseconds(
+            scan_plan.parasitic_discharge_delay_debouncing
+        )
+
+
+    def parse_json(self, parser_info=None):
+        pass

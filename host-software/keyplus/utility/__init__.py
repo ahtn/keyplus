@@ -5,4 +5,4 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from keyplus.layout.scan_mode import ScanMode
+from keyplus.utility.crc16 import crc16_bytes, is_valid_crc16, crc16

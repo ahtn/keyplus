@@ -19,6 +19,13 @@ SCAN_MODE_STR_MAP = {
     MATRIX_SCANNER_MODE_PIN_VCC: "pin_vcc",
 }
 
+MAX_NUM_ROWS = 10
+
+INVALID_KEY_NUMBER = 0xff
+
+def is_valid_scan_mode(mode):
+    return mode in SCAN_MODE_STR_MAP
+
 def scan_mode_to_str(mode):
     if mode in SCAN_MODE_STR_MAP:
         return SCAN_MODE_STR_MAP[mode]

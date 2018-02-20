@@ -150,6 +150,13 @@ class KeyplusKeyboard(object):
         self.firmware_info = other.firmware_info
         # self.layout_info = other.layout_info
 
+    def get_device_target(self):
+        device_target = KeyboardDeviceTarget(
+            device_id = self.device_info.device_id,
+            firmware_info = self.firmware_info,
+        )
+        return device_target
+
     def reconnect(self):
         """ Reconnect to a device after it has been reset.  """
         if self.get_serial_number() not in ["", None]:
@@ -175,6 +182,10 @@ class KeyplusKeyboard(object):
             size = 64,
             timeout = timeout,
         )
+
+###############################################################################
+#                                USB Commands                                 #
+###############################################################################
 
     def simple_command(self, cmd_id, cmd_data=None, receive=True):
         """
@@ -324,7 +335,6 @@ class KeyplusKeyboard(object):
         rf_info = KeyboardRFInfo()
         rf_info.unpack(response[0:SETTINGS_RF_INFO_HEADER_SIZE] + bytearray(AES_KEY_LEN*2))
         self.rf_info = rf_info
-
         return rf_info
 
 
