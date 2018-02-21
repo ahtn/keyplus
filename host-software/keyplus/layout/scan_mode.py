@@ -6,18 +6,17 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from collections import namedtuple
+import re
+import sys
 
 from keyplus.device_info import KeyboardPinMapping
 import keyplus.cdata_types
 
-from keyplus.constants import *
+from keyplus.layout.parser_info import KeyplusParserInfo
+from keyplus.layout.debounce_profiles import *
+from keyplus.exceptions import *
 
-DEFAULT_DEBOUNCE_PRESS_TIME = 5
-DEFAULT_DEBOUNCE_RELEASE_TIME = (2*DEFAULT_DEBOUNCE_PRESS_TIME)
-DEFAULT_RELEASE_TRIGGER_TIME = 3
-DEFAULT_PRESS_TRIGGER_TIME = 1
-DEFAULT_PARASITIC_DISCHARGE_DELAY_IDLE = 2.0
-DEFAULT_PARASITIC_DISCHARGE_DELAY_DEBOUNCE = 10.0
+from keyplus.constants import *
 
 MatrixPosition = namedtuple("MatrixPosition", "row col")
 
@@ -27,31 +26,26 @@ ROW_COL = MATRIX_SCANNER_MODE_ROW_COL
 PIN_GND = MATRIX_SCANNER_MODE_PIN_GND
 PIN_VCC = MATRIX_SCANNER_MODE_PIN_VCC
 
-class ScanMode(object):
-    MODE_MAP = {
-        'no_matrix': NO_MATRIX,
-        'col_row': COL_ROW,
-        'row_col': ROW_COL,
-        'pin_gnd': PIN_GND,
-        'pin_vcc': PIN_VCC,
-    }
+MODE_MAP = {
+    'no_matrix': NO_MATRIX,
+    'col_row': COL_ROW,
+    'row_col': ROW_COL,
+    'pin_gnd': PIN_GND,
+    'pin_vcc': PIN_VCC,
+}
 
+class ScanMode(object):
     def __init__(self):
         self.mode = NO_MATRIX
 
         self.column_pins = []
-        self.direct_wiring_pins = []
         self.row_pins = []
+        self.direct_wiring_pins = []
 
         self.matrix_map = {}
         self.matrix_pin_map = {}
 
-        self.debounce_time_press = DEFAULT_DEBOUNCE_PRESS_TIME
-        self.debounce_time_release = DEFAULT_DEBOUNCE_RELEASE_TIME
-        self.trigger_time_press = DEFAULT_PRESS_TRIGGER_TIME
-        self.trigger_time_release = DEFAULT_RELEASE_TRIGGER_TIME
-        self.parasitic_discharge_delay_idle = DEFAULT_PARASITIC_DISCHARGE_DELAY_IDLE
-        self.parasitic_discharge_delay_debouncing = DEFAULT_PARASITIC_DISCHARGE_DELAY_DEBOUNCE
+        self.set_debounce_profile('default')
 
         self.max_number_supported_keys = 127
 
@@ -69,10 +63,6 @@ class ScanMode(object):
     def number_direct_wiring_pins(self):
         """ The number of direct wiring pins """
         return len(self.direct_wiring_pins)
-
-    @property
-    def max_column_key_number(self):
-        return max(self.matrix_map.values())
 
     @property
     def max_pin_key_number(self):
@@ -138,9 +128,9 @@ class ScanMode(object):
             mode: a string with one of the values 'row_col', 'col_row',
                 'pin_gnd', or 'pin_vcc'.
         """
-        if mode.lower() not in self.MODE_MAP:
+        if mode.lower() not in MODE_MAP:
             raise KeyplusSettingsError("Unknown scan mode '{}'".format(mode))
-        self.mode = self.MODE_MAP[mode.lower()]
+        self.mode = MODE_MAP[mode.lower()]
 
     def _scale_microseconds(self, value):
         """
@@ -171,7 +161,7 @@ class ScanMode(object):
         elif self.mode in [COL_ROW, ROW_COL]:
             scan_plan.rows = self.number_rows
             scan_plan.cols = self.number_columns
-            scan_plan.max_key_num = self.max_column_key_number;
+            scan_plan.max_key_num = max(self.matrix_map.values())
 
             # Find the maximum column pin number used
             max_column_pin = 0
@@ -182,7 +172,7 @@ class ScanMode(object):
         elif self.mode == [PIN_GND, PIN_VCC]:
             scan_plan.cols = self.number_direct_wiring_pins
             scan_plan.rows = 0
-            scan_plan.max_key_num = self.max_pin_key_number;
+            scan_plan.max_key_num = max(self.matrix_pin_map.values())
 
             # Find the maximum direct wiring pin number used
             max_pin = 0
@@ -298,5 +288,106 @@ class ScanMode(object):
             scan_plan.parasitic_discharge_delay_debouncing
         )
 
-    def parse_json_object(self, parser_info=None):
-        pass
+    def set_debounce_profile(self, profile_name):
+        if profile_name not in DEBOUNCE_PROFILE_TABLE:
+            raise KeyplusSettingsError("Unknown debounce profile: {}"
+                                       .format(profile_name))
+        else:
+            profile = DEBOUNCE_PROFILE_TABLE[profile_name]
+            # copy all the fields of the debounce profile to this object
+            for field in profile:
+                setattr(self, field, profile[field])
+
+    def parse_matrix_map_refrence(self, refrence):
+        refrence = refrence.lower()
+        if re.fullmatch('-+', refrence) or re.fullmatch('_+', refrence) or \
+                refrence == 'none':
+            return None
+        results = re.match('r(\d+)c(\d+)', refrence)
+        if results == None:
+            raise KeyplusParseError("Expected string of the form rXcY, but got '{}' "
+                    "in matrix_map '{}'".format(map_key, kb_name))
+        r, c = results.groups()
+        return MatrixPosition(int(r), int(c))
+
+    def parse_matrix_map(self, mapping):
+        self.matrix_map = {}
+        for (key_num, row_col_refrence) in enumerate(mapping):
+            matrix_pos = self.parse_matrix_map_refrence(row_col_refrence)
+            if matrix_pos == None:
+                continue
+            self.matrix_map[matrix_pos] = key_num
+
+    def parse_json(self, json_obj, parser_info=None):
+        print_warnings = False
+
+        if parser_info == None:
+            print_warnings = True
+            parser_info = KeyplusParserInfo(
+                "<ScanMode Dict>",
+                {"scan_mode": json_obj}
+            )
+        parser_info.enter("scan_mode")
+
+        self.mode = parser_info.try_get("mode", field_type=str)
+        self.mode = parser_info.map_to_value(self.mode, MODE_MAP)
+
+        if self.mode == NO_MATRIX:
+            return
+        elif self.mode in [ROW_COL, COL_ROW]:
+            self.row_pins = parser_info.try_get("rows", field_type=list)
+            self.column_pins = parser_info.try_get("cols", field_type=list)
+            self.parse_matrix_map(parser_info.try_get("matrix_map", field_type=list))
+        elif self.mode in [PIN_GND, PIN_VCC]:
+            self.direct_wiring_pins = parser_info.try_get("pins", field_type=list)
+            self.parse_pin_map(parser_info.try_get("pin_map", field_type=list))
+
+        if parser_info.has_field('debounce', field_type=str):
+            debounce_profile = parser_info.try_get("debounce", field_type=str)
+            self.set_debounce_profile(debounce_profile)
+        elif parser_info.has_field('debounce', field_type=dict):
+            parser_info.enter('debounce')
+
+            self.set_debounce_profile('default')
+
+            self.debounce_time_press = parser_info.try_get(
+                "debounce_time_press", default=self.debounce_time_press, field_type=int,
+                field_range=[0, 255]
+            )
+
+            self.debounce_time_release = parser_info.try_get(
+                "debounce_time_release", default=self.debounce_time_release, field_type=int,
+                field_range=[0, 255]
+            )
+
+            self.trigger_time_press = parser_info.try_get(
+                "trigger_time_press", default=self.trigger_time_press, field_type=int,
+                field_range=[0, 255]
+            )
+
+            self.trigger_time_release = parser_info.try_get(
+                "trigger_time_release", default=self.trigger_time_release, field_type=int,
+                field_range=[0, 255]
+            )
+
+            self.parasitic_discharge_delay_idle = parser_info.try_get(
+                "parasitic_discharge_delay_idle",
+                default=self.parasitic_discharge_delay_idle,
+                field_type=[int, float],
+                field_range=[0, 48.0]
+            )
+
+            self.parasitic_discharge_delay_debouncing = parser_info.try_get(
+                "parasitic_discharge_delay_debouncing",
+                default=self.parasitic_discharge_delay_debouncing,
+                field_type=[int, float],
+                field_range=[0, 48.0]
+            )
+
+            parser_info.exit()
+
+        parser_info.exit()
+
+        if print_warnings:
+            for warn in parser_info.warnings:
+                print(warn, file=sys.stderr)

@@ -42,6 +42,17 @@ class LayoutDevice(object):
         self.layout_id = dev_info.layout_id
         self.split_device_num = layout_info.get_split_device_number(self.device_id)
 
+    def parse_json_object(self, json_obj, parser_info=None):
+        if parser_info == None:
+            parser_info = KeyplusParserInfo(
+                "<ScanMode Dict>",
+                {"scan_mode": json_obj}
+            )
+        parser_info.enter("scan_mode")
+
+        self.device_id = parser_info.try_get("id", field_type=int)
+        parser_info.check_range(0, MAX_DEVICE_ID)
+
 
 # class Device(object):
 #     def __init__(self, id, name, scan_mode, layout_name, layout_offset,

@@ -70,6 +70,7 @@ if __name__ == '__main__':
             for col in range(6):
                 # Note: reverse column position in row
                 scan_mode.add_key_to_matrix_map(row*6+(5-col), row, col)
+    scan_mode.set_debounce_profile("cherry_mx")
 
     target = kb.get_device_target()
     scan_plan = scan_mode.generate_scan_plan(target)
@@ -104,6 +105,34 @@ if __name__ == '__main__':
     )
 
     pprint(vars(layout_device))
+
+    print(("#"*80 + "\n")*3)
+
+    scan_mode_test = ScanMode()
+    scan_mode_test.parse_json({
+        'mode': 'col_row',
+        'rows': ['D0', 'D1', 'D2', 'D3'],
+        'cols': ['A0', 'A1', 'A2', 'A3', 'A4', 'A5'],
+        'matrix_map': [
+            'r0c0', 'r0c1', 'r0c2', 'r0c3', 'r0c4', 'r0c5',
+            'r1c0', 'r1c1', 'r1c2', 'r1c3', 'r1c4', 'r1c5',
+            'r2c0', 'r2c1', 'r2c2', 'r2c3', 'r2c4', 'r2c5',
+            'r3c0', 'r3c1', 'r3c2', 'r3c3', 'r3c4', 'r3c5',
+        ],
+        # 'debounce': 'kailh_box',
+        'debounce': {
+            "debounce_time_press": 5,
+            "debounce_time_release": 10,
+            "trigger_time_press": 1,
+            "trigger_time_release": 3,
+            "parasitic_discharge_delay_idle": 2.0,
+            "parasitic_discharge_delay_debouncing": 10.0,
+        }
+    })
+
+    hexdump(scan_mode_test.generate_scan_plan(target).pack())
+    hexdump(scan_mode_test.generate_pin_mapping(target).pack())
+    pprint(vars(scan_mode_test))
 
     # kb.set_passthrough_mode(True)
     kb.disconnect()
