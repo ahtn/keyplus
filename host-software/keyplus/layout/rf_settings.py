@@ -5,12 +5,14 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import struct, os
-import yaml
+import struct
+import sys
+import os
 
-from layout.common import try_get, ParseError, bytes_from_hex, check_range
-
-import layout.round_keys as round_keys
+from keyplus.utility import *
+from keyplus.layout.parser_info import KeyplusParserInfo
+from keyplus.exceptions import *
+import keyplus.cdata_types
 
 RF_ADDR_WIDTH = 5
 
@@ -25,23 +27,47 @@ PWR_NEG_12DB = 0x01
 PWR_NEG_6DB = 0x02
 PWR_0DB = 0x03
 
-MAX_CHANNEL = 127
+MAX_RF_CHANNEL = 127
 
-class RFSettings:
-    PowerStrMap = {
-        '0db': PWR_0DB,
-        '-6db': PWR_NEG_6DB,
-        '-12db': PWR_NEG_12DB,
-        '-18db': PWR_NEG_18DB,
-    }
-    DataRateStrMap = {
-        '2mbps': RF_DR_2MBPS,
-        '1mbps': RF_DR_1MBPS,
-        '250kbps': RF_DR_250KBPS,
-    }
+RF_POWER_MAP = {
+    '0db': PWR_0DB,
+    '-6db': PWR_NEG_6DB,
+    '-12db': PWR_NEG_12DB,
+    '-18db': PWR_NEG_18DB,
+}
+RF_DATA_RATE_MAP = {
+    '2mbps': RF_DR_2MBPS,
+    '1mbps': RF_DR_1MBPS,
+    '250kbps': RF_DR_250KBPS,
+}
 
+
+def string_to_bytearray(string):
+    try:
+        return bytearray.fromhex(string)
+    except:
+        raise KeyplusParseError("'{}' is not a valid hex string".format(string))
+
+def to_hex_string(value):
+    if isinstance(value, int):
+        return "{:02x}".format(value)
+    elif type(value) in [list, bytearray, bytes]:
+        return "".join(["{:02x}".format(byte) for byte in value])
+
+def data_rate_to_str(x):
+    for (key, value) in RF_DATA_RATE_MAP.items():
+        if x == value:
+            return key
+    return None
+
+def power_to_str(x):
+    for (key, value) in RF_POWER_MAP.items():
+        if x == value:
+            return key
+    return None
+
+class LayoutRFSettings(object):
     def __init__(self):
-
         self.pipe0 = None
         self.pipe1 = None
         self.pipe2 = None
@@ -51,267 +77,195 @@ class RFSettings:
 
         self.channel = None
 
-        self.ekey = None
+        self.encryption_key = None
 
-        self.arc = 15
+        self.auto_retransmit_count = 15
         self.data_rate = RF_DR_2MBPS
         self.power = PWR_0DB
 
-    @staticmethod
-    def from_rand():
-        result = RFSettings()
-        result.ekey = bytearray(os.urandom(16))
-        x = MAX_CHANNEL+1
-        while not x <= MAX_CHANNEL:
+    def generate_random_channel(self):
+        """ Returns a random RF channel """
+        channel = MAX_RF_CHANNEL+1
+        while channel > MAX_RF_CHANNEL:
             n = int((bytearray(os.urandom(1))[0]))
-            x = 3*n+2
-        result.channel = x
+            channel = 3*n+2
+        self.channel = channel
 
+    def generate_random_pipe_addresses(self):
         while True:
             # least significant bytes of address can't match
             pipeBytes = []
 
-            result.pipe0 = bytearray(os.urandom(5))
-            result.pipe1 = bytearray(os.urandom(5))
-            if result.pipe0 == result.pipe1: continue
-            if int(result.pipe0[4]) in [0x55, 0xAA]: continue
-            if int(result.pipe1[4]) in [0x55, 0xAA]: continue
+            self.pipe0 = bytearray(os.urandom(5))
+            self.pipe1 = bytearray(os.urandom(5))
+            if self.pipe0 == self.pipe1: continue
+            if int(self.pipe0[4]) in [0x55, 0xAA]: continue
+            if int(self.pipe1[4]) in [0x55, 0xAA]: continue
 
-            pipeBytes.append(int(result.pipe0[0]))
-            pipeBytes.append(int(result.pipe1[0]))
+            pipeBytes.append(int(self.pipe0[0]))
+            pipeBytes.append(int(self.pipe1[0]))
 
-            result.pipe2 = int(bytearray(os.urandom(1))[0])
-            result.pipe3 = int(bytearray(os.urandom(1))[0])
-            result.pipe4 = int(bytearray(os.urandom(1))[0])
-            result.pipe5 = 0
+            self.pipe2 = int(bytearray(os.urandom(1))[0])
+            self.pipe3 = int(bytearray(os.urandom(1))[0])
+            self.pipe4 = int(bytearray(os.urandom(1))[0])
+            self.pipe5 = 0
 
             valid = True
             for pipe in ['pipe2', 'pipe3', 'pipe4', 'pipe5']:
-                if getattr(result, pipe) in pipeBytes:
+                if getattr(self, pipe) in pipeBytes:
                     valid = False
                 else:
-                    pipeBytes.append(getattr(result, pipe))
+                    pipeBytes.append(getattr(self, pipe))
 
             if not valid:
                 continue
             else:
-                break;
+                return
 
-        return result
-
-    @staticmethod
-    def from_json_obj(json_obj):
-        result = RFSettings()
-
-        rf_data = try_get(json_obj, "rf_settings")
-        # pipes 0-1
-        for pipe in ['pipe0', 'pipe1']:
-            # bytes are stored in big endian
-            data = bytes_from_hex(try_get(rf_data, pipe))
-            if len(data) != RF_ADDR_WIDTH:
-                raise ParseError("Expected '{}' to be {} byte(s) long", data, RF_ADDR_WIDTH)
-            setattr(result, pipe, data)
-
-
-        # pipes 2-5
-        for pipe in ['pipe2', 'pipe3', 'pipe4', 'pipe5']:
-            data = int(try_get(rf_data, pipe), base=16)
-            check_range(data, pipe, 0, 255)
-            setattr(result, pipe, data)
-
-        # channel
-        channel = try_get(rf_data, 'rf_channel', val_type=int)
-        if channel < 0 or channel > 255:
-            raise ParseError("Expected 'rf_channel' to be in range 0-255")
-        result.channel = channel
-
-        # arc
-        arc = try_get(rf_data, 'auto_retransmit_count', val_type=int)
-        check_range(arc, 'auto_retransmit_count', 0, 15)
-        result.arc = arc
-
-        # data rate
-        data_rate = try_get(rf_data, 'data_rate')
-        if data_rate in RFSettings.DataRateStrMap:
-            data_rate = RFSettings.DataRateStrMap[data_rate]
-        else:
-            raise ParseError("Unexpected value '{}' for 'data_rate'".format(data_rate))
-        result.data_rate = data_rate
-
-        # power
-        power = try_get(rf_data, 'transmit_power')
-        if power in RFSettings.PowerStrMap:
-            power = RFSettings.PowerStrMap[power]
-        else:
-            raise ParseError("Unexpected value '{}' for 'transmit_power'".format(power))
-        result.power = power
-
-        # reserved[14]
-        result.reserved = bytearray(14)
-
-        # aes encryption key and the final round key data for decryption
-        aes_ekey = bytes_from_hex(try_get(rf_data, 'aes_encryption_key'))
-        result.ekey = aes_ekey
-
-        return result
-
-    @staticmethod
-    def from_bytes(data):
-        # uint8_t pipe_addr_0[NRF_ADDR_LEN];
-        # uint8_t pipe_addr_1[NRF_ADDR_LEN];
-        # uint8_t pipe_addr_2;
-        # uint8_t pipe_addr_3;
-        # uint8_t pipe_addr_4;
-        # uint8_t pipe_addr_5;
-        # uint8_t channel; // TODO: when using unifying, channel must be (ch%3 == 0)
-        #                 // this should be enforced somewhere/somehow
-        # uint8_t arc;
-        # uint8_t data_rate;
-        # uint8_t power;
-        # uint8_t _reserved[14]; // pad to 32 bytes
-        # uint8_t ekey[AES_KEY_LEN];
-        # uint8_t dkey[AES_KEY_LEN];
-
-        assert(len(data == 32))
-
-        DeviceSettingsRaw = collections.namedtuple("KBInfoFirmware",
-            """
-            pipe0 pipe1 pipe2 pipe2 pipe3 pipe4 pipe5
-            channel arc data_rate power reserved
-            ekey dkey
-            """
-        )
-
-        x = struct.unpack("< 5s 8B 14s 16s 16s" , data)
-        x = KBInfoFirmware._make(x)
-        result = RFSettings()
-        result.pipe0 = x.pipe0
-        result.pipe1 = x.pipe1
-        result.pipe2 = x.pipe2
-        result.pipe3 = x.pipe3
-        result.pipe4 = x.pipe4
-        result.pipe5 = x.pipe5
-
-        result.channel = x.channel
-        result.arc = x.arc
-        result.data_rate = x.data_rate
-        result.power = x.power
-        result._reserved = x._reserved
-        result.ekey = x.ekey
-        # result.dkey = x.dkey # don't need this
-
-    def to_bytes(self):
-        # uint8_t pipe_addr_0[NRF_ADDR_LEN];
-        # uint8_t pipe_addr_1[NRF_ADDR_LEN];
-        # uint8_t pipe_addr_2;
-        # uint8_t pipe_addr_3;
-        # uint8_t pipe_addr_4;
-        # uint8_t pipe_addr_5;
-        # uint8_t channel; // TODO: when using unifying, channel must be (ch%3 == 0)
-        #                 // this should be enforced somewhere/somehow
-        # uint8_t arc;
-        # uint8_t data_rate;
-        # uint8_t power;
-        # uint8_t _reserved[14]; // pad to 32 bytes
-        # uint8_t ekey[AES_KEY_LEN];
-        # uint8_t dkey[AES_KEY_LEN];
-        result = bytearray(0)
-
-        # pipes 0-1
-        for pipe in ['pipe0', 'pipe1']:
-            result += getattr(self, pipe)
-
-        # pipes 2-5
-        for pipe in ['pipe2', 'pipe3', 'pipe4', 'pipe5']:
-            result += struct.pack('<B', getattr(self, pipe))
-
-        # channel
-        result += struct.pack('<B', self.channel)
-
-        # arc
-        result += struct.pack('<B', self.arc)
-
-        # data rate
-        result += struct.pack('<B', self.data_rate)
-
-        # power
-        result += struct.pack('<B', self.power)
-
-        # reserved[14]
-        result += bytearray(14)
-
-        # aes encryption key and the final round key data for decryption
-        # dkey = gen_final_round_key(self.ekey)
-        dkey = round_keys.gen_final_round_key(self.ekey)
-        result += self.ekey
-        result += dkey
-
-        return result
-
-    @staticmethod
-    def data_rate_to_str(x):
-        for (key, value) in RFSettings.DataRateStrMap.items():
-            if x == value:
-                return key
-        return None
-
-    @staticmethod
-    def power_to_str(x):
-        for (key, value) in RFSettings.PowerStrMap.items():
-            if x == value:
-                return key
-        return None
-
-    @staticmethod
-    def bytearray_to_hex(array):
-        return "".join(["{:02x}".format(byte) for byte in array])
-
-
-    def to_json_obj(self):
-        error_msgs = self.checkSettings()
-        if len(error_msgs) != 0:
-            msg = "Invalid Settings: " + "\n".join(error_msgs)
-            raise ParseError(msg)
-
-
-        return {
-            'rf_settings': {
-                'pipe0': RFSettings.bytearray_to_hex(self.pipe0),
-                'pipe1': RFSettings.bytearray_to_hex(self.pipe1),
-                'pipe2': "{:02x}".format(self.pipe2),
-                'pipe3': "{:02x}".format(self.pipe3),
-                'pipe4': "{:02x}".format(self.pipe4),
-                'pipe5': "{:02x}".format(self.pipe5),
-                'aes_encryption_key': RFSettings.bytearray_to_hex(self.ekey),
-                'rf_channel': self.channel,
-                'data_rate': RFSettings.data_rate_to_str(self.data_rate),
-                'transmit_power': RFSettings.power_to_str(self.power),
-                'auto_retransmit_count': self.arc,
-            }
-        }
-
-    def to_yaml(self):
-        return yaml.safe_dump(self.to_json_obj(), default_flow_style=False)
-
-
-    def checkSettings(self):
+    def check_settings(self):
         """
         Returns a list of error messages strings.
         """
-        result = []
+        errors = []
 
         MAX_ARC = 15
-        if self.channel > MAX_CHANNEL:
-            result.append("Channel must be <128, got: {}".format(self.channel))
-        if self.arc > MAX_ARC:
-            result.append("ARC must be <128, got: {}".format(self.arc))
-        if self.power not in RFSettings.PowerStrMap.values():
-            result.append("Power must be <4, got: {}".format(self.power))
-        if self.data_rate not in RFSettings.DataRateStrMap.values():
-            result.append("Power must be <4, got: {}".format(self.data_rate))
-        if sum([i == 0 for i in self.ekey]) == 16:
-            result.append("Warning got null encryption key! {}".format(self.ekey))
+        if self.channel > MAX_RF_CHANNEL:
+            errors.append("Channel must be <128, got: {}".format(self.channel))
+        if self.auto_retransmit_count > MAX_ARC:
+            errors.append("ARC must be <128, got: {}".format(self.auto_retransmit_count))
+        if self.power not in RF_POWER_MAP.values():
+            errors.append("Power must be <4, got: {}".format(self.power))
+        if self.data_rate not in RF_DATA_RATE_MAP.values():
+            errors.append("Power must be <4, got: {}".format(self.data_rate))
+        # if sum([i == 0 for i in self.encryption_key]) == 16:
+        #     errors.append("Warning got null encryption key! {}".format(self.encryption_key))
+
+        if len(errors) != 0:
+            msg = "Invalid Settings: " + "\n".join(errors)
+            raise KeyplusSettingsError(msg)
+
+    def to_json(self):
+        self.check_settings()
+
+        return {
+            'pipe0': to_hex_string(self.pipe0),
+            'pipe1': to_hex_string(self.pipe1),
+            'pipe2': to_hex_string(self.pipe2),
+            'pipe3': to_hex_string(self.pipe3),
+            'pipe4': to_hex_string(self.pipe4),
+            'pipe5': to_hex_string(self.pipe5),
+            'aes_encryption_key': to_hex_string(self.encryption_key),
+            'rf_channel': self.channel,
+            'data_rate': data_rate_to_str(self.data_rate),
+            'transmit_power': power_to_str(self.power),
+            'auto_retransmit_count': self.auto_retransmit_count
+        }
+
+    def load_raw_data(self, rf_settings):
+        self.pipe0 = rf_settings.pipe_addr_0
+        self.pipe1 = rf_settings.pipe_addr_1
+        self.pipe2 = rf_settings.pipe_addr_2
+        self.pipe3 = rf_settings.pipe_addr_3
+        self.pipe4 = rf_settings.pipe_addr_4
+        self.pipe5 = rf_settings.pipe_addr_5
+        self.channel = rf_settings.channel;
+        self.auto_retransmit_count = rf_settings.arc;
+        self.data_rate = rf_settings.data_rate;
+        self.power = rf_settings.power;
+        self.encryption_key = rf_settings.ekey
+        self.check_settings()
+
+
+    def load_random(self):
+        # Generate a random encryption key
+        self.encryption_key = bytearray(os.urandom(16))
+        self.generate_random_channel()
+        self.generate_random_pipe_addresses()
+
+    def parse_json(self, json_obj=None, parser_info=None):
+        print_warnings = False
+
+        if parser_info == None:
+            assert(json_obj != None)
+            print_warnings = True
+            parser_info = KeyplusParserInfo(
+                "<LayoutRFSettings Dict>",
+                {"rf_settings" : json_obj}
+            )
+
+        parser_info.enter("rf_settings")
+
+        self.channel = parser_info.try_get(
+            "rf_channel",
+            field_type = int,
+            field_range = [0, MAX_RF_CHANNEL]
+        )
+
+        self.encryption_key = parser_info.try_get(
+            "aes_encryption_key",
+            field_type = str,
+            remap_function = string_to_bytearray,
+        )
+
+        for field in ['pipe0', 'pipe1']:
+            setattr(self, field, parser_info.try_get(
+                    field,
+                    field_type = str,
+                    remap_function = string_to_bytearray,
+                )
+            )
+        for field in ['pipe2', 'pipe3', 'pipe4','pipe5']:
+            setattr(self, field, parser_info.try_get(
+                    field,
+                    field_type = str,
+                    remap_function = string_to_bytearray,
+                )[0]
+            )
+
+        self.data_rate = parser_info.try_get(
+            "data_rate",
+            field_type = str,
+            remap_table = RF_DATA_RATE_MAP
+        )
+
+        self.power = parser_info.try_get(
+            "transmit_power",
+            field_type = str,
+            remap_table = RF_POWER_MAP,
+        )
+
+        self.auto_retransmit_count = parser_info.try_get(
+            "auto_retransmit_count",
+            field_type = int,
+            field_range = [0, MAX_RF_CHANNEL]
+        )
+
+        # Finish parsing `rf_settings`
+        parser_info.exit()
+
+        # If this is debug code, print the warnings
+        if print_warnings:
+            for warn in parser_info.warnings:
+                print(warn, file=sys.stderr)
+
+    def generate_rf_settings(self):
+        result = keyplus.cdata_types.rf_settings_t()
+
+        # pipes 0-1
+        result.pipe_addr_0 = self.pipe0
+        result.pipe_addr_1 = self.pipe1
+        result.pipe_addr_2 = self.pipe2
+        result.pipe_addr_3 = self.pipe3
+        result.pipe_addr_4 = self.pipe4
+        result.pipe_addr_5 = self.pipe5
+
+        result.channel = self.channel
+        result.arc = self.auto_retransmit_count
+        result.data_rate = self.data_rate
+        result.power = self.power
+
+        decryption_key = list(gen_final_round_key(self.encryption_key))
+        result.ekey = self.encryption_key
+        result.dkey = decryption_key
 
         return result
-
-

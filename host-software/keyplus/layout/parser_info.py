@@ -16,7 +16,7 @@ class UnusedValueWarning(Warning):
         self.values = values
 
     def __str__(self):
-        return "In '{}', the following values were not used: {}".format(
+        return "Warning: in '{}', the following fields were ignored: {}".format(
             self.path_name, self.values
         )
 
@@ -61,7 +61,7 @@ class KeyplusParserInfo(object):
             self.property_stack.pop()
 
     def try_get(self, field, default=None, ignore_case=True, field_type=None,
-                field_range=None):
+                field_range=None, remap_function=None, remap_table=None):
         try:
             value = self.current_obj[field]
 
@@ -88,10 +88,17 @@ class KeyplusParserInfo(object):
 
             self.last_field = field
             self.touch_field(field)
+
             if ignore_case and (type(value) is str):
-                return value.lower()
-            else:
-                return value
+                value = value.lower()
+
+            if remap_table != None:
+                value = remap_table[value]
+
+            if remap_function != None:
+                value = remap_function(value)
+
+            return value
         except:
             if default != None:
                 self.last_field = field

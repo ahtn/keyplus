@@ -13,7 +13,7 @@ import keyplus
 from keyplus.constants import *
 from keyplus.exceptions import KeyplusUSBCommandError
 
-from keyplus.layout import ScanMode, LayoutDevice
+from keyplus.layout import ScanMode, LayoutDevice, LayoutRFSettings
 from keyplus.device_info import KeyboardPinMapping
 
 import keyplus.cdata_types
@@ -147,6 +147,45 @@ if __name__ == '__main__':
 
     pprint(vars(layout_device))
 
+    print(("*"*80 + "\n")*3)
+
+    rf_settings = LayoutRFSettings()
+    rf_settings.load_random()
+    pprint(vars(rf_settings))
+
+    rf_settings = LayoutRFSettings()
+    test_rf_settings = {
+        "aes_encryption_key": "9febeb27209e131ceaf812f73feed577",
+        "rf_channel": 0x08,
+        "auto_retransmit_count": 8, # options: 0-15
+        # TODO: should include retransmit delay option
+        "data_rate":  "2mbps", # options: 2mbps, 1mbps, 250kbps
+        "transmit_power": "0dB", # options: 0dB, -6dB, -12dB, -18dB
+        "pipe0": '2aef63473c',
+        "pipe1": '168d715956',
+        "pipe2": 'c1',
+        "pipe3": 'fc',
+        "pipe4": '63',
+        "pipe5": '00',
+        "pipe6": '00',
+    }
+    rf_settings.parse_json(test_rf_settings)
+
+    pprint(vars(rf_settings))
+    new_json = rf_settings.to_json()
+    print(rf_settings, new_json)
+    new_rf_settings = LayoutRFSettings()
+    new_rf_settings.parse_json(new_json)
+
+    newest_rf_settings = LayoutRFSettings()
+    newest_rf_settings.load_raw_data(kb.rf_info)
+    thingy = newest_rf_settings.to_json()
+    print("newest_rf_settings:", thingy)
+
+    newest_raw = newest_rf_settings.generate_rf_settings()
+    something = newest_raw
+    print(something.pack)
+    print(something.pack())
 
 
     # kb.set_passthrough_mode(True)
