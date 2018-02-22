@@ -109,7 +109,7 @@ if __name__ == '__main__':
     print(("#"*80 + "\n")*3)
 
     scan_mode_test = ScanMode()
-    scan_mode_test.parse_json({
+    test_scan_mode_dict = {
         'mode': 'col_row',
         'rows': ['D0', 'D1', 'D2', 'D3'],
         'cols': ['A0', 'A1', 'A2', 'A3', 'A4', 'A5'],
@@ -128,11 +128,26 @@ if __name__ == '__main__':
             "parasitic_discharge_delay_idle": 2.0,
             "parasitic_discharge_delay_debouncing": 10.0,
         }
-    })
+    }
+    scan_mode_test.parse_json(test_scan_mode_dict)
 
     hexdump(scan_mode_test.generate_scan_plan(target).pack())
     hexdump(scan_mode_test.generate_pin_mapping(target).pack())
     pprint(vars(scan_mode_test))
+
+    print(("@"*80 + "\n")*3)
+
+    test_layout_device_dict = {
+        'id': 0,
+        'layout_offset': 0,
+        'scan_mode': test_scan_mode_dict,
+    }
+    layout_device = LayoutDevice()
+    layout_device.parse_json("test_device", json_obj=test_layout_device_dict)
+
+    pprint(vars(layout_device))
+
+
 
     # kb.set_passthrough_mode(True)
     kb.disconnect()

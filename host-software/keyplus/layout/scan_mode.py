@@ -318,10 +318,11 @@ class ScanMode(object):
                 continue
             self.matrix_map[matrix_pos] = key_num
 
-    def parse_json(self, json_obj, parser_info=None):
+    def parse_json(self, json_obj=None, parser_info=None):
         print_warnings = False
 
         if parser_info == None:
+            assert(json_obj != None)
             print_warnings = True
             parser_info = KeyplusParserInfo(
                 "<ScanMode Dict>",

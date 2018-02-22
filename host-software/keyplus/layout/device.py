@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 # from layout.common import try_get, ParseError, check_range, MAX_DEVICE_ID
 
 from keyplus.layout.scan_mode import ScanMode
+from keyplus.layout.parser_info import KeyplusParserInfo
 from keyplus.cdata_types import feature_ctrl_t
 
 from keyplus.constants import *
@@ -42,16 +43,60 @@ class LayoutDevice(object):
         self.layout_id = dev_info.layout_id
         self.split_device_num = layout_info.get_split_device_number(self.device_id)
 
-    def parse_json_object(self, json_obj, parser_info=None):
-        if parser_info == None:
-            parser_info = KeyplusParserInfo(
-                "<ScanMode Dict>",
-                {"scan_mode": json_obj}
-            )
-        parser_info.enter("scan_mode")
+    def parse_json(self, device_name, json_obj=None, parser_info=None):
+        print_warnings = False
 
-        self.device_id = parser_info.try_get("id", field_type=int)
-        parser_info.check_range(0, MAX_DEVICE_ID)
+        if parser_info == None:
+            assert(json_obj != None)
+            print_warnings = True
+            parser_info = KeyplusParserInfo(
+                "<LayoutDevice Dict>",
+                {device_name : json_obj}
+            )
+        parser_info.enter(device_name)
+
+        self.device_id = parser_info.try_get(
+            "id",
+            field_type = int,
+            field_range = [0, MAX_NUMBER_DEVICES-1]
+        )
+
+        self.device_id = parser_info.try_get(
+            "layout_offset",
+            default = 0,
+            field_type = int,
+            field_range = [0, MAX_NUMBER_DEVICES-1]
+        )
+
+        # TODO: unifying naming of feature_ctrl variables
+        # Load any of the feature settings, use defaults if they are not found
+        self.feature_ctrl.nrf24_disabled = not parser_info.try_get(
+            "wireless_split",
+            default = not self.feature_ctrl.nrf24_disabled,
+            field_type = bool,
+        )
+        self.feature_ctrl.unifying_disabled = not parser_info.try_get(
+            "wireless_mouse",
+            default = not self.feature_ctrl.unifying_disabled,
+            field_type = bool,
+        )
+        self.feature_ctrl.i2c_disabled = not parser_info.try_get(
+            "wired_split",
+            default = not self.feature_ctrl.i2c_disabled,
+            field_type = bool,
+        )
+
+        self.scan_mode = ScanMode()
+        self.scan_mode.parse_json(parser_info=parser_info)
+
+
+        # Finish parsing `device_name`
+        parser_info.exit()
+
+        # If this is debug code, print the warnings
+        if print_warnings:
+            for warn in parser_info.warnings:
+                print(warn, file=sys.stderr)
 
 
 # class Device(object):
