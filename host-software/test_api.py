@@ -70,7 +70,10 @@ if __name__ == '__main__':
             for col in range(6):
                 # Note: reverse column position in row
                 scan_mode.add_key_to_matrix_map(row*6+(5-col), row, col)
+
     scan_mode.set_debounce_profile("cherry_mx")
+
+    print("scan_mode.to_json:", scan_mode.to_json())
 
     target = kb.get_device_target()
     scan_plan = scan_mode.generate_scan_plan(target)
@@ -139,6 +142,7 @@ if __name__ == '__main__':
 
     test_layout_device_dict = {
         'id': 0,
+        'layout': 0,
         'layout_offset': 0,
         'scan_mode': test_scan_mode_dict,
     }

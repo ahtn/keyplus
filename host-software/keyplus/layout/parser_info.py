@@ -141,9 +141,20 @@ class KeyplusParserInfo(object):
         self.check_in_set(list(mapping.keys()))
         return mapping[value]
 
-    def has_field(self, field, field_type=None):
+    def has_field(self, *fields, field_type=None):
+        current_field_obj = self.current_obj
+        for field in fields:
+            if field in current_field_obj:
+                current_field_obj = current_field_obj[field]
+            else:
+                return False
         if field_type != None:
-            return (field in self.current_obj) and \
-                (isinstance(self.current_obj[field], field_type))
+            return (isinstance(self.current_obj, field_type))
         else:
-            return field in self.current_obj
+            return True
+
+    def peek_field(self, *fields):
+        current_field_obj = self.current_obj
+        for field in fields:
+            current_field_obj = current_field_obj[field]
+        return current_field_obj

@@ -6,6 +6,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from collections import namedtuple
+from copy import copy
 import re
 import sys
 
@@ -33,6 +34,14 @@ MODE_MAP = {
     'pin_gnd': PIN_GND,
     'pin_vcc': PIN_VCC,
 }
+
+INV_MODE_MAP = {}
+for key in MODE_MAP:
+    INV_MODE_MAP[MODE_MAP[key]] = key
+
+def is_blank_pin(pin_name):
+    return re.fullmatch('-+', pin_name) or re.fullmatch('_+', pin_name) or \
+            pin_name == 'none'
 
 class ScanMode(object):
     def __init__(self):
@@ -195,15 +204,21 @@ class ScanMode(object):
 
         return scan_plan
 
-    def _generate_key_number_map(self, column_pins, pin_mode=False):
+    def _generate_key_number_map(self, column_pins, pin_map=None):
         num_column_positions = max(column_pins) + 1
-        if pin_mode == True:
+        if pin_map != None:
+            matrix_map = {}
+            for (pin_i, pin_name) in enumerate(self.direct_wiring_pins):
+                if is_blank_pin(pin_name):
+                    continue
+                matrix_map[MatrixPosition(1, pin_i)] = pin_i
             num_rows = 1
         else:
+            matrix_map = self.matrix_map
             num_rows = self.number_rows
         result = [0xff] * num_rows * num_column_positions
 
-        for matrix_pos in self.matrix_map:
+        for matrix_pos in matrix_map:
             row = matrix_pos.row
             col = matrix_pos.col
             # The FAST_ROW_COL internal scan method assumes a fixed
@@ -215,7 +230,7 @@ class ScanMode(object):
             mapped_col_num = column_pins[col]
 
             # Store the key number at the correct (row,col) position.
-            key_number = self.matrix_map[matrix_pos]
+            key_number = matrix_map[matrix_pos]
             result[row*num_column_positions + mapped_col_num] = key_number
 
         return result
@@ -288,11 +303,34 @@ class ScanMode(object):
             scan_plan.parasitic_discharge_delay_debouncing
         )
 
+    def debounce_to_json(self):
+        result = {}
+
+        result['debounce_time_press'] = self.debounce_time_press
+        result['debounce_time_release'] = self.debounce_time_release
+        result['trigger_time_press'] = self.trigger_time_press
+        result['trigger_time_release'] = self.trigger_time_release
+        result['parasitic_discharge_delay_idle'] = self.parasitic_discharge_delay_idle
+        result['parasitic_discharge_delay_debouncing'] = self.parasitic_discharge_delay_debouncing
+
+        matches_debounce_profile = True
+        for field in result:
+            if result[field] != DEBOUNCE_PROFILE_TABLE[self.debounce_profile][field]:
+                matches_debounce_profile = False
+                break
+
+        if matches_debounce_profile:
+            return self.debounce_profile
+        else:
+            return result
+
+
     def set_debounce_profile(self, profile_name):
         if profile_name not in DEBOUNCE_PROFILE_TABLE:
             raise KeyplusSettingsError("Unknown debounce profile: {}"
                                        .format(profile_name))
         else:
+            self.debounce_profile = profile_name
             profile = DEBOUNCE_PROFILE_TABLE[profile_name]
             # copy all the fields of the debounce profile to this object
             for field in profile:
@@ -300,8 +338,7 @@ class ScanMode(object):
 
     def parse_matrix_map_refrence(self, refrence):
         refrence = refrence.lower()
-        if re.fullmatch('-+', refrence) or re.fullmatch('_+', refrence) or \
-                refrence == 'none':
+        if is_blank_pin(refrence):
             return None
         results = re.match('r(\d+)c(\d+)', refrence)
         if results == None:
@@ -392,3 +429,27 @@ class ScanMode(object):
         if print_warnings:
             for warn in parser_info.warnings:
                 print(warn, file=sys.stderr)
+
+    def to_json(self):
+        result  = {}
+
+        result['mode'] = INV_MODE_MAP[self.mode]
+
+        if self.mode == NO_MATRIX:
+            pass
+        elif self.mode in [ROW_COL, COL_ROW]:
+            result['rows'] = copy(self.row_pins)
+            result['cols'] = copy(self.column_pins)
+            num_keys = max(self.matrix_map.values()) + 1
+            matrix_map = ['____'] * num_keys
+            for matrix_pos in self.matrix_map:
+                key_number = self.matrix_map[matrix_pos]
+                matrix_pos_str = "r{}c{}".format(matrix_pos.row, matrix_pos.col)
+                matrix_map[key_number] = matrix_pos_str
+            result['matrix_map'] = matrix_map
+        elif self.mode in [PIN_GND, PIN_VCC]:
+            result['pins'] = copy(self.direct_wiring_pins)
+
+        result['debounce'] = self.debounce_to_json()
+
+        return result

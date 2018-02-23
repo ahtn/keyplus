@@ -7,6 +7,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import struct
 from hexdump import hexdump
+from keyplus.layout.parser_info import KeyplusParserInfo
+from keyplus.exceptions import *
 
 import layout.keycodes as keycodes
 
@@ -64,6 +66,54 @@ class EKCHoldKey(EKCData):
         )
 
         return result
+
+    def parse_json(self, keycode_name, json_obj=None, parser_info=None):
+
+        print_warnings = False
+
+        if parser_info == None:
+            assert(json_obj != None)
+            print_warnings = True
+            parser_info = KeyplusParserInfo(
+                "<EKCHoldKeycode Dict>",
+                {keycode_name : json_obj}
+            )
+        parser_info.enter(keycode_name)
+
+        # Get the tap key field
+        self.keycode = parser_info.try_get(
+            'keycode',
+            field_type=str
+        )
+        assert_equal(self.keycode, 'kc_hold')
+
+        # Get the hold key field
+        self.hold_key = parser_info.try_get(
+            'hold_key',
+            type=str
+        )
+
+        # Get the tap key field
+        self.tap_key = parser_info.try_get(
+            'tap_key',
+            type=str
+        )
+
+        # Get the delay key field
+        self.delay = try_get(
+            'delay',
+            field_type=int,
+            default=EKCHoldKey.DEFAULT_DELAY
+        )
+
+        # Finish parsing `device_name`
+        parser_info.exit()
+
+        # If this is debug code, print the warnings
+        if print_warnings:
+            for warn in parser_info.warnings:
+                print(warn, file=sys.stderr)
+
 
 class EKCMacroRepeatKey(EKCData):
     pass

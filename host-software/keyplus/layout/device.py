@@ -41,6 +41,21 @@ class LayoutDevice(object):
         self.layout_id = dev_info.layout_id
         self.split_device_num = layout_info.get_split_device_number(self.device_id)
 
+    def to_json(self):
+        result = {}
+
+        result["id"] = self.device_id
+        if self.feature_ctrl.wireless_split:
+            result["wireless_split"] = True
+        if self.feature_ctrl.wireless_mouse:
+            result["wireless_mouse"] = True
+        if self.feature_ctrl.wired_split:
+            result["wireless_mouse"] = True
+
+        result["layout"] = self.layout_id
+        result["split_device_num"] = self.layout
+        result["scan_mode"] = self.scan_mode
+
     def parse_json(self, device_name, json_obj=None, parser_info=None):
         print_warnings = False
 
@@ -59,7 +74,12 @@ class LayoutDevice(object):
             field_range = [0, MAX_NUMBER_DEVICES-1]
         )
 
-        self.device_id = parser_info.try_get(
+        self.layout = parser_info.try_get(
+            "layout",
+            field_type = [str, int],
+        )
+
+        self.split_device_num = parser_info.try_get(
             "layout_offset",
             default = 0,
             field_type = int,

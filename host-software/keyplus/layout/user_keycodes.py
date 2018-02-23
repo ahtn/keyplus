@@ -7,29 +7,23 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from layout.common import *
 
-from layout.ekc_data import *
-import layout.mapped_keycodes as mapped_keycodes
+from keyplus.layout.ekc_data import *
+import keyplus.keycodes.mapped_keycodes as mapped_keycodes
+from keyplus.keycodes.keycodes import *
+from keyplus.layout.parser_info import KeyplusParserInfo
+from keyplus.exceptions import *
 
-class UserKeycode:
+class UserKeycode(object):
     def __init__(self, name, data, ekc):
         self.name = name
-        self.data = data
         self.has_been_parsed_before = False
         self.ekc = ekc
         self.ekc_pos = None
 
-class UserKeycodes:
+class UserKeycodes(object):
 
-    def __init__(self, keycode_list_dict):
-
+    def __init__(self):
         self.user_keycode_table = {}
-
-        for entry in keycode_list_dict:
-            name = entry.lower()
-            data = keycode_list_dict[entry]
-            self.add_keycode(name, data)
-
-        self.generate_ekc_position_data()
 
     def get_ekc_keycode_value(self, kc_name):
         kc_name = kc_name.lower()
@@ -65,54 +59,23 @@ class UserKeycodes:
             kc.ekc_pos = ekc_pos
             ekc_pos += kc.ekc.size()
 
-    def add_keycode(self, name, data):
-        if type(data) == str:
-            # Alias keycode
-            raise ParseLayoutError("TODO: implement alias keycodes")
+    def add_keycode(self, kc_name, json_obj=None, parse_info=None):
+        print_warnings = False
 
-        elif type(data) == dict:
-            keycode_dict = data
+        if not parser_info.has_field(kc_name, 'keycode'):
+            raise KeyplusSettingsError("The field 'keycode' must be defined"
+                                       "for '{}'.".format(kc_name))
 
-            kc_type = try_get(
-                keycode_dict,
-                'keycode',
-                hint=name,
-                val_type=str
+        kc_type = self.peek_field(kc_name, 'keycode')
+        kc_type = kc_type.lower()
+
+        if kc_type == "kc_hold":
+            hold_key = EKCHoldKey()
+            hold_key.parse_json(kc_name, parser_info=parser_info)
+            hold_key.set_keycode_map_function(self.get_ekc_keycode_value)
+
+            self.user_keycode_table[kc_name] = UserKeycode(
+                kc_name,
+                data,
+                ekc = hold_key,
             )
-            kc_type = kc_type.lower()
-
-            if kc_type == "kc_hold":
-                # Get the tap key field
-                tap_key = try_get(
-                    keycode_dict,
-                    'tap_key',
-                    hint=name,
-                    val_type=str
-                )
-                # Get the hold key field
-                hold_key = try_get(
-                    keycode_dict,
-                    'hold_key',
-                    hint=name,
-                    val_type=str
-                )
-                # Get the delay key field
-                delay = try_get(
-                    keycode_dict,
-                    'delay',
-                    hint=name,
-                    val_type=int,
-                    default=EKCHoldKey.DEFAULT_DELAY
-                )
-
-                self.user_keycode_table[name] = UserKeycode(
-                    name,
-                    data,
-                    ekc = EKCHoldKey(
-                        tap_key = tap_key,
-                        hold_key = hold_key,
-                        delay = delay,
-                        kc_map_function=self.get_ekc_keycode_value
-                    ),
-                )
-
