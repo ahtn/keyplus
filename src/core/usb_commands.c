@@ -209,6 +209,29 @@ static void erase_page_range(uint16_t start_page, uint16_t page_count) {
     flash_modify_disable();
 }
 
+#define CMD_READ_LAYOUT_START_ADDRESS 1
+#define CMD_READ_LAYOUT_SIZE 5
+static void cmd_read_layout(void) {
+    const uint32_t layout_offset = *((uint32_t*)(g_vendor_report_out.data+1));
+    const uint8_t bytes_to_read = *((uint8_t*)(g_vendor_report_out.data+5));
+
+    if (
+        (layout_offset + bytes_to_read > LAYOUT_SIZE) ||
+        (bytes_to_read > (VENDOR_REPORT_LEN-1))
+    ) {
+        cmd_error(CMD_ERROR_CODE_TOO_MUCH_DATA);
+    } else {
+        g_vendor_report_in.data[0] = CMD_READ_LAYOUT;
+        flash_read(
+            g_vendor_report_in.data+1,
+            LAYOUT_ADDR + layout_offset,
+            bytes_to_read
+        );
+        g_vendor_report_in.len = VENDOR_REPORT_LEN;
+        send_vendor_report();
+    }
+}
+
 static void cmd_get_info(void) {
     uint8_t info_type = g_vendor_report_out.data[1];
 
@@ -367,6 +390,10 @@ void parse_cmd(void) {
             erase_page_range(LAYOUT_PAGE_NUM, number_pages);
 
             cmd_ok();
+        } break;
+
+        case CMD_READ_LAYOUT: {
+            cmd_read_layout();
         } break;
 
         case CMD_UNIFYING_PAIR: {

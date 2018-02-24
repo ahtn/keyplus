@@ -9,6 +9,7 @@ import sys
 import easyhid
 import struct
 import hexdump
+import time
 
 from keyplus.constants import *
 from keyplus.usb_ids import is_keyplus_usb_id
@@ -17,6 +18,8 @@ import keyplus.exceptions
 from keyplus.exceptions import *
 from keyplus.device_info import *
 import keyplus.io_map
+
+from keyplus.debug import DEBUG
 
 from keyplus.cdata_types import layout_settings_t
 
@@ -208,15 +211,15 @@ class KeyplusKeyboard(object):
             for i, byte in enumerate(cmd_data):
                 cmd_packet[i+1] = byte
 
-        self.hid_device.write(cmd_packet)
+        self.hid_write(cmd_packet)
 
         if receive:
-            response = self.hid_device.read()
+            response = self.hid_read()
 
             packet_type = response[0]
 
             while packet_type != cmd_id and packet_type != CMD_ERROR_CODE: # ignore other packets
-                response = self.hid_device.read(timeout=3)
+                response = self.hid_read(timeout=1)
                 if response == None:
                     self.hid_device.write(cmd_packet)
                 else:
@@ -231,6 +234,22 @@ class KeyplusKeyboard(object):
             return response[1:]
         else:
             return None
+
+    def hid_write(self, data):
+        if DEBUG.usb_cmd_timing:
+            print("{:.3F} usb sent:".format(time.monotonic()))
+            hexdump.hexdump(data)
+        self.hid_device.write(data)
+
+    def hid_read(self, timeout=None):
+        response = self.hid_device.read(timeout=timeout)
+        if DEBUG.usb_cmd_timing:
+            if response == None:
+                print("{:.3F} usb recv timeout:".format(time.monotonic()))
+            else:
+                print("{:.3F} usb recv:".format(time.monotonic()))
+                hexdump.hexdump(response)
+        return response
 
     def set_passthrough_mode(self, enable):
         """
@@ -359,6 +378,26 @@ class KeyplusKeyboard(object):
         rf_info.unpack(response[0:SETTINGS_RF_INFO_HEADER_SIZE] + bytearray(AES_KEY_LEN*2))
         self.rf_info = rf_info
         return rf_info
+
+    def read_whole_layout(self):
+        bytes_remaining = self.firmware_info.layout_flash_size
+        offset = 0
+
+        result = bytearray()
+        while bytes_remaining != 0:
+            bytes_to_read = min(bytes_remaining, 63)
+            result += self.read_layout_data(offset, bytes_to_read)
+            bytes_remaining -= bytes_to_read
+            offset += bytes_to_read
+        return result
+
+
+
+    def read_layout_data(self, offset, size):
+        assert(size <= VENDOR_REPORT_LEN-1)
+        control_data = struct.pack("< L B", offset, size)
+        return self.simple_command(CMD_READ_LAYOUT, control_data)
+
 
     def get_layers(self, layout_id):
         response = self.simple_command(CMD_GET_LAYER, [layout_id])

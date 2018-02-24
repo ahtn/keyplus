@@ -4,7 +4,7 @@
 #include "core/util.h"
 
 #ifdef __SDCC_mcs51
-ROM const uint8_t bit_lookup[8] = {
+ROM const uint8_t bit_mask_lookup_table[8] = {
     (1 << 0),
     (1 << 1),
     (1 << 2),
@@ -16,11 +16,11 @@ ROM const uint8_t bit_lookup[8] = {
 };
 
 bit_t is_bitn_set(uint8_t byte, uint8_t n) {
-    return (byte & bit_lookup[n]);
+    return (byte & bit_mask_lookup_table[n]);
 }
 
 uint8_t bitn_mask(uint8_t n) {
-    return bit_lookup[n];
+    return bit_mask_lookup_table[n];
 }
 
 bit_t bitmap_get_bit(uint8_t *array, uint8_t n) {

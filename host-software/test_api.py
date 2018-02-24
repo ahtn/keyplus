@@ -237,5 +237,12 @@ if __name__ == '__main__':
     pprint(new_layout.to_keycodes())
 
 
+    print(kb.read_layout_data(0, 63))
+    print()
+    layout_data = kb.read_whole_layout()
+    print("Full layout data: ")
+    hexdump(layout_data)
+
+
     # kb.set_passthrough_mode(True)
     kb.disconnect()

@@ -43,6 +43,7 @@ enum usb_vendor_cmd_t {
     CMD_PASSTHROUGH_MATRIX = 0x09, // raw matrix data sent to the host without interpretting it
     CMD_UPDATE_SETTINGS = 0x0A,
     CMD_UPDATE_LAYOUT = 0x0B, // flash keyboard layout
+    CMD_READ_LAYOUT = 0x0C, // read keyboard layout
 
     CMD_UNIFYING_PAIR = 0x10, // enter pairing mode
 };

@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 AES_KEY_LEN = 16
 EP_VENDOR_SIZE = 64
+VENDOR_REPORT_LEN = 64
 SETTINGS_RF_INFO_SIZE = 64
 SETTINGS_RF_INFO_HEADER_SIZE = (SETTINGS_RF_INFO_SIZE - AES_KEY_LEN*2)
 SETTINGS_SIZE = 512
