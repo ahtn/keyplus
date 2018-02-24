@@ -3,12 +3,13 @@
 # Copyright 2017 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-from keyplus.exceptions import KeyplusParseError
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from keyplus.keycodes import *
 
 SYMBOL_TO_KEYCODE_MAP = {
     # start HID normal keycodes
-    "none": KC_NONE, "no": KC_NONE, "----": KC_NONE,
+    "none": KC_NONE,
     "error_roll_over": KC_ERROR_ROLL_OVER,
     "post_fail": KC_POST_FAIL,
     "error_undefined": KC_ERROR_UNDEFINED,
@@ -38,17 +39,17 @@ SYMBOL_TO_KEYCODE_MAP = {
     "x": KC_X,
     "y": KC_Y,
     "z": KC_Z,
-    "1": KC_1, 1: KC_1,
-    "2": KC_2, 2: KC_2,
-    "2": KC_2, 2: KC_2,
-    "3": KC_3, 3: KC_3,
-    "4": KC_4, 4: KC_4,
-    "5": KC_5, 5: KC_5,
-    "6": KC_6, 6: KC_6,
-    "7": KC_7, 7: KC_7,
-    "8": KC_8, 8: KC_8,
-    "9": KC_9, 9: KC_9,
-    "0": KC_0, 0: KC_0,
+    "1": KC_1,
+    "2": KC_2,
+    "2": KC_2,
+    "3": KC_3,
+    "4": KC_4,
+    "5": KC_5,
+    "6": KC_6,
+    "7": KC_7,
+    "8": KC_8,
+    "9": KC_9,
+    "0": KC_0,
     "ent": KC_ENTER, "enter": KC_ENTER,
     "esc": KC_ESCAPE, "escape": KC_ESCAPE,
     "bspc": KC_BACKSPACE, "backspace": KC_BACKSPACE,
@@ -421,81 +422,8 @@ SYMBOL_TO_KEYCODE_MAP = {
     "sticky_rgui": KC_STICKY_RGUI,
 
     "layer_reset": KC_LAYER_RESET,
-
 }
 
-def get_keycode_type(keycode):
-    if type(kc) != int:
-        raise KeyplusParseError("keycode must be an int")
-    if kc < 0 or kc > 0xffff:
-        raise KeyplusParseError("keycode must be a 16 bit integer")
-
-    if (keycode & EKC_TAG):
-        return KC_TYPE_EKC
-    elif (keycode & SPECIAL_KC_TAG):
-        return KC_TYPE_SPECIAL
-    else:
-        return KC_TYPE_MODKEY
-
-
-def keycode_from_binary(kc_raw):
-    assert(type(kc_raw) == int and kc_raw >= 0 and kc_raw <= 0xffff)
-
-    kc_type = get_keycode_type(keycode)
-
-    if kc_type == KC_TYPE_MODKEY:
-        pass
-    elif kc_type == KC_TYPE_SPECIAL:
-        pass
-    elif kc_type == KC_TYPE_EKC:
-        pass
-    else:
-        raise KeyplusParseError("Unknown keycode format")
-
-
-def interpret_keycode(kc_in):
-    kc_str = str(kc_in).lower()
-    if kc_str in SYMBOL_TO_KEYCODE_MAP:
-        return SYMBOL_TO_KEYCODE_MAP[kc_str]
-    elif "-" in kc_str:
-        if kc_str.count('-') > 2:
-            raise KeyplusParseError("Too many '-' in keycode: '{}'".format(kc_str))
-        if kc_str.count('-') == 2:
-            if kc_str.count('--') != 1 or kc_str[-1] != '-' or kc_str == "--":
-                raise KeyplusParseError("Couldn't handle keycode: '{}'".format(kc_str))
-        mods, kc = kc_str.split("-", 1)
-        ctrl = False
-        shift = False
-        alt = False
-        gui = False
-        right = False
-        left = False
-        force = False
-        for mod in mods:
-            if mod == 'c' and not ctrl:
-                ctrl = True
-            elif mod == 's' and not shift:
-                shift = True
-            elif mod == 'a' and not alt:
-                alt = True
-            elif mod == 'g' or mod == 'w' or mod == 'm' and not gui:
-                gui = True
-            elif mod == 'r' and not (right or left):
-                right = True
-            elif mod == 'l' and not (right or left):
-                left = True
-            elif mod == 'f':
-                force = True
-            else:
-                raise KeyplusParseError("Unexpected or duplicate character in mods mask: '{}'".format(mod))
-        kc = interpret_keycode(kc)
-        return generate_modkey(kc, ctrl=ctrl, shift=shift, alt=alt, gui=gui, right=right, force=force)
-    else:
-        raise KeyplusParseError("Unexpected keycode: '{}'".format(kc_in))
-
-
-if __name__ == "__main__":
-    print(hex(interpret_keycode('l0')))
-    print(hex(interpret_keycode('gr-up')))
-    print(hex(interpret_keycode('caslg-up')))
-    print(hex(interpret_keycode('casrg-up')))
+INVERSE_OVERIDE_MAP = {
+    KC_NONE: "none",
+}

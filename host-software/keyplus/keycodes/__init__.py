@@ -7,3 +7,4 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from keyplus.keycodes.keycodes import *
 from keyplus.keycodes.mapped_keycodes import *
+from keyplus.keycodes.keycode_mapper import *

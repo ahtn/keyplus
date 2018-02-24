@@ -16,7 +16,7 @@ import struct
 DEFAULT_FEATURE_MASK = FEATURE_CTRL_RF_DISABLE | FEATURE_CTRL_RF_MOUSE_DISABLE \
     | FEATURE_CTRL_WIRED_DISABLE;
 
-class LayoutDevice(object):
+class DeviceDefinition(object):
     def __init__(self, device_id=0, name=None, layout_name=None,
                  scan_mode=None, layout_id=None, split_device_num=0):
         self.device_id = device_id
@@ -63,7 +63,7 @@ class LayoutDevice(object):
             assert(json_obj != None)
             print_warnings = True
             parser_info = KeyplusParserInfo(
-                "<LayoutDevice Dict>",
+                "<DeviceDefinition Dict>",
                 {device_name : json_obj}
             )
         parser_info.enter(device_name)

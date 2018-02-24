@@ -13,8 +13,9 @@ import keyplus
 from keyplus.constants import *
 from keyplus.exceptions import KeyplusUSBCommandError
 
-from keyplus.layout import ScanMode, LayoutDevice, LayoutRFSettings
+from keyplus.layout import *
 from keyplus.device_info import KeyboardPinMapping
+from keyplus.keycodes import *
 
 import keyplus.cdata_types
 
@@ -102,7 +103,7 @@ if __name__ == '__main__':
     pprint(vars(layout_settings))
 
 
-    layout_device = LayoutDevice()
+    layout_device = DeviceDefinition()
     layout_device.load_raw_data(
         kb.device_info, layout_settings, new_pin_mapping
     )
@@ -146,7 +147,7 @@ if __name__ == '__main__':
         'layout_offset': 0,
         'scan_mode': test_scan_mode_dict,
     }
-    layout_device = LayoutDevice()
+    layout_device = DeviceDefinition()
     layout_device.parse_json("test_device", json_obj=test_layout_device_dict)
 
     pprint(vars(layout_device))
@@ -190,6 +191,50 @@ if __name__ == '__main__':
     something = newest_raw
     print(something.pack)
     print(something.pack())
+
+    keycode_mapper = KeycodeMapper()
+    layout = LayoutKeyboard(
+        layout_id = "foo",
+        number_layers = 3,
+        device_sizes = [3, 5],
+    )
+
+    layout.set_keycode(
+        layer = 0,
+        device = 0,
+        key_number = 0,
+        keycode = "ca-up"
+    )
+
+    layout.set_keycode(
+        layer = 1,
+        device = 0,
+        key_number = 0,
+        keycode = "a"
+    )
+    layout.set_keycode(
+        layer = 1,
+        device = 0,
+        key_number = 1,
+        keycode = "b"
+    )
+
+    pprint(vars(layout))
+    for layer in layout.layer_list:
+        pprint(vars(layer))
+        for device in layer.device_list:
+            pprint(vars(device))
+
+    keycode_mapper = KeycodeMapper()
+    pprint(layout.to_json())
+    pprint(layout.to_keycodes())
+
+    new_layout = LayoutKeyboard('new')
+    new_layout.load_keycodes(layout.to_keycodes())
+    print("new_layout: ", end="")
+    pprint(new_layout.to_json())
+    print("new_layout: ", end="")
+    pprint(new_layout.to_keycodes())
 
 
     # kb.set_passthrough_mode(True)
