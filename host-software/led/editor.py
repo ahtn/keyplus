@@ -21,7 +21,6 @@ from PySide.QtCore import Slot, Signal
 import os
 import json
 import kle
-import random
 import led_vm
 
 DEFAULT_KEY_SIZE = 50
@@ -64,7 +63,7 @@ class KeyboardDeviceWidget(QGraphicsItem):
         for(i, key) in enumerate(self.keys):
             key = KeyWidget(
                 key,
-                key.get_legend_text(),
+                key.get_legend_str(),
                 color = QColor(0,0,0),
                 parent=self
             )
@@ -421,7 +420,7 @@ class Window(QWidget):
         # layout of the widgets in the window
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.inputType)
-        self.key_size = 50
+        self.key_size = DEFAULT_KEY_SIZE
 
         self.setLayout(self.layout)
 
@@ -443,9 +442,11 @@ class Window(QWidget):
 
         test_items = [
             # ("60%", os.path.join("layouts", "60-percent.json")),
-            ("dox-left",  os.path.join("layouts", "dox-left.json")),
-            ("dox-right", os.path.join("layouts", "dox-right.json")),
+            # ("dox-left",  os.path.join("layouts", "dox-left.json")),
+            # ("dox-right", os.path.join("layouts", "dox-right.json")),
             # ("jemini-v5", os.path.join("layouts", "jemini-v5.json")),
+            ("ortho-left",  os.path.join("layouts", "ortho_4x6.json")),
+            ("ortho-right", os.path.join("layouts", "ortho_4x6.json")),
         ]
 
         self.test_objs = [
