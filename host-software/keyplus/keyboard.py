@@ -412,7 +412,8 @@ class KeyplusKeyboard(object):
             offset += bytes_to_read
 
         finish = time.time()
-        print("Time to read layout: ", finish - start)
+        if DEBUG.usb_cmd_timing:
+            print("Time to read layout: ", finish - start)
 
         self._whole_layout_data = result
         self._layout_data_dirty = False
@@ -494,7 +495,7 @@ class KeyplusKeyboard(object):
         # TODO:
         # ekc_table = EKCTable()
         # ekc_table.unpack()
-        hexdump.hexdump(layout_data)
+        # hexdump.hexdump(layout_data)
 
         layout_arrays = self._get_layout_keycode_arrays(layout_data)
 
