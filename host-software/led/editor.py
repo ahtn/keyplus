@@ -209,7 +209,8 @@ class KeyWidget(QGraphicsItem, QObject):
 
         self.text = text
 
-        self.setPos(key.x, key.y)
+        rect = key.get_rect_points()
+        self.setPos(rect[0].x, rect[0].y)
         self.angle = key.r
 
         self.w = key.w
@@ -342,7 +343,7 @@ class KeyboardEditorScene(QGraphicsScene):
 
         self.gridActive = True
         self.keySize = key_size
-        self.snapSize = 0.25
+        self.snapSize = 0.125
 
     def setSnapSize(self, size):
         self.snapSize = size
@@ -424,6 +425,8 @@ class Window(QWidget):
 
         self.setLayout(self.layout)
 
+        self.resize(1600, 900)
+
         self.scene = KeyboardEditorScene(
             -200, -200, 1000, 600,
             key_size = self.key_size
@@ -439,10 +442,10 @@ class Window(QWidget):
         self.view.setFont(keyFont)
 
         test_items = [
-            ("60%", os.path.join("layouts", "60-percent.json")),
-            # ("dox-left",  "test_layouts/test-dox-left.json"),
-            # ("dox-right", "test_layouts/test-dox-right.json"),
-            # ("mine-v5", "test_layouts/test-mine-v5.json"),
+            # ("60%", os.path.join("layouts", "60-percent.json")),
+            ("dox-left",  os.path.join("layouts", "dox-left.json")),
+            ("dox-right", os.path.join("layouts", "dox-right.json")),
+            # ("jemini-v5", os.path.join("layouts", "jemini-v5.json")),
         ]
 
         self.test_objs = [
@@ -463,6 +466,7 @@ class Window(QWidget):
         self.refreshEvent.setInterval(33)
         # self.refreshEvent.timeout.connect(self.USBUpdate)
         self.refreshEvent.timeout.connect(self.test_objs[0].updateLEDAnimation)
+        self.refreshEvent.timeout.connect(self.test_objs[1].updateLEDAnimation)
         self.refreshEvent.start()
 
 
