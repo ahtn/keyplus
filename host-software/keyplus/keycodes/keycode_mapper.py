@@ -79,8 +79,6 @@ class KeycodeMapper(object):
         assert(isinstance(keycode, six.integer_types))
         assert(0 <= keycode <= 0xffff)
 
-        print(keycode)
-
         if keycode in self.keycode_to_symbol_map:
             return self.keycode_to_symbol_map[keycode]
 

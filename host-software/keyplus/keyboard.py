@@ -11,6 +11,9 @@ import struct
 import hexdump
 import time
 
+from collections import namedtuple
+from pprint import pprint
+
 from keyplus.constants import *
 from keyplus.usb_ids import is_keyplus_usb_id
 from keyplus.error_table import KeyplusErrorTable
@@ -18,6 +21,8 @@ import keyplus.exceptions
 from keyplus.exceptions import *
 from keyplus.device_info import *
 import keyplus.io_map
+
+from keyplus.layout import *
 
 from keyplus.debug import DEBUG
 
@@ -133,6 +138,10 @@ def find_devices(name=None, serial_number=None, vid_pid=None, device_id=None,
 class KeyplusKeyboard(object):
     def __init__(self, hid_device):
         self.hid_device = hid_device
+
+        self._layout_data_dirty = True
+        self._layout_info_dirty = True
+        self._rf_info_dirty = True
 
         with self.hid_device:
             self.get_device_info()
@@ -361,6 +370,9 @@ class KeyplusKeyboard(object):
         return layout_info
 
     def get_layout_info(self):
+        if not self._layout_info_dirty:
+            return self.layout_settings
+
         response = bytearray(0)
         for i in range(INFO_NUM_LAYOUT_DATA_PAGES):
             response = response + self.get_info_cmd(INFO_LAYOUT_DATA_0 + i)
@@ -369,17 +381,26 @@ class KeyplusKeyboard(object):
 
         layout_settings.unpack(response[:layout_settings_t.__size__])
         self.layout_settings = layout_settings
+        self._layout_info_dirty = False
         return layout_settings
 
     def get_rf_info(self):
+        if not self._rf_info_dirty:
+            return self.rf_info
+
         response = self.get_info_cmd(INFO_RF)
 
         rf_info = KeyboardRFInfo()
         rf_info.unpack(response[0:SETTINGS_RF_INFO_HEADER_SIZE] + bytearray(AES_KEY_LEN*2))
         self.rf_info = rf_info
+        self._rf_info_dirty = False
         return rf_info
 
     def read_whole_layout(self):
+        if not self._layout_data_dirty:
+            return self._whole_layout_data
+
+        start = time.time()
         bytes_remaining = self.firmware_info.layout_flash_size
         offset = 0
 
@@ -389,15 +410,107 @@ class KeyplusKeyboard(object):
             result += self.read_layout_data(offset, bytes_to_read)
             bytes_remaining -= bytes_to_read
             offset += bytes_to_read
+
+        finish = time.time()
+        print("Time to read layout: ", finish - start)
+
+        self._whole_layout_data = result
+        self._layout_data_dirty = False
+
         return result
 
+    def _get_layout_data_sections(self):
+        device_target = self.get_device_target()
+
+        if self.firmware_info.internal_scan_method == MATRIX_SCANNER_INTERNAL_NONE:
+            pin_mapping_section = 0
+        elif self.firmware_info.internal_scan_method == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL:
+            header_size = device_target.get_io_mapper().get_storage_size()
+            header_size += MAX_NUM_ROWS
+            scan_plan = self.device_info.scan_plan
+            map_size = (scan_plan.max_col_pin_num+1) * scan_plan.rows
+            pin_mapping_section = header_size + map_size
+
+        data = self._whole_layout_data
+
+        # ekc_size =
+        external_keycode_table = pin_mapping_section + struct.unpack(
+            "< H",
+            data[pin_mapping_section:pin_mapping_section+2],
+        )[0]
+
+        pin_map_data = data[:pin_mapping_section]
+        ekc_data = data[pin_mapping_section:external_keycode_table]
+        layout_data = data[external_keycode_table+2:]
+
+        return (
+            pin_map_data,
+            ekc_data,
+            layout_data
+        )
+
+    def _get_layout_keycode_arrays(self, layout_data):
+        self.get_layout_info()
+
+        result = []
+
+        pos = 0
+
+        for layout_i in range(self.layout_settings.number_layouts):
+            layout = self.layout_settings.layouts[layout_i]
+            devices = self.layout_settings.get_layout_device_sizes(layout_i)
+            num_layers = self.layout_settings.layouts[layout_i].layer_count
+            layout_keycodes = []
+            for layer_i in range(num_layers):
+                layer = []
+                for (offset, size) in devices:
+                    keycodes = struct.unpack(
+                        "<" + "H" * (size // 2),
+                        layout_data[pos:pos+size]
+                    )
+                    layer.append(list(keycodes))
+                    pos += size
+                layout_keycodes.append(layer)
+            result.append(layout_keycodes)
+
+
+        return result
+
+    def unpack_layout_data(self):
+        self.read_whole_layout()
+        device_target = self.get_device_target()
+
+        pin_map_data, ekc_table, layout_data = self._get_layout_data_sections()
+
+        scan_mode = ScanMode()
+        pin_mapping = KeyboardPinMapping()
+        pin_mapping.unpack(
+            pin_map_data,
+            self.device_info.scan_plan,
+            device_target,
+        )
+        scan_mode.load_raw_data(self.device_info.scan_plan, pin_mapping)
+
+        # TODO:
+        # ekc_table = EKCTable()
+        # ekc_table.unpack()
+        hexdump.hexdump(layout_data)
+
+        layout_arrays = self._get_layout_keycode_arrays(layout_data)
+
+        result = []
+        for (layout_i, _) in enumerate(layout_arrays):
+            layout = LayoutKeyboard(layout_i)
+            layout.load_keycodes(layout_arrays[layout_i])
+            result.append(layout)
+
+        return result
 
 
     def read_layout_data(self, offset, size):
         assert(size <= VENDOR_REPORT_LEN-1)
         control_data = struct.pack("< L B", offset, size)
-        return self.simple_command(CMD_READ_LAYOUT, control_data)
-
+        return self.simple_command(CMD_READ_LAYOUT, control_data)[:size]
 
     def get_layers(self, layout_id):
         response = self.simple_command(CMD_GET_LAYER, [layout_id])

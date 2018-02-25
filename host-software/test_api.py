@@ -236,12 +236,21 @@ if __name__ == '__main__':
     print("new_layout: ", end="")
     pprint(new_layout.to_keycodes())
 
-
     print(kb.read_layout_data(0, 63))
     print()
     layout_data = kb.read_whole_layout()
     print("Full layout data: ")
     hexdump(layout_data)
+
+    unpacked_layout_data = kb.unpack_layout_data()
+
+    for (i, layout) in enumerate(unpacked_layout_data):
+        # pprint(vars(layout))
+        print("This is layout {}:".format(i))
+        print(layout.to_json())
+        print()
+
+
 
 
     # kb.set_passthrough_mode(True)

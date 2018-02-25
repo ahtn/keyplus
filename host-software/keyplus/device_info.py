@@ -6,6 +6,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import struct
+import math
 
 import keyplus.cdata_types
 from keyplus.utility import crc16_bytes
@@ -64,8 +65,8 @@ class KeyboardPinMapping(object):
             # row_data
             pos = 0
             row_size = MAX_NUM_ROWS
-            row_data = raw_data[:MAX_NUM_ROWS]
-            pos += MAX_NUM_ROWS
+            row_data = raw_data[:row_size]
+            pos += row_size
             # column_data
             column_storage_size = io_mapper.get_storage_size()
             column_data = raw_data[pos:pos+column_storage_size]
@@ -74,14 +75,13 @@ class KeyboardPinMapping(object):
             map_size = (scan_plan.max_col_pin_num+1) * scan_plan.rows
             matrix_map_data = raw_data[pos:pos+map_size]
 
-            self.row_pins = row_data[:scan_plan.rows]
+            self.row_pins = list(row_data[:scan_plan.rows])
             self.column_pins = io_mapper.get_pins_from_mask_bytes(column_data)
             self.key_number_map = matrix_map_data
         else:
             raise KeyplusSettingsError(
                 "Unknown internal scan method '{}'".format(self.internal_scan_method)
             )
-
 
 
 class KeyboardDeviceTarget(object):
@@ -98,8 +98,10 @@ class KeyboardDeviceTarget(object):
         else:
             self.firmware_info = firmware_info
 
+        self.io_mapper = get_io_mapper_for_chip(self.firmware_info.chip_id)
+
     def get_io_mapper(self):
-        return get_io_mapper_for_chip(self.firmware_info.chip_id)
+        return self.io_mapper
 
 
 class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
@@ -159,11 +161,55 @@ class KeyboardLayoutInfo(keyplus.cdata_types.layout_settings_t):
             else:
                 self.lookup_table[device.layout_id].append(device)
 
-        # Sort each device list by its matrix offset
+        # Sort each device list by its matrix offset (smallest first)
+        # If their sizes match, sort by matrix_size (largest first)
         for layout_id in self.lookup_table:
-            self.lookup_table[layout_id].sort(key = lambda x: x.matrix_offset)
+            self.lookup_table[layout_id].sort(
+                key = lambda x: x.matrix_offset * 256 - x.matrix_size
+            )
 
         self.has_built_lookup_table = True
+
+    def get_layout_size(self, layout_id):
+        devices = self.get_devices_in_layout(layout_id)
+        layout = self.layouts[layout_id]
+
+        matrix_size = 0
+
+        for device in devices:
+            matrix_size += int(math.ceil(device.matrix_size/8))
+
+        if matrix_size > MAX_MATRIX_SIZE:
+            raise KeyplusParseError("Too many keys in layout '{}'".format(layout_id))
+
+        matrix_size *= layout.layer_count * 2
+
+        return matrix_size
+
+    def get_layout_device_sizes(self, layout_id):
+        devices = self.get_devices_in_layout(layout_id)
+        # TODO: need to change the layout storage format to use key numbers
+        # not byte numers.
+
+        # NOTE: The devices in the list returned by get_devices_in_layout()
+        # is sorted by their matrix_offset
+        offset_pos = devices[0].matrix_offset + devices[0].matrix_size*2*8
+        offset_list = [(0, offset_pos)]
+        for device in devices:
+            this_offset_pos = device.matrix_offset*2*8
+            if this_offset_pos > offset_pos:
+                raise KeyplusSettingsError(
+                    "Unexpected overlap in matrix_sizes: {}".format(devices)
+                )
+            if this_offset_pos < offset_pos:
+                continue
+            size = device.matrix_size*8*2
+            offset_list.append((offset_pos, size))
+            offset_pos += size
+
+        return offset_list
+
+
 
     def get_devices_in_layout(self, layout_id):
         """ For a given `layout_id`, find all the devices using that layout """

@@ -324,7 +324,6 @@ class ScanMode(object):
         else:
             return result
 
-
     def set_debounce_profile(self, profile_name):
         if profile_name not in DEBOUNCE_PROFILE_TABLE:
             raise KeyplusSettingsError("Unknown debounce profile: {}"
