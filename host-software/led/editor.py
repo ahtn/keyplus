@@ -19,7 +19,8 @@ from PySide.QtGui import QApplication, QWidget, QComboBox, QVBoxLayout, \
 from PySide.QtCore import Slot, Signal
 
 import os
-import kle, json
+import json
+import kle
 import random
 import led_vm
 
@@ -45,7 +46,7 @@ class KeyboardDeviceWidget(QGraphicsItem):
         self.key_layout = key_layout
         self.keys = key_layout.get_keys()
         self.keyList = []
-        self.keySize = self.key_layout.get_spacing()
+        self.keySize = self.key_layout.spacing
 
         with open("rgb.cl") as f:
             main_program = f.read()
@@ -112,7 +113,7 @@ class KeyboardDeviceWidget(QGraphicsItem):
         with open(file_name) as json_file:
             json_layout = json.loads(json_file.read())
         print(json_layout)
-        key_layout = kle.Keyboard.from_json(json_layout, spacing=key_size)
+        key_layout = kle.KLEKeyboard.from_json(json_layout, spacing=key_size)
         return KeyboardDeviceWidget(key_layout, name)
 
     # @Slot(str)
@@ -208,11 +209,11 @@ class KeyWidget(QGraphicsItem, QObject):
 
         self.text = text
 
-        self.setPos(key.x(), key.y())
-        self.angle = key.r()
+        self.setPos(key.x, key.y)
+        self.angle = key.r
 
-        self.w = key.w()
-        self.h = key.h()
+        self.w = key.w
+        self.h = key.h
 
         # self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
