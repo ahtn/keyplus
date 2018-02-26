@@ -358,7 +358,9 @@ void rf_load_sync_ack_payload(uint8_t device_id) {
     memset(packet->sync.salt, 0, PACKET_SYNC_SALT_LENGTH);
     // encrypt and load into ack payload fifo
     aes_encrypt(tmp_buffer);
+    rf_disable_receive_irq();
     nrf24_write_ack_payload(tmp_buffer, PACKET_SIZE, device_id_to_pipe_num(device_id));
+    rf_enable_receive_irq();
 }
 
 // For a packet to be valid:
