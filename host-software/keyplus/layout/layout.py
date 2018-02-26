@@ -25,16 +25,7 @@ class KeyplusLayout(object):
     def from_yaml_file(self, layout_file, rf_file=None):
         pass
 
-    def parse_json(self, layout_json, rf_json=None, parser_info=None):
-        print_warnings = False
-
-        if parser_info == None:
-            print_warnings = True
-            parser_info = KeyplusParserInfo(
-                "<KeyplusLayout>",
-                layout_json
-            )
-
+    def _parse_devices(self, parser_info):
         parser_info.enter("devices")
         devices = []
         for field in parser_info.iter_fields():
@@ -44,11 +35,32 @@ class KeyplusLayout(object):
                 parser_info = parser_info
             )
             devices.append(device)
-
-        # for device in devices:
-        #     print(device.to_json())
-
+        self.devices = devices
         parser_info.exit()
+
+    def _parse_layouts(self, parser_info):
+        parser_info.enter("layouts")
+        layouts = []
+        for field in parser_info.iter_fields():
+            layout = LayoutKeyboard(field)
+            layout.parse_json(
+                layout_id = field,
+                parser_info = parser_info
+            )
+            layouts.append(layout)
+        self.layouts = layouts
+        parser_info.exit()
+
+    def parse_json(self, layout_json, rf_json=None, parser_info=None):
+        if parser_info == None:
+            parser_info = KeyplusParserInfo(
+                "<KeyplusLayout>",
+                layout_json,
+                print_warnings = True
+            )
+
+        self._parse_devices(parser_info)
+        self._parse_layouts(parser_info)
 
 
 if 0:

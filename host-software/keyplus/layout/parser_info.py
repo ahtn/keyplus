@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import six
 import sys
+from colorama import Fore, Style
 
 from keyplus.exceptions import KeyplusParseError
 from keyplus.debug import DEBUG
@@ -20,8 +21,11 @@ class UnusedValueWarning(Warning):
         self.values = values
 
     def __str__(self):
-        return "Warning: in '{}', the following fields were ignored: {}".format(
-            self.path_name, self.values
+        return (
+            f"{Fore.RED}Warning{Style.RESET_ALL}"
+            ": in '{}', the following fields were ignored: {}".format(
+                self.path_name, self.values
+            )
         )
 
 class KeyplusParserInfo(object):
@@ -42,10 +46,10 @@ class KeyplusParserInfo(object):
             self._debug_message("Touch:", "{}.{}".format(self.get_current_path(), field))
         self.untouched_fields.remove(field)
 
-    def _debug_message(self, *message):
+    def _debug_message(self, *message, file=sys.stdout):
         indent = '  ' * (len(self.property_stack))
-        print(indent, end='')
-        print(*message)
+        print(indent, end='', file=file)
+        print(*message, file=file)
 
     def enter(self, field):
         if field not in self.current_obj:
@@ -59,13 +63,18 @@ class KeyplusParserInfo(object):
         self.current_obj = self.current_obj[field]
         self.untouched_fields = list(self.current_obj.keys())
 
+
     def get_current_path(self):
+        def sanitize_field(field):
+            if field.isidentifier():
+                return field
+            else:
+                return "'{}'".format(field)
+
         field_path = []
         for (field, _, _) in self.property_stack:
-            if field.isidentifier():
-                field_path.append(field)
-            else:
-                field_path.append("'{}'".format(field))
+            field_path.append(sanitize_field(field))
+        field_path.append(sanitize_field(self.current_field))
         return '.'.join(field_path)
 
     def exit(self):

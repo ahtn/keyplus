@@ -99,6 +99,21 @@ class LayoutKeyboard(object):
 
         return result
 
+    def parse_json(self, layout_id, parser_info=None):
+        if parser_info == None:
+            parser_info = KeyplusParserInfo(
+                "<LayoutKeyboard>",
+                {layout_id: layout_json},
+                print_warnings = True
+            )
+        parser_info.enter(layout_id)
+        self.default_layer = parser_info.try_get(
+            field = 'default_layer',
+            field_type = int,
+            default = 0,
+        )
+        parser_info.exit()
+
     def set_keycode_mapper(self, keycode_mapper):
         self.keycode_mapper = keycode_mapper
 

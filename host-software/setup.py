@@ -21,7 +21,7 @@ setup(
     packages = ['keyplus'],
     install_requires = [
         'hexdump', 'intelhex', 'easyhid', 'pyyaml', 'pyusb',
-        'cstruct', 'kle', 'six'
+        'cstruct', 'kle', 'six', 'colorama'
     ],
     keywords = ['keyboard', 'usb', 'hid'],
     zip_safe = False

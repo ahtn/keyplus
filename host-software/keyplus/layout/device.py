@@ -64,7 +64,6 @@ class LayoutDevice(object):
     def parse_json(self, device_name, json_obj=None, parser_info=None):
         if parser_info == None:
             assert(json_obj != None)
-            print_warnings = True
             parser_info = KeyplusParserInfo(
                 "<LayoutDevice>",
                 {device_name : json_obj},

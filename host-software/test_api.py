@@ -7,6 +7,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import yaml
 import time
+import colorama
+
 from pprint import pprint
 from hexdump import hexdump
 
@@ -22,6 +24,8 @@ import keyplus.cdata_types
 
 
 if __name__ == '__main__':
+    colorama.init()
+
     dev_list = keyplus.find_devices()
     print(dev_list)
     kb = dev_list[0]
