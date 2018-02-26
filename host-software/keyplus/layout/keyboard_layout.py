@@ -7,7 +7,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from keyplus.keycodes import *
 
-class LayoutDevice(object):
+class LayoutDeviceKeycodes(object):
     def __init__(self, keycodes=None, number_keys=None, keycode_mapper=None):
         if keycodes != None:
             self.keycodes = keycodes
@@ -40,7 +40,7 @@ class LayoutLayer(object):
             self.device_list = device_list
         elif device_sizes != None:
             for dev_size in device_sizes:
-                self.device_list.append( LayoutDevice(number_keys = dev_size) )
+                self.device_list.append( LayoutDeviceKeycodes(number_keys = dev_size) )
 
     @property
     def number_devices(self):
@@ -108,7 +108,7 @@ class LayoutKeyboard(object):
             layer_obj = LayoutLayer()
             self.layer_list.append(layer_obj)
             for device in layer:
-                device_obj = LayoutDevice()
+                device_obj = LayoutDeviceKeycodes()
                 self.layer_list[-1].add_device_layer(device_obj)
                 for keycode in device:
                     keycode_name = self.keycode_mapper.keycode_to_string(keycode)

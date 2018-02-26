@@ -372,11 +372,11 @@ class ScanMode(object):
         if self.mode == NO_MATRIX:
             return
         elif self.mode in [ROW_COL, COL_ROW]:
-            self.row_pins = parser_info.try_get("rows", field_type=list)
-            self.column_pins = parser_info.try_get("cols", field_type=list)
+            self.row_pins = parser_info.try_get("rows", field_type=[list, int])
+            self.column_pins = parser_info.try_get("cols", field_type=[list, int])
             self.parse_matrix_map(parser_info.try_get("matrix_map", field_type=list))
         elif self.mode in [PIN_GND, PIN_VCC]:
-            self.direct_wiring_pins = parser_info.try_get("pins", field_type=list)
+            self.direct_wiring_pins = parser_info.try_get("pins", field_type=[list, int])
             self.parse_pin_map(parser_info.try_get("pin_map", field_type=list))
 
         if parser_info.has_field('debounce', field_type=str):

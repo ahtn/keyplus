@@ -332,14 +332,13 @@ class ProgramCommand(GenericDeviceCommand):
             exit(EXIT_BAD_FILE)
 
     def task(self, args):
-        layout_file = args.layout_file
-        rf_file = args.rf_file
-        hex_file = args.hex_file
-        new_id = args.new_id
-
         if args.merge_hex:
-            if (new_id == None or layout_file == None or rf_file == None or \
-                    new_id == None):
+            if (
+                args.new_id == None or
+                args.layout_file == None or
+                args.rf_file == None or
+                args.new_id == None
+            ):
                 print("Error: To generate a merged hex file, need all settings"
                         " files.", file=sys.stderr)
                 exit(EXIT_COMMAND_ERROR)
@@ -350,12 +349,18 @@ class ProgramCommand(GenericDeviceCommand):
                 exit(EXIT_COMMAND_ERROR)
 
 
-        if new_id != None and (layout_file == None or rf_file == None):
+        if (
+            args.new_id != None and (args.layout_file == None or args.rf_file == None)
+        ):
             print("Error: when providing a new ID, a layout and RF file "
                   "must be provided", file=sys.stderr)
             exit(EXIT_COMMAND_ERROR)
 
-        if layout_file == None and hex_file == None and rf_file == None:
+        if (
+            args.layout_file == None and
+            args.hex_file == None and
+            args.rf_file == None
+        ):
             self.arg_parser.print_help()
             exit(0)
 
@@ -371,8 +376,8 @@ class ProgramCommand(GenericDeviceCommand):
             print("")
 
 
-        if layout_file != None:
-            with open(layout_file) as file_obj:
+        if args.layout_file != None:
+            with open(args.layout_file) as file_obj:
                 try:
                     layout_json_obj = yaml.safe_load(file_obj.read())
                 # except yaml.YAMLError as err:
@@ -383,8 +388,8 @@ class ProgramCommand(GenericDeviceCommand):
         else:
             layout_json_obj = None
 
-        if rf_file != None:
-            with open(rf_file) as file_obj:
+        if args.rf_file != None:
+            with open(args.rf_file) as file_obj:
                 try:
                     rf_json_obj = yaml.safe_load(file_obj.read())
                 # except yaml.YAMLError as err:
@@ -395,21 +400,21 @@ class ProgramCommand(GenericDeviceCommand):
         else:
             rf_json_obj = None
 
-        if layout_file != None:
+        if args.layout_file != None:
             print("Parsing files...")
 
             if not args.merge_hex:
                 device_info = protocol.get_device_info(device)
 
-            if new_id == None:
+            if args.new_id == None:
                 target_id = device_info.id
             else:
-                target_id = new_id
+                target_id = args.new_id
 
             layout_data, settings_data = self.process_layout(
                 layout_json_obj,
                 rf_json_obj,
-                layout_file,
+                args.layout_file,
                 target_id
             )
             if layout_data == None or settings_data == None:
@@ -419,7 +424,7 @@ class ProgramCommand(GenericDeviceCommand):
         if args.merge_hex:
             # don't want to program the device, instead we want to build a
             # hexfile with the settings preprogrammed
-            with open(hex_file) as f:
+            with open(args.hex_file) as f:
                 fw_hex = intelhex.IntelHex(f)
 
             settings_addr = args.merge_hex[0]
@@ -451,7 +456,7 @@ class ProgramCommand(GenericDeviceCommand):
 
             # first erase anything that is in the layout section
             for i in range(layout_addr, layout_addr+layout_size):
-                fw_hex[i] = 0 # dummy, write so del works
+                fw_hex[i] = 0 # dummy, write so del always works
                 del fw_hex[i]
 
             fw_hex.merge(layout_hex, overlap='replace')
@@ -462,17 +467,17 @@ class ProgramCommand(GenericDeviceCommand):
             else:
                     fw_hex.write_hex_file(sys.stdout)
             exit(0)
-        elif layout_file and not rf_file:
+        elif args.layout_file and not args.rf_file:
             print("Updating layout only...")
             protocol.update_settings_section(device, settings_data, keep_rf=True)
             protocol.update_layout_section(device, layout_data)
-        elif layout_file and rf_file:
+        elif args.layout_file and args.rf_file:
             print("Updating layout and rf settings...")
             protocol.update_settings_section(device, settings_data)
             protocol.update_layout_section(device, layout_data)
-        elif layout_file and rf_file and hex_file:
+        elif args.layout_file and args.rf_file and args.hex_file:
             print("TODO: not implemented", file=sys.stderr)
-        elif hex_file and not layout_file and not rf_file:
+        elif args.hex_file and not args.layout_file and not args.rf_file:
             print("TODO: not implemented", file=sys.stderr)
         else:
             pass

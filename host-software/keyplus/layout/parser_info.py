@@ -5,6 +5,8 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import six
+
 from keyplus.exceptions import KeyplusParseError
 
 class Warning(object):
@@ -142,14 +144,14 @@ class KeyplusParserInfo(object):
         return mapping[value]
 
     def has_field(self, *fields, field_type=None):
-        current_field_obj = self.current_obj
+        field_obj = self.current_obj
         for field in fields:
-            if field in current_field_obj:
-                current_field_obj = current_field_obj[field]
+            if field in field_obj:
+                field_obj = field_obj[field]
             else:
                 return False
         if field_type != None:
-            return (isinstance(self.current_obj, field_type))
+            return (isinstance(field_obj, field_type))
         else:
             return True
 
@@ -158,3 +160,6 @@ class KeyplusParserInfo(object):
         for field in fields:
             current_field_obj = current_field_obj[field]
         return current_field_obj
+
+    def iter_fields(self):
+        return six.iterkeys(self.current_obj)

@@ -16,7 +16,7 @@ import struct
 DEFAULT_FEATURE_MASK = FEATURE_CTRL_RF_DISABLE | FEATURE_CTRL_RF_MOUSE_DISABLE \
     | FEATURE_CTRL_WIRED_DISABLE;
 
-class DeviceDefinition(object):
+class LayoutDevice(object):
     def __init__(self, device_id=0, name=None, layout_name=None,
                  scan_mode=None, layout_id=None, split_device_num=0):
         self.device_id = device_id
@@ -45,16 +45,18 @@ class DeviceDefinition(object):
         result = {}
 
         result["id"] = self.device_id
-        if self.feature_ctrl.wireless_split:
+        if not self.feature_ctrl.i2c_disabled:
             result["wireless_split"] = True
-        if self.feature_ctrl.wireless_mouse:
+        if not self.feature_ctrl.unifying_disabled:
             result["wireless_mouse"] = True
-        if self.feature_ctrl.wired_split:
+        if not self.feature_ctrl.i2c_disabled:
             result["wireless_mouse"] = True
 
         result["layout"] = self.layout_id
         result["split_device_num"] = self.layout
-        result["scan_mode"] = self.scan_mode
+        result["scan_mode"] = self.scan_mode.to_json()
+
+        return result
 
     def parse_json(self, device_name, json_obj=None, parser_info=None):
         print_warnings = False
@@ -63,7 +65,7 @@ class DeviceDefinition(object):
             assert(json_obj != None)
             print_warnings = True
             parser_info = KeyplusParserInfo(
-                "<DeviceDefinition Dict>",
+                "<LayoutDevice Dict>",
                 {device_name : json_obj}
             )
         parser_info.enter(device_name)

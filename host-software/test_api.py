@@ -5,6 +5,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import yaml
 import time
 from pprint import pprint
 from hexdump import hexdump
@@ -103,7 +104,7 @@ if __name__ == '__main__':
     pprint(vars(layout_settings))
 
 
-    layout_device = DeviceDefinition()
+    layout_device = LayoutDevice()
     layout_device.load_raw_data(
         kb.device_info, layout_settings, new_pin_mapping
     )
@@ -147,7 +148,7 @@ if __name__ == '__main__':
         'layout_offset': 0,
         'scan_mode': test_scan_mode_dict,
     }
-    layout_device = DeviceDefinition()
+    layout_device = LayoutDevice()
     layout_device.parse_json("test_device", json_obj=test_layout_device_dict)
 
     pprint(vars(layout_device))
@@ -250,7 +251,10 @@ if __name__ == '__main__':
         print(layout.to_json())
         print()
 
-
+    keyplus_layout = KeyplusLayout()
+    with open("../layouts/arbitrary_map_tester.yaml") as f:
+        layout_json = yaml.load(f.read())
+    keyplus_layout.parse_json(layout_json)
 
 
     # kb.set_passthrough_mode(True)

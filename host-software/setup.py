@@ -20,7 +20,8 @@ setup(
     license = 'MIT',
     packages = ['keyplus'],
     install_requires = [
-        'hexdump', 'intelhex', 'easyhid', 'pyyaml', 'pyusb', 'cstruct', 'kle'
+        'hexdump', 'intelhex', 'easyhid', 'pyyaml', 'pyusb',
+        'cstruct', 'kle', 'six'
     ],
     keywords = ['keyboard', 'usb', 'hid'],
     zip_safe = False
