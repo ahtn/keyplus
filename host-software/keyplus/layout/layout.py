@@ -6,6 +6,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import math
+import sys
 
 from keyplus.layout.parser_info import KeyplusParserInfo
 from keyplus.layout.device import LayoutDevice
@@ -30,7 +31,7 @@ class KeyplusLayout(object):
         if parser_info == None:
             print_warnings = True
             parser_info = KeyplusParserInfo(
-                "<KeyplusLayout Dict>",
+                "<KeyplusLayout>",
                 layout_json
             )
 
@@ -44,14 +45,11 @@ class KeyplusLayout(object):
             )
             devices.append(device)
 
-        for device in devices:
-            print(device.to_json())
+        # for device in devices:
+        #     print(device.to_json())
 
         parser_info.exit()
 
-        if print_warnings:
-            for warn in parser_info.warnings:
-                print(warn, file=sys.stderr)
 
 if 0:
     parser_info.enter("scan_mode")

@@ -361,8 +361,9 @@ class ScanMode(object):
             assert(json_obj != None)
             print_warnings = True
             parser_info = KeyplusParserInfo(
-                "<ScanMode Dict>",
-                {"scan_mode": json_obj}
+                "<ScanMode>",
+                {"scan_mode": json_obj},
+                print_warnings = True
             )
         parser_info.enter("scan_mode")
 
@@ -370,6 +371,7 @@ class ScanMode(object):
         self.mode = parser_info.map_to_value(self.mode, MODE_MAP)
 
         if self.mode == NO_MATRIX:
+            parser_info.exit()
             return
         elif self.mode in [ROW_COL, COL_ROW]:
             self.row_pins = parser_info.try_get("rows", field_type=[list, int])
@@ -383,6 +385,7 @@ class ScanMode(object):
             debounce_profile = parser_info.try_get("debounce", field_type=str)
             self.set_debounce_profile(debounce_profile)
         elif parser_info.has_field('debounce', field_type=dict):
+
             parser_info.enter('debounce')
 
             self.set_debounce_profile('default')
@@ -424,10 +427,6 @@ class ScanMode(object):
             parser_info.exit()
 
         parser_info.exit()
-
-        if print_warnings:
-            for warn in parser_info.warnings:
-                print(warn, file=sys.stderr)
 
     def to_json(self):
         result  = {}

@@ -6,8 +6,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import six
+import sys
 
 from keyplus.exceptions import KeyplusParseError
+from keyplus.debug import DEBUG
 
 class Warning(object):
     pass
@@ -23,7 +25,7 @@ class UnusedValueWarning(Warning):
         )
 
 class KeyplusParserInfo(object):
-    def __init__(self, dict_name, dictionary):
+    def __init__(self, dict_name, dictionary, print_warnings=False):
         self.property_stack = []
 
         self.current_field = dict_name
@@ -33,14 +35,24 @@ class KeyplusParserInfo(object):
         self.last_field = None
 
         self.warnings = []
+        self.print_warnings = print_warnings
 
     def touch_field(self, field):
+        if DEBUG.parsing:
+            self._debug_message("Touch:", "{}.{}".format(self.get_current_path(), field))
         self.untouched_fields.remove(field)
+
+    def _debug_message(self, *message):
+        indent = '  ' * (len(self.property_stack))
+        print(indent, end='')
+        print(*message)
 
     def enter(self, field):
         if field not in self.current_obj:
             raise KeyplusParseError("Couldn't find field '{}' in '{}'"
                                     .format(field, self.current_field))
+        if DEBUG.parsing:
+            self._debug_message("Entering field({})".format(field))
         self.property_stack.append( (self.current_field, self.current_obj, self.untouched_fields) )
         self.touch_field(field)
         self.current_field = field
@@ -50,17 +62,35 @@ class KeyplusParserInfo(object):
     def get_current_path(self):
         field_path = []
         for (field, _, _) in self.property_stack:
-            field_path.append(field)
+            if field.isidentifier():
+                field_path.append(field)
+            else:
+                field_path.append("'{}'".format(field))
         return '.'.join(field_path)
 
     def exit(self):
         assert(len(self.property_stack) != 0)
+
+        old_field = self.current_field
+
         if len(self.untouched_fields) != 0:
             self.warnings.append(
-                UnusedValueWarning(self.get_current_path(), self.untouched_fields)
+                UnusedValueWarning(
+                    self.get_current_path(),
+                    self.untouched_fields
+                )
             )
+
+        # If this is debug code, print the warnings
+        if self.print_warnings:
+            for warn in self.warnings:
+                print(warn, file=sys.stderr)
+
         self.current_field, self.current_obj, self.untouched_fields = \
             self.property_stack.pop()
+
+        if DEBUG.parsing:
+            self._debug_message("Exit field({})".format(old_field))
 
     def try_get(self, field, default=None, ignore_case=True, field_type=None,
                 field_range=None, remap_function=None, remap_table=None):

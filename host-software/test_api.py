@@ -252,7 +252,8 @@ if __name__ == '__main__':
         print()
 
     keyplus_layout = KeyplusLayout()
-    with open("../layouts/arbitrary_map_tester.yaml") as f:
+    # with open("../layouts/arbitrary_map_tester.yaml") as f:
+    with open("../layouts/basic_split_test.yaml") as f:
         layout_json = yaml.load(f.read())
     keyplus_layout.parse_json(layout_json)
 

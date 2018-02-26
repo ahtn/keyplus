@@ -5,6 +5,7 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import keyplus.layout.scan_mode
 from keyplus.layout.scan_mode import ScanMode
 from keyplus.layout.parser_info import KeyplusParserInfo
 from keyplus.cdata_types import feature_ctrl_t
@@ -26,6 +27,8 @@ class LayoutDevice(object):
         self.split_device_num = split_device_num
         self.feature_ctrl = feature_ctrl_t()
         self.feature_ctrl.feature_ctrl = DEFAULT_FEATURE_MASK
+        self.layout = None
+        self.layout_offset = None
 
     def load_raw_data(self, device_info, layout_info, pin_mapping=None):
         self.device_id = device_info.device_id
@@ -59,15 +62,15 @@ class LayoutDevice(object):
         return result
 
     def parse_json(self, device_name, json_obj=None, parser_info=None):
-        print_warnings = False
-
         if parser_info == None:
             assert(json_obj != None)
             print_warnings = True
             parser_info = KeyplusParserInfo(
-                "<LayoutDevice Dict>",
-                {device_name : json_obj}
+                "<LayoutDevice>",
+                {device_name : json_obj},
+                print_warnings = True,
             )
+
         parser_info.enter(device_name)
 
         self.device_id = parser_info.try_get(
@@ -76,17 +79,22 @@ class LayoutDevice(object):
             field_range = [0, MAX_NUMBER_DEVICES-1]
         )
 
-        self.layout = parser_info.try_get(
-            "layout",
-            field_type = [str, int],
-        )
+        self.scan_mode = ScanMode()
+        self.scan_mode.parse_json(parser_info=parser_info)
 
-        self.split_device_num = parser_info.try_get(
-            "layout_offset",
-            default = 0,
-            field_type = int,
-            field_range = [0, MAX_NUMBER_DEVICES-1]
-        )
+        if self.scan_mode.mode != keyplus.layout.scan_mode.NO_MATRIX:
+            self.layout = parser_info.try_get(
+                "layout",
+                field_type = [str, int],
+            )
+
+            self.split_device_num = parser_info.try_get(
+                "layout_offset",
+                default = 0,
+                field_type = int,
+                field_range = [0, MAX_NUMBER_DEVICES-1]
+            )
+
 
         # TODO: unifying naming of feature_ctrl variables
         # Load any of the feature settings, use defaults if they are not found
@@ -106,15 +114,5 @@ class LayoutDevice(object):
             field_type = bool,
         )
 
-        self.scan_mode = ScanMode()
-        self.scan_mode.parse_json(parser_info=parser_info)
-
-
         # Finish parsing `device_name`
         parser_info.exit()
-
-        # If this is debug code, print the warnings
-        if print_warnings:
-            for warn in parser_info.warnings:
-                print(warn, file=sys.stderr)
-
