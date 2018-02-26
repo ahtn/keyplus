@@ -22,7 +22,7 @@ class UnusedValueWarning(Warning):
 
     def __str__(self):
         return (
-            f"{Fore.RED}Warning{Style.RESET_ALL}: "
+            Fore.RED + "Warning: " + Style.RESET_ALL +
             "in {}, the following fields were ignored: {}".format(
                 self.path_name, ', '.join(self.values)
             )
@@ -46,10 +46,14 @@ class KeyplusParserInfo(object):
             self._debug_message("Touch:", "{}.{}".format(self.get_current_path(), field))
         self.untouched_fields.remove(field)
 
-    def _debug_message(self, *message, file=sys.stdout):
+    def _debug_message(self, *message, **kwargs):
         indent = '  ' * (len(self.property_stack))
-        print(indent, end='', file=file)
-        print(*message, file=file)
+        if 'file' in kwargs:
+            file_ = kwargs['file']
+        else:
+            file_ = sys.stdout
+        print(indent, end='', file=file_)
+        print(*message, file=file_)
 
     def enter(self, field):
         if field not in self.current_obj:
@@ -66,7 +70,7 @@ class KeyplusParserInfo(object):
 
     def get_current_path(self):
         def sanitize_field(field):
-            if field.isidentifier():
+            if field.isalnum():
                 return field
             else:
                 return "'{}'".format(field)
@@ -129,6 +133,11 @@ class KeyplusParserInfo(object):
             value = self.current_obj[field]
 
             has_matching_type = True
+
+            # Python2 compatibility
+            if field_type == str:
+                field_type = six.string_types
+
             if field_type == None:
                 pass
             elif isinstance(field_type, list):
@@ -152,7 +161,7 @@ class KeyplusParserInfo(object):
             self.last_field = field
             self.touch_field(field)
 
-            if ignore_case and (type(value) is str):
+            if ignore_case and isinstance(value, six.string_types):
                 value = value.lower()
 
             if remap_table != None:
@@ -219,14 +228,15 @@ class KeyplusParserInfo(object):
                 .format(self.last_field, valid_values)
             )
 
-    def has_field(self, *fields, field_type=None):
+    def has_field(self, *fields, **kwargs):
         field_obj = self.current_obj
         for field in fields:
             if field in field_obj:
                 field_obj = field_obj[field]
             else:
                 return False
-        if field_type != None:
+        if 'field_type' in kwargs:
+            field_type = kwargs['field_type']
             return (isinstance(field_obj, field_type))
         else:
             return True

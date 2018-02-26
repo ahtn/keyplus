@@ -31,7 +31,6 @@ class KeyplusLayout(object):
 
     def _from_file_common(self, layout_file, rf_file=None, print_warnings=False,
                            load_method=yaml.load):
-
         basename = os.path.basename(layout_file)
         with open(layout_file) as f:
             layout_json_obj = load_method(f.read())
@@ -57,8 +56,6 @@ class KeyplusLayout(object):
             rf_parser_info = rf_parser_info,
         )
 
-
-
     def from_json_file(self, layout_file, rf_file=None, print_warnings=False):
         return self._from_file_common(
             layout_file,
@@ -74,8 +71,6 @@ class KeyplusLayout(object):
             print_warnings,
             yaml.load,
         )
-
-
 
     def _parse_devices(self, parser_info):
         parser_info.enter("devices")

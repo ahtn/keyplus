@@ -8,9 +8,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import yaml
 import time
 import colorama
+import six
 
 from pprint import pprint
-from hexdump import hexdump
+from hexdump import hexdump as hexdump_
+
+if six.PY2:
+    def hexdump_py2(data):
+        hexdump_(bytes(data))
+    hexdump = hexdump_py2
+elif six.PY3:
+    hexdump = hexdump_
 
 import keyplus
 from keyplus.constants import *
@@ -84,6 +92,9 @@ if __name__ == '__main__':
     target = kb.get_device_target()
     scan_plan = scan_mode.generate_scan_plan(target)
     scan_plan_bytes = scan_plan.pack()
+    print(scan_plan_bytes)
+    print(repr(scan_plan_bytes))
+    print(type(scan_plan_bytes))
     hexdump(scan_plan_bytes)
     new_scan_plan = keyplus.cdata_types.scan_plan_t()
     new_scan_plan.unpack(scan_plan_bytes)

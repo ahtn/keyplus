@@ -39,8 +39,12 @@ INV_MODE_MAP = {}
 for key in MODE_MAP:
     INV_MODE_MAP[MODE_MAP[key]] = key
 
+def fullmatch(regex, string, flags=0):
+    """Emulate python-3.4 re.fullmatch()."""
+    return re.match("(?:" + regex + r")\Z", string, flags=flags)
+
 def is_blank_pin(pin_name):
-    return re.fullmatch('-+', pin_name) or re.fullmatch('_+', pin_name) or \
+    return fullmatch('-+', pin_name) or fullmatch('_+', pin_name) or \
             pin_name == 'none'
 
 class ScanMode(object):
