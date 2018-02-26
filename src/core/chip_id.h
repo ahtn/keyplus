@@ -1,5 +1,6 @@
 // Copyright 2018 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
+/// @file src/core/chip_id.h
 
 #pragma once
 

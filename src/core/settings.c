@@ -104,11 +104,6 @@ const ROM firmware_build_settings_t g_firmware_build_settings = {
 #endif
 };
 
-uint8_t device_id_to_pipe_num(const uint8_t device_id) {
-    return device_id % NUM_KEYBOARD_PIPES;
-}
-
-
 void settings_load_from_flash(void) {
     // load rf setings into ram
     flash_read(

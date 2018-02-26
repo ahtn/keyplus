@@ -239,21 +239,6 @@ ROM const uint16_t usb_string_desc_0[2] = {
     HID_LANG_ID(HID_LANG_ENGLISH, HID_SUBLANG_ENGLISH_US),
 };
 
-ROM const uint16_t usb_string_desc_1[7] = {
-    USB_STRING_DESC_SIZE(sizeof(usb_string_desc_1)),
-    'V','e','n','d','o','r'
-};
-
-ROM const uint16_t usb_string_desc_2[7] = {
-    USB_STRING_DESC_SIZE(sizeof(usb_string_desc_2)),
-    'n','r','f','k','e','y',
-};
-
-ROM const uint16_t usb_string_desc_3[7] = {
-    USB_STRING_DESC_SIZE(sizeof(usb_string_desc_3)),
-    '0','.','1','2','3','4'
-};
-
 #ifdef USE_WEBUSB
 ROM const uint8_t usb_url_desc_1[17] = {
     sizeof(usb_url_desc_1),
