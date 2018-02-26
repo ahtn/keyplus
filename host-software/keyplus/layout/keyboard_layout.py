@@ -106,18 +106,29 @@ class LayoutKeyboard(object):
                 {layout_id: layout_json},
                 print_warnings = True
             )
+
         parser_info.enter(layout_id)
+        self.layout_id = layout_id
+
         self.default_layer = parser_info.try_get(
             field = 'default_layer',
             field_type = int,
             default = 0,
         )
+
+        keycode_table = parser_info.try_get(
+            field = 'layers',
+            field_type = list,
+        )
+
+        self.load_keycodes(keycode_table, keycode_type=str)
+
         parser_info.exit()
 
     def set_keycode_mapper(self, keycode_mapper):
         self.keycode_mapper = keycode_mapper
 
-    def load_keycodes(self, keycodes):
+    def load_keycodes(self, keycodes, keycode_type=int):
         self.layer_list = []
         for layer in keycodes:
             layer_obj = LayoutLayer()
@@ -126,7 +137,10 @@ class LayoutKeyboard(object):
                 device_obj = LayoutDeviceKeycodes()
                 self.layer_list[-1].add_device_layer(device_obj)
                 for keycode in device:
-                    keycode_name = self.keycode_mapper.keycode_to_string(keycode)
+                    if keycode_type == int:
+                        keycode_name = self.keycode_mapper.keycode_to_string(keycode)
+                    else:
+                        keycode_name = keycode
                     device_obj.keycodes.append(keycode_name)
 
     def to_keycodes(self):

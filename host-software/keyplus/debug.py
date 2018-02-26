@@ -6,5 +6,11 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 class DEBUG(object):
+    """
+    The static variables in this class can be used to turn on and off debug
+    messages.
+    """
     usb_cmd_timing = False
     parsing = True
+    parsing_extra = True
+

@@ -9,7 +9,7 @@ import six
 import sys
 from colorama import Fore, Style
 
-from keyplus.exceptions import KeyplusParseError
+from keyplus.exceptions import *
 from keyplus.debug import DEBUG
 
 class Warning(object):
@@ -22,9 +22,9 @@ class UnusedValueWarning(Warning):
 
     def __str__(self):
         return (
-            f"{Fore.RED}Warning{Style.RESET_ALL}"
-            ": in '{}', the following fields were ignored: {}".format(
-                self.path_name, self.values
+            f"{Fore.RED}Warning{Style.RESET_ALL}: "
+            "in {}, the following fields were ignored: {}".format(
+                self.path_name, ', '.join(self.values)
             )
         )
 
@@ -94,6 +94,8 @@ class KeyplusParserInfo(object):
         if self.print_warnings:
             for warn in self.warnings:
                 print(warn, file=sys.stderr)
+            # Clear the warnings now that we have printed them
+            self.warnings = []
 
         self.current_field, self.current_obj, self.untouched_fields = \
             self.property_stack.pop()
@@ -102,8 +104,28 @@ class KeyplusParserInfo(object):
             self._debug_message("Exit field({})".format(old_field))
 
     def try_get(self, field, default=None, ignore_case=True, field_type=None,
-                field_range=None, remap_function=None, remap_table=None):
-        try:
+                field_range=None, remap_function=None, remap_table=None,
+                optional = False):
+        """
+        Arguments:
+            ignore_case: ignore the case of the field names, the field will be
+                converted to lower case.
+            default: if the field is not found, return this default value instead
+            field_type: the field value must match one of the types given in this
+                variable. This can be either a single type, or a list of types.
+            field_range: For integer types, check that the field value lies
+                with in the given bounds. The bounds are provided as list/tuple
+                of low and high bounds.
+            remap_function: After reading the field, apply this function,
+                use the given function to remap the value.
+            remap_table: Similar to remap_function, except us a dictionary
+                to remap the value. If the value is not in the dictionary,
+                raise an error.
+            optional: the same as default, except return `None` instead of the
+                default value
+        """
+
+        if field in self.current_obj:
             value = self.current_obj[field]
 
             has_matching_type = True
@@ -134,20 +156,39 @@ class KeyplusParserInfo(object):
                 value = value.lower()
 
             if remap_table != None:
-                value = remap_table[value]
+                if value in remap_table:
+                    value = remap_table[value]
+                else:
+                    raise KeyplusSettingsError(
+                        "In {}, for the field '{}' got unknown value '{}'. Expecting "
+                        "one of: {}".format(
+                            self.get_current_path(),
+                            field,
+                            value,
+                            ", ".join(six.iterkeys(remap_table))
+                        )
+
+                    )
 
             if remap_function != None:
                 value = remap_function(value)
 
             return value
-        except:
+        else:
+            # Couldn't find the field
+            # Either:
+            # * return a default value
+            # * return `None` if it is optional
+            # * raise Error if it is non-optional and doesn't have a default value
             if default != None:
                 self.last_field = field
                 return default
+            elif optional == True:
+                return None
             else:
                 raise KeyplusParseError(
-                    "Couldn't find field '{}' inside of '{}'"
-                    .format(field, self.current_field)
+                    "In {}, could not find compulsory field '{}'."
+                    .format(self.get_current_path(), field)
                 )
 
         if field_range:
@@ -177,10 +218,6 @@ class KeyplusParserInfo(object):
                 "For the field '{}', expected one of the following values: {}"
                 .format(self.last_field, valid_values)
             )
-
-    def map_to_value(self, value, mapping):
-        self.check_in_set(list(mapping.keys()))
-        return mapping[value]
 
     def has_field(self, *fields, field_type=None):
         field_obj = self.current_obj

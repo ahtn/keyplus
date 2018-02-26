@@ -71,6 +71,7 @@ class LayoutDevice(object):
             )
 
         parser_info.enter(device_name)
+        self.name = device_name
 
         self.device_id = parser_info.try_get(
             "id",

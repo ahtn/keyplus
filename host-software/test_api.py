@@ -256,10 +256,17 @@ if __name__ == '__main__':
         print()
 
     keyplus_layout = KeyplusLayout()
-    # with open("../layouts/arbitrary_map_tester.yaml") as f:
     with open("../layouts/basic_split_test.yaml") as f:
         layout_json = yaml.load(f.read())
     keyplus_layout.parse_json(layout_json)
+
+    keyplus_layout2 = KeyplusLayout()
+    keyplus_layout2.from_yaml_file(
+        "../layouts/arbitrary_map_tester.yaml",
+        "../layouts/test_rf_config.yaml",
+    )
+
+    pprint(vars(keyplus_layout2))
 
 
     # kb.set_passthrough_mode(True)

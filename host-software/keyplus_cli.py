@@ -8,6 +8,7 @@ import argparse
 import yaml
 import hexdump
 import sys
+import colorama
 
 import layout.parser
 import protocol
@@ -555,4 +556,5 @@ class KeyplusCLI(object):
 
 
 if __name__ == "__main__":
+    colorama.init()
     KeyplusCLI()

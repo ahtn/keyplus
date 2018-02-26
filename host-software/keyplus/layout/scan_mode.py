@@ -364,8 +364,11 @@ class ScanMode(object):
             )
         parser_info.enter("scan_mode")
 
-        self.mode = parser_info.try_get("mode", field_type=str)
-        self.mode = parser_info.map_to_value(self.mode, MODE_MAP)
+        self.mode = parser_info.try_get(
+            field = "mode",
+            field_type=str,
+            remap_table = MODE_MAP,
+        )
 
         if self.mode == NO_MATRIX:
             parser_info.exit()
