@@ -9,6 +9,7 @@ import keyplus.layout.scan_mode
 from keyplus.layout.scan_mode import ScanMode
 from keyplus.layout.parser_info import KeyplusParserInfo
 from keyplus.cdata_types import feature_ctrl_t
+from keyplus.device_info import KeyboardSettingsInfo
 
 from keyplus.constants import *
 
@@ -44,15 +45,30 @@ class LayoutDevice(object):
         self.layout_id = dev_info.layout_id
         self.split_device_num = layout_info.get_split_device_number(self.device_id)
 
+    def build_settings_header(self, device_target):
+        header = KeyboardSettingsInfo()
+
+        header.device_id = self.device_id
+        # TODO: encode utf-16LE
+        # header.device_name = self.name.encode('utf-16le')
+
+        header.device_name = self.name.encode('utf-8')
+        header.scan_plan = self.scan_mode.generate_scan_plan(device_target)
+        header.feature_ctrl = self.feature_ctrl.feature_ctrl
+
+        # header.
+
+        return header
+
     def to_json(self):
         result = {}
 
         result["id"] = self.device_id
         if not self.feature_ctrl.i2c_disabled:
+            result["wired_split"] = True
+        if not self.feature_ctrl.nrf24_disabled:
             result["wireless_split"] = True
         if not self.feature_ctrl.unifying_disabled:
-            result["wireless_mouse"] = True
-        if not self.feature_ctrl.i2c_disabled:
             result["wireless_mouse"] = True
 
         result["layout"] = self.layout_id

@@ -252,8 +252,8 @@ class LayoutRFSettings(object):
         result = keyplus.cdata_types.rf_settings_t()
 
         # pipes 0-1
-        result.pipe_addr_0 = self.pipe0
-        result.pipe_addr_1 = self.pipe1
+        result.pipe_addr_0 = list(self.pipe0)
+        result.pipe_addr_1 = list(self.pipe1)
         result.pipe_addr_2 = self.pipe2
         result.pipe_addr_3 = self.pipe3
         result.pipe_addr_4 = self.pipe4
@@ -265,7 +265,10 @@ class LayoutRFSettings(object):
         result.power = self.power
 
         decryption_key = list(gen_final_round_key(self.encryption_key))
-        result.ekey = self.encryption_key
+        result.ekey = list(self.encryption_key)
         result.dkey = decryption_key
 
         return result
+
+    def to_bytes(self):
+        return self.generate_rf_settings().pack()

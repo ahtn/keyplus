@@ -9,16 +9,15 @@ import yaml
 import time
 import colorama
 import six
+import intelhex
 
 from pprint import pprint
-from hexdump import hexdump as hexdump_
+from hexdump import hexdump as hexdump
 
 if six.PY2:
     def hexdump_py2(data):
         hexdump_(bytes(data))
     hexdump = hexdump_py2
-elif six.PY3:
-    hexdump = hexdump_
 
 import keyplus
 from keyplus.constants import *
@@ -266,11 +265,6 @@ if __name__ == '__main__':
         print(layout.to_json())
         print()
 
-    keyplus_layout = KeyplusLayout()
-    with open("../layouts/basic_split_test.yaml") as f:
-        layout_json = yaml.load(f.read())
-    keyplus_layout.parse_json(layout_json)
-
     keyplus_layout2 = KeyplusLayout()
     keyplus_layout2.from_yaml_file(
         "../layouts/arbitrary_map_tester.yaml",
@@ -279,6 +273,31 @@ if __name__ == '__main__':
 
     pprint(vars(keyplus_layout2))
 
+    keyplus_layout = KeyplusLayout()
+    with open("../layouts/basic_split_test.yaml") as f:
+        layout_json = yaml.load(f.read())
+    with open("./_ignore_rf_settings.yaml") as f:
+        rf_json = yaml.load(f.read())
+    keyplus_layout.parse_json(layout_json, rf_json)
+
+    raw_layout = keyplus_layout.build_layout_section(kb.get_device_target())
+    hexdump(raw_layout)
+
+    ihex = intelhex.IntelHex()
+    ihex.frombytes(raw_layout, 0x7800)
+    ihex.write_hex_file(
+        "test_layout_out.hex"
+    )
+    print(ihex)
+
+    raw_settings = keyplus_layout.build_settings_section(kb.get_device_target())
+    hexdump(raw_settings)
+
+    ihex = intelhex.IntelHex()
+    ihex.frombytes(raw_settings, 0x7600)
+    ihex.write_hex_file(
+        "temp_new.hex"
+    )
 
     # kb.set_passthrough_mode(True)
     kb.disconnect()

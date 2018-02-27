@@ -6,6 +6,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from copy import copy
+from colorama import Fore, Style
 
 import six
 
@@ -136,4 +137,12 @@ class KeycodeMapper(object):
             kc = self.from_string(kc)
             return generate_modkey(kc, ctrl=ctrl, shift=shift, alt=alt, gui=gui, right=right, force=force)
         else:
-            raise KeyplusParseError("Unexpected keycode: '{}'".format(kc_in))
+            # TODO: need to add back support for external keycodes, but
+            # for now use KC_NONE as a placeholder
+            print(
+                Fore.RED + "Warning: " + Style.RESET_ALL +
+                " ignoring keycode: " + kc_str
+            )
+            return KC_NONE
+            # TODO:  add this exception back in
+            # raise KeyplusParseError("Unexpected keycode: '{}'".format(kc_in))

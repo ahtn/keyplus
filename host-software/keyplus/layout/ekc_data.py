@@ -12,7 +12,7 @@ from keyplus.exceptions import *
 
 import layout.keycodes as keycodes
 
-class EKCData:
+class EKCData(object):
     def __init__(self, data):
         self.data = data
 
@@ -129,7 +129,7 @@ class EKCMacroRepeatKey(EKCData):
 #             elif type(item) == str:
 
 
-class EKCDataMain(EKCData):
+class EKCDataTable(EKCData):
     # def __init__(self, children=[]):
     def __init__(self):
         self.children = []
@@ -160,12 +160,11 @@ class EKCDataMain(EKCData):
         for (i, child) in enumerate(self.children):
             result += child.to_bytes()
 
-        hexdump(result)
-
         return result
+    pack = to_bytes
 
 if __name__ == '__main__':
-    ekc_data = EKCDataMain()
+    ekc_data = EKCDataTable()
     ekc_data.add_child(EKCData([1,2,3]))
     sticky_ent = EKCHoldKey(keycodes.KC_ENTER, keycodes.KC_STICKY_LSHIFT)
     ekc_data.add_child(sticky_ent)

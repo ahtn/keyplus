@@ -1,0 +1,13 @@
+# Generated on 2018-20-22 at 23:20
+rf_settings:
+  aes_encryption_key: b3788d2bd5d8c564f86e3110ddc43795
+  auto_retransmit_count: 15
+  data_rate: 2mbps
+  pipe0: 2c8147eab0
+  pipe1: b1646d37a8
+  pipe2: '72'
+  pipe3: '01'
+  pipe4: f6
+  pipe5: '00'
+  rf_channel: 38
+  transmit_power: 0db

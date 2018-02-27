@@ -5,7 +5,11 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import struct
+import math
+
 from keyplus.keycodes import *
+from keyplus.exceptions import *
 
 class LayoutDeviceKeycodes(object):
     def __init__(self, keycodes=None, number_keys=None, keycode_mapper=None):
@@ -37,10 +41,12 @@ class LayoutLayer(object):
     def __init__(self, device_list=None, device_sizes=None):
         self.device_list = []
         if device_list != None:
-            self.device_list = device_list
+            for dev in device_list:
+                self.add_device_layer(dev)
         elif device_sizes != None:
             for dev_size in device_sizes:
-                self.device_list.append( LayoutDeviceKeycodes(number_keys = dev_size) )
+                dev = LayoutDeviceKeycodes(number_keys = dev_size)
+                self.add_device_layer(dev)
 
     @property
     def number_devices(self):
@@ -61,14 +67,30 @@ class LayoutLayer(object):
             result.append(device.to_keycodes(keycode_mapper))
         return result
 
+    @property
+    def device_sizes(self):
+        return [x.number_keys for x in self.device_list]
+
+    def get_device_offset(self, dev_id):
+        result = 0
+        print(self.device_sizes, dev_id)
+        for i in range(dev_id):
+            result += int(math.ceil(self.device_sizes[dev_id]/8))
+        return result
+
+    def get_device_size(self, dev_id):
+        print(self.device_sizes, dev_id)
+        return int(math.ceil(self.device_sizes[dev_id]/8))
+
 
 class LayoutKeyboard(object):
-    def __init__(self, layout_id, number_layers=0, device_sizes=None):
+    def __init__(self, layout_id, name=None, number_layers=0, device_sizes=None):
         """
         Args:
             layout_id: can be a string or an integer.
         """
         self.layout_id = layout_id
+        self.name = name
         self.default_layer = 0
         self.layer_list = []
         if device_sizes != None:
@@ -99,16 +121,22 @@ class LayoutKeyboard(object):
 
         return result
 
-    def parse_json(self, layout_id, parser_info=None):
+    def parse_json(self, name, parser_info=None):
         if parser_info == None:
             parser_info = KeyplusParserInfo(
                 "<LayoutKeyboard>",
-                {layout_id: layout_json},
+                {name: layout_json},
                 print_warnings = True
             )
 
-        parser_info.enter(layout_id)
-        self.layout_id = layout_id
+        parser_info.enter(name)
+        self.name = name
+
+        self.layout_id = parser_info.try_get(
+            field = 'id',
+            field_type = int,
+            optional = True,
+        )
 
         self.default_layer = parser_info.try_get(
             field = 'default_layer',
@@ -142,11 +170,55 @@ class LayoutKeyboard(object):
                     else:
                         keycode_name = keycode
                     device_obj.keycodes.append(keycode_name)
+                print( self.layer_list[-1] )
+                if ( len(self.layer_list) > 1 and
+                    self.layer_list[-1].device_sizes != self.layer_list[-1].device_sizes
+                ):
+                    raise KeyplusSettingsError(
+                        "Error in layout '{}'. The layers do not have the "
+                        "same split keyboard configuration for all layers.\n"
+                        "Layer {} has split keyboards with the following number "
+                        "of keys: {}\n"
+                        "Layer {} has split keyboards with the following number "
+                        "of keys: {}"
+                        .format(
+                            self.name,
+                            len(self.layer_list), self.layer_list[-1].device_sizes,
+                            len(self.layer_list)-1, self.layer_list[-2].device_sizes,
+                        )
+                    )
+            if ( len(self.layer_list) > 1 and
+                self.layer_list[-1].number_devices != self.layer_list[-2].number_devices
+            ):
+                raise KeyplusSettingsError(
+                    "Error in layout '{}'. When trying to add layer {}, found a "
+                    "different number of split devices than in layer {}."
+                    .format(
+                        self.name, len(self.layer_list), len(self.layer_list)-1
+                    )
+                )
 
     def to_keycodes(self):
         result = []
         for layer in self.layer_list:
             result.append(layer.to_keycodes(self.keycode_mapper))
+        return result
+
+    def to_bytes(self):
+        result = bytearray()
+
+        keycodes = self.to_keycodes()
+
+        # TODO: Remove requirement that keymaps mast be aligned to 8 byte
+        # boundaries
+        for layer in keycodes:
+            print('layer:', layer)
+            for device in layer:
+                print('device:', device)
+                for keycode in device:
+                    result += struct.pack("<H", keycode)
+                result += struct.pack("<H", KC_NONE) * (-(len(device)%8)%8)
+
         return result
 
 

@@ -5,7 +5,7 @@
 # test keyboard layout
 
 name: "test-layout"
-version: 0
+version: 0.3.0
 report_mode: auto_nkro # options: auto_nkro, 6kro, nkro
 
 # NOTE: rf settings and encryption key are stored in a separate file
@@ -153,7 +153,7 @@ devices:
     id: 14
     wireless_split: true
     wireless_mouse: true
-    wired_split: true
+    wired_split: false
     layout: gamma_split
     layout_offset: 0
     scan_mode:
@@ -333,7 +333,8 @@ layouts:
       [ # layer 0 (colemak)
         [ # left hand
           tab , q   , w   , f   , p   , g   ,
-          SFTEnt , a   , r   , s   , t   , d   ,
+          # SFTEnt , a   , r   , s   , t   , d   ,
+          ent , a   , r   , s   , t   , d   ,
           lalt, z   , x   , c   , v   , b   ,
           esc , L4  , L4  , lctl  , L3  , spc ,
         ],
