@@ -4,3 +4,4 @@
 #pragma once
 
 void rtc_ulp_init(void);
+void impl_idle_sleep(void);
