@@ -65,8 +65,8 @@ ROM const uint8_t hid_desc_nkro_keyboard[] = {
         HID_REPORT_SIZE(1)     , 0x01,
         HID_INPUT(1)           , IOF_DATA | IOF_VARIABLE | IOF_ABSOLUTE,
         // keycodes
-        // HID_LOGICAL_MINIMUM(1) , 0, // Reuse global item
-        // HID_LOGICAL_MAXIMUM(1) , 1, // Reuse global item
+        // HID_LOGICAL_MINIMUM(1) , 0x00, // Reuse global item
+        // HID_LOGICAL_MAXIMUM(1) , 0x01, // Reuse global item
         HID_USAGE_MINIMUM(1)   , 0x00,
         HID_USAGE_MAXIMUM(1)   , 0xdf,
         HID_REPORT_COUNT(1)    , 0xe0,

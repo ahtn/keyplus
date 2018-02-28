@@ -232,6 +232,7 @@ static void cmd_read_layout(void) {
     }
 }
 
+// TODO: clean this up
 static void cmd_get_info(void) {
     uint8_t info_type = g_vendor_report_out.data[1];
 
