@@ -280,6 +280,8 @@ if __name__ == '__main__':
         rf_json = yaml.load(f.read())
     keyplus_layout.parse_json(layout_json, rf_json)
 
+    # keyplus_layout.get_layout_by_id(2).set_keycode(0, 0, 3, 's-W')
+
     raw_layout = keyplus_layout.build_layout_section(kb.get_device_target())
     hexdump(raw_layout)
 
@@ -299,5 +301,8 @@ if __name__ == '__main__':
         "temp_new.hex"
     )
 
-    # kb.set_passthrough_mode(True)
+    kb.update_settings_section(raw_settings, keep_rf=1)
+    kb.update_layout_section(raw_layout)
+
+    #[len(chunk_list)] kb.set_passthrough_mode(True)
     kb.disconnect()

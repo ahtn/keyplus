@@ -190,12 +190,6 @@ class KeyplusKeyboard(object):
         self.hid_device.close()
         self._is_connected = False
 
-    def read(self, timeout=0):
-        return self.hid_device.read(
-            size = 64,
-            timeout = timeout,
-        )
-
 ###############################################################################
 #                                USB Commands                                 #
 ###############################################################################
@@ -517,6 +511,58 @@ class KeyplusKeyboard(object):
         response = self.simple_command(CMD_GET_LAYER, [layout_id])
         return struct.unpack_from("<B HHH", response)
 
+    def _get_chunks(self, data, chunk_size, pad=0xff):
+        chunk_data = None
+        remainder = len(data) % chunk_size
+        if remainder != 0:
+            chunk_data = data[:] + bytearray([pad] * (chunk_size - remainder))
+        else:
+            chunk_data = data
+        return [bytes(chunk_data[i*chunk_size:(i+1)*chunk_size]) for i in range(len(chunk_data)//chunk_size)]
+
+    def _check_cmd_response(self, packet):
+        packet_type = packet[0]
+        err_code = packet[1]
+
+        if packet_type != CMD_ERROR_CODE:
+            raise KeyplusProtocolError(
+                "Received unexpected packet type while writing settings "
+                "section. Expected {}, but got {} instead."
+                .format(CMD_ERROR_CODE, packet_type)
+            )
+        if err_code != CMD_ERROR_CODE_NONE:
+            if err_code in CMD_ERROR_CODE_TABLE:
+                err_message = CMD_ERROR_CODE_TABLE[err_code]
+            else:
+                err_message = "UnknownCmdError({})".format(err_code)
+            raise KeyplusProtocolError(
+                "USB protocol error: {}".format(err_code)
+            )
+
+    def update_settings_section(self, settings_data, keep_rf=0):
+        self.simple_command(CMD_UPDATE_SETTINGS, [keep_rf])
+
+        size = SETTINGS_SIZE
+        if (keep_rf):
+            size = SETTINGS_SIZE - SETTINGS_RF_INFO_SIZE
+        chunk_list = self._get_chunks(settings_data[0:size], EP_VENDOR_SIZE)
+
+        for chunk in chunk_list:
+            self.hid_write(chunk)
+            response = self.hid_read(timeout=3500)
+            self._check_cmd_response(response)
+
+    def update_layout_section(self, layout_data):
+        chunk_list = self._get_chunks(layout_data, EP_VENDOR_SIZE)
+
+        # TODO: change this to a uint32_t
+        num_chunks = struct.pack("<H", len(chunk_list))
+        self.simple_command(CMD_UPDATE_LAYOUT, num_chunks)
+
+        for chunk in chunk_list:
+            self.hid_write(chunk)
+            response = self.hid_read(timeout=3500)
+            self._check_cmd_response(response)
 
 
 if __name__ == '__main__':

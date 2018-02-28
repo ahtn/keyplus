@@ -109,6 +109,13 @@ class KeyplusLayout(object):
                 .format(device.name, layout_id)
             )
 
+    def get_layout_by_id(self, layout_id):
+        return self._layouts[layout_id]
+
+    def get_layout_by_name(self, name):
+        layout_id = self._layout_id_map[name]
+        return self._layouts[layout_id]
+
     def add_layout(self, layout):
         layout_id = layout.layout_id
         if layout_id in self._layouts:
