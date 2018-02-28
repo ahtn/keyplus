@@ -7,7 +7,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import six
 import sys
-from colorama import Fore, Style
+from colorama import Style
 
 from keyplus.exceptions import *
 from keyplus.debug import DEBUG
@@ -22,7 +22,7 @@ class UnusedValueWarning(Warning):
 
     def __str__(self):
         return (
-            Fore.RED + "Warning: " + Style.RESET_ALL +
+            WARN_COLOR + "Warning: " + Style.RESET_ALL +
             "in {}, the following fields were ignored: {}".format(
                 self.path_name, ', '.join(self.values)
             )
@@ -182,6 +182,9 @@ class KeyplusParserInfo(object):
             if remap_function != None:
                 value = remap_function(value)
 
+            if field_range:
+                self.check_range(field_range[0], field_range[1])
+
             return value
         else:
             # Couldn't find the field
@@ -200,9 +203,6 @@ class KeyplusParserInfo(object):
                     .format(self.get_current_path(), field)
                 )
 
-        if field_range:
-            self.check_range(field_range[0], field_range[1])
-
     def get_last_value(self):
         return  self.current_obj[self.last_field]
 
@@ -213,8 +213,13 @@ class KeyplusParserInfo(object):
         last_value = self.get_last_value()
         if not (low <= last_value <= high):
             raise KeyplusParseError(
-                "Expected '{}' to be in range [{},{}]"
-                .format(self.last_field, low, high)
+                "In {}, expected '{}' to be in the range [{},{}], but got '{}'."
+                .format(
+                    self.get_current_path(),
+                    self.last_field,
+                    low, high,
+                    last_value
+                )
             )
 
     def check_in_set(self, valid_values):

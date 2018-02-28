@@ -73,13 +73,11 @@ class LayoutLayer(object):
 
     def get_device_offset(self, dev_id):
         result = 0
-        print(self.device_sizes, dev_id)
         for i in range(dev_id):
             result += int(math.ceil(self.device_sizes[dev_id]/8))
         return result
 
     def get_device_size(self, dev_id):
-        print(self.device_sizes, dev_id)
         return int(math.ceil(self.device_sizes[dev_id]/8))
 
 
@@ -170,7 +168,6 @@ class LayoutKeyboard(object):
                     else:
                         keycode_name = keycode
                     device_obj.keycodes.append(keycode_name)
-                print( self.layer_list[-1] )
                 if ( len(self.layer_list) > 1 and
                     self.layer_list[-1].device_sizes != self.layer_list[-1].device_sizes
                 ):
@@ -212,9 +209,7 @@ class LayoutKeyboard(object):
         # TODO: Remove requirement that keymaps mast be aligned to 8 byte
         # boundaries
         for layer in keycodes:
-            print('layer:', layer)
             for device in layer:
-                print('device:', device)
                 for keycode in device:
                     result += struct.pack("<H", keycode)
                 result += struct.pack("<H", KC_NONE) * (-(len(device)%8)%8)

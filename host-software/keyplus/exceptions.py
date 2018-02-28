@@ -5,7 +5,12 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from colorama import Fore
+
 from keyplus.constants import *
+
+WARN_COLOR = Fore.GREEN
+ERROR_COLOR = Fore.RED
 
 class KeyplusError(Exception):
     pass

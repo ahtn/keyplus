@@ -41,16 +41,17 @@ class KeyplusLayout(object):
 
         self.ekc_data = EKCDataTable()
 
-    def _from_file_common(self, layout_file, rf_file=None, print_warnings=False,
+    def _from_file_common(self, layout_file=None, rf_file=None, print_warnings=False,
                            load_method=yaml.load):
         basename = os.path.basename(layout_file)
-        with open(layout_file) as f:
-            layout_json_obj = load_method(f.read())
-        parser_info = KeyplusParserInfo(
-            "<{}>".format(basename),
-            layout_json_obj,
-            print_warnings = print_warnings,
-        )
+        if layout_file:
+            with open(layout_file) as f:
+                layout_json_obj = load_method(f.read())
+            parser_info = KeyplusParserInfo(
+                "<{}>".format(basename),
+                layout_json_obj,
+                print_warnings = print_warnings,
+            )
         if rf_file:
             rf_basename = os.path.basename(rf_file)
             with open(rf_file) as f:
@@ -68,7 +69,7 @@ class KeyplusLayout(object):
             rf_parser_info = rf_parser_info,
         )
 
-    def from_json_file(self, layout_file, rf_file=None, print_warnings=False):
+    def from_json_file(self, layout_file=None, rf_file=None, print_warnings=False):
         return self._from_file_common(
             layout_file,
             rf_file,
@@ -76,7 +77,7 @@ class KeyplusLayout(object):
             json.loads,
         )
 
-    def from_yaml_file(self, layout_file, rf_file=None, print_warnings=False):
+    def from_yaml_file(self, layout_file=None, rf_file=None, print_warnings=False):
         return self._from_file_common(
             layout_file,
             rf_file,
@@ -278,10 +279,7 @@ class KeyplusLayout(object):
                     if this_dev.layout in self._layout_id_map:
                         dev.layout_id = self._layout_id_map[this_dev.layout]
                         target_layout = self._layouts[dev.layout_id]
-                        print(dev.layout_id, self._layouts, target_layout)
                         target_layer = target_layout.layer_list[0]
-                        print(vars(target_layer), vars(target_layer))
-                        print(vars(target_layer))
                         dev.matrix_offset = target_layer.get_device_offset(this_dev.split_device_num)
                         # TODO: Change this to a key number
                         dev.matrix_size = target_layer.get_device_size(this_dev.split_device_num)
@@ -291,7 +289,6 @@ class KeyplusLayout(object):
                             "layout does not exist."
                             .format(this_dev.name, this_dev.layout)
                         )
-                    print(vars(this_dev))
                     # dev.layout_id =
                     pass
             else:

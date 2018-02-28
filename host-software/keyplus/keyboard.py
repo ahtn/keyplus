@@ -11,6 +11,8 @@ import struct
 import hexdump
 import time
 
+from colorama import Fore
+
 from collections import namedtuple
 from pprint import pprint
 
@@ -390,6 +392,19 @@ class KeyplusKeyboard(object):
         self._rf_info_dirty = False
         return rf_info
 
+    def read_settings_section(self):
+        """ Reads the settings section from the device and returns it """
+        # NOTE: In the future, might support mulitple formats of the settings
+        # section.
+        # self.get_firmware_info()
+
+        settings = keyplus.cdata_types.settings_t()
+        settings.header = self.get_device_info()
+        settings.layout = self.get_layout_info()
+        settings.rf = self.get_rf_info()
+
+        return settings
+
     def read_whole_layout(self):
         if not self._layout_data_dirty:
             return self._whole_layout_data
@@ -539,7 +554,13 @@ class KeyplusKeyboard(object):
                 "USB protocol error: {}".format(err_code)
             )
 
-    def update_settings_section(self, settings_data, keep_rf=0):
+    def update_settings_section(self, settings_data, keep_rf=False):
+        assert(isinstance(keep_rf, bool))
+        keep_rf = int(keep_rf)
+
+        self._rf_info_dirty = True
+        self._layout_info_dirty = True
+
         self.simple_command(CMD_UPDATE_SETTINGS, [keep_rf])
 
         size = SETTINGS_SIZE
@@ -554,6 +575,8 @@ class KeyplusKeyboard(object):
 
     def update_layout_section(self, layout_data):
         chunk_list = self._get_chunks(layout_data, EP_VENDOR_SIZE)
+
+        self._layout_info_dirty = True
 
         # TODO: change this to a uint32_t
         num_chunks = struct.pack("<H", len(chunk_list))
