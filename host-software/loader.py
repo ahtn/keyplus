@@ -16,6 +16,10 @@ from PySide.QtGui import QIcon, QIntValidator
 from PySide.QtCore import Qt, QBasicTimer, QSize , QFileInfo, QTimer
 from PySide.QtCore import Slot, Signal, QAbstractTableModel
 
+from keyplus.layout import KeyplusLayout
+from keyplus.device_info import KeyboardDeviceTarget, KeyboardFirmwareInfo
+import keyplus.chip_id
+
 # TODO: clean up directory structure
 import sys
 import datetime, time, binascii
@@ -832,19 +836,25 @@ class Loader(QMainWindow):
             else:
                 pass
 
-            layout_json_obj = None
-            with open(layout_file) as file_obj:
-                try:
-                    layout_json_obj = yaml.safe_load(file_obj.read())
-                except Exception as err:
-                    error_msg_box("Syntax error in yaml file: " + str(err))
-                    self.abort_update(target_device)
-                    return
+            try:
+                device_info = protocol.get_device_info(target_device)
 
-            device_info = protocol.get_device_info(target_device)
-            layout_data, settings_data = self.process_layout(layout_json_obj, layout_file, device_info.id)
-            if layout_data == None or settings_data == None:
+                kp_layout = KeyplusLayout()
+                kp_layout.from_yaml_file(layout_file)
+                fw_settings = KeyboardFirmwareInfo()
+                fw_settings.chip_id = keyplus.chip_id.get_chip_id_from_name('atxmega32a4u')
+                fw_settings.set_internal_scan_method('fast_row_col')
+                device_target = KeyboardDeviceTarget(
+                    device_id = device_info.id,
+                    firmware_info = fw_settings,
+                )
+                settings_data = kp_layout.build_settings_section(device_target)
+                layout_data = kp_layout.build_layout_section(device_target)
+            except Exception as err:
+                error_msg_box(str(err))
+                self.abort_update(target_device)
                 return
+
 
             protocol.update_layout_section(target_device, layout_data)
             protocol.update_settings_section(target_device, settings_data, keep_rf=True)
@@ -871,32 +881,24 @@ class Loader(QMainWindow):
                 self.abort_update(target_device)
                 return
 
-            layout_json_obj = None
-            rf_json_obj = None
-            with open(layout_file) as file_obj:
-                try:
-                    layout_json_obj = yaml.safe_load(file_obj.read())
-                except Exception as err:
-                    error_msg_box("Syntax error in yaml file: " + str(err))
-                    self.abort_update(target_device)
-                    return
-            with open(rf_file) as file_obj:
-                try:
-                    rf_json_obj = yaml.safe_load(file_obj.read())
-                except Exception as err:
-                    error_msg_box("Syntax error in yaml file: " + str(err))
-                    self.abort_update(target_device)
-                    return
-
             try:
-                settings_gen = layout.parser.SettingsGenerator(layout_json_obj, rf_json_obj)
-            except layout.parser.ParseError as err:
-                error_msg_box("Error Generating RF settings data: " + str(err))
+                device_info = protocol.get_device_info(target_device)
+
+                kp_layout = KeyplusLayout()
+                kp_layout.from_yaml_file(layout_file, rf_file)
+                fw_settings = KeyboardFirmwareInfo()
+                fw_settings.chip_id = keyplus.chip_id.get_chip_id_from_name('atxmega32a4u')
+                fw_settings.set_internal_scan_method('fast_row_col')
+                device_target = KeyboardDeviceTarget(
+                    device_id = device_info.id,
+                    firmware_info = fw_settings,
+                )
+                settings_data = kp_layout.build_settings_section(device_target)
+                layout_data = kp_layout.build_layout_section(device_target)
+            except Exception as err:
+                error_msg_box(str(err))
                 self.abort_update(target_device)
                 return
-
-            layout_data = settings_gen.gen_layout_section(target_id)
-            settings_data = settings_gen.gen_settings_section(target_id)
 
             protocol.update_settings_section(target_device, settings_data)
             protocol.update_layout_section(target_device, layout_data)
@@ -1154,11 +1156,6 @@ The firmware loader accepts *.hex files. For the latest keyplus firmware see her
 
 
 if __name__ == '__main__':
-    import xusb_boot
-    import easyhid
-    import protocol
-    # import time
-
     app = QApplication(sys.argv)
     ex = Loader()
     sys.exit(app.exec_())

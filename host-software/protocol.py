@@ -160,8 +160,8 @@ class KBInfoMain(KBInfoMainNamedTuple):
 
 def get_device_info(device):
     DEVICE_INFO_SIZE = 96
-    response = simple_command(device, CMD_GET_DEVICE_SETTINGS, [INFO_MAIN_0])[1:]
-    response += simple_command(device, CMD_GET_DEVICE_SETTINGS, [INFO_MAIN_1])[1:]
+    response = simple_command(device, CMD_GET_INFO, [INFO_MAIN_0])[1:]
+    response += simple_command(device, CMD_GET_INFO, [INFO_MAIN_1])[1:]
     response = response[0:DEVICE_INFO_SIZE]
 
     # check if the flash has been initialized
@@ -198,7 +198,7 @@ def get_device_info(device):
     return KBInfoMain._make_with_crc(x, crc, is_empty)
 
 def get_layout_info(device):
-    response = simple_command(device, CMD_GET_DEVICE_SETTINGS, [INFO_LAYOUT])[1:]
+    response = simple_command(device, CMD_GET_INFO, [INFO_LAYOUT])[1:]
 
     # uint8_t number_layouts;
     # uint8_t number_devices;
@@ -250,7 +250,7 @@ class KBInfoErrorSystem(object):
         return self._has_critical_error
 
 def get_error_info(device):
-    response = simple_command(device, CMD_GET_DEVICE_SETTINGS, [INFO_ERROR_SYSTEM])[1:]
+    response = simple_command(device, CMD_GET_INFO, [INFO_ERROR_SYSTEM])[1:]
 
     x = KBInfoErrorSystem.SIZE_ERROR_CODE_TABLE
     error_table = response[:KBInfoErrorSystem.SIZE_ERROR_CODE_TABLE]
@@ -416,13 +416,13 @@ def get_firmware_info(device):
 
     # uint8_t reserved[23];
 
-    response = simple_command(device, CMD_GET_DEVICE_SETTINGS, [INFO_FIRMWARE])[1:]
+    response = simple_command(device, CMD_GET_INFO, [INFO_FIRMWARE])[1:]
 
     x = struct.unpack("< 3B L Q Q 5B 2H L H B 23s" ,response)
     return KBInfoFirmware._make(x)
 
 def get_rf_info(device):
-    response = simple_command(device, CMD_GET_DEVICE_SETTINGS, [INFO_RF])[1:]
+    response = simple_command(device, CMD_GET_INFO, [INFO_RF])[1:]
 
     # uint8_t pipe_addr_0[NRF_ADDR_LEN];
     # uint8_t pipe_addr_1[NRF_ADDR_LEN];
@@ -477,12 +477,12 @@ def begin_pairing(device):
     response = simple_command(device, CMD_UNIFYING_PAIR, receive=False)
     return response
 
-def set_indicator_led(device, state):
-    response = simple_command(device, CMD_LED_CONTROL, [state], receive=False)
+def set_indicator_led(device, led_num, state):
+    response = simple_command(device, CMD_LED_CONTROL, [led_num, state], receive=False)
     return response
 
-def reset_device(device):
-    response = simple_command(device, CMD_RESET, receive=False)
+def reset_device(device, reset_type=RESET_TYPE_HARDWARE):
+    response = simple_command(device, CMD_RESET, [reset_type], receive=False)
     return response
 
 def get_chunks(data, chunk_size, pad=0xff):
@@ -499,7 +499,7 @@ def update_settings_section(device, settings_data, keep_rf=0):
 
     size = SETTINGS_SIZE
     if (keep_rf):
-        size = SETTINGS_SIZE - RF_INFO_SIZE
+        size = SETTINGS_SIZE - SETTINGS_RF_INFO_SIZE
     chunk_list = get_chunks(settings_data[0:size], EP_VENDOR_SIZE)
 
     for chunk in chunk_list:

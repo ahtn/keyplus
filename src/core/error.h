@@ -29,6 +29,7 @@ typedef enum error_code_type {
     ERROR_PIN_MAPPING_CONFLICT = 69,
     ERROR_NRF24_BAD_SPI_CONNECTION = 70,
     ERROR_UNSUPPORTED_SCAN_MODE = 71,
+    ERROR_MAXIMUM_KEY_NUMBER_EXCEEDED = 72,
 } error_code_type;
 
 extern XRAM uint8_t g_error_code_table[SIZE_ERROR_CODE_TABLE];

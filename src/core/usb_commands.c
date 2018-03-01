@@ -49,11 +49,9 @@ static void unlock_usb_commands(void) {
     s_usb_commands_in_progress = false;
 }
 
-// static void lock_usb_commands(void) {
-//     s_usb_commands_in_progress = true;
-// }
-
 static void lock_usb_commands(void) {
+    // TODO:
+//     s_usb_commands_in_progress = true;
     s_usb_commands_in_progress = false;
 }
 
@@ -127,13 +125,16 @@ void cmd_error(uint8_t code) {
 }
 
 void cmd_ok(void) {
-    cmd_error(ERROR_CODE_NONE);
+    cmd_error(CMD_ERROR_CODE_NONE);
 }
 
 /* TODO: abstract */
-void cmd_reset(void) {
-    reset_mcu();
-    while (1);
+void cmd_reset(uint8_t reset_type) {
+    if (reset_type == RESET_TYPE_HARDWARE) {
+        reset_mcu();
+    } else if (reset_type == RESET_TYPE_SOFTWARE) {
+        // TODO: software reset
+    }
 }
 
 // send data to the host for debugging purposes
@@ -163,17 +164,22 @@ uint8_t usb_print(const uint8_t *data, uint8_t len) {
     return 0;
 }
 
-void cmd_send_layer(uint8_t kb_slot_id) {
-    if (!is_keyboard_active(kb_slot_id)) {
-        cmd_error(ERROR_KEYBOARD_INACTIVE);
+void cmd_send_layer(uint8_t kb_id) {
+    if (!is_keyboard_active(kb_id)) {
+        cmd_error(CMD_ERROR_KEYBOARD_INACTIVE);
         return;
     }
 
+
+
     g_vendor_report_in.data[0] = CMD_LAYER_STATE;
-    g_vendor_report_in.data[1] = kb_slot_id;
-    memcpy(g_vendor_report_in.data + 2, (uint8_t*)&g_keyboard_slots[kb_slot_id].active_layers, 2),
-    memcpy(g_vendor_report_in.data + 4, (uint8_t*)&g_keyboard_slots[kb_slot_id].sticky_layers, 2),
-    memcpy(g_vendor_report_in.data + 6, (uint8_t*)&g_keyboard_slots[kb_slot_id].default_layers, 2),
+    g_vendor_report_in.data[1] = kb_id;
+    {
+        const uint8_t kb_slot_id = get_slot_id(kb_id);
+        memcpy(g_vendor_report_in.data + 2, (uint8_t*)&g_keyboard_slots[kb_slot_id].active_layers, 2);
+        memcpy(g_vendor_report_in.data + 4, (uint8_t*)&g_keyboard_slots[kb_slot_id].sticky_layers, 2);
+        memcpy(g_vendor_report_in.data + 6, (uint8_t*)&g_keyboard_slots[kb_slot_id].default_layers, 2);
+    }
     g_vendor_report_in.len = 8;
     send_vendor_report();
 }
@@ -203,6 +209,30 @@ static void erase_page_range(uint16_t start_page, uint16_t page_count) {
     flash_modify_disable();
 }
 
+#define CMD_READ_LAYOUT_START_ADDRESS 1
+#define CMD_READ_LAYOUT_SIZE 5
+static void cmd_read_layout(void) {
+    const uint32_t layout_offset = *((uint32_t*)(g_vendor_report_out.data+1));
+    const uint8_t bytes_to_read = *((uint8_t*)(g_vendor_report_out.data+5));
+
+    if (
+        (layout_offset + bytes_to_read > LAYOUT_SIZE) ||
+        (bytes_to_read > (VENDOR_REPORT_LEN-1))
+    ) {
+        cmd_error(CMD_ERROR_CODE_TOO_MUCH_DATA);
+    } else {
+        g_vendor_report_in.data[0] = CMD_READ_LAYOUT;
+        flash_read(
+            g_vendor_report_in.data+1,
+            LAYOUT_ADDR + layout_offset,
+            bytes_to_read
+        );
+        g_vendor_report_in.len = VENDOR_REPORT_LEN;
+        send_vendor_report();
+    }
+}
+
+// TODO: clean this up
 static void cmd_get_info(void) {
     uint8_t info_type = g_vendor_report_out.data[1];
 
@@ -221,17 +251,18 @@ static void cmd_get_info(void) {
             SETTINGS_ADDR + (EP_SIZE_VENDOR-2),
             SETTINGS_MAIN_INFO_SIZE - (EP_SIZE_VENDOR-2)
         );
-    } else if (info_type == INFO_LAYOUT) {
+    } else if (info_type == INFO_LAYOUT_HEADER) {
         flash_read(
             g_vendor_report_in.data+2,
             SETTINGS_ADDR + SETTINGS_LAYOUT_INFO_OFFSET,
-            SETTINGS_LAYOUT_INFO_SIZE
+            SETTINGS_LAYOUT_INFO_HEADER_SIZE
         );
     } else if (info_type == INFO_RF) {
+        // NOTE: this command doesn't return the AES keys
         flash_read(
             g_vendor_report_in.data+2,
             SETTINGS_ADDR + SETTINGS_RF_INFO_OFFSET,
-            SETTINGS_RF_INFO_SIZE
+            SETTINGS_RF_INFO_HEADER_SIZE
         );
     } else if (info_type == INFO_FIRMWARE) {
         flash_read(
@@ -245,6 +276,17 @@ static void cmd_get_info(void) {
             g_error_code_table,
             SIZE_ERROR_CODE_TABLE
         );
+    } else if (INFO_LAYOUT_DATA_0 <= info_type && info_type <= INFO_LAYOUT_DATA_5) {
+        const uint16_t offset = 62 * (info_type - INFO_LAYOUT_DATA_0);
+        uint8_t size = 62;
+        if (info_type == INFO_LAYOUT_DATA_5) {
+            size = sizeof(layout_settings_t) - 62 * (INFO_NUM_LAYOUT_DATA_PAGES - 1);
+        }
+        flash_read(
+            g_vendor_report_in.data+2,
+            (flash_ptr_t)(SETTINGS_ADDR + SETTINGS_LAYOUT_INFO_OFFSET + offset),
+            size
+        );
     } else {
         g_vendor_report_in.data[1] = INFO_UNSUPPORTED;
     }
@@ -254,7 +296,9 @@ static void cmd_get_info(void) {
 }
 
 void parse_cmd(void) {
-    uint8_t cmd = g_vendor_report_out.data[0];
+    const uint8_t cmd = g_vendor_report_out.data[0];
+    const uint8_t data1 = g_vendor_report_out.data[1];
+    const uint8_t data2 = g_vendor_report_out.data[2];
     debug_toggle(1);
     switch (cmd) {
         case CMD_BOOTLOADER: {
@@ -265,14 +309,15 @@ void parse_cmd(void) {
             cmd_get_info();
         } break;
         case CMD_RESET: {
-            cmd_reset();
+            cmd_reset(data1);
         } break;
         case CMD_LED_CONTROL: {
-            const uint8_t led_on = g_vendor_report_out.data[1];
-            led_testing_set(led_on);
+            const uint8_t led_number = data1;
+            const uint8_t state = data2;
+            led_testing_set(led_number, state);
         } break;
         case CMD_LAYER_STATE: {
-            cmd_send_layer(g_vendor_report_out.data[1]);
+            cmd_send_layer(data1);
         } break;
         case CMD_LOGITECH_BOOTLOADER: {
             cmd_logitech_bootloader();
@@ -280,9 +325,9 @@ void parse_cmd(void) {
 #ifndef NO_MATRIX
         case CMD_SET_PASSTHROUGH_MODE: {
             if (g_scan_plan.mode == MATRIX_SCANNER_MODE_NO_MATRIX ) {
-                cmd_error(ERROR_UNSUPPORTED_COMMAND);
+                cmd_error(CMD_ERROR_UNSUPPORTED_COMMAND);
             } else {
-                passthrough_mode_on = g_vendor_report_out.data[1];
+                passthrough_mode_on = data1;
                 cmd_ok();
             }
         } break;
@@ -290,7 +335,7 @@ void parse_cmd(void) {
 
         // TODO: before using this command on XMEGA, need to fix flash locations
         case CMD_UPDATE_SETTINGS: {
-            uint8_t update_type = g_vendor_report_out.data[1];
+            uint8_t update_type = data1;
 
             flash_layout.counter = 0;
             flash_layout.addr = SETTINGS_ADDR;
@@ -300,7 +345,7 @@ void parse_cmd(void) {
             } else if (update_type == SETTING_UPDATE_KEEP_RF) {
                 flash_layout.num_packets = (SETTINGS_SIZE - SETTINGS_RF_INFO_SIZE) / EP_SIZE_VENDOR;
             } else {
-                cmd_error(ERROR_INVALID_VALUE);
+                cmd_error(CMD_ERROR_INVALID_VALUE);
                 return;
             }
 
@@ -326,13 +371,13 @@ void parse_cmd(void) {
         } break;
         case CMD_UPDATE_LAYOUT: {
             uint16_t number_pages;
-            flash_layout.num_packets = g_vendor_report_out.data[1];
+            flash_layout.num_packets = data1;
             flash_layout.counter = 0;
             flash_layout.addr = LAYOUT_ADDR;
 
             number_pages = (flash_layout.num_packets+(CHUNKS_PER_PAGE-1))/CHUNKS_PER_PAGE;
             if (number_pages > LAYOUT_PAGE_COUNT) {
-                cmd_error(ERROR_CODE_TOO_MUCH_DATA);
+                cmd_error(CMD_ERROR_CODE_TOO_MUCH_DATA);
                 return;
             }
 
@@ -348,11 +393,15 @@ void parse_cmd(void) {
             cmd_ok();
         } break;
 
+        case CMD_READ_LAYOUT: {
+            cmd_read_layout();
+        } break;
+
         case CMD_UNIFYING_PAIR: {
             cmd_unifying_pairing();
         } break;
         default: {
-            cmd_error(ERROR_UNKNOWN_CMD);
+            cmd_error(CMD_ERROR_UNKNOWN_CMD);
         } break;
     }
 }

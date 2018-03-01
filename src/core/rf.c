@@ -31,6 +31,10 @@ XRAM bool g_rf_enabled;
 #define NRF24_TX_IRQ_MASK (0)
 #define NRF24_IRQ_MASK_ALL (MASK_MAX_RT_bm | MASK_TX_DS_bm | MASK_RX_DR_bm)
 
+static uint8_t device_id_to_pipe_num(const uint8_t device_id) {
+    return device_id % NUM_KEYBOARD_PIPES;
+}
+
 void nrf_registers_common(void) {
     // When ack payloads > 15bytes are used @2Mbps, need ARD >=500µs.
     // maybe increase the auto matic retransmit delay?
@@ -354,7 +358,9 @@ void rf_load_sync_ack_payload(uint8_t device_id) {
     memset(packet->sync.salt, 0, PACKET_SYNC_SALT_LENGTH);
     // encrypt and load into ack payload fifo
     aes_encrypt(tmp_buffer);
+    rf_disable_receive_irq();
     nrf24_write_ack_payload(tmp_buffer, PACKET_SIZE, device_id_to_pipe_num(device_id));
+    rf_enable_receive_irq();
 }
 
 // For a packet to be valid:

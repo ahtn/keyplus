@@ -92,7 +92,7 @@ typedef struct usb_config_desc_keyboard_t {
 #define REPORT_INTERVAL_MEDIA 10
 #define REPORT_INTERVAL_MOUSE 1
 #define REPORT_INTERVAL_VENDOR_IN 1
-#define REPORT_INTERVAL_VENDOR_OUT 10
+#define REPORT_INTERVAL_VENDOR_OUT 1
 #define REPORT_INTERVAL_NKRO_KEYBOARD 1
 
 // report id for media report
@@ -110,7 +110,6 @@ typedef struct usb_config_desc_keyboard_t {
 #define STRING_DESC_MANUFACTURER 1
 #define STRING_DESC_PRODUCT 2
 #define STRING_DESC_SERIAL_NUMBER 3
-#define STRING_DESC_TEST 4
 
 extern ROM const usb_config_desc_keyboard_t usb_config_desc;
 extern ROM const usb_device_desc_t usb_device_desc;
@@ -118,7 +117,6 @@ extern ROM const uint16_t usb_string_desc_0[];
 extern ROM const uint16_t usb_string_desc_1[];
 extern ROM const uint16_t usb_string_desc_2[];
 extern ROM const uint16_t usb_string_desc_3[];
-extern ROM const uint16_t usb_string_desc_4[];
 extern ROM const uint8_t sizeof_hid_desc_boot_keyboard;
 extern ROM const uint8_t hid_desc_boot_keyboard[];
 extern ROM const uint8_t sizeof_hid_desc_media;

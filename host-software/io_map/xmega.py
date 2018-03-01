@@ -81,3 +81,12 @@ class IoMapperXmega(IoMapper):
 
         return self.pin_mapper.get_pin_number(port, pin)
 
+    def get_pin_name(self, pin_number):
+        port_number, pin_bit = self.get_pin(pin_number)
+        if port_number not in self.ports or pin_bit > self.port_size:
+            raise IoMapperError("Pin number '{}' doesn't exist on this mcu"
+                                .format(pin_number))
+        return "{port_name}{pin_bit}".format(
+            port_name = self.ports[port_number],
+            pin_bit = pin_bit,
+        )

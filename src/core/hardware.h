@@ -52,7 +52,12 @@ void hardware_init(void);
 void bootloader_jmp(void);
 void bootloader_jmp_2(void);
 void reset_mcu(void);
+
+#ifdef NO_IDLE_SLEEP
+#define idle_sleep() {}
+#else
 void idle_sleep(void);
+#endif
 
 void wdt_init(void);
 void wdt_disable(void);

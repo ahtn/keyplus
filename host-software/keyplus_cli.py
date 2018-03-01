@@ -5,32 +5,45 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import intelhex
 import argparse
-import yaml
 import hexdump
 import sys
+import colorama
+from colorama import Fore, Style
+
 import datetime
+import six
 
-import layout.parser
-import protocol
-import easyhid
+import keyplus
+from keyplus.layout import KeyplusLayout
+from keyplus.device_info import KeyboardDeviceTarget, KeyboardFirmwareInfo
 
-__version_info__ = (0, 0, 1)
-__version__ = '.'.join([str(i) for i in __version_info__])
+from keyplus.chip_id import get_chip_id_from_name
 
+from keyplus.exceptions import *
+from keyplus.constants import *
+
+__version__ = keyplus.__version__
+
+EXIT_NO_ERROR = 0
 EXIT_COMMAND_ERROR = 1
 EXIT_MATCH_DEVICE = 2
 EXIT_UNSUPPORTED_FEATURE = 3
 EXIT_BAD_FILE = 4
 EXIT_INSUFFICIENT_SPACE = 5
 
-def print_hid_info(device):
+def print_error(*args):
+    print(Fore.RED + "Error: " + Style.RESET_ALL, file=sys.stderr, end='')
+    print(*args, file=sys.stderr)
+
+
+def print_hid_info(hid_device):
     print("{:x}:{:x} | {} | {} | {}"
         .format(
-            device.vendor_id,
-            device.product_id,
-            device.manufacturer_string,
-            device.product_string,
-            device.serial_number,
+            hid_device.vendor_id,
+            hid_device.product_id,
+            hid_device.manufacturer_string,
+            hid_device.product_string,
+            hid_device.serial_number,
         )
     )
 
@@ -41,40 +54,33 @@ def timestamp_to_string(tstamp):
         timestamp_str = str(build_date)
     return timestamp_str
 
-def print_device_info(device, indent="  "):
-    dev_info = protocol.get_device_info(device)
-    print(indent, "id: ", dev_info.id)
-    print(indent, "name: '{}'".format(dev_info.device_name_str()) )
-    print(indent, "layout last updated: ", dev_info.timestamp_str())
-    print(indent, "default_report_mode: ", dev_info.default_report_mode_str())
-    print(indent, "scan_mode: ", dev_info.scan_mode)
-    print(indent, "row_count: ", dev_info.row_count)
-    print(indent, "col_count: ", dev_info.col_count)
-
-def print_layout_info(device, indent="  "):
-    layout_info = protocol.get_layout_info(device)
-    print(indent, "number_devices: ", layout_info.number_devices)
-    print(indent, "number_layouts: ", layout_info.number_layouts)
+def print_device_info(device_info, indent="  "):
+    print(indent, "id: ", device_info.device_id)
+    print(indent, "name: '{}'".format(device_info.get_name_str()) )
+    print(indent, "layout last updated: ", timestamp_to_string(device_info.timestamp_raw))
+    print(indent, "default_report_mode: ", device_info.get_default_report_mode_str())
+    print(indent, "scan_mode: ", device_info.scan_plan.mode)
+    print(indent, "row_count: ", device_info.scan_plan.rows)
+    print(indent, "col_count: ", device_info.scan_plan.cols)
 
 def print_firmware_info(device, indent="  "):
     fw_info = protocol.get_firmware_info(device)
-    print(indent, "build time: ", timestamp_to_string(fw_info.timestamp))
+    print(indent, "build time: ", timestamp_to_string(fw_info.timestamp_raw))
     print(indent, "git_hash: {:08x}".format(fw_info.git_hash))
 
-def print_all_info(device):
-    print_hid_info(device)
-    print_device_info(device)
-    print_layout_info(device)
-    print("firmware info:")
-    print_firmware_info(device)
+def print_all_info(kb_device):
+    print_hid_info(kb_device.hid_device)
+    print_device_info(kb_device.device_info)
+
+
 
 # Generic Command
 class GenericCommand(object):
     def __init__(self, description):
 
         command_name = ""
-        for name in Keyer.COMMAND_NAME_MAP:
-            if Keyer.COMMAND_NAME_MAP[name] == self.__class__:
+        for name in KeyplusCLI.COMMAND_NAME_MAP:
+            if KeyplusCLI.COMMAND_NAME_MAP[name] == self.__class__:
                 command_name = name
 
         command_name = sys.argv[0] + " " + command_name
@@ -104,7 +110,7 @@ class GenericDeviceCommand(GenericCommand):
         super(GenericDeviceCommand, self).__init__(description)
 
         self.arg_parser.add_argument(
-            '-i', '--id', dest='dev_id', type=int, default=None,
+            '-i', '--id', dest='device_id', type=int, default=None,
             help='The id of the device to program'
         )
 
@@ -123,105 +129,31 @@ class GenericDeviceCommand(GenericCommand):
             help='Name of the USB device to use. Can be a partial match.'
         )
 
-    def get_similar_serial_number(self, dev_list, serial):
-        partial_match = None
-        partial_match_pos = None
-        for dev in dev_list.find():
-            if dev.serial_number == serial:
-                # found an exact match
-                return serial
-            elif partial_match == None:
-                # didn't find an exact match, so keep track of partial matches
-                match_pos = dev.serial_number.find(serial)
-
-                # no match, ignore
-                if match_pos == -1:
-                    continue
-
-                # update the best match we found, prioritize serial numbers
-                # that match near the start of the string
-                if partial_match_pos == None or match_pos < partial_match_pos:
-                    partial_match = dev.serial_number
-                    partial_match_pos = match_pos
-
-        if partial_match:
-            return partial_match
-        else:
-            return serial
-
-    def find_matching_device(self, args):
-        hid_list = easyhid.Enumeration()
-
-        target_vid = protocol.DEFAULT_VID
-        target_pid = None
-
-        if args.vid_pid:
-            matches = args.vid_pid.split(":")
-            if len(matches) == 1:
-                try:
-                    target_vid = int(matches[0], base=16)
-                    if target_vid > 0xffff: raise Exception
-                except:
-                    print("Bad VID/PID pair: " + args.vid_pid, file=sys.stderr)
-                    exit(EXIT_MATCH_DEVICE)
-            elif len(matches) == 2:
-                try:
-                    if matches[0] == '':
-                        target_vid = None
-                    else:
-                        target_vid = target_vid = int(matches[0], base=16)
-                    if matches[1] == '':
-                        target_pid = None
-                    else:
-                        target_pid = target_pid = int(matches[1], base=16)
-                    if target_vid and target_vid > 0xffff: raise Exception
-                    if target_pid and target_pid > 0xffff: raise Exception
-                except:
-                    print("Bad VID/PID pair: " + args.vid_pid, file=sys.stderr)
-                    exit(EXIT_MATCH_DEVICE)
-
-        if args.serial != None:
-            args.serial = self.get_similar_serial_number(hid_list, args.serial)
-
-        matching_devices = hid_list.find(
-            vid=target_vid,
-            pid=target_pid,
-            serial=args.serial,
-            interface=3
+    def find_matching_device(self, args, multiple_matches=False):
+        matching_devices = keyplus.find_devices(
+            name = args.name,
+            device_id = args.device_id,
+            vid_pid = args.vid_pid,
+            serial_number = args.serial,
         )
-
-        if len(matching_devices) == 0:
-            print("Couldn't find a matching device to open", file=sys.stderr)
-            exit(EXIT_MATCH_DEVICE)
-
-        if args.dev_id != None:
-            matching_id_list = []
-            for dev in matching_devices:
-                try:
-                    dev.open()
-                    dev_info = protocol.get_device_info(dev)
-                    dev.close()
-                    if dev_info.id == args.dev_id:
-                        matching_id_list.append(dev)
-                except:
-                    print("Warning: couldn't open device: " + str(dev), file=sys.stderr)
-                    dev.close()
-            matching_devices = matching_id_list
-
         num_matches = len(matching_devices)
 
+        if multiple_matches:
+            return matching_devices
+
         if num_matches== 0:
-            print("Couldn't find any matching devices.", file=sys.stderr)
+            print_error("Couldn't find any matching devices.")
             exit(EXIT_MATCH_DEVICE)
         elif num_matches == 1:
             return matching_devices[0]
         elif num_matches > 1:
-            print("Error: found {} matching devices, select a specifc device or "
-                  "disconnect the other devices".format(num_matches), file=sys.stderr)
+            print_error("Error: found {} matching devices, select a specifc device or "
+                  "disconnect the other devices".format(num_matches))
             exit(EXIT_MATCH_DEVICE)
 
     def task(self, args):
         pass
+
 
 # Hexdump of raw debug output
 class DebugCommand(GenericDeviceCommand):
@@ -231,11 +163,11 @@ class DebugCommand(GenericDeviceCommand):
         )
 
     def task(self, args):
-        device = self.find_matching_device(args)
+        kb = self.find_matching_device(args)
+        print_all_info(kb)
 
-        device.open()
-        print_all_info(device)
-        protocol.listen_raw(device)
+        with kb:
+            kb.listen_raw()
 
 
 # Prints matrix (row,col) pairs of pressed keys to stdout of a connected USB device
@@ -258,44 +190,42 @@ class PassthroughCommand(GenericDeviceCommand):
 
     def task(self, args):
 
-        device = self.find_matching_device(args)
-        device.open()
+        kb = self.find_matching_device(args)
 
-        try:
-            protocol.set_passthrough_mode(device, 1)
-        except protocol.KBProtocolException as err:
-            if err.error_code == protocol.ProtocolError.ERROR_UNSUPPORTED_COMMAND:
-                print("Target device doesn't support matrix scanning", file=sys.stderr)
-                exit(EXIT_UNSUPPORTED_FEATURE)
-            raise err
-        passthrough_timeout = 10000
+        with kb:
+            try:
+                kb.set_passthrough_mode(True)
+            except KeyplusUSBCommandError as err:
+                if err.error_code == KeyplusUSBCommandError.ERROR_UNSUPPORTED_COMMAND:
+                    print_error("Target device doesn't support matrix scanning")
+                    exit(EXIT_UNSUPPORTED_FEATURE)
+                raise err
+            passthrough_timeout = 10000
 
-        response = device.read(timeout=passthrough_timeout)
+            response = kb.read(timeout=passthrough_timeout)
 
-        while response != None:
-            if response[0] == protocol.CMD_PASSTHROUGH_MATRIX:
-                if (args.verbose):
-                    hexdump.hexdump(response[1:])
-                for row in range(10):
-                    for col in range(2):
-                        byte = response[1 + row*2 + col]
-                        if byte == 0:
-                            continue
-                        else:
-                            for i in range(8):
-                                if byte & (1 << i):
-                                    row_num = row
-                                    col_num = col * 8 + i
-                                    print("r{}c{} ".format(row_num, col_num), end="")
-                print("")
+            while response != None:
+                if response[0] == CMD_PASSTHROUGH_MATRIX:
+                    if (args.verbose):
+                        hexdump.hexdump(response[1:])
+                    for row in range(10):
+                        for col in range(2):
+                            byte = response[1 + row*2 + col]
+                            if byte == 0:
+                                continue
+                            else:
+                                for i in range(8):
+                                    if byte & (1 << i):
+                                        row_num = row
+                                        col_num = col * 8 + i
+                                        print("r{}c{} ".format(row_num, col_num), end="")
+                    print("")
+                response = kb.read(timeout=passthrough_timeout)
 
-            response = device.read(timeout=passthrough_timeout)
-
-        protocol.set_passthrough_mode(device, 0)
-        device.close()
+            kb.set_passthrough_mode(False)
 
 # List connected USB devices
-class ListCommand(GenericCommand):
+class ListCommand(GenericDeviceCommand):
     def __init__(self):
         super(ListCommand, self).__init__(
             'List the connected keyplus devices'
@@ -307,17 +237,13 @@ class ListCommand(GenericCommand):
         )
 
     def task(self, args):
-        dev_list = easyhid.Enumeration().find(
-            interface=3
-        )
-        for dev in dev_list:
-            print_hid_info(dev)
+        kb_devices = self.find_matching_device(args, multiple_matches=True)
+
+        for kb_device in kb_devices:
+            print_hid_info(kb_device.hid_device)
             if args.verbosity != None:
-                dev.open()
                 if args.verbosity >= 1:
-                    print_device_info(dev)
-                    print_layout_info(dev)
-                dev.close()
+                    print_device_info(kb_device.device_info)
 
 # Test command for controlling LEDs
 class LEDCommand(GenericDeviceCommand):
@@ -327,15 +253,19 @@ class LEDCommand(GenericDeviceCommand):
         )
 
         self.arg_parser.add_argument(
+            'led_number', type=int,
+            help="Led number to set"
+        )
+
+        self.arg_parser.add_argument(
             'led_state', type=int,
             help="State to set the led: 0->off, 1->on"
         )
 
     def task(self, args):
-        device = self.find_matching_device(args)
-        device.open()
-        protocol.set_indicator_led(device, args.led_state)
-        device.close()
+        kb = self.find_matching_device(args)
+        with kb:
+            kb.set_indicator_led(args.led_number, args.led_state)
 
 # Test command for controlling LEDs
 class ResetCommand(GenericDeviceCommand):
@@ -345,10 +275,9 @@ class ResetCommand(GenericDeviceCommand):
         )
 
     def task(self, args):
-        device = self.find_matching_device(args)
-        device.open()
-        protocol.reset_device(device)
-        device.close()
+        kb = self.find_matching_device(args)
+        with kb:
+            kb.reset()
 
 # Enter the devices bootloader
 class BootloaderCommand(GenericDeviceCommand):
@@ -358,10 +287,9 @@ class BootloaderCommand(GenericDeviceCommand):
         )
 
     def task(self, args):
-        device = self.find_matching_device(args)
-        device.open()
-        protocol.enter_bootloader(device)
-        device.close()
+        kb = self.find_matching_device(args)
+        with kb:
+            kb.enter_bootloader()
 
 class HelpCommand(GenericCommand):
     def __init__(self):
@@ -377,14 +305,15 @@ class HelpCommand(GenericCommand):
     def task(self, args):
         if args.command_name == None:
             self.arg_parser.print_help()
-            exit(0)
+            exit(EXIT_NO_ERROR)
 
-        if args.command_name in Keyer.COMMAND_NAME_MAP:
-            cmd = Keyer.COMMAND_NAME_MAP[args.command_name]()
+        if args.command_name in KeyplusCLI.COMMAND_NAME_MAP:
+            cmd = KeyplusCLI.COMMAND_NAME_MAP[args.command_name]()
             cmd.arg_parser.print_help()
         else:
-            print("Error: Can't find help for unknown command " +
-                  str(args.command_name), file=sys.stderr)
+            print_error(
+                "Error: Can't find help for unknown command " + str(args.command_name)
+            )
 
 
 class ProgramCommand(GenericDeviceCommand):
@@ -427,183 +356,214 @@ class ProgramCommand(GenericDeviceCommand):
         )
 
         self.arg_parser.add_argument(
+            '-F', '--fw-set', dest='firmware_settings',
+            action='append',
+            type=str,
+            # nargs='+',
+            # default=None,
+        )
+
+        self.arg_parser.add_argument(
             '-o', '--outfile', dest='outfile',
             type=str, default=None,
             help='The file written by the -M flag. If no file is given, print'
             ' to stdoutput'
         )
 
-    def process_layout(self, layout_json_obj, rf_json, layout_file, device_id):
+    def task(self, args):
+        if (
+            args.layout_file == None and
+            args.hex_file == None and
+            args.rf_file == None and
+            args.new_id == None and
+            args.merge_hex == None
+        ):
+            self.arg_parser.print_help()
+            exit(EXIT_NO_ERROR)
+
+        if args.merge_hex:
+            self.task_mereged_hex(args)
+        else:
+            self.task_program_device(args)
+
+    def load_layout_file(self, args):
         try:
-            settings_gen = layout.parser.SettingsGenerator(layout_json_obj, rf_json)
-            if not settings_gen.has_id(device_id):
-                print(
-                    'Error parsing "{}": No device with id {}'.format(
-                        layout_file,
-                        device_id
-                    ),
-                    file=sys.stderr
-                )
-                exit(EXIT_BAD_FILE)
-            layout_data = settings_gen.gen_layout_section(device_id)
-            settings_data = settings_gen.gen_settings_section(device_id)
-            return layout_data, settings_data
-        except (layout.parser.ParseError, layout.parser.ParseKeycodeError) as err:
-            print(
-                'Error parsing "{}": {}'.format(layout_file, str(err)),
+            kp_layout = KeyplusLayout()
+            kp_layout.from_yaml_file(
+                layout_file = args.layout_file,
+                rf_file = args.rf_file,
+                print_warnings = True,
             )
+            return kp_layout
+        except Exception as err:
+            print_error(str(err))
             exit(EXIT_BAD_FILE)
 
-    def task(self, args):
-        layout_file = args.layout_file
-        rf_file = args.rf_file
-        hex_file = args.hex_file
-        new_id = args.new_id
-
-        if args.merge_hex:
-            if (new_id == None or layout_file == None or rf_file == None or \
-                    new_id == None):
-                print("Error: To generate a merged hex file, need all settings"
-                        " files.", file=sys.stderr)
-                exit(EXIT_COMMAND_ERROR)
-            if len(args.merge_hex) != 3:
-                print("Error: To generate a merged hex file, need to provide "
-                      "[settings_addr, layout_addr, layout_size] as arguments",
-                      file=sys.stderr)
-                exit(EXIT_COMMAND_ERROR)
-
-
-        if new_id != None and (layout_file == None or rf_file == None):
-            print("Error: when providing a new ID, a layout and RF file "
-                  "must be provided", file=sys.stderr)
+    def task_mereged_hex(self, args):
+        if (
+            args.new_id == None or
+            args.layout_file == None or
+            args.rf_file == None or
+            args.hex_file == None
+        ):
+            self.arg_parser.print_help()
+            print_error(
+                "To generate a merged hex file, need the following options: "
+                "layout file (-l), rf file (-r), hex file (-x), and a device id (-I)"
+            )
             exit(EXIT_COMMAND_ERROR)
 
-        if layout_file == None and hex_file == None and rf_file == None:
-            self.arg_parser.print_help()
-            exit(0)
+        if len(args.merge_hex) != 3:
+            print_error("To generate a merged hex file, need to provide "
+                    "[settings_addr, layout_addr, layout_size] as arguments")
+            exit(EXIT_COMMAND_ERROR)
+
+        if args.firmware_settings == None:
+            print_error("Must provide firmware settings with -F flag.")
+            exit(EXIT_COMMAND_ERROR)
+
+        known_settings = ['chip_name', 'scan_method']
+        firmware_settings = {}
+        for option in args.firmware_settings:
+            try:
+                expression = option.split('=', maxsplit=1)
+                key = expression[0].lower()
+                value = expression[1].lower()
+                if key not in known_settings:
+                    print_error(
+                        "Unknown firmware option '{}', expected one of: {}".format(
+                            key, known_settings
+                        )
+                    )
+                    exit(EXIT_COMMAND_ERROR)
+                firmware_settings[key] = value
+                known_settings.remove(key)
+            except:
+                print_error(
+                    "Bad format for firmware setting. Expected format is "
+                    "'fw_opt=value'."
+                )
+                exit(EXIT_COMMAND_ERROR)
+
+        # TODO: build device target from command line parameters
+        firmware_info = KeyboardFirmwareInfo()
+        try:
+            firmware_info.chip_id = get_chip_id_from_name(firmware_settings['chip_name'])
+            firmware_info.set_internal_scan_method(firmware_settings['scan_method'])
+        except KeyplusSettingsError as err:
+            print_error(str(err))
+            exit(EXIT_COMMAND_ERROR)
+        except KeyError as err:
+            print_error("firmware setting '{}' must be set".format(err.args[0]))
+            exit(EXIT_COMMAND_ERROR)
+
+        print(vars(firmware_info))
+
+        # firmware_info.chip_id =
+        device_target = KeyboardDeviceTarget(
+            device_id = args.new_id,
+            firmware_info = firmware_info
+        )
+
+        kp_layout = self.load_layout_file(args)
+
+        # don't want to program the device, instead we want to build a
+        # hexfile with the settings preprogrammed
+        with open(args.hex_file) as f:
+            fw_hex = intelhex.IntelHex(f)
+
+        settings_addr = args.merge_hex[0]
+        layout_addr = args.merge_hex[1]
+        layout_size = args.merge_hex[2]
 
 
-        if not args.merge_hex:
-            device = self.find_matching_device(args)
+        settings_data = kp_layout.build_settings_section(device_target)
+        layout_data = kp_layout.build_layout_section(device_target)
 
-            device.open()
+        if len(layout_data) > layout_size:
+            print_error("layout data to large. Got {} bytes, but only "
+                    "{} bytes available".format(
+                        len(layout_data),
+                        layout_size
+                    ))
+            exit(EXIT_INSUFFICIENT_SPACE)
+
+        settings_hex = intelhex.IntelHex()
+        settings_hex.frombytes(
+            settings_data,
+            offset = settings_addr
+        )
+
+        layout_hex = intelhex.IntelHex()
+        layout_hex.frombytes(
+            layout_data,
+            offset = layout_addr
+        )
+
+
+        fw_hex.merge(settings_hex, overlap='replace')
+
+        # first erase anything that is in the layout section
+        for i in range(layout_addr, layout_addr+layout_size):
+            fw_hex[i] = 0 # dummy, write so del always works
+            del fw_hex[i]
+
+        fw_hex.merge(layout_hex, overlap='replace')
+
+        if args.outfile:
+            with open(args.outfile, 'w') as outfile:
+                fw_hex.write_hex_file(outfile)
+        else:
+                fw_hex.write_hex_file(sys.stdout)
+        exit(EXIT_NO_ERROR)
+
+    def task_program_device(self, args):
+
+        kb = self.find_matching_device(args)
+
+        with kb:
             print("Programing start...")
-            print_hid_info(device)
-            print_device_info(device)
-            print_layout_info(device)
+            print_all_info(kb)
             print("")
 
+            device_target = kb.get_device_target()
 
-        if layout_file != None:
-            with open(layout_file) as file_obj:
-                try:
-                    layout_json_obj = yaml.safe_load(file_obj.read())
-                # except yaml.YAMLError as err:
-                except Exception as err:
-                    print("Error in Layout Settings YAML file: " + str(err), file=sys.stderr)
-                    device.close()
-                    exit(EXIT_BAD_FILE)
-        else:
-            layout_json_obj = None
+            # Set the target device id
+            if args.new_id:
+                device_target.device_id = args.new_id
 
-        if rf_file != None:
-            with open(rf_file) as file_obj:
-                try:
-                    rf_json_obj = yaml.safe_load(file_obj.read())
-                # except yaml.YAMLError as err:
-                except Exception as err:
-                    print("Error in RF Settings YAML file: " + str(err), file=sys.stderr)
-                    device.close()
-                    exit(EXIT_BAD_FILE)
-        else:
-            rf_json_obj = None
-
-        if layout_file != None:
-            print("Parsing files...")
-
-            if not args.merge_hex:
-                device_info = protocol.get_device_info(device)
-
-            if new_id == None:
-                target_id = device_info.id
-            else:
-                target_id = new_id
-
-            layout_data, settings_data = self.process_layout(
-                layout_json_obj,
-                rf_json_obj,
-                layout_file,
-                target_id
-            )
-            if layout_data == None or settings_data == None:
-                exit(EXIT_BAD_FILE)
-            print("Parsing finished...")
-
-        if args.merge_hex:
-            # don't want to program the device, instead we want to build a
-            # hexfile with the settings preprogrammed
-            with open(hex_file) as f:
-                fw_hex = intelhex.IntelHex(f)
-
-            settings_addr = args.merge_hex[0]
-            layout_addr = args.merge_hex[1]
-            layout_size = args.merge_hex[2]
-
-            if len(layout_data) > layout_size:
-                print("Error: layout data to large. Got {} bytes, but only "
-                      "{} bytes available".format(
-                          len(layout_data),
-                          layout_size
-                      ), file=sys.stderr)
-                exit(EXIT_INSUFFICIENT_SPACE)
-
-            settings_hex = intelhex.IntelHex()
-            settings_hex.frombytes(
-                settings_data,
-                offset = settings_addr
-            )
-
-            layout_hex = intelhex.IntelHex()
-            layout_hex.frombytes(
-                layout_data,
-                offset = layout_addr
-            )
+            # If only a new id was provide, update the old settings section
+            # with just the new id.
+            if (
+                args.layout_file == None and
+                args.rf_file == None and
+                args.new_id
+            ):
+                settings = kb.read_settings_section()
+                settings.header.device_id = args.new_id
+                kb.update_settings_section(settings, keep_rf=True)
+                exit(EXIT_NO_ERROR)
 
 
-            fw_hex.merge(settings_hex, overlap='replace')
+            kp_layout = self.load_layout_file(args)
 
-            # first erase anything that is in the layout section
-            for i in range(layout_addr, layout_addr+layout_size):
-                fw_hex[i] = 0 # dummy, write so del works
-                del fw_hex[i]
+            # If this command is running, we always update the layout section
+            settings = kp_layout.build_settings_section(device_target)
 
-            fw_hex.merge(layout_hex, overlap='replace')
+            update_rf = False
+            if args.rf_file:
+                update_rf = True
 
-            if args.outfile:
-                with open(args.outfile, 'w') as outfile:
-                    fw_hex.write_hex_file(outfile)
-            else:
-                    fw_hex.write_hex_file(sys.stdout)
-            exit(0)
-        elif layout_file and not rf_file:
-            print("Updating layout only...")
-            protocol.update_settings_section(device, settings_data, keep_rf=True)
-            protocol.update_layout_section(device, layout_data)
-        elif layout_file and rf_file:
-            print("Updating layout and rf settings...")
-            protocol.update_settings_section(device, settings_data)
-            protocol.update_layout_section(device, layout_data)
-        elif layout_file and rf_file and hex_file:
-            print("TODO: not implemented", file=sys.stderr)
-        elif hex_file and not layout_file and not rf_file:
-            print("TODO: not implemented", file=sys.stderr)
-        else:
-            pass
+            kb.update_settings_section(settings, update_rf)
 
-        print("Done!")
+            # only update the layout section if a layout file was given
+            if args.layout_file:
+                layout = kp_layout.build_layout_section(device_target)
+                kb.update_layout_section(layout)
 
-        protocol.reset_device(device)
-        device.close()
+            kb.reset()
+
+
 
 class PairCommand(GenericDeviceCommand):
     def __init__(self):
@@ -612,12 +572,11 @@ class PairCommand(GenericDeviceCommand):
         )
 
     def task(self, args):
-        device = self.find_matching_device(args)
-        device.open()
-        protocol.begin_pairing(device)
-        device.close()
+        kb = self.find_matching_device(args)
+        with kb:
+            kb.enter_pairing_mode()
 
-class Keyer(object):
+class KeyplusCLI(object):
     COMMAND_NAME_MAP = {
         "bootloader": BootloaderCommand,
         "debug": DebugCommand,
@@ -667,11 +626,12 @@ class Keyer(object):
         if args.command in command_list:
             command_list[args.command].run()
         else:
-            print('Unrecognized command: {}'.format(args.command), file=sys.stderr)
+            print_error('Unrecognized command: {}'.format(args.command))
             parser.print_help()
             exit(EXIT_COMMAND_ERROR)
-        exit(0)
+        exit(EXIT_NO_ERROR)
 
 
 if __name__ == "__main__":
-    Keyer()
+    colorama.init()
+    KeyplusCLI()

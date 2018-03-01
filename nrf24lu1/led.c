@@ -17,8 +17,10 @@ void led_init(void) {
     P03 = 0;
 }
 
-void led_testing_set(uint8_t state) {
-    P03 = state;
+void led_testing_set(uint8_t led_number, uint8_t state) {
+    if (led_number == 0) {
+        P03 = state;
+    }
 }
 
 void led_testing_toggle(void) {

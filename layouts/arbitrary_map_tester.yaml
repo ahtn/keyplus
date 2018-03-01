@@ -5,7 +5,7 @@
 # test keyboard layout
 
 name: "Matrix Testing Layout (Max Columns)"
-version: 0
+version: 0.3.0
 report_mode: auto_nkro # options: auto_nkro, 6kro, nkro
 
 devices:

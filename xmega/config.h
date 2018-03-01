@@ -19,8 +19,10 @@
 #define USB_DEVICE_VERSION 0x0000
 #endif
 
+#if !defined(BOOTLOADER_VID) && !defined(BOOTLOADER_PID)
 #define BOOTLOADER_VID 0x6666
 #define BOOTLOADER_PID 0xB007
+#endif
 
 // TODO: move to settings
 // TODO: an option to enter deep sleep when there has been no change in the matrix

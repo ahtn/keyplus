@@ -8,7 +8,7 @@
 void led_init(void) {
 }
 
-void led_testing_set(uint8_t state) {
+void led_testing_set(uint8_t led_num, uint8_t state) {
 }
 
 void led_testing_toggle(void) {

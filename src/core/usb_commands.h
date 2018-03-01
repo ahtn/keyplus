@@ -43,17 +43,18 @@ enum usb_vendor_cmd_t {
     CMD_PASSTHROUGH_MATRIX = 0x09, // raw matrix data sent to the host without interpretting it
     CMD_UPDATE_SETTINGS = 0x0A,
     CMD_UPDATE_LAYOUT = 0x0B, // flash keyboard layout
+    CMD_READ_LAYOUT = 0x0C, // read keyboard layout
 
     CMD_UNIFYING_PAIR = 0x10, // enter pairing mode
 };
 
 enum {
-    ERROR_CODE_NONE = 0,
-    ERROR_CODE_TOO_MUCH_DATA = 1,
-    ERROR_INVALID_VALUE = 2,
-    ERROR_KEYBOARD_INACTIVE = 3,
-    ERROR_UNKNOWN_CMD = 4,
-    ERROR_UNSUPPORTED_COMMAND = 5,
+    CMD_ERROR_CODE_NONE = 0,
+    CMD_ERROR_CODE_TOO_MUCH_DATA = 1,
+    CMD_ERROR_INVALID_VALUE = 2,
+    CMD_ERROR_KEYBOARD_INACTIVE = 3,
+    CMD_ERROR_UNKNOWN_CMD = 4,
+    CMD_ERROR_UNSUPPORTED_COMMAND = 5,
 };
 
 enum usb_vendor_state {
@@ -75,11 +76,24 @@ enum {
 enum {
     INFO_MAIN_0 = 0,
     INFO_MAIN_1 = 1,
-    INFO_LAYOUT = 2,
+    INFO_LAYOUT_HEADER = 2, // TODO: deprecate this
     INFO_RF = 3,
     INFO_FIRMWARE = 4,
     INFO_ERROR_SYSTEM = 5,
+    INFO_LAYOUT_DATA_0 = 6, // 62
+    INFO_LAYOUT_DATA_1 = 7, // 124
+    INFO_LAYOUT_DATA_2 = 8, // 186
+    INFO_LAYOUT_DATA_3 = 9, // 248
+    INFO_LAYOUT_DATA_4 = 10, // 310
+    INFO_LAYOUT_DATA_5 = 11, // 372
     INFO_UNSUPPORTED = 0xff,
+};
+
+#define INFO_NUM_LAYOUT_DATA_PAGES (INFO_LAYOUT_DATA_5 - INFO_LAYOUT_DATA_0 + 1)
+
+enum {
+    RESET_TYPE_HARDWARE = 0,
+    RESET_TYPE_SOFTWARE = 1,
 };
 
 #define USB_PRINT_TEXT(text) (usb_print((uint8_t*)text, sizeof(text)))

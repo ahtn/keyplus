@@ -172,6 +172,9 @@ bool scanner_debounce_row(
         for ( ; pin_mask != 0 ; col++, pin_mask<<=1 ) {
             if (s_is_debouncing[row][i] & pin_mask) {
                 const uint8_t key_num = get_key_number(row, col);
+                if (key_num == INVALID_KEY_NUMBER) {
+                    continue;
+                }
                 // key debouncing:
                 // check if the key has finished debouncing
                 if (bitmap_get_bit(s_debounce_type, key_num)) {
@@ -238,6 +241,9 @@ bool scanner_debounce_row(
                     continue;
                 }
                 const uint8_t key_num = get_key_number(row, col);
+                if (key_num == INVALID_KEY_NUMBER) {
+                    continue;
+                }
 
                 // If the key press/release trigger time is 0, then that means
                 // we should trigger the key immediately after seeing that it

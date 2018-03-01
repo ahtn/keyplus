@@ -8,6 +8,7 @@
 #include <avr/io.h>
 
 #include "board_config.h"
+#include "xmega_hardware.h"
 
 #define static_delay_us(x) _delay_us(x)
 #define static_delay_ms(x) _delay_ms(x)

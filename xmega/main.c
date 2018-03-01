@@ -64,7 +64,7 @@ void xmega_common_init(void) {
     pin_init();
     settings_load_from_flash();
     aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
-    led_testing_set(0);
+    led_testing_set(0, 0);
     matrix_scanner_init();
 }
 
