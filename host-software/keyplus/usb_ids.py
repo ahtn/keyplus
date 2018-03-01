@@ -39,13 +39,13 @@ KEYPLUS_USB_IDS = {
     (0x6666, 0x1111): USBKeyplusKeyboardInfo(
         vid = 0x6666,
         pid = 0x1111,
-        description = "keyplus keyboard xmega (custom firmware)",
+        description = "keyplus keyboard xmega (prototype)",
     ),
 
     (0x6666, 0x3333): USBKeyplusKeyboardInfo(
         vid = 0x6666,
         pid = 0x3333,
-        description = "keyplus nRF24 wireless keyboard dongle (custom firmware)",
+        description = "keyplus nRF24 wireless keyboard dongle (prototype)",
     ),
 
     (0x1209, 0xBB00): USBKeyplusKeyboardInfo(
@@ -93,3 +93,6 @@ BOOTLOADER_USB_IDS = {
 
 def is_keyplus_usb_id(vendor_id, product_id):
     return (vendor_id, product_id) in KEYPLUS_USB_IDS
+
+def is_bootloader_usb_id(vendor_id, product_id):
+    return (vendor_id, product_id) in BOOTLOADER_USB_IDS

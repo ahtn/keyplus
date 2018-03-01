@@ -544,8 +544,7 @@ def timestamp_to_str(timestamp_raw):
         return '<Unavailable>'
     else:
         try:
-            # return str(datetime.datetime.fromtimestamp(timestamp_raw))
-            return str(timestamp_raw)
+            return str(datetime.datetime.fromtimestamp(timestamp_raw))
         except OSError:
             return str(hex(timestamp_raw))
 

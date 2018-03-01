@@ -92,7 +92,7 @@ class KeyboardDeviceTarget(object):
     needed to instruct the settings generation commands for a specific device
     type.
     """
-    def __init__(self, device_id=None, firmware_info=None):
+    def __init__(self, device_id, firmware_info):
         self.device_id = device_id
         if firmware_info == None:
             self.firmware_info = keyplus.cdata_types.firmware_info_t()
