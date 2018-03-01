@@ -11,8 +11,6 @@ import struct
 import hexdump
 import time
 
-from colorama import Fore
-
 from collections import namedtuple
 from pprint import pprint
 

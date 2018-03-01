@@ -5,19 +5,19 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import intelhex
 import argparse
-import yaml
 import hexdump
 import sys
 import colorama
 from colorama import Fore, Style
 
-import layout.parser
 import datetime
-import sys
+import six
 
 import keyplus
 from keyplus.layout import KeyplusLayout
-from keyplus.device_info import KeyboardDeviceTarget
+from keyplus.device_info import KeyboardDeviceTarget, KeyboardFirmwareInfo
+
+from keyplus.chip_id import get_chip_id_from_name
 
 from keyplus.exceptions import *
 from keyplus.constants import *
@@ -30,6 +30,11 @@ EXIT_MATCH_DEVICE = 2
 EXIT_UNSUPPORTED_FEATURE = 3
 EXIT_BAD_FILE = 4
 EXIT_INSUFFICIENT_SPACE = 5
+
+def print_error(*args):
+    print(Fore.RED + "Error: " + Style.RESET_ALL, file=sys.stderr, end='')
+    print(*args, file=sys.stderr)
+
 
 def print_hid_info(hid_device):
     print("{:x}:{:x} | {} | {} | {}"
@@ -137,13 +142,13 @@ class GenericDeviceCommand(GenericCommand):
             return matching_devices
 
         if num_matches== 0:
-            print("Couldn't find any matching devices.", file=sys.stderr)
+            print_error("Couldn't find any matching devices.")
             exit(EXIT_MATCH_DEVICE)
         elif num_matches == 1:
             return matching_devices[0]
         elif num_matches > 1:
-            print("Error: found {} matching devices, select a specifc device or "
-                  "disconnect the other devices".format(num_matches), file=sys.stderr)
+            print_error("Error: found {} matching devices, select a specifc device or "
+                  "disconnect the other devices".format(num_matches))
             exit(EXIT_MATCH_DEVICE)
 
     def task(self, args):
@@ -192,7 +197,7 @@ class PassthroughCommand(GenericDeviceCommand):
                 kb.set_passthrough_mode(True)
             except KeyplusUSBCommandError as err:
                 if err.error_code == KeyplusUSBCommandError.ERROR_UNSUPPORTED_COMMAND:
-                    print("Target device doesn't support matrix scanning", file=sys.stderr)
+                    print_error("Target device doesn't support matrix scanning")
                     exit(EXIT_UNSUPPORTED_FEATURE)
                 raise err
             passthrough_timeout = 10000
@@ -306,8 +311,9 @@ class HelpCommand(GenericCommand):
             cmd = KeyplusCLI.COMMAND_NAME_MAP[args.command_name]()
             cmd.arg_parser.print_help()
         else:
-            print("Error: Can't find help for unknown command " +
-                  str(args.command_name), file=sys.stderr)
+            print_error(
+                "Error: Can't find help for unknown command " + str(args.command_name)
+            )
 
 
 class ProgramCommand(GenericDeviceCommand):
@@ -350,6 +356,14 @@ class ProgramCommand(GenericDeviceCommand):
         )
 
         self.arg_parser.add_argument(
+            '-F', '--fw-set', dest='firmware_settings',
+            action='append',
+            type=str,
+            # nargs='+',
+            # default=None,
+        )
+
+        self.arg_parser.add_argument(
             '-o', '--outfile', dest='outfile',
             type=str, default=None,
             help='The file written by the -M flag. If no file is given, print'
@@ -361,7 +375,8 @@ class ProgramCommand(GenericDeviceCommand):
             args.layout_file == None and
             args.hex_file == None and
             args.rf_file == None and
-            args.new_id == None
+            args.new_id == None and
+            args.merge_hex == None
         ):
             self.arg_parser.print_help()
             exit(EXIT_NO_ERROR)
@@ -381,24 +396,74 @@ class ProgramCommand(GenericDeviceCommand):
             )
             return kp_layout
         except Exception as err:
-            print(ERROR_COLOR + "Error: " + Style.RESET_ALL + str(err))
+            print_error(str(err))
             exit(EXIT_BAD_FILE)
 
     def task_mereged_hex(self, args):
         if (
             args.new_id == None or
             args.layout_file == None or
-            args.rf_file == None
+            args.rf_file == None or
+            args.hex_file == None
         ):
-            print("Error: To generate a merged hex file, need all settings"
-                    " files.", file=sys.stderr)
+            self.arg_parser.print_help()
+            print_error(
+                "To generate a merged hex file, need the following options: "
+                "layout file (-l), rf file (-r), hex file (-x), and a device id (-I)"
+            )
             exit(EXIT_COMMAND_ERROR)
 
         if len(args.merge_hex) != 3:
-            print("Error: To generate a merged hex file, need to provide "
-                    "[settings_addr, layout_addr, layout_size] as arguments",
-                    file=sys.stderr)
+            print_error("To generate a merged hex file, need to provide "
+                    "[settings_addr, layout_addr, layout_size] as arguments")
             exit(EXIT_COMMAND_ERROR)
+
+        if args.firmware_settings == None:
+            print_error("Must provide firmware settings with -F flag.")
+            exit(EXIT_COMMAND_ERROR)
+
+        known_settings = ['chip_name', 'scan_method']
+        firmware_settings = {}
+        for option in args.firmware_settings:
+            try:
+                expression = option.split('=', maxsplit=1)
+                key = expression[0].lower()
+                value = expression[1].lower()
+                if key not in known_settings:
+                    print_error(
+                        "Unknown firmware option '{}', expected one of: {}".format(
+                            key, known_settings
+                        )
+                    )
+                    exit(EXIT_COMMAND_ERROR)
+                firmware_settings[key] = value
+                known_settings.remove(key)
+            except:
+                print_error(
+                    "Bad format for firmware setting. Expected format is "
+                    "'fw_opt=value'."
+                )
+                exit(EXIT_COMMAND_ERROR)
+
+        # TODO: build device target from command line parameters
+        firmware_info = KeyboardFirmwareInfo()
+        try:
+            firmware_info.chip_id = get_chip_id_from_name(firmware_settings['chip_name'])
+            firmware_info.set_internal_scan_method(firmware_settings['scan_method'])
+        except KeyplusSettingsError as err:
+            print_error(str(err))
+            exit(EXIT_COMMAND_ERROR)
+        except KeyError as err:
+            print_error("firmware setting '{}' must be set".format(err.args[0]))
+            exit(EXIT_COMMAND_ERROR)
+
+        print(vars(firmware_info))
+
+        # firmware_info.chip_id =
+        device_target = KeyboardDeviceTarget(
+            device_id = args.new_id,
+            firmware_info = firmware_info
+        )
 
         kp_layout = self.load_layout_file(args)
 
@@ -411,19 +476,16 @@ class ProgramCommand(GenericDeviceCommand):
         layout_addr = args.merge_hex[1]
         layout_size = args.merge_hex[2]
 
-        # TODO: build device target from command line parameters
-        device_target = KeyboardDeviceTarget()
-        raise Exception("not implement yet")
 
-        settings_data = kp_layout.build_layout_section(device_target)
-        layout_data = kp_layout.build_settings_section(device_target)
+        settings_data = kp_layout.build_settings_section(device_target)
+        layout_data = kp_layout.build_layout_section(device_target)
 
         if len(layout_data) > layout_size:
-            print("Error: layout data to large. Got {} bytes, but only "
+            print_error("layout data to large. Got {} bytes, but only "
                     "{} bytes available".format(
                         len(layout_data),
                         layout_size
-                    ), file=sys.stderr)
+                    ))
             exit(EXIT_INSUFFICIENT_SPACE)
 
         settings_hex = intelhex.IntelHex()
@@ -564,7 +626,7 @@ class KeyplusCLI(object):
         if args.command in command_list:
             command_list[args.command].run()
         else:
-            print('Unrecognized command: {}'.format(args.command), file=sys.stderr)
+            print_error('Unrecognized command: {}'.format(args.command))
             parser.print_help()
             exit(EXIT_COMMAND_ERROR)
         exit(EXIT_NO_ERROR)

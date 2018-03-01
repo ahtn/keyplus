@@ -3,7 +3,7 @@
 # Copyright 2018 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-import keyplus.io_map.chip_id
+import keyplus.chip_id
 
 from keyplus.io_map.common import *
 
@@ -60,7 +60,7 @@ class IoMapperXmega(IoMapper):
 
     def __init__(self, chip_id):
         super(IoMapperXmega, self).__init__()
-        self.chip_info = keyplus.io_map.chip_id.lookup_chip_id(chip_id)
+        self.chip_info = keyplus.chip_id.lookup_chip_id(chip_id)
 
         assert(self.chip_info != None)
         assert(self.chip_info.architecture == 'XMEGA')

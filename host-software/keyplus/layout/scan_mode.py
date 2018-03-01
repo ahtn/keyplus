@@ -65,12 +65,18 @@ class ScanMode(object):
     @property
     def number_columns(self):
         """ The number of columns in the matrix """
-        return len(self.column_pins)
+        if isinstance(self.column_pins, int):
+            return self.column_pins
+        else:
+            return len(self.column_pins)
 
     @property
     def number_rows(self):
         """ The number of rows in the matrix """
-        return len(self.row_pins)
+        if isinstance(self.row_pins, int):
+            return self.row_pins
+        else:
+            return len(self.row_pins)
 
     @property
     def number_direct_wiring_pins(self):
@@ -160,6 +166,18 @@ class ScanMode(object):
         """
         return (value / 255 * 48.0)
 
+    def get_column_pin_numbers(self, io_mapper):
+        if isinstance(self.column_pins, int):
+            return io_mapper.get_default_cols(self.column_pins)
+        else:
+            return io_mapper.get_pin_numbers(self.column_pins)
+
+    def get_row_pin_numbers(self, io_mapper):
+        if isinstance(self.row_pins, int):
+            return io_mapper.get_default_rows(self.row_pins)
+        else:
+            return  io_mapper.get_pin_numbers(self.row_pins)
+
     def generate_scan_plan(self, device_target):
         scan_plan = keyplus.cdata_types.scan_plan_t()
         scan_plan.mode = self.mode
@@ -178,8 +196,8 @@ class ScanMode(object):
 
             # Find the maximum column pin number used
             max_column_pin = 0
-            for pin_name in self.column_pins:
-                pin_number = io_mapper.get_pin_number(pin_name)
+            column_pin_numbers = self.get_column_pin_numbers(io_mapper)
+            for pin_number in column_pin_numbers:
                 max_column_pin = max(max_column_pin, pin_number)
             scan_plan.max_col_pin_num = max_column_pin
         elif self.mode == [PIN_GND, PIN_VCC]:
@@ -253,8 +271,9 @@ class ScanMode(object):
         if self.mode == NO_MATRIX:
             pass
         elif self.mode in [ROW_COL, COL_ROW]:
-            row_pin_numbers = io_mapper.get_pin_numbers(self.row_pins)
-            column_pin_numbers = io_mapper.get_pin_numbers(self.column_pins)
+            row_pin_numbers = self.get_row_pin_numbers(io_mapper)
+            column_pin_numbers = self.get_column_pin_numbers(io_mapper)
+
             pin_mapping.row_pins = row_pin_numbers
             pin_mapping.column_pins = column_pin_numbers
             pin_mapping.key_number_map = self._generate_key_number_map(column_pin_numbers)

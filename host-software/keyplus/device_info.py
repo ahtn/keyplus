@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import struct
 import math
+import six
 
 import keyplus.cdata_types
 from keyplus.utility import crc16_bytes
@@ -251,6 +252,22 @@ class KeyboardFirmwareInfo(keyplus.cdata_types.firmware_info_t):
 
     def get_interal_scan_method_as_str(self):
         return self.internal_scan_method_to_str(self.internal_scan_method)
+
+    def set_internal_scan_method(self, new_value):
+        if isinstance(new_value, six.string_types):
+            self.internal_scan_method = self.internal_scan_method_from_str(new_value)
+        elif isinstance(new_value, int):
+            self.internal_scan_method = new_value
+        else:
+            raise TypeError("Expected a string or integer for scan_method")
+
+    def internal_scan_method_from_str(self, scan_method):
+        if scan_method in INTERNAL_SCAN_METHOD_NAME_TABLE:
+            return INTERNAL_SCAN_METHOD_NAME_TABLE[scan_method]
+        else:
+            raise KeyplusSettingsError(
+                "Unknown internal scan method: {}".format(scan_method)
+            )
 
     def internal_scan_method_to_str(self, method):
         assert_equal(type(method), int)

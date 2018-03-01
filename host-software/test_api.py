@@ -33,7 +33,7 @@ import keyplus.cdata_types
 if __name__ == '__main__':
     colorama.init()
 
-    dev_list = keyplus.find_devices()
+    dev_list = keyplus.find_devices(vid_pid="6666:1111")
     print(dev_list)
     kb = dev_list[0]
     kb.connect()

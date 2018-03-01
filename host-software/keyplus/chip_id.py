@@ -7,6 +7,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from collections import namedtuple
 
+from keyplus.exceptions import KeyplusSettingsError
+
 ATMEL_ID = 0x03eb0000
 NORDIC_ID = 0x19150000
 
@@ -14,6 +16,7 @@ ChipInfo = namedtuple(
     'ChipInfo',
     " ".join([
         "name",
+        "chip_id",
         "architecture",
         "series",
         "flash_size",
@@ -25,6 +28,7 @@ ChipInfo = namedtuple(
 def _create_nrf24(flash_size, name):
     return ChipInfo(
         name = name,
+        chip_id = None, # filled out automatically later
         architecture = "8051",
         series = 'nRF24',
         flash_size = flash_size,
@@ -58,6 +62,7 @@ def _create_xmega(flash_size, series):
         ram_size = 32
     return ChipInfo(
         name = "ATxmega{flash}{series}".format(flash=flash_size, series=series),
+        chip_id = None, # filled out automatically later
         architecture = "XMEGA",
         series = series,
         flash_size = flash_size,
@@ -69,13 +74,29 @@ def get_chip_name_from_id(chip_id):
     if chip_id in CHIP_ID_TABLE:
         return CHIP_ID_TABLE[chip_id].name
     else:
-        return "UnknownChipID({})".format(hex(chip_id))
+        raise KeyplusSettingsError("UnknownChipID({})".format(hex(chip_id)))
 
 def lookup_chip_id(chip_id):
     if chip_id in CHIP_ID_TABLE:
         return CHIP_ID_TABLE[chip_id]
     else:
         return None
+
+def _generate_chip_name_table(table):
+    """
+    Generate a mapping from chip_name -> chip_id.
+    NOTE: names will be converted to lower case when added to the lookup table
+    """
+    result = {}
+    for chip_id in table:
+        result[table[chip_id].name.lower()] = table[chip_id]
+    return result
+
+def get_chip_id_from_name(name):
+    if name in CHIP_NAME_TABLE:
+        return CHIP_NAME_TABLE[name.lower()].chip_id
+    else:
+        raise KeyplusSettingsError("Unknown chip name '{}'".format(name))
 
 CHIP_ID_TABLE = {
     # ATMEL micro controllers
@@ -119,6 +140,12 @@ CHIP_ID_TABLE = {
     NORDIC_ID | 0x0002 : _create_nrf24(16, 'nRF24LU1P-F16'),
     NORDIC_ID | 0x0003 : _create_nrf24(32, 'nRF24LU1P-F32'),
 }
+
+# Add the chip_ids to the objects in the table
+for chip_id in CHIP_ID_TABLE:
+    CHIP_ID_TABLE[chip_id] = CHIP_ID_TABLE[chip_id]._replace(chip_id=chip_id)
+
+CHIP_NAME_TABLE = _generate_chip_name_table(CHIP_ID_TABLE)
 
 if __name__ == '__main__':
     print(CHIP_ID_TABLE)
