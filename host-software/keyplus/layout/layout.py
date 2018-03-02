@@ -42,7 +42,7 @@ class KeyplusLayout(object):
         self.ekc_data = EKCDataTable()
 
     def _from_file_common(self, layout_file=None, rf_file=None, print_warnings=False,
-                           load_method=yaml.load):
+                           load_method=yaml.load, warnings=None):
         basename = os.path.basename(layout_file)
         if layout_file:
             with open(layout_file) as f:
@@ -52,6 +52,9 @@ class KeyplusLayout(object):
                 layout_json_obj,
                 print_warnings = print_warnings,
             )
+        else:
+            parser_info = None
+
         if rf_file:
             rf_basename = os.path.basename(rf_file)
             with open(rf_file) as f:
@@ -64,25 +67,38 @@ class KeyplusLayout(object):
         else:
             rf_parser_info = None
 
-        return self.parse_json(
+        result = self.parse_json(
             parser_info =  parser_info,
             rf_parser_info = rf_parser_info,
         )
 
-    def from_json_file(self, layout_file=None, rf_file=None, print_warnings=False):
+        if warnings != None:
+            # print(warnings, parser_info.warnings, rf_parser_info.warnings)
+            if parser_info != None:
+                warnings.extend(parser_info.warnings)
+            if rf_parser_info != None:
+                warnings.extend(rf_parser_info.warnings)
+
+        return result
+
+    def from_json_file(self, layout_file=None, rf_file=None,
+                       print_warnings=False, warnings=None):
         return self._from_file_common(
             layout_file,
             rf_file,
             print_warnings,
             json.loads,
+            warnings,
         )
 
-    def from_yaml_file(self, layout_file=None, rf_file=None, print_warnings=False):
+    def from_yaml_file(self, layout_file=None, rf_file=None,
+                       print_warnings=False, warnings=None):
         return self._from_file_common(
             layout_file,
             rf_file,
             print_warnings,
             yaml.load,
+            warnings,
         )
 
     def add_device(self, device):

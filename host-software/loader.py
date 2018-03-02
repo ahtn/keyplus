@@ -19,11 +19,13 @@ from PySide.QtCore import Slot, Signal, QAbstractTableModel
 from keyplus.layout import KeyplusLayout
 from keyplus.device_info import KeyboardDeviceTarget, KeyboardFirmwareInfo
 import keyplus.chip_id
+from keyplus import KeyplusKeyboard
 
 # TODO: clean up directory structure
 import sys
 import datetime, time, binascii
 import yaml
+import colorama
 
 import easyhid
 import protocol
@@ -808,6 +810,9 @@ class Loader(QMainWindow):
 
         self.deviceListWidget.updateList()
 
+    def abort_update2(self):
+        self.deviceListWidget.updateList()
+
     @Slot(str)
     def programDeviceHandler(self, device_path):
         target_device = self.tryOpenDevicePath(device_path)
@@ -825,43 +830,45 @@ class Loader(QMainWindow):
             return
 
         if programmingMode == FileSelector.ScopeLayout:
+            target_device.close()
+            kb = self.tryOpenDevicePath2(device_path)
             self.statusBar().showMessage("Started updating layout", timeout=STATUS_BAR_TIMEOUT)
 
             layout_file = self.fileSelectorWidget.getLayoutFile()
 
             if layout_file == '':
                 error_msg_box("No layout file given.")
-                self.abort_update(target_device)
                 return
-            else:
-                pass
 
             try:
-                device_info = protocol.get_device_info(target_device)
-
                 kp_layout = KeyplusLayout()
-                kp_layout.from_yaml_file(layout_file)
-                fw_settings = KeyboardFirmwareInfo()
-                fw_settings.chip_id = keyplus.chip_id.get_chip_id_from_name('atxmega32a4u')
-                fw_settings.set_internal_scan_method('fast_row_col')
-                device_target = KeyboardDeviceTarget(
-                    device_id = device_info.id,
-                    firmware_info = fw_settings,
-                )
+                warnings = []
+                kp_layout.from_yaml_file(layout_file, warnings=warnings)
+                device_target = kb.get_device_target()
                 settings_data = kp_layout.build_settings_section(device_target)
                 layout_data = kp_layout.build_layout_section(device_target)
             except Exception as err:
                 error_msg_box(str(err))
-                self.abort_update(target_device)
                 return
 
+            with kb:
+                kb.update_layout_section(layout_data)
+                kb.update_settings_section(settings_data, keep_rf=True)
+                kb.reset()
 
-            protocol.update_layout_section(target_device, layout_data)
-            protocol.update_settings_section(target_device, settings_data, keep_rf=True)
-            protocol.reset_device(target_device)
+            if warnings != []:
+                error_msg_box(
+                    "The device was programmed successfully, but some "
+                    "non-critical errors were encountered:\n" +
+                    "\n".join([str(warn) for warn in warnings]),
+                    title = "Warnings",
+                )
 
             self.statusBar().showMessage("Finished updating layout", timeout=STATUS_BAR_TIMEOUT)
         elif programmingMode == FileSelector.ScopeDevice:
+            target_device.close()
+            kb = self.tryOpenDevicePath2(device_path)
+
             layout_file = self.fileSelectorWidget.getRFLayoutFile()
             rf_file = self.fileSelectorWidget.getRFFile()
             target_id = self.fileSelectorWidget.getTargetID()
@@ -882,17 +889,10 @@ class Loader(QMainWindow):
                 return
 
             try:
-                device_info = protocol.get_device_info(target_device)
-
                 kp_layout = KeyplusLayout()
-                kp_layout.from_yaml_file(layout_file, rf_file)
-                fw_settings = KeyboardFirmwareInfo()
-                fw_settings.chip_id = keyplus.chip_id.get_chip_id_from_name('atxmega32a4u')
-                fw_settings.set_internal_scan_method('fast_row_col')
-                device_target = KeyboardDeviceTarget(
-                    device_id = device_info.id,
-                    firmware_info = fw_settings,
-                )
+                warnings = []
+                kp_layout.from_yaml_file(layout_file, rf_file, warnings=warnings)
+                device_target = kb.get_device_target()
                 settings_data = kp_layout.build_settings_section(device_target)
                 layout_data = kp_layout.build_layout_section(device_target)
             except Exception as err:
@@ -900,9 +900,18 @@ class Loader(QMainWindow):
                 self.abort_update(target_device)
                 return
 
-            protocol.update_settings_section(target_device, settings_data)
-            protocol.update_layout_section(target_device, layout_data)
-            protocol.reset_device(target_device)
+            with kb:
+                kb.update_settings_section(settings_data)
+                kb.update_layout_section(layout_data)
+                kb.reset()
+
+            if warnings != []:
+                error_msg_box(
+                    "The device was programmed successfully, but some "
+                    "non-critical errors were encountered:\n" +
+                    "\n".join([str(warn) for warn in warnings]),
+                    title = "Warnings",
+                )
 
             self.statusBar().showMessage("Finished updating RF settings", timeout=STATUS_BAR_TIMEOUT)
 
@@ -975,6 +984,18 @@ class Loader(QMainWindow):
             error_msg_box("Error programming the bootloader to hex file: " + str(err))
         finally:
             device.close()
+
+    def tryOpenDevicePath2(self, device_path):
+        try:
+            device = easyhid.Enumeration().find(path=device_path)[0]
+            return KeyplusKeyboard(device)
+        except:
+            msg_box(
+                    description="Failed to open device! Check it is still present "
+                    "and you have permission to write to it.",
+                    title="USB Device write error"
+            )
+            return None
 
     def tryOpenDevicePath(self, device_path):
         try:
@@ -1156,6 +1177,8 @@ The firmware loader accepts *.hex files. For the latest keyplus firmware see her
 
 
 if __name__ == '__main__':
+    from colorama import Fore, Style
+    colorama.init(convert=False)
     app = QApplication(sys.argv)
     ex = Loader()
     sys.exit(app.exec_())

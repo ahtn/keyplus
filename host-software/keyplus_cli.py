@@ -395,7 +395,7 @@ class ProgramCommand(GenericDeviceCommand):
                 print_warnings = True,
             )
             return kp_layout
-        except Exception as err:
+        except KeyplusError as err:
             print_error(str(err))
             exit(EXIT_BAD_FILE)
 
@@ -438,7 +438,7 @@ class ProgramCommand(GenericDeviceCommand):
                     exit(EXIT_COMMAND_ERROR)
                 firmware_settings[key] = value
                 known_settings.remove(key)
-            except:
+            except KeyError:
                 print_error(
                     "Bad format for firmware setting. Expected format is "
                     "'fw_opt=value'."
@@ -456,8 +456,6 @@ class ProgramCommand(GenericDeviceCommand):
         except KeyError as err:
             print_error("firmware setting '{}' must be set".format(err.args[0]))
             exit(EXIT_COMMAND_ERROR)
-
-        print(vars(firmware_info))
 
         # firmware_info.chip_id =
         device_target = KeyboardDeviceTarget(
