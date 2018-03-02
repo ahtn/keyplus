@@ -162,7 +162,7 @@ bit_t send_vendor_report(void) {
         usb_write_in_endpoint(
             EP_NUM_VENDOR,
             g_vendor_report_in.data,
-            g_vendor_report_in.len
+            EP_SIZE_VENDOR
         );
 
         g_vendor_report_in.len = 0;

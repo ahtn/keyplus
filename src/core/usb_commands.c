@@ -301,6 +301,11 @@ void parse_cmd(void) {
     const uint8_t data2 = g_vendor_report_out.data[2];
     const uint8_t data3 = g_vendor_report_out.data[3];
 
+    if (cmd == CMD_NOP) {
+        cmd_ok();
+        return;
+    }
+
     if (s_vendor_state == STATE_WRITE_FLASH && cmd != CMD_WRITE_FLASH) {
         // When writing flash, prevent other commands from executing
         cmd_error(CMD_ERROR_BUSY);

@@ -47,6 +47,8 @@ enum usb_vendor_cmd_t {
     CMD_WRITE_FLASH = 0x0D, // write data to flash
 
     CMD_UNIFYING_PAIR = 0x10, // enter pairing mode
+
+    CMD_NOP = 0xff, // do nothing, can be used to get an acknowledgement from slave
 };
 
 enum {
