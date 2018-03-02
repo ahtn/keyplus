@@ -841,7 +841,7 @@ class Loader(QMainWindow):
                 device_target = kb.get_device_target()
                 settings_data = kp_layout.build_settings_section(device_target)
                 layout_data = kp_layout.build_layout_section(device_target)
-            except KeyplusError as err:
+            except (KeyplusError, IOError) as err:
                 error_msg_box(str(err))
                 return
 
@@ -900,7 +900,7 @@ class Loader(QMainWindow):
                 device_target.device_id = target_id
                 settings_data = kp_layout.build_settings_section(device_target)
                 layout_data = kp_layout.build_layout_section(device_target)
-            except KeyplusError as err:
+            except (KeyplusError, IOError) as err:
                 error_msg_box(str(err))
                 self.abort_update(target_device)
                 return
