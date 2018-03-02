@@ -217,16 +217,26 @@ class KeyplusKeyboard(object):
         self.hid_write(cmd_packet)
 
         if receive:
-            response = self.hid_read()
+            response = self.hid_read(timeout=20)
 
-            packet_type = response[0]
+            packet_type = None
+            if response != None:
+                packet_type = response[0]
 
+            max_retries = 5
             while packet_type != cmd_id and packet_type != CMD_ERROR_CODE: # ignore other packets
-                response = self.hid_read(timeout=1)
+                response = self.hid_read(timeout=20)
                 if response == None:
-                    self.hid_device.write(cmd_packet)
+                    self.hid_write(cmd_packet)
+                    max_retries -= 1
                 else:
                     packet_type = response[0]
+
+                if max_retries == 0:
+                    raise KeyplusProtocolError(
+                        "Device not replying to packets correctly. Packet that failed: {}"
+                        .format(hexdump.dump(bytes(cmd_packet)))
+                    )
 
 
             if response[0] == CMD_ERROR_CODE:
@@ -240,18 +250,18 @@ class KeyplusKeyboard(object):
 
     def hid_write(self, data):
         if DEBUG.usb_cmd_timing:
-            print("{:.3F} usb sent:".format(time.monotonic()))
-            hexdump.hexdump(data)
+            print("{:.3F} usb sent:".format(time.time()))
+            hexdump.hexdump(bytes(data))
         self.hid_device.write(data)
 
     def hid_read(self, timeout=None):
         response = self.hid_device.read(timeout=timeout)
         if DEBUG.usb_cmd_timing:
             if response == None:
-                print("{:.3F} usb recv timeout:".format(time.monotonic()))
+                print("{:.3F} usb recv timeout:".format(time.time()))
             else:
-                print("{:.3F} usb recv:".format(time.monotonic()))
-                hexdump.hexdump(response)
+                print("{:.3F} usb recv:".format(time.time()))
+                hexdump.hexdump(bytes(response))
         return response
 
     def set_passthrough_mode(self, enable):
@@ -566,6 +576,9 @@ class KeyplusKeyboard(object):
             size = SETTINGS_SIZE - SETTINGS_RF_INFO_SIZE
         chunk_list = self._get_chunks(settings_data[0:size], EP_VENDOR_SIZE)
 
+        if DEBUG.usb_cmd:
+            print("Setting chunks:", chunk_list)
+
         for chunk in chunk_list:
             self.hid_write(chunk)
             response = self.hid_read(timeout=3500)
@@ -578,6 +591,7 @@ class KeyplusKeyboard(object):
 
         # TODO: change this to a uint32_t
         num_chunks = struct.pack("<H", len(chunk_list))
+        print(num_chunks)
         self.simple_command(CMD_UPDATE_LAYOUT, num_chunks)
 
         for chunk in chunk_list:

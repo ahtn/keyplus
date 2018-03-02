@@ -10,7 +10,7 @@ from hexdump import hexdump
 from keyplus.layout.parser_info import KeyplusParserInfo
 from keyplus.exceptions import *
 
-import layout.keycodes as keycodes
+import keyplus.keycodes as keycodes
 
 class EKCData(object):
     def __init__(self, data):

@@ -49,9 +49,12 @@ def print_hid_info(hid_device):
 
 def timestamp_to_string(tstamp):
     timestamp_str = "<Unavailable>"
-    if tstamp != 0:
-        build_date = datetime.datetime.fromtimestamp(tstamp)
-        timestamp_str = str(build_date)
+    try:
+        if tstamp != 0:
+            build_date = datetime.datetime.fromtimestamp(tstamp)
+            timestamp_str = str(build_date)
+    except OverflowError:
+        pass
     return timestamp_str
 
 def print_device_info(device_info, indent="  "):

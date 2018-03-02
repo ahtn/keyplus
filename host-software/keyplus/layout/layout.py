@@ -328,6 +328,7 @@ class KeyplusLayout(object):
         settings_header = device.build_settings_header(device_target)
         settings_header.timestamp = list(struct.pack("<Q", int(time.time())))
         settings_header.default_report_mode = self.settings['default_report_mode']
+        print(vars(settings_header))
         settings_header.crc = settings_header.compute_crc()
 
         settings.header = settings_header
@@ -339,7 +340,7 @@ class KeyplusLayout(object):
         else:
             settings.rf = self.rf_settings.generate_rf_settings()
 
-        return settings.pack()
+        return settings.to_bytes()
 
     def build_layout_section(self, device_target):
         device = self.get_device(device_target.device_id)
@@ -347,7 +348,7 @@ class KeyplusLayout(object):
 
         pin_map = device.scan_mode.generate_pin_mapping(device_target)
 
-        result += pin_map.pack()
+        result += pin_map.to_bytes()
         result += self.ekc_data.to_bytes()
         result += self._build_layouts()
 

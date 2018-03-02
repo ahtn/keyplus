@@ -3,6 +3,8 @@
 # Copyright 2017 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 from layout.common import ParseKeycodeError
 
 KC_TYPE_L_MODKEY = 0b00

@@ -20,18 +20,21 @@ from keyplus.layout import KeyplusLayout
 from keyplus.device_info import KeyboardDeviceTarget, KeyboardFirmwareInfo
 import keyplus.chip_id
 from keyplus import KeyplusKeyboard
+from keyplus.exceptions import *
 
 # TODO: clean up directory structure
 import sys
+import traceback
 import datetime, time, binascii
 import yaml
 import colorama
+import hexdump
 
 import easyhid
 import protocol
 import layout.parser
 import io_map.chip_id as chip_id
-import xusb_boot
+import boot as xusb_boot
 
 STATUS_BAR_TIMEOUT=4500
 
@@ -788,20 +791,6 @@ class Loader(QMainWindow):
         self.setWindowTitle('keyplus layout and firmware loader')
         self.show()
 
-    def process_layout(self, layout_json_obj, layout_file, device_id):
-        try:
-            settings_gen = layout.parser.SettingsGenerator(layout_json_obj, None)
-            layout_data = settings_gen.gen_layout_section(device_id)
-            settings_data = settings_gen.gen_settings_section(device_id)
-            return layout_data, settings_data
-        except (layout.parser.ParseError, layout.parser.ParseKeycodeError) as err:
-            error_msg_box(str(err))
-            self.statusBar().showMessage(
-                'Error parsing "{}"'.format(layout_file),
-                timeout=STATUS_BAR_TIMEOUT*2
-            )
-            return None, None
-
     def abort_update(self, target_device):
         try:
             target_device.close()
@@ -832,6 +821,11 @@ class Loader(QMainWindow):
         if programmingMode == FileSelector.ScopeLayout:
             target_device.close()
             kb = self.tryOpenDevicePath2(device_path)
+
+            if kb == None:
+                return
+
+
             self.statusBar().showMessage("Started updating layout", timeout=STATUS_BAR_TIMEOUT)
 
             layout_file = self.fileSelectorWidget.getLayoutFile()
@@ -847,13 +841,21 @@ class Loader(QMainWindow):
                 device_target = kb.get_device_target()
                 settings_data = kp_layout.build_settings_section(device_target)
                 layout_data = kp_layout.build_layout_section(device_target)
-            except Exception as err:
+            except KeyplusError as err:
                 error_msg_box(str(err))
                 return
 
+            print('#'*80)
+            print("settings_data:", type(settings_data), settings_data)
+            print('#'*80)
+            print("layout_data:", type(layout_data), layout_data)
+            print('#'*80)
+            hexdump.hexdump(bytes(settings_data))
+            hexdump.hexdump(bytes(layout_data))
+
             with kb:
-                kb.update_layout_section(layout_data)
                 kb.update_settings_section(settings_data, keep_rf=True)
+                kb.update_layout_section(layout_data)
                 kb.reset()
 
             if warnings != []:
@@ -868,6 +870,8 @@ class Loader(QMainWindow):
         elif programmingMode == FileSelector.ScopeDevice:
             target_device.close()
             kb = self.tryOpenDevicePath2(device_path)
+            if kb == None:
+                return
 
             layout_file = self.fileSelectorWidget.getRFLayoutFile()
             rf_file = self.fileSelectorWidget.getRFFile()
@@ -893,16 +897,17 @@ class Loader(QMainWindow):
                 warnings = []
                 kp_layout.from_yaml_file(layout_file, rf_file, warnings=warnings)
                 device_target = kb.get_device_target()
+                device_target.device_id = target_id
                 settings_data = kp_layout.build_settings_section(device_target)
                 layout_data = kp_layout.build_layout_section(device_target)
-            except Exception as err:
+            except KeyplusError as err:
                 error_msg_box(str(err))
                 self.abort_update(target_device)
                 return
 
             with kb:
                 kb.update_settings_section(settings_data)
-                kb.update_layout_section(layout_data)
+                kb.update_layout_section(layout_data, keep_rf=False)
                 kb.reset()
 
             if warnings != []:
@@ -987,14 +992,17 @@ class Loader(QMainWindow):
 
     def tryOpenDevicePath2(self, device_path):
         try:
+            print(device_path)
             device = easyhid.Enumeration().find(path=device_path)[0]
             return KeyplusKeyboard(device)
-        except:
+        except Exception as err:
             msg_box(
                     description="Failed to open device! Check it is still present "
-                    "and you have permission to write to it.",
+                    "and you have permission to write to it. ErrorMsg: {}"
+                    .format(err),
                     title="USB Device write error"
             )
+            traceback.print_exc(file=sys.stderr)
             return None
 
     def tryOpenDevicePath(self, device_path):
