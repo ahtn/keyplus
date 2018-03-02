@@ -7,10 +7,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import six
 import sys
-from colorama import Style
 
 from keyplus.exceptions import *
 from keyplus.debug import DEBUG
+from colorama import Style
 
 class Warning(object):
     pass
@@ -21,9 +21,7 @@ class UnusedValueWarning(Warning):
         self.values = values
 
     def __str__(self):
-        return (
-            WARN_COLOR + "Warning: " + Style.RESET_ALL +
-            "in {}, the following fields were ignored: {}".format(
+        return ("in {}, the following fields were ignored: {}".format(
                 self.path_name, ', '.join(self.values)
             )
         )
@@ -97,7 +95,10 @@ class KeyplusParserInfo(object):
         # If this is debug code, print the warnings
         if self.print_warnings:
             for warn in self.warnings:
-                print(warn, file=sys.stderr)
+                print(
+                    WARN_COLOR + "Warning: " + Style.RESET_ALL + str(warn),
+                    file=sys.stderr
+                )
             # Clear the warnings now that we have printed them
             self.warnings = []
 

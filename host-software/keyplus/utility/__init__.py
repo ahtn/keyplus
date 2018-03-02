@@ -12,3 +12,10 @@ from keyplus.utility.round_keys import gen_final_round_key
 
 def inverse_map(mapping):
     return dict([v, k] for (k, v) in six.iteritems(mapping))
+
+def uint24_le(data):
+    return [
+        (data >>  0) & 0xff,
+        (data >>  8) & 0xff,
+        (data >> 16) & 0xff,
+    ]

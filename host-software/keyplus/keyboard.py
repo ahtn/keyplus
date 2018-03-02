@@ -11,21 +11,21 @@ import struct
 import hexdump
 import time
 
+import keyplus.exceptions
+import keyplus.io_map
+
 from collections import namedtuple
 from pprint import pprint
 
 from keyplus.constants import *
 from keyplus.usb_ids import is_keyplus_usb_id
 from keyplus.error_table import KeyplusErrorTable
-import keyplus.exceptions
 from keyplus.exceptions import *
 from keyplus.device_info import *
-import keyplus.io_map
+from keyplus.utility import uint24_le
 
 from keyplus.layout import *
-
 from keyplus.debug import DEBUG
-
 from keyplus.cdata_types import layout_settings_t
 
 def _get_similar_serial_number(dev_list, serial_num):
@@ -203,6 +203,7 @@ class KeyplusKeyboard(object):
             HIDException, KeyplusProtocolError
         """
         cmd_packet = bytearray(EP_VENDOR_SIZE)
+        nop_packet = bytearray([0xff]*EP_VENDOR_SIZE)
         cmd_packet[0] = cmd_id
 
         # Optional data component
@@ -217,16 +218,39 @@ class KeyplusKeyboard(object):
         self.hid_write(cmd_packet)
 
         if receive:
-            response = self.hid_read()
+            response = self.hid_read(timeout=1000)
 
-            packet_type = response[0]
+            packet_type = None
+            if response != None:
+                packet_type = response[0]
 
-            while packet_type != cmd_id and packet_type != CMD_ERROR_CODE: # ignore other packets
-                response = self.hid_read(timeout=1)
-                if response == None:
-                    self.hid_device.write(cmd_packet)
+            retries_left = 5
+            while packet_type != cmd_id: # ignore other packets
+                if packet_type == CMD_ERROR_CODE and response != None:
+                    # If we got a error code packet, then break out of this
+                    # loop (except for CMD_ERROR_BUSY).
+                    error_code = response[1]
+                    if error_code != CMD_ERROR_BUSY:
+                        break
+
+                response = self.hid_read(timeout=1000)
+                if response == None and retries_left > 3:
+                    # self.hid_write(nop_packet)
+                    pass
+                elif response == None and retries_left == 3:
+                    self.hid_write(cmd_packet)
+                elif response == None and retries_left < 3:
+                    pass
+                    # self.hid_write(nop_packet)
                 else:
                     packet_type = response[0]
+
+                retries_left -= 1
+                if retries_left == 0:
+                    raise KeyplusProtocolError(
+                        "Device not replying to packets correctly. Packet that failed: {}"
+                        .format(hexdump.dump(bytes(cmd_packet)))
+                    )
 
 
             if response[0] == CMD_ERROR_CODE:
@@ -239,19 +263,21 @@ class KeyplusKeyboard(object):
             return None
 
     def hid_write(self, data):
+        if len(data) != EP_VENDOR_SIZE:
+            raise KeyplusProtocolError("HID write packets must be 64 bytes")
         if DEBUG.usb_cmd_timing:
-            print("{:.3F} usb sent:".format(time.monotonic()))
-            hexdump.hexdump(data)
+            print("{:.3F} usb sent:".format(time.time()))
+            hexdump.hexdump(bytes(data))
         self.hid_device.write(data)
 
     def hid_read(self, timeout=None):
         response = self.hid_device.read(timeout=timeout)
         if DEBUG.usb_cmd_timing:
             if response == None:
-                print("{:.3F} usb recv timeout:".format(time.monotonic()))
+                print("{:.3F} usb recv timeout:".format(time.time()))
             else:
-                print("{:.3F} usb recv:".format(time.monotonic()))
-                hexdump.hexdump(response)
+                print("{:.3F} usb recv:".format(time.time()))
+                hexdump.hexdump(bytes(response))
         return response
 
     def set_passthrough_mode(self, enable):
@@ -552,6 +578,38 @@ class KeyplusKeyboard(object):
                 "USB protocol error: {}".format(err_code)
             )
 
+    def create_flash_write_packet(self, write_pos, write_size, data):
+        # CMD_WRITE_FLASH format:
+        # byte0:    this command name
+        # byte1-3:  24-bit write address
+        # byte4:    number of bytes to write in this packet.
+        # byte5-63: bytes to be written to flash
+        result = bytearray()
+        result.append(CMD_WRITE_FLASH)
+        result.extend(uint24_le(write_pos))
+        result.append(write_size)
+        result.extend(data)
+        return result
+
+    def _write_flash_chunks(self, chunk_list, length):
+        address_pos = 0
+        length_remaining = length
+        for chunk in chunk_list:
+            packet = self.create_flash_write_packet(
+                address_pos,
+                min(FLASH_WRITE_PACKET_LEN, length_remaining),
+                chunk,
+            )
+            self.hid_write(packet)
+            response = self.hid_read(timeout=3500)
+            self._check_cmd_response(response)
+            address_pos += FLASH_WRITE_PACKET_LEN;
+            length_remaining -= FLASH_WRITE_PACKET_LEN
+        # Writing to address 0xffffff ends flash write.
+        finish_packet = bytearray([0xff]*64)
+        finish_packet[0] = CMD_WRITE_FLASH
+        self.hid_write(finish_packet);
+
     def update_settings_section(self, settings_data, keep_rf=False):
         assert(isinstance(keep_rf, bool))
         keep_rf = int(keep_rf)
@@ -559,31 +617,43 @@ class KeyplusKeyboard(object):
         self._rf_info_dirty = True
         self._layout_info_dirty = True
 
-        self.simple_command(CMD_UPDATE_SETTINGS, [keep_rf])
-
         size = SETTINGS_SIZE
         if (keep_rf):
             size = SETTINGS_SIZE - SETTINGS_RF_INFO_SIZE
-        chunk_list = self._get_chunks(settings_data[0:size], EP_VENDOR_SIZE)
+        chunk_list = self._get_chunks(settings_data[0:size], FLASH_WRITE_PACKET_LEN)
 
-        for chunk in chunk_list:
-            self.hid_write(chunk)
-            response = self.hid_read(timeout=3500)
-            self._check_cmd_response(response)
+        self.simple_command(CMD_UPDATE_SETTINGS, [keep_rf])
+
+        if DEBUG.usb_cmd:
+            print("Setting chunks:", chunk_list)
+
+        self._write_flash_chunks(chunk_list, size)
+
 
     def update_layout_section(self, layout_data):
-        chunk_list = self._get_chunks(layout_data, EP_VENDOR_SIZE)
-
         self._layout_info_dirty = True
 
         # TODO: change this to a uint32_t
-        num_chunks = struct.pack("<H", len(chunk_list))
-        self.simple_command(CMD_UPDATE_LAYOUT, num_chunks)
+        start_address = 0
+        end_address = len(layout_data)
 
-        for chunk in chunk_list:
-            self.hid_write(chunk)
-            response = self.hid_read(timeout=3500)
-            self._check_cmd_response(response)
+        if end_address > self.firmware_info.layout_flash_size:
+            raise KeyplusSettingsError(
+                "Not enough storage space for layout settings. The device has "
+                "{} bytes of storage space. The given layout requires {} bytes."
+                .format(self.firmware_info.layout_flash_size, end_address)
+            )
+
+        flash_write_info = struct.pack(
+            "<L L",
+            start_address,
+            end_address,
+        )
+        self.simple_command(CMD_UPDATE_LAYOUT, flash_write_info)
+
+        chunk_list = self._get_chunks(layout_data, FLASH_WRITE_PACKET_LEN)
+
+        self._write_flash_chunks(chunk_list, end_address)
 
 
 if __name__ == '__main__':

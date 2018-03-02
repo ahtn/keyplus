@@ -24,7 +24,7 @@ class KeyboardPinMapping(object):
         self.key_number_map = None
         self.io_mapper = None
 
-    def pack(self):
+    def to_bytes(self):
         result = bytearray(0)
 
         if self.internal_scan_method == MATRIX_SCANNER_INTERNAL_NONE:
@@ -110,11 +110,13 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
         return self.crc == self.compute_crc()
 
     def compute_crc(self):
-        return crc16_bytes(self.pack()[:-2])
+        bytes_ = bytearray(self.to_bytes())[:-2]
+        print(bytes_, type(bytes_))
+        return crc16_bytes(bytes_)
 
     def is_empty(self):
         # check if the flash has been initialized
-        return sum([1 for byte in self.pack() if byte != 0xff]) == 0
+        return sum([1 for byte in self.to_bytes() if byte != 0xff]) == 0
 
     @property
     def timestamp_raw(self):
@@ -122,7 +124,12 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
 
     @timestamp_raw.setter
     def timestamp_raw(self, value):
-        self.timestamp = struct.pack("<Q", value)
+        bytes_ = struct.pack("<Q", value)
+        if six.PY2:
+            self.timestamp = [ord(c) for c in bytes_]
+        elif six.PY3:
+            self.timestamp = [int(c) for c in bytes_]
+
 
     def get_name_str(self):
         if self.is_empty():
@@ -245,7 +252,7 @@ class KeyboardFirmwareInfo(keyplus.cdata_types.firmware_info_t):
 
     @timestamp_raw.setter
     def timestamp_raw(self, value):
-        self.timestamp = struct.pack("<Q", value)
+        self.timestamp = struct.to_bytes("<Q", value)
 
     def get_interal_scan_method(self):
         return self.internal_scan_method

@@ -9,6 +9,10 @@ import cstruct
 from cstruct import define, typedef, CStruct
 from keyplus.constants import *
 
+class CStructWithBytes(CStruct):
+    def to_bytes(self):
+        return bytearray(self.pack())
+
 typedef('uint8', 'uint8_t')
 typedef('uint16', 'uint16_t')
 typedef('uint32', 'uint32_t')
@@ -72,7 +76,7 @@ def make_bit_field_variables(class_obj, field_list):
         )
 
 
-class scan_plan_t(CStruct):
+class scan_plan_t(CStructWithBytes):
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __struct__ = """
         uint8_t mode;
@@ -89,7 +93,7 @@ class scan_plan_t(CStruct):
     """
 
 
-class settings_header_t(CStruct):
+class settings_header_t(CStructWithBytes):
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __struct__ = """
     uint8_t device_id;
@@ -104,7 +108,7 @@ class settings_header_t(CStruct):
     """
 
 
-class feature_ctrl_t(CStruct):
+class feature_ctrl_t(CStructWithBytes):
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __struct__ = """
     uint8_t feature_ctrl;
@@ -120,14 +124,14 @@ for class_name in [settings_header_t, feature_ctrl_t]:
     ])
 
 
-class keyboard_info_t(CStruct):
+class keyboard_info_t(CStructWithBytes):
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __struct__ = """
     uint8_t matrix_size;
     uint8_t layer_count;
     """
 
-class device_info_t(CStruct):
+class device_info_t(CStructWithBytes):
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __struct__ = """
     uint8_t layout_id;
@@ -135,7 +139,7 @@ class device_info_t(CStruct):
     uint8_t matrix_size;
     """
 
-class layout_settings_header_t(CStruct):
+class layout_settings_header_t(CStructWithBytes):
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __struct__ = """
         uint8_t number_layouts;
@@ -143,7 +147,7 @@ class layout_settings_header_t(CStruct):
         uint8_t _reserved[30]; /* 32 */
     """
 
-class layout_settings_t(CStruct):
+class layout_settings_t(CStructWithBytes):
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __struct__ = """
         uint8_t number_layouts;
@@ -153,7 +157,7 @@ class layout_settings_t(CStruct):
         struct device_info_t devices[MAX_NUM_DEVICES]; /* 353 bytes */
     """
 
-class firmware_info_t(CStruct):
+class firmware_info_t(CStructWithBytes):
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __struct__ = """
     uint8_t version_major;
@@ -204,7 +208,7 @@ make_bit_field_variables(firmware_info_t, [
     ("connectivity" , "has_bluetooth" , SUPPORT_BT)       ,
 ])
 
-class rf_settings_t(CStruct):
+class rf_settings_t(CStructWithBytes):
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __struct__ = """
     uint8_t pipe_addr_0[NRF_ADDR_LEN];
@@ -222,7 +226,7 @@ class rf_settings_t(CStruct):
     uint8_t dkey[AES_KEY_LEN];
     """
 
-class settings_t(CStruct): #
+class settings_t(CStructWithBytes): #
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __struct__ = """
     struct settings_header_t header; /* size == 96 */

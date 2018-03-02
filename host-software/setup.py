@@ -5,10 +5,15 @@
 
 from setuptools import setup
 import os
-import six
 
-with open(os.path.join("keyplus", "version.py")) as f:
-    six.exec_(f.read())
+# Load the version number
+try: # python3
+    fields = {}
+    with open(os.path.join("keyplus", "version.py")) as f:
+        exec(f.read(), fields)
+    __version__ = fields['__version__']
+except: # python2
+    execfile(os.path.join("keyplus", "version.py"))
 
 setup(
     name = 'keyplus',

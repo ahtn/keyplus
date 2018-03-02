@@ -15,6 +15,7 @@
 #include "core/led.h"
 #include "core/matrix_interpret.h"
 #include "core/matrix_scanner.h"
+#include "core/timer.h"
 #include "core/unifying.h"
 
 #include "usb_reports/keyboard_report.h"
@@ -36,10 +37,9 @@ XRAM static uint8_t s_usb_commands_in_progress;
 XRAM struct {
     // TODO: clean up most of the code related to this
     // TODO: must change to 16bit, need to check flashing software first
-    uint8_t num_packets;
-    uint8_t counter;
-    uint16_t addr;
-} flash_layout;
+    flash_ptr_t offset_into_flash;
+    flash_ptr_t max_addr;
+} flash_cmd_info;
 
 static uint8_t usb_commands_is_locked(void) {
     return s_usb_commands_in_progress;
@@ -299,6 +299,14 @@ void parse_cmd(void) {
     const uint8_t cmd = g_vendor_report_out.data[0];
     const uint8_t data1 = g_vendor_report_out.data[1];
     const uint8_t data2 = g_vendor_report_out.data[2];
+    const uint8_t data3 = g_vendor_report_out.data[3];
+
+    if (s_vendor_state == STATE_WRITE_FLASH && cmd != CMD_WRITE_FLASH) {
+        // When writing flash, prevent other commands from executing
+        cmd_error(CMD_ERROR_BUSY);
+        return;
+    }
+
     debug_toggle(1);
     switch (cmd) {
         case CMD_BOOTLOADER: {
@@ -333,30 +341,42 @@ void parse_cmd(void) {
         } break;
 #endif
 
-        // TODO: before using this command on XMEGA, need to fix flash locations
+        /// CMD_UPDATE_SETTINGS format:
+        /// byte0: this command name
+        /// byte1: update type
         case CMD_UPDATE_SETTINGS: {
-            uint8_t update_type = data1;
+            const uint8_t update_type = data1;
 
-            flash_layout.counter = 0;
-            flash_layout.addr = SETTINGS_ADDR;
+            // load boundaries for CMD_WRITE_FLASH
+            {
+                flash_cmd_info.offset_into_flash = SETTINGS_ADDR;
 
-            if (update_type == SETTING_UPDATE_ALL) {
-                flash_layout.num_packets = (SETTINGS_SIZE) / EP_SIZE_VENDOR;
-            } else if (update_type == SETTING_UPDATE_KEEP_RF) {
-                flash_layout.num_packets = (SETTINGS_SIZE - SETTINGS_RF_INFO_SIZE) / EP_SIZE_VENDOR;
-            } else {
-                cmd_error(CMD_ERROR_INVALID_VALUE);
-                return;
+                if (update_type == SETTING_UPDATE_ALL) {
+                    // The entire settings section will be update
+                    flash_cmd_info.max_addr = SETTINGS_SIZE;
+                } else if (update_type == SETTING_UPDATE_KEEP_RF) {
+                    // The RF settings will not be update and the current settings
+                    // will be kept. This allows the software to update the settings
+                    // without needing to know the encryption key.
+                    flash_cmd_info.max_addr = (SETTINGS_SIZE - SETTINGS_RF_INFO_SIZE);
+                } else {
+                    cmd_error(CMD_ERROR_INVALID_VALUE);
+                    return;
+                }
             }
 
-            // TODO: instead of using this global, just run everything in a loop?
-            g_input_disabled = true;
-
-            lock_usb_commands();
-            s_vendor_state = STATE_WRITE_FLASH;
+            {
+                // TODO: instead of using this global, just run everything in a loop?
+                g_input_disabled = true;
+                s_vendor_state = STATE_WRITE_FLASH;
+                lock_usb_commands();
+            }
 
             erase_page_range(SETTINGS_PAGE_NUM, SETTINGS_PAGE_COUNT);
 
+            // If the update types keeps the RF info, we need to write it back.
+            // The current RF info should already be held in RAM, so we can
+            // just write it back to flash now.
             if (update_type == SETTING_UPDATE_KEEP_RF) {
                 flash_modify_enable();
                 flash_write(
@@ -369,26 +389,92 @@ void parse_cmd(void) {
 
             cmd_ok();
         } break;
-        case CMD_UPDATE_LAYOUT: {
-            uint16_t number_pages;
-            flash_layout.num_packets = data1;
-            flash_layout.counter = 0;
-            flash_layout.addr = LAYOUT_ADDR;
 
-            number_pages = (flash_layout.num_packets+(CHUNKS_PER_PAGE-1))/CHUNKS_PER_PAGE;
-            if (number_pages > LAYOUT_PAGE_COUNT) {
+        /// CMD_UPDATE_LAYOUT format:
+        /// byte0:   this command name
+        /// byte1-4: start address for flash erase
+        /// byte5-8: end address for flash erase
+        case CMD_UPDATE_LAYOUT: {
+            uint32_t start = *((uint32_t*)g_vendor_report_out.data+1);
+            uint32_t end = *((uint32_t*)g_vendor_report_out.data+5);
+
+            if (end >= LAYOUT_SIZE) {
                 cmd_error(CMD_ERROR_CODE_TOO_MUCH_DATA);
                 return;
             }
 
-            // TODO: instead of using this global, just run everything in a loop?
-            g_input_disabled = true;
+            // load boundaries for CMD_WRITE_FLASH
+            {
+                flash_cmd_info.offset_into_flash = LAYOUT_ADDR;
+                flash_cmd_info.max_addr = LAYOUT_SIZE;
+            }
 
-            lock_usb_commands();
-            s_vendor_state = STATE_WRITE_FLASH;
+            {
+                // TODO: instead of using this global, just run everything in a loop?
+                g_input_disabled = true;
+                lock_usb_commands();
+                s_vendor_state = STATE_WRITE_FLASH;
+            }
 
-            // debug_toggle(3);
-            erase_page_range(LAYOUT_PAGE_NUM, number_pages);
+            // Erase the required flash pages
+            {
+                // Start is only an offset from the start of the layout section
+                start += LAYOUT_ADDR;
+                start = start / PAGE_SIZE; // star is now the start page number
+                // Now we convert them to page numbers
+                end = end / PAGE_SIZE; // end is now the number of pages
+                erase_page_range(start, end);
+            }
+
+            cmd_ok();
+        } break;
+
+        /// CMD_WRITE_FLASH format:
+        /// byte0:    this command name
+        /// byte1-3:  24-bit write address
+        /// byte4:    number of bytes to write in this packet.
+        /// byte5-63: bytes to be written to flash
+        case CMD_WRITE_FLASH: {
+            const uint8_t size = g_vendor_report_out.data[4];
+            if ((data1 & data2 & data3) == 0xff) {
+                // If data1, data2, data3 are all 0xff, then the host is
+                // signaling that is finished writing to flash.
+                s_vendor_state = STATE_WAIT_CMD;
+                g_input_disabled = false;
+                cmd_ok();
+                return;
+            }
+
+            {
+                const uint32_t offset = (
+                    ((uint32_t)data1 << 0) |
+                    ((uint32_t)data2 << 8) |
+                    ((uint32_t)data3 << 16)
+                );
+
+                if (
+                    (size > EP_SIZE_VENDOR-5) ||
+                    (offset+size > flash_cmd_info.max_addr)
+                ) {
+                    cmd_error(CMD_ERROR_CODE_TOO_MUCH_DATA);
+                    return;
+                }
+
+                // at this stage all the necessary pages have been erased, so all we
+                // need to do is write to them.
+                flash_modify_enable();
+                flash_write(
+                    g_vendor_report_out.data+5, // data to write
+                    flash_cmd_info.offset_into_flash + offset,
+                    size
+                );
+                flash_modify_disable();
+            }
+
+            g_vendor_report_out.len = 0;
+
+            // zero report in case it contained encryption key data, etc.
+            memset(g_vendor_report_out.data, 0, EP_SIZE_VENDOR);
 
             cmd_ok();
         } break;
@@ -420,37 +506,5 @@ void handle_vendor_out_reports(void) {
         return;
     }
 
-    if (s_vendor_state == STATE_WAIT_CMD) {
-        parse_cmd();
-    } else if (s_vendor_state == STATE_WRITE_FLASH) {
-        /* const uint8_t page = LAYOUT_PAGE_NUM + flash_layout.counter/CHUNKS_PER_PAGE; */
-        const uint16_t addr = flash_layout.addr + (uint16_t)flash_layout.counter * EP_SIZE_VENDOR;
-        const uint8_t size = g_vendor_report_out.len;
-
-        debug_toggle(2);
-        wdt_kick();
-
-        // at this stage all the necessary pages have been erased, so all we
-        // need to do is write to them.
-        flash_modify_enable();
-        flash_write(g_vendor_report_out.data, addr, size);
-        flash_modify_disable();
-
-        g_vendor_report_out.len = 0;
-
-        // zero report incase it contained encryption key data, etc.
-        memset(g_vendor_report_out.data, 0, EP_SIZE_VENDOR);
-
-        cmd_ok();
-
-        flash_layout.counter += 1;
-        if (flash_layout.counter >= flash_layout.num_packets) {
-            debug_toggle(3);
-            s_vendor_state = STATE_WAIT_CMD;
-            g_input_disabled = false;
-            unlock_usb_commands();
-            // dynamic_delay_ms(100);
-            // cmd_reset();
-        }
-    }
+    parse_cmd();
 }
