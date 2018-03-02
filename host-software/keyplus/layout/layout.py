@@ -326,7 +326,7 @@ class KeyplusLayout(object):
         settings = settings_t()
 
         settings_header = device.build_settings_header(device_target)
-        settings_header.timestamp = list(struct.pack("<Q", int(time.time())))
+        settings_header.timestamp_raw = int(time.time())
         settings_header.default_report_mode = self.settings['default_report_mode']
         print(vars(settings_header))
         settings_header.crc = settings_header.compute_crc()

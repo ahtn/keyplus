@@ -124,7 +124,12 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
 
     @timestamp_raw.setter
     def timestamp_raw(self, value):
-        self.timestamp = struct.to_bytes("<Q", value)
+        bytes_ = struct.pack("<Q", value)
+        if six.PY2:
+            self.timestamp = [ord(c) for c in bytes_]
+        elif six.PY3:
+            self.timestamp = [int(c) for c in bytes_]
+
 
     def get_name_str(self):
         if self.is_empty():

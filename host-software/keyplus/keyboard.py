@@ -203,6 +203,7 @@ class KeyplusKeyboard(object):
             HIDException, KeyplusProtocolError
         """
         cmd_packet = bytearray(EP_VENDOR_SIZE)
+        nop_packet = bytearray([0xff]*EP_VENDOR_SIZE)
         cmd_packet[0] = cmd_id
 
         # Optional data component
@@ -217,13 +218,13 @@ class KeyplusKeyboard(object):
         self.hid_write(cmd_packet)
 
         if receive:
-            response = self.hid_read(timeout=20)
+            response = self.hid_read(timeout=1000)
 
             packet_type = None
             if response != None:
                 packet_type = response[0]
 
-            max_retries = 5
+            retries_left = 5
             while packet_type != cmd_id: # ignore other packets
                 if packet_type == CMD_ERROR_CODE and response != None:
                     # If we got a error code packet, then break out of this
@@ -232,14 +233,20 @@ class KeyplusKeyboard(object):
                     if error_code != CMD_ERROR_BUSY:
                         break
 
-                response = self.hid_read(timeout=20)
-                if response == None:
+                response = self.hid_read(timeout=1000)
+                if response == None and retries_left > 3:
+                    # self.hid_write(nop_packet)
+                    pass
+                elif response == None and retries_left == 3:
                     self.hid_write(cmd_packet)
+                elif response == None and retries_left < 3:
+                    pass
+                    # self.hid_write(nop_packet)
                 else:
                     packet_type = response[0]
 
-                max_retries -= 1
-                if max_retries == 0:
+                retries_left -= 1
+                if retries_left == 0:
                     raise KeyplusProtocolError(
                         "Device not replying to packets correctly. Packet that failed: {}"
                         .format(hexdump.dump(bytes(cmd_packet)))
@@ -256,6 +263,8 @@ class KeyplusKeyboard(object):
             return None
 
     def hid_write(self, data):
+        if len(data) != EP_VENDOR_SIZE:
+            raise KeyplusProtocolError("HID write packets must be 64 bytes")
         if DEBUG.usb_cmd_timing:
             print("{:.3F} usb sent:".format(time.time()))
             hexdump.hexdump(bytes(data))
