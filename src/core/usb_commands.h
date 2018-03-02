@@ -44,6 +44,7 @@ enum usb_vendor_cmd_t {
     CMD_UPDATE_SETTINGS = 0x0A,
     CMD_UPDATE_LAYOUT = 0x0B, // flash keyboard layout
     CMD_READ_LAYOUT = 0x0C, // read keyboard layout
+    CMD_WRITE_FLASH = 0x0D, // write data to flash
 
     CMD_UNIFYING_PAIR = 0x10, // enter pairing mode
 };
@@ -55,6 +56,7 @@ enum {
     CMD_ERROR_KEYBOARD_INACTIVE = 3,
     CMD_ERROR_UNKNOWN_CMD = 4,
     CMD_ERROR_UNSUPPORTED_COMMAND = 5,
+    CMD_ERROR_BUSY = 6,
 };
 
 enum usb_vendor_state {
@@ -63,6 +65,7 @@ enum usb_vendor_state {
     STATE_WRITE_FLASH,
 };
 
+/// Settings update type
 enum {
     SETTING_UPDATE_ALL = 0,
     SETTING_UPDATE_KEEP_RF = 1,

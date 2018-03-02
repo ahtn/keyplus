@@ -393,7 +393,6 @@ void usb_mode_main_loop(void) {
 
 NO_RETURN_ATTR void recovery_mode_main_loop(void) {
     while (1) {
-        usb_print((uint8_t*)"Critical Error", sizeof("Critical Error"));
         send_vendor_report();
         handle_vendor_out_reports();
 

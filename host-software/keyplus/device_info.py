@@ -110,8 +110,7 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
         return self.crc == self.compute_crc()
 
     def compute_crc(self):
-        # self.timestamp = [ord(x) for x in self.timestamp]
-        bytes_ = bytearray(self.to_bytes())[:-1]
+        bytes_ = bytearray(self.to_bytes())[:-2]
         print(bytes_, type(bytes_))
         return crc16_bytes(bytes_)
 

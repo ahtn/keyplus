@@ -67,18 +67,30 @@ void flash_write(uint8_t* src, flash_ptr_t addr, flash_size_t len) {
         uint16_t write_len;
         uint32_t write_pos = addr + pos;
         uint16_t buffer_write_offset = (write_pos) % APP_SECTION_PAGE_SIZE;
-        if (len - pos < APP_SECTION_PAGE_SIZE) {
+        uint32_t data_left = (len-pos);
+        uint32_t page_end_addr =
+            (write_pos / APP_SECTION_PAGE_SIZE) * APP_SECTION_PAGE_SIZE
+            + APP_SECTION_PAGE_SIZE;
+
+        if (
+            (data_left < APP_SECTION_PAGE_SIZE) &&
+            (write_pos + data_left < page_end_addr)
+        ) {
+            // If there is not enough data left to fill the page, and the
+            // data doesn't extend over the end of the flash page (writes
+            // can't cross page boundaries).
             write_len = len - pos;
         } else {
+            // Write enough data to fill the rest of the page
             write_len = APP_SECTION_PAGE_SIZE - buffer_write_offset;
         }
 
-        sp_write_flash_buffer(src, buffer_write_offset, write_len);
+        sp_write_flash_buffer(src+pos, buffer_write_offset, write_len);
 
         SP_WriteApplicationPage(write_pos);
         SP_WaitForSPM();
 
-        src += write_len;
+        // src += write_len;
         pos += write_len;
     }
 }
