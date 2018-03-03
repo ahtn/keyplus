@@ -29,5 +29,6 @@ setup(
         'cstruct', 'kle', 'six', 'colorama', 'xusbboot'
     ],
     keywords = ['keyboard', 'usb', 'hid'],
-    zip_safe = False
+    scripts = ['keyplus-cli'],
+    zip_safe = False,
 )
