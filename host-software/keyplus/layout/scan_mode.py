@@ -17,6 +17,8 @@ from keyplus.layout.parser_info import KeyplusParserInfo
 from keyplus.layout.debounce_profiles import *
 from keyplus.exceptions import *
 
+from keyplus.utility import list_to_map, inverse_map
+
 from keyplus.constants import *
 
 MatrixPosition = namedtuple("MatrixPosition", "row col")
@@ -172,6 +174,21 @@ class ScanMode(object):
         else:
             return io_mapper.get_pin_numbers(self.column_pins)
 
+    def get_column_pin_order_map(self, io_mapper):
+        """
+        When the matrix_map is serialized and sent to the device, the order
+        that the column pins where defined is lost.
+        """
+        pins = self.get_column_pin_numbers(io_mapper)
+        col_num_map = {}
+        for (col_num, pin) in enumerate(pins):
+            col_num_map[pin] = col_num
+        pin_rank = sorted(pins)
+        result = []
+        for (rank, pin) in pin_rank:
+            result[rank] = con_num_map[pin]
+        return result
+
     def get_row_pin_numbers(self, io_mapper):
         if isinstance(self.row_pins, int):
             return io_mapper.get_default_rows(self.row_pins)
@@ -298,10 +315,12 @@ class ScanMode(object):
             self.row_pins = io_mapper.get_pin_names(pin_mapping.row_pins)
             self.column_pins = io_mapper.get_pin_names(pin_mapping.column_pins)
 
+            pin_to_column_map = inverse_map(list_to_map(pin_mapping.column_pins))
+
             self.matrix_map = {}
             num_col_positions = scan_plan.max_col_pin_num+1
             for row in range(scan_plan.rows):
-                actual_column_number = 0
+                physical_column_number = 0
                 for col in range(num_col_positions):
                     # Ignore columns that aren't in the
                     if col not in pin_mapping.column_pins:
@@ -310,9 +329,11 @@ class ScanMode(object):
                     key_number = pin_mapping.key_number_map[raw_matrix_map_pos]
                     if key_number == INVALID_KEY_NUMBER:
                         continue
-                    actual_matrix_pos = MatrixPosition(row, actual_column_number)
+
+                    logical_column_number = pin_to_column_map[physical_column_number]
+                    actual_matrix_pos = MatrixPosition(row, logical_column_number)
                     self.matrix_map[actual_matrix_pos] = key_number
-                    actual_column_number += 1
+                    physical_column_number += 1
 
 
         self.debounce_time_press = scan_plan.debounce_time_press

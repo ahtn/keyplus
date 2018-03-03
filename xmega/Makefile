@@ -57,6 +57,9 @@ include $(XMEGA_PATH)/hardware/hardware.mk
 # AVRDUDE_CMD=avrdude-pdi -C ~/local/etc/avrdude-pdi.conf -c usbasp -p $(AVRDUDE_PART)
 AVRDUDE_CMD=avrdude -p $(AVRDUDE_PART) -c avrispmkII
 
+KEYPLUS_CLI = ../host-software/keyplus-cli
+XUSBBOOT_CLI = ./xusb-boot/scripts/bin/xusbboot-cli
+
 #######################################################################
 #                             c settings                              #
 #######################################################################
@@ -195,7 +198,7 @@ MERGED_HEX="$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex"
 all: fuse lock $(MERGED_HEX)
 
 $(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
-	../host-software/keyplus_cli.py program \
+	 $(KEYPLUS_CLI) program \
 		--new-id $(ID) \
 		--layout $(LAYOUT_FILE) \
 		--rf $(RF_FILE) \
@@ -209,11 +212,14 @@ program: $(MERGED_HEX) program-boot
 
 # reset a board into bootloader via usb, then program it via the bootloader
 program-boot: $(MERGED_HEX)
-	./scripts/flash_hex.sh $< $(MCU)
+	# ./scripts/flash_hex.sh $< $(MCU)
+	$(KEYPLUS_CLI) bootloader -d 6666:1111
+	sleep 1.5
+	$(XUSBBOOT_CLI) -d 6666:b007 -f $< -mcu $(MCU)
 
 # program a board that is already in in bootloader mode
 program-boot-2: $(MERGED_HEX)
-	./xusb-boot/scripts/xusb/bin/xusbboot-cli -f $< -mcu $(MCU)
+	$(XUSBBOOT_CLI) -f $< -mcu $(MCU)
 
 # program a board using an external programmer
 program-hard: $(MERGED_HEX)

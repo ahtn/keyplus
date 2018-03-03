@@ -17,10 +17,12 @@
 #define MAX_UPDATE_LIST 16
 #define MAX_DOWN_LIST 16
 
-#define KEY_NUMBER_BITMAP_SIZE (MAX_NUM_KEYS/8)
-
 // can probably make this static
 XRAM uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT];
+
+#if INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL
+XRAM uint8_t g_col_masks[IO_PORT_COUNT];
+#endif
 
 static XRAM uint8_t s_is_debouncing[MAX_NUM_ROWS][IO_PORT_COUNT];
 static XRAM uint8_t s_debounce_time[MAX_NUM_KEYS];
@@ -28,7 +30,7 @@ static XRAM uint8_t s_debounce_type[KEY_NUMBER_BITMAP_SIZE];
 static XRAM uint8_t s_matrix_number_keys_down;
 static XRAM uint8_t s_matrix_number_keys_debouncing;
 
-static XRAM uint8_t g_key_num_bitmap[KEY_NUMBER_BITMAP_SIZE];
+XRAM uint8_t g_key_num_bitmap[KEY_NUMBER_BITMAP_SIZE];
 
 XRAM matrix_scan_plan_t g_scan_plan;
 

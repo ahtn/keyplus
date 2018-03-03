@@ -46,5 +46,13 @@ extern io_port_t * const g_io_port_map[IO_PORT_COUNT];
 
 void io_map_init(void);
 uint8_t io_map_claim_pins(uint8_t port_num, uint8_t mask);
-uint8_t io_map_get_col_port_mask(uint8_t port_num);
+
 uint8_t io_map_get_row_pin(uint8_t row);
+uint8_t io_map_get_col_pin(uint8_t col);
+
+/// Returns the column mask for a port used by the matrix scanner using the
+/// `MATRIX_SCANNER_INTERNAL_FAST_ROW_COL` method.
+///
+/// For example, if the matrix scanning algorithm is using pins P0.0, P0.1 and
+/// P0.7 as column pins on `P0`, then `get_column_masks(0) -> 0b10000011`.
+uint8_t io_map_get_col_port_mask(uint8_t port_num);

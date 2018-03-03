@@ -71,6 +71,8 @@ typedef PORT_t io_port_t;
 #define PORT_E_USABLE_PINS 0x0f
 #define PORT_R_USABLE_PINS 0x03
 
+#define IO_MAP_GPIO_COUNT (34 - 2)
+
 #ifndef IO_USABLE_PINS
 #define IO_USABLE_PINS { \
     PORT_A_USABLE_PINS, \

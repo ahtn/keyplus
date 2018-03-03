@@ -23,7 +23,7 @@ setup(
     author = "jem",
     author_email = "jem@seethis.link",
     license = 'MIT',
-    packages = find_packages(),
+    packages = find_packages(include=['keyplus', 'keyplus.*']),
     install_requires = [
         'hexdump', 'intelhex', 'easyhid', 'pyyaml', 'pyusb',
         'cstruct', 'kle', 'six', 'colorama', 'xusbboot'

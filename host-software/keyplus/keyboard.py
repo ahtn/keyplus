@@ -459,8 +459,9 @@ class KeyplusKeyboard(object):
         if self.firmware_info.internal_scan_method == MATRIX_SCANNER_INTERNAL_NONE:
             pin_mapping_section = 0
         elif self.firmware_info.internal_scan_method == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL:
-            header_size = device_target.get_io_mapper().get_storage_size()
+            header_size = 0
             header_size += MAX_NUM_ROWS
+            header_size += device_target.get_io_mapper().get_gpio_count()
             scan_plan = self.device_info.scan_plan
             map_size = (scan_plan.max_col_pin_num+1) * scan_plan.rows
             pin_mapping_section = header_size + map_size
@@ -511,6 +512,7 @@ class KeyplusKeyboard(object):
         return result
 
     def unpack_layout_data(self):
+        self.get_layout_info()
         self.read_whole_layout()
         device_target = self.get_device_target()
 
@@ -525,6 +527,13 @@ class KeyplusKeyboard(object):
         )
         scan_mode.load_raw_data(self.device_info.scan_plan, pin_mapping)
 
+        layout_device = LayoutDevice()
+        layout_device.load_raw_data(
+            self.device_info,
+            self.layout_settings,
+            pin_mapping,
+        )
+
         # TODO:
         # ekc_table = EKCTable()
         # ekc_table.unpack()
@@ -533,12 +542,15 @@ class KeyplusKeyboard(object):
         layout_arrays = self._get_layout_keycode_arrays(layout_data)
 
         result = []
+        kp_layout = KeyplusLayout()
         for (layout_i, _) in enumerate(layout_arrays):
             layout = LayoutKeyboard(layout_i)
             layout.load_keycodes(layout_arrays[layout_i])
             result.append(layout)
+            kp_layout.add_layout(layout)
+        kp_layout.add_device(layout_device)
 
-        return result
+        return kp_layout
 
 
     def read_layout_data(self, offset, size):

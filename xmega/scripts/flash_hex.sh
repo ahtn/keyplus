@@ -2,7 +2,7 @@
 # Copyright 2017 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-keyplus_cmd=../host-software/keyplus_cli.py
+keyplus_cmd=../host-software/keyplus-cli
 xusb_cmd=./xusb-boot/scripts/bin/xusbboot-cli
 
 if [[ $# -ne 2 ]]; then

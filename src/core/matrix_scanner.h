@@ -15,8 +15,13 @@
 /// Max number of keys a split keyboard device can use (16 bytes)
 #define MAX_NUM_KEYS 128
 
+/// Size of the bitmap used to store key numbers
+#define KEY_NUMBER_BITMAP_SIZE (MAX_NUM_KEYS/8)
+
 /// Max number of rows allowed for the matrix scanner
 #define MAX_NUM_ROWS 10
+#define MAX_NUM_COLS IO_MAP_GPIO_COUNT
+
 /// How much ram is needed to store the matrix in the matrix scanner module
 #define MATRIX_DATA_SIZE ((MAX_NUM_ROWS) * (IO_PORT_COUNT))
 
@@ -84,7 +89,12 @@ typedef struct matrix_scan_plan_t {
  *                         global variables                          *
  *********************************************************************/
 
-extern uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT];
+extern XRAM uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT];
+extern XRAM uint8_t g_key_num_bitmap[KEY_NUMBER_BITMAP_SIZE];
+
+#if INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL
+extern XRAM uint8_t g_col_masks[IO_PORT_COUNT];
+#endif
 
 extern const ROM uint8_t *g_scan_key_map;
 extern XRAM matrix_scan_plan_t g_scan_plan;
@@ -118,12 +128,14 @@ void matrix_scan_irq_clear(void);
 /// Returns true if
 bool matrix_has_active_row(void);
 
-// How many bytes of data is stored in the matrix (i.e. size=ceil(num_physical_keys/8))
+/// How many bytes of data is stored in the matrix (i.e. size=ceil(num_physical_keys/8))
 uint8_t get_matrix_compressed_size(void);
+/// Returns the number of keys currently pressed in the matrix
 uint8_t get_matrix_num_keys_down(void);
+/// Returns the number of keys currently being debounced in the matrix
 uint8_t get_matrix_num_keys_debouncing(void);
 
-// functions to be called to update the key matrix
+/// functions to be called to update the key matrix
 void init_matrix_scanner_utils(void);
 
 /// Get a matrix packet that for the most recent matrix scan.

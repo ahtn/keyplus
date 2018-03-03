@@ -36,15 +36,16 @@ class KeyboardPinMapping(object):
             assert_less_than(len(self.row_pins), MAX_NUM_ROWS)
             row_pin_padding = MAX_NUM_ROWS - len(self.row_pins)
             result += bytearray(self.row_pins) + bytearray([0]*row_pin_padding)
-            result += self.io_mapper.get_pin_masks_as_bytes(self.column_pins)
+
+            col_pin_padding = self.io_mapper.get_gpio_count() - len(self.column_pins)
+            result += bytearray(self.column_pins) + bytearray([0]*col_pin_padding)
             result += bytearray(self.key_number_map)
 
             # Check that the resulting object has the correct size
-            column_mask_size = self.io_mapper.get_storage_size()
             row_size = max(self.column_pins) + 1
             total_size = (
                 MAX_NUM_ROWS +
-                column_mask_size +
+                self.io_mapper.get_gpio_count() +
                 len(self.row_pins) * row_size
             )
             assert_equal(len(result), total_size)
@@ -69,7 +70,7 @@ class KeyboardPinMapping(object):
             row_data = raw_data[:row_size]
             pos += row_size
             # column_data
-            column_storage_size = io_mapper.get_storage_size()
+            column_storage_size = io_mapper.get_gpio_count()
             column_data = raw_data[pos:pos+column_storage_size]
             pos += column_storage_size
             # matrix_map_data
@@ -77,7 +78,7 @@ class KeyboardPinMapping(object):
             matrix_map_data = raw_data[pos:pos+map_size]
 
             self.row_pins = list(row_data[:scan_plan.rows])
-            self.column_pins = io_mapper.get_pins_from_mask_bytes(column_data)
+            self.column_pins = list(column_data[:scan_plan.cols])
             self.key_number_map = matrix_map_data
         else:
             raise KeyplusSettingsError(
@@ -111,7 +112,6 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
 
     def compute_crc(self):
         bytes_ = bytearray(self.to_bytes())[:-2]
-        print(bytes_, type(bytes_))
         return crc16_bytes(bytes_)
 
     def is_empty(self):

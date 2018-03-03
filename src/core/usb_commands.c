@@ -7,7 +7,6 @@
 #include <stddef.h>
 
 #include "core/bootloader.h"
-#include "core/debug.h"
 #include "core/error.h"
 #include "core/flash.h"
 #include "core/hardware.h"
@@ -23,11 +22,11 @@
 #include "usb_reports/mouse_report.h"
 #include "usb_reports/vendor_report.h"
 
-#include "core/debug.h"
-
 /* TODO: abstract mcu specifi usb code */
 
+#ifndef NO_MATRIX
 static bit_t passthrough_mode_on;
+#endif
 
 XRAM static uint8_t s_vendor_state = STATE_WAIT_CMD;
 XRAM static bool s_restore_rf_settings;
@@ -55,9 +54,11 @@ static void lock_usb_commands(void) {
     s_usb_commands_in_progress = false;
 }
 
+#ifndef NO_MATRIX
 bit_t is_passthrough_enabled(void) {
     return passthrough_mode_on;
 }
+#endif
 
 void queue_vendor_in_packet(
     uint8_t usb_cmd,
@@ -98,7 +99,10 @@ void reset_usb_reports(void) {
     s_vendor_state = STATE_WAIT_CMD;
     s_restore_rf_settings = false;
 
+#ifndef NO_MATRIX
     passthrough_mode_on = false;
+#endif
+
     reset_media_report();
     reset_vendor_report();
     reset_mouse_report();
@@ -128,7 +132,6 @@ void cmd_ok(void) {
     cmd_error(CMD_ERROR_CODE_NONE);
 }
 
-/* TODO: abstract */
 void cmd_reset(uint8_t reset_type) {
     if (reset_type == RESET_TYPE_HARDWARE) {
         reset_mcu();
@@ -312,13 +315,11 @@ void parse_cmd(void) {
         return;
     }
 
-    debug_toggle(1);
     switch (cmd) {
         case CMD_BOOTLOADER: {
             cmd_custom_bootloader();
         } break;
         case CMD_GET_INFO: {
-            debug_toggle(5);
             cmd_get_info();
         } break;
         case CMD_RESET: {

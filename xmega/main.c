@@ -323,11 +323,37 @@ void usb_mode_main_loop(void) {
             keyboard_update_device_matrix(GET_SETTING(device_id), matrix_data);
 
             if (is_passthrough_enabled()) {
+                // Use `passthrough` as a bitmap for matrix data
+                uint8_t passthrough_bitmap[63];
+                const uint8_t row_size = INT_DIV_ROUND_UP(g_scan_plan.max_col_pin_num, 8);
+                uint8_t row, col, logical_col;
+                memset(passthrough_bitmap, 0, 63);
+                logical_col = 0;
+
+                // walk through `g_matrix` and extract any bits that represent
+                // matrix data.
+                for (row = 0; row < g_scan_plan.rows; ++row) {
+                    for (col = 0; col < row_size; ++col) {
+                        uint8_t matrix_byte = g_matrix[row][col];
+                        // uint8_t col_mask = io_map_get_col_port_mask(col);
+                        uint8_t col_mask = g_col_masks[col];
+                        uint8_t mask = 0x01;
+                        while ((uint8_t) mask) {
+                            if (col_mask & mask) {
+                                if (matrix_byte & mask) {
+                                    bitmap_set_bit(passthrough_bitmap, logical_col);
+                                }
+                                logical_col += 1;
+                            }
+                            mask <<= 1;
+                        }
+                    }
+                }
                 // send the raw matrix data to the host
                 queue_vendor_in_packet(
                     CMD_PASSTHROUGH_MATRIX,
-                    (uint8_t*)g_matrix,
-                    MATRIX_DATA_SIZE,
+                    (uint8_t*)passthrough_bitmap,
+                    INT_DIV_ROUND_UP(logical_col, 8),
                     STATIC_LENGTH_CMD // TODO: make this a variable?
                 );
             }

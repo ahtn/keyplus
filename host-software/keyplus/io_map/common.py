@@ -91,10 +91,15 @@ class IoMapper(object):
             result.append(self.get_pin_number(self.pin_mapper.default_rows[i]))
         return result
 
+    def get_gpio_count(self):
+        return self.pin_mapper.gpio_count
+
 class IoMapperPins(IoMapper):
-    def __init__(self, ports, pins, port_size=8, default_cols=[], default_rows=[]):
+    def __init__(self, ports, pins, gpio_count, port_size=8, default_cols=[],
+                 default_rows=[]):
         self.ports = ports
         self.pins = pins
+        self.gpio_count = gpio_count
         self.port_size = port_size
         self.default_rows = default_rows
         self.default_cols = default_cols

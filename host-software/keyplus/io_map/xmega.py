@@ -24,6 +24,7 @@ XmegaPinsA4U = IoMapperPins(
         0x0f,
         0x03,
     ],
+    gpio_count = 34 - 2,
     default_rows = [
         'D0', 'D1', 'D2', 'D3', 'D4', 'D5',
         'C3', 'C2', 'C1', 'C0'
@@ -40,12 +41,14 @@ XmegaPinsA4U = IoMapperPins(
 XmegaPinsA3U = IoMapperPins(
     ports = {},
     pins = None,
+    gpio_count = 50 - 2,
     port_size = 8
 )
 
 XmegaPinsA1U = IoMapperPins(
     ports = {},
     pins = None,
+    gpio_count = 78 - 2,
     port_size = 8
 )
 

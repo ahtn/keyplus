@@ -38,11 +38,29 @@ uint8_t io_map_claim_pins(uint8_t port_num, uint8_t pin_mask) {
     return 0;
 }
 
-port_mask_t io_map_get_col_port_mask(uint8_t port_num) {
+
+// #if defined(INTERNAL_SCAN_METHOD) && INTERNAL_SCAN_METHOD==MATRIX_SCANNER_INTERNAL_FAST_ROW_COL
+// port_mask_t io_map_get_col_port_mask(uint8_t port_num) {
+// #if IO_PORT_SIZE == 8
+//     return flash_read_byte(
+//         LAYOUT_PORT_COL_MASKS_ADDR + port_num
+//     );
+// #elif IO_PORT_SIZE == 32
+//     return flash_read_u32(
+//         LAYOUT_PORT_COL_MASKS_ADDR + port_num
+//     );
+// #else
+// #error "Unexpected value for IO_PORT_SIZE"
+// #endif
+// }
+// #endif
+
+uint8_t io_map_get_col_pin(uint8_t col) {
     return flash_read_byte(
-        LAYOUT_PORT_COL_MASKS_ADDR + port_num
+        LAYOUT_PORT_COL_PINS_ADDR + col
     );
 }
+
 
 port_mask_t io_map_get_row_pin(uint8_t row) {
     return flash_read_byte(

@@ -5,13 +5,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import intelhex
 import argparse
-import hexdump
 import sys
 import colorama
 from colorama import Fore, Style
 
 import datetime
-import six
 
 import keyplus
 from keyplus.layout import KeyplusLayout
@@ -21,6 +19,8 @@ from keyplus.chip_id import get_chip_id_from_name
 
 from keyplus.exceptions import *
 from keyplus.constants import *
+from keyplus.utility import list_to_map, inverse_map
+
 
 __version__ = keyplus.__version__
 
@@ -196,6 +196,12 @@ class PassthroughCommand(GenericDeviceCommand):
         kb = self.find_matching_device(args)
 
         with kb:
+            kp_layout = kb.unpack_layout_data()
+
+            dev = kp_layout.get_device(kb.device_info.device_id)
+            pin_mapping = dev.scan_mode.generate_pin_mapping(kb.get_device_target())
+            inv_col_map = inverse_map(list_to_map(pin_mapping.column_pins))
+
             try:
                 kb.set_passthrough_mode(True)
             except KeyplusUSBCommandError as err:
@@ -205,25 +211,51 @@ class PassthroughCommand(GenericDeviceCommand):
                 raise err
             passthrough_timeout = 10000
 
-            response = kb.read(timeout=passthrough_timeout)
+            response = kb.hid_read(timeout=passthrough_timeout)
+
+            dev_info = kb.get_device_info()
+            rows = dev_info.scan_plan.rows
+            cols = dev_info.scan_plan.cols
+
+            data_size = (rows * cols + 7) // 8
+
+            def get_bitmap_bitn(bitmap, n):
+                return int(not not (bitmap[n//8] & (1 << (n%8))))
+
+            def passthrough_bitmap_to_row_col(bitmap, rows, cols):
+                result = []
+                for i in range(rows):
+                    result.append([0]*cols)
+                pos = 0
+                while pos < rows * cols:
+                    row = pos//cols
+                    col = pos%cols
+                    result[row][col] = get_bitmap_bitn(bitmap, pos)
+
+                    pos += 1
+                return result
+
 
             while response != None:
                 if response[0] == CMD_PASSTHROUGH_MATRIX:
+                    passthrough_bitmap = response[1:data_size+1]
+                    passthrough_data = passthrough_bitmap_to_row_col(passthrough_bitmap, rows, cols)
+                    print()
                     if (args.verbose):
-                        hexdump.hexdump(response[1:])
-                    for row in range(10):
-                        for col in range(2):
-                            byte = response[1 + row*2 + col]
-                            if byte == 0:
-                                continue
-                            else:
-                                for i in range(8):
-                                    if byte & (1 << i):
-                                        row_num = row
-                                        col_num = col * 8 + i
-                                        print("r{}c{} ".format(row_num, col_num), end="")
-                    print("")
-                response = kb.read(timeout=passthrough_timeout)
+                        for (row_num, row_data) in enumerate(passthrough_data):
+                            row_binary = ''
+                            for key in row_data:
+                                row_binary += str(key)
+                            print("row{}: {}".format(row_num, row_binary))
+                    result = ''
+                    for (row_num, row) in enumerate(passthrough_data):
+                        for (col_num, pin) in enumerate(row):
+                            if pin:
+                                real_column = inv_col_map[col_num]
+                                result += "r{}c{} ".format(row_num, real_column)
+                    if (result != ''):
+                        print(result)
+                response = kb.hid_read(timeout=passthrough_timeout)
 
             kb.set_passthrough_mode(False)
 
