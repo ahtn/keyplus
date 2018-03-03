@@ -213,7 +213,7 @@ program-boot: $(MERGED_HEX)
 
 # program a board that is already in in bootloader mode
 program-boot-2: $(MERGED_HEX)
-	./xusb-boot/scripts/flash.py -f $< -mcu $(MCU)
+	./xusb-boot/scripts/xusb/bin/xusbboot-cli -f $< -mcu $(MCU)
 
 # program a board using an external programmer
 program-hard: $(MERGED_HEX)

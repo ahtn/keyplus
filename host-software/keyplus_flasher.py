@@ -34,7 +34,7 @@ import easyhid
 import protocol
 import layout.parser
 import io_map.chip_id as chip_id
-import boot as xusb_boot
+import xusbboot
 
 STATUS_BAR_TIMEOUT=4500
 
@@ -68,9 +68,9 @@ def is_keyplus_device(device):
     return (device.vendor_id, device.product_id) in [(0x6666, 0x1111*i) for i in range(16)]
 
 def is_xusb_bootloader_device(device):
-    # if device.interface_number != xusb_boot.DEFAULT_INTERFACE:
+    # if device.interface_number != xusbboot.DEFAULT_INTERFACE:
     #     return False
-    return (device.vendor_id, device.product_id) == (xusb_boot.DEFAULT_VID, xusb_boot.DEFAULT_PID)
+    return (device.vendor_id, device.product_id) == (xusbboot.DEFAULT_VID, xusbboot.DEFAULT_PID)
 
 def is_nrf24lu1p_bootloader_device(device):
     ID_VENDOR = 0x1915
@@ -172,7 +172,7 @@ class DeviceWidget(QGroupBox):
     def setup_xusb_bootloader_label(self):
         try:
             self.device.open()
-            bootloader_info = xusb_boot.get_boot_info(self.device)
+            bootloader_info = xusbboot.get_boot_info(self.device)
             self.device.close()
         except TimeoutError as err:
             # Incase opening the device fails
@@ -204,7 +204,7 @@ class DeviceWidget(QGroupBox):
     def setup_nrf24lu1p_label(self):
         # try:
         #     self.device.open()
-        #     bootloader_info = xusb_boot.get_boot_info(self.device)
+        #     bootloader_info = xusbboot.get_boot_info(self.device)
         #     self.device.close()
         # except TimeoutError as err:
         #     # Incase opening the device fails
@@ -984,8 +984,8 @@ class Loader(QMainWindow):
 
     def program_xusb_boot_firmware_hex(self, device, file_name):
         try:
-            xusb_boot.write_hexfile(device, file_name)
-        except xusb_boot.BootloaderException as err:
+            xusbboot.write_hexfile(device, file_name)
+        except xusbboot.BootloaderException as err:
             error_msg_box("Error programming the bootloader to hex file: " + str(err))
         finally:
             device.close()
@@ -1038,7 +1038,7 @@ class Loader(QMainWindow):
         if is_keyplus_device(device):
             protocol.reset_device(device)
         elif is_xusb_bootloader_device(device):
-            xusb_boot.reset(device)
+            xusbboot.reset(device)
         elif is_nrf24lu1p_bootloader_device(device):
             print("TODO: reset: ", device_path, file=sys.stderr)
         else:
