@@ -336,7 +336,8 @@ void usb_mode_main_loop(void) {
                     for (col = 0; col < row_size; ++col) {
                         uint8_t matrix_byte = g_matrix[row][col];
                         // uint8_t col_mask = io_map_get_col_port_mask(col);
-                        uint8_t col_mask = g_col_masks[col];
+                        // uint8_t col_mask = g_col_masks[col];
+                        uint8_t col_mask = get_col_mask(col);
                         uint8_t mask = 0x01;
                         while ((uint8_t) mask) {
                             if (col_mask & mask) {

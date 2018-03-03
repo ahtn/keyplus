@@ -20,9 +20,9 @@
 // can probably make this static
 XRAM uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT];
 
-#if INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL
-XRAM uint8_t g_col_masks[IO_PORT_COUNT];
-#endif
+// #if INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL
+// XRAM uint8_t g_col_masks[IO_PORT_COUNT];
+// #endif
 
 static XRAM uint8_t s_is_debouncing[MAX_NUM_ROWS][IO_PORT_COUNT];
 static XRAM uint8_t s_debounce_time[MAX_NUM_KEYS];

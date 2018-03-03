@@ -52,6 +52,8 @@ static bool has_scan_irq_triggered;
 
 #if !USE_HARDWARE_SPECIFIC_SCAN
 
+static XRAM uint8_t s_col_masks[IO_PORT_COUNT];
+
 static uint8_t s_row_port_masks[IO_PORT_COUNT];
 static uint8_t s_row_pin_mask[MAX_NUM_ROWS];
 static io_port_t *s_row_ports[MAX_NUM_ROWS];
@@ -69,7 +71,7 @@ static void setup_columns(void) {
         const uint8_t pin_number = io_map_get_col_pin(col_pin_i);
         const uint8_t col_port_num = IO_MAP_GET_PIN_PORT(pin_number);
         const uint8_t col_pin_bit = IO_MAP_GET_PIN_BIT(pin_number);
-        g_col_masks[col_port_num] |= (1 << col_pin_bit);
+        s_col_masks[col_port_num] |= (1 << col_pin_bit);
     }
 
     // Note: PORTCFG.MPCMASK lets us configure multiple PINnCTRL regs at once
@@ -81,7 +83,7 @@ static void setup_columns(void) {
     uint8_t port_ii;
     for (port_ii = 0; port_ii < max_port_num; ++port_ii) {
         io_port_t *port = IO_MAP_GET_PORT(port_ii);
-        uint8_t col_mask = g_col_masks[port_ii];
+        uint8_t col_mask = s_col_masks[port_ii];
 
         // Nothing is set in this col
         if (col_mask == 0) {
@@ -218,12 +220,16 @@ static inline void select_all_rows(void) {
 /// When `select_all_rows()` has been called, this function can be used to
 /// check if any key is down in any row.
 bool matrix_has_active_row(void) {
-    return (PORTA.IN & g_col_masks[PORT_A_NUM]) ||
-           (PORTB.IN & g_col_masks[PORT_B_NUM]) ||
-           (PORTC.IN & g_col_masks[PORT_C_NUM]) ||
-           (PORTD.IN & g_col_masks[PORT_D_NUM]) ||
-           (PORTE.IN & g_col_masks[PORT_E_NUM]) ||
-           (PORTR.IN & g_col_masks[PORT_R_NUM]);
+    return (PORTA.IN & s_col_masks[PORT_A_NUM]) ||
+           (PORTB.IN & s_col_masks[PORT_B_NUM]) ||
+           (PORTC.IN & s_col_masks[PORT_C_NUM]) ||
+           (PORTD.IN & s_col_masks[PORT_D_NUM]) ||
+           (PORTE.IN & s_col_masks[PORT_E_NUM]) ||
+           (PORTR.IN & s_col_masks[PORT_R_NUM]);
+}
+
+port_mask_t get_col_mask(uint8_t port_num) {
+    return s_col_masks[port_num];
 }
 
 /// Selecting a row makes it outputs
@@ -344,12 +350,12 @@ ISR(PORTR_INT0_vect) { matrix_scan_irq(); }
 
 static inline uint8_t scan_row(uint8_t row) {
     const uint8_t new_row[IO_PORT_COUNT] = {
-        PORTA.IN & g_col_masks[PORT_A_NUM],
-        PORTB.IN & g_col_masks[PORT_B_NUM],
-        PORTC.IN & g_col_masks[PORT_C_NUM],
-        PORTD.IN & g_col_masks[PORT_D_NUM],
-        PORTE.IN & g_col_masks[PORT_E_NUM],
-        PORTR.IN & g_col_masks[PORT_R_NUM],
+        PORTA.IN & s_col_masks[PORT_A_NUM],
+        PORTB.IN & s_col_masks[PORT_B_NUM],
+        PORTC.IN & s_col_masks[PORT_C_NUM],
+        PORTD.IN & s_col_masks[PORT_D_NUM],
+        PORTE.IN & s_col_masks[PORT_E_NUM],
+        PORTR.IN & s_col_masks[PORT_R_NUM],
     };
 
     return scanner_debounce_row(row, new_row, s_bytes_per_row);
