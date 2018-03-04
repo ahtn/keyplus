@@ -319,7 +319,7 @@ void passthrough_keycodes_task(void) {
     if (is_passthrough_enabled() && (s_has_raw_matrix_updated)) {
         // Use `passthrough` as a bitmap for matrix data
         uint8_t passthrough_bitmap[63];
-        const uint8_t row_size = INT_DIV_ROUND_UP(g_scan_plan.max_col_pin_num, 8);
+        const uint8_t row_size = INT_DIV_ROUND_UP(g_scan_plan.max_col_pin_num+1, 8);
         uint8_t row, col, logical_col;
         memset(passthrough_bitmap, 0, 63);
         logical_col = 0;
