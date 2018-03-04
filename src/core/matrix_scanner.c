@@ -13,12 +13,18 @@
 #include "core/packet.h"
 #include "core/settings.h"
 #include "core/timer.h"
+#include "core/usb_commands.h"
 
 #define MAX_UPDATE_LIST 16
 #define MAX_DOWN_LIST 16
 
 // can probably make this static
 XRAM uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT];
+
+/// This variable will be set to true if any row/col position in the matrix is
+/// updated (even if it is unused is the keymap).
+XRAM uint8_t s_has_raw_matrix_updated;
+XRAM uint8_t s_has_updated;
 
 // #if INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL
 // XRAM uint8_t g_col_masks[IO_PORT_COUNT];
@@ -64,12 +70,19 @@ void init_matrix_scanner_utils(void) {
     g_down_list_len = 0;
     // TODO: load scan key map
     memset(g_key_num_bitmap, 0, KEY_NUMBER_BITMAP_SIZE);
+    s_has_raw_matrix_updated = 0;
 
     scanner_init_debouncer();
 }
 
 // TODO:
 void scanner_add_matrix_key(uint8_t key_num) {
+    s_has_raw_matrix_updated = 1;
+    if (key_num == INVALID_KEY_NUMBER) {
+        return;
+    }
+    s_has_updated = 1;
+
     // add then key to the delta list
     if (g_delta_list_len < MAX_UPDATE_LIST) {
         g_delta_list[g_delta_list_len] = MATRIX_DELTA_TYPE_PRESSED | key_num;
@@ -87,6 +100,12 @@ void scanner_add_matrix_key(uint8_t key_num) {
 }
 
 void scanner_del_matrix_key(uint8_t key_num) {
+    s_has_raw_matrix_updated = 1;
+    if (key_num == INVALID_KEY_NUMBER) {
+        return;
+    }
+    s_has_updated = 1;
+
     // add then key to the delta list
     if (g_delta_list_len < MAX_UPDATE_LIST) {
         g_delta_list[g_delta_list_len] = MATRIX_DELTA_TYPE_RELEASED | key_num;
@@ -158,7 +177,8 @@ bool scanner_debounce_row(
     uint8_t bytes_per_row
 ) {
     const uint8_t cur_time = timer_read8_ms();
-    bool has_updated = false;
+    // Will be set to tru by add_key/del_key
+    s_has_updated = false;
 
     for (uint8_t i = 0; i < bytes_per_row; ++i) {
         uint8_t old_row = g_matrix[row][i];
@@ -174,9 +194,11 @@ bool scanner_debounce_row(
         for ( ; pin_mask != 0 ; col++, pin_mask<<=1 ) {
             if (s_is_debouncing[row][i] & pin_mask) {
                 const uint8_t key_num = get_key_number(row, col);
-                if (key_num == INVALID_KEY_NUMBER) {
-                    continue;
-                }
+
+                // if (key_num == INVALID_KEY_NUMBER) {
+                //     continue;
+                // }
+
                 // key debouncing:
                 // check if the key has finished debouncing
                 if (bitmap_get_bit(s_debounce_type, key_num)) {
@@ -193,7 +215,6 @@ bool scanner_debounce_row(
                                 g_matrix[row][i] |= pin_mask;
                                 s_matrix_number_keys_down++;
                                 scanner_add_matrix_key(key_num);
-                                has_updated = 1;
                             } else {
                                 // reject key press and reset debouncing state
                                 s_is_debouncing[row][i] &= ~pin_mask;
@@ -227,7 +248,6 @@ bool scanner_debounce_row(
                             g_matrix[row][i] &= ~pin_mask;
                             s_matrix_number_keys_down--;
                             scanner_del_matrix_key(key_num);
-                            has_updated = 1;
                         } else if (bounce_duration >= g_scan_plan.debounce_time_release ) {
                             // debounce over
                             s_is_debouncing[row][i] &= ~pin_mask;
@@ -242,10 +262,8 @@ bool scanner_debounce_row(
                     // ignore pins in this row that haven't changed
                     continue;
                 }
+
                 const uint8_t key_num = get_key_number(row, col);
-                if (key_num == INVALID_KEY_NUMBER) {
-                    continue;
-                }
 
                 // If the key press/release trigger time is 0, then that means
                 // we should trigger the key immediately after seeing that it
@@ -260,7 +278,6 @@ bool scanner_debounce_row(
                     g_matrix[row][i] |= pin_mask;
                     s_matrix_number_keys_down++;
                     scanner_add_matrix_key(key_num);
-                    has_updated = 1;
                 } else if (g_scan_plan.trigger_time_release == 0 && !is_key_down) {
                     // debounce release trigger time is 0, so register the key press
                     // immediately. The debouncing algorithm then waits until
@@ -269,7 +286,6 @@ bool scanner_debounce_row(
                     g_matrix[row][i] &= ~pin_mask;
                     s_matrix_number_keys_down--;
                     scanner_del_matrix_key(key_num);
-                    has_updated = 1;
                 }
 
                 // this pin has changed, so we start it's debounce timer
@@ -287,7 +303,7 @@ bool scanner_debounce_row(
         }
     }
 
-    return has_updated;
+    return s_has_updated;
 }
 
 uint8_t get_matrix_num_keys_down(void) {
@@ -296,4 +312,45 @@ uint8_t get_matrix_num_keys_down(void) {
 
 uint8_t get_matrix_num_keys_debouncing(void) {
     return s_matrix_number_keys_debouncing;
+}
+
+
+void passthrough_keycodes_task(void) {
+    if (is_passthrough_enabled() && (s_has_raw_matrix_updated)) {
+        // Use `passthrough` as a bitmap for matrix data
+        uint8_t passthrough_bitmap[63];
+        const uint8_t row_size = INT_DIV_ROUND_UP(g_scan_plan.max_col_pin_num, 8);
+        uint8_t row, col, logical_col;
+        memset(passthrough_bitmap, 0, 63);
+        logical_col = 0;
+
+        // walk through `g_matrix` and extract any bits that represent
+        // matrix data.
+        for (row = 0; row < g_scan_plan.rows; ++row) {
+            for (col = 0; col < row_size; ++col) {
+                uint8_t matrix_byte = g_matrix[row][col];
+                // uint8_t col_mask = io_map_get_col_port_mask(col);
+                // uint8_t col_mask = g_col_masks[col];
+                uint8_t col_mask = get_col_mask(col);
+                uint8_t mask = 0x01;
+                while ((uint8_t) mask) {
+                    if (col_mask & mask) {
+                        if (matrix_byte & mask) {
+                            bitmap_set_bit(passthrough_bitmap, logical_col);
+                        }
+                        logical_col += 1;
+                    }
+                    mask <<= 1;
+                }
+            }
+        }
+        // send the raw matrix data to the host
+        queue_vendor_in_packet(
+            CMD_PASSTHROUGH_MATRIX,
+            (uint8_t*)passthrough_bitmap,
+            INT_DIV_ROUND_UP(logical_col, 8),
+            STATIC_LENGTH_CMD // TODO: make this a variable?
+        );
+        s_has_raw_matrix_updated = 0;
+    }
 }

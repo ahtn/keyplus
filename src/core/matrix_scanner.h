@@ -179,3 +179,7 @@ bool scanner_debounce_row(
     const uint8_t *new_row,
     uint8_t bytes_per_row
 );
+
+/// If passthrough is enabled, this command will send the key matrix to the
+/// host when it changes.
+void passthrough_keycodes_task(void);

@@ -208,7 +208,7 @@ class KeyplusLayout(object):
 
         self.settings["version"] = parser_info.try_get(
             field = "version",
-            field_type = str,
+            field_type = [str, int],
             optional = True
         )
 

@@ -906,8 +906,8 @@ class Loader(QMainWindow):
                 return
 
             with kb:
-                kb.update_settings_section(settings_data)
-                kb.update_layout_section(layout_data, keep_rf=False)
+                kb.update_settings_section(settings_data, keep_rf=False)
+                kb.update_layout_section(layout_data)
                 kb.reset()
 
             if warnings != []:

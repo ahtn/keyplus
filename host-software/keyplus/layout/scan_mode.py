@@ -320,7 +320,6 @@ class ScanMode(object):
             self.matrix_map = {}
             num_col_positions = scan_plan.max_col_pin_num+1
             for row in range(scan_plan.rows):
-                physical_column_number = 0
                 for col in range(num_col_positions):
                     # Ignore columns that aren't in the
                     if col not in pin_mapping.column_pins:
@@ -330,10 +329,9 @@ class ScanMode(object):
                     if key_number == INVALID_KEY_NUMBER:
                         continue
 
-                    logical_column_number = pin_to_column_map[physical_column_number]
+                    logical_column_number = pin_to_column_map[col]
                     actual_matrix_pos = MatrixPosition(row, logical_column_number)
                     self.matrix_map[actual_matrix_pos] = key_number
-                    physical_column_number += 1
 
 
         self.debounce_time_press = scan_plan.debounce_time_press

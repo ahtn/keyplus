@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import intelhex
 import argparse
 import sys
+import hexdump
 import colorama
 from colorama import Fore, Style
 
@@ -150,6 +151,11 @@ class GenericDeviceCommand(GenericCommand):
         elif num_matches == 1:
             return matching_devices[0]
         elif num_matches > 1:
+            # Print all the matching devices
+            for kb_device in matching_devices:
+                print_hid_info(kb_device.hid_device)
+            # Show an error message since the command is expecting only one
+            # device
             print_error("Error: found {} matching devices, select a specifc device or "
                   "disconnect the other devices".format(num_matches))
             exit(EXIT_MATCH_DEVICE)
@@ -186,6 +192,12 @@ class PassthroughCommand(GenericDeviceCommand):
         )
 
         self.arg_parser.add_argument(
+            '-t', '--timeout',
+            type=int, default=10,
+            help='Set passthrough state "on" or "off"'
+        )
+
+        self.arg_parser.add_argument(
             '-V', dest='verbose', action='store_const',
             const=True, default=False,
             help='Verbose output'
@@ -200,7 +212,14 @@ class PassthroughCommand(GenericDeviceCommand):
 
             dev = kp_layout.get_device(kb.device_info.device_id)
             pin_mapping = dev.scan_mode.generate_pin_mapping(kb.get_device_target())
-            inv_col_map = inverse_map(list_to_map(pin_mapping.column_pins))
+
+            # List is (col_num, pin_num)
+            pin_and_col = list(enumerate(pin_mapping.column_pins))
+            # Sort this list by it's pin_num field
+            pin_and_col.sort(key=lambda x: x[1])
+            # Make a mapping from physical column numbers -> logical column
+            # numbers
+            inv_col_map = [col_num for (col_num, pin_num) in pin_and_col]
 
             try:
                 kb.set_passthrough_mode(True)
@@ -209,7 +228,7 @@ class PassthroughCommand(GenericDeviceCommand):
                     print_error("Target device doesn't support matrix scanning")
                     exit(EXIT_UNSUPPORTED_FEATURE)
                 raise err
-            passthrough_timeout = 10000
+            passthrough_timeout = args.timeout*1000
 
             response = kb.hid_read(timeout=passthrough_timeout)
 
@@ -230,6 +249,7 @@ class PassthroughCommand(GenericDeviceCommand):
                 while pos < rows * cols:
                     row = pos//cols
                     col = pos%cols
+                    col = inv_col_map[col]
                     result[row][col] = get_bitmap_bitn(bitmap, pos)
 
                     pos += 1
@@ -251,8 +271,7 @@ class PassthroughCommand(GenericDeviceCommand):
                     for (row_num, row) in enumerate(passthrough_data):
                         for (col_num, pin) in enumerate(row):
                             if pin:
-                                real_column = inv_col_map[col_num]
-                                result += "r{}c{} ".format(row_num, real_column)
+                                result += "r{}c{} ".format(row_num, col_num)
                     if (result != ''):
                         print(result)
                 response = kb.hid_read(timeout=passthrough_timeout)
@@ -279,6 +298,44 @@ class ListCommand(GenericDeviceCommand):
             if args.verbosity != None:
                 if args.verbosity >= 1:
                     print_device_info(kb_device.device_info)
+
+class ReadCommand(GenericDeviceCommand):
+    def __init__(self):
+        super(ReadCommand, self).__init__(
+            'Read data from the keyboard'
+        )
+
+        self.arg_parser.add_argument(
+            '--dump-settings', dest='dump_settings',
+            action='store_const',
+            const=True, default=False,
+            help='Hexdump of the settings section'
+        )
+
+        self.arg_parser.add_argument(
+            '--dump-layout', dest='dump_layout',
+            action='store_const',
+            const=True, default=False,
+            help='Hexdump of the layout section'
+        )
+
+    def task(self, args):
+        kb = self.find_matching_device(args)
+
+        with kb:
+            if args.dump_settings:
+                print("Settings section hexdump:")
+                setings_data = kb.read_settings_section()
+                hexdump.hexdump(bytes(setings_data.to_bytes()))
+                print()
+
+            if args.dump_layout:
+                print("Layout section hexdump:")
+                layout_data = kb.read_whole_layout()
+                hexdump.hexdump(bytes(layout_data))
+                print()
+
+
 
 # Test command for controlling LEDs
 class LEDCommand(GenericDeviceCommand):
@@ -616,27 +673,19 @@ class KeyplusCLI(object):
         "led": LEDCommand,
         "list": ListCommand,
         "passthrough": PassthroughCommand,
+        "read": ReadCommand,
         "reset": ResetCommand,
         "program": ProgramCommand,
         "pair": PairCommand,
-        # "layers": LayerCommand(),
+        # "layers": LayerCommand,
         "help": HelpCommand,
     }
 
     def __init__(self):
 
-        command_list = {
-            "bootloader": BootloaderCommand(),
-            "debug": DebugCommand(),
-            "led": LEDCommand(),
-            "list": ListCommand(),
-            "passthrough": PassthroughCommand(),
-            "reset": ResetCommand(),
-            "program": ProgramCommand(),
-            "pair": PairCommand(),
-            # "layers": LayerCommand(),
-            "help": HelpCommand(),
-        }
+        command_list = {}
+        for cmd in KeyplusCLI.COMMAND_NAME_MAP:
+            command_list[cmd] = KeyplusCLI.COMMAND_NAME_MAP[cmd]()
 
         command_list_string = "\n".join(["    {0: <16}{1:}".format(cmd, command_list[cmd].description) for cmd in command_list])
 
