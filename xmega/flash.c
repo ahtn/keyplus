@@ -28,7 +28,7 @@ void flash_read(uint8_t* dest, flash_ptr_t addr, flash_size_t len) {
     memcpy_P(dest, (uint8_t*)(addr), len);
 }
 
-void flash_erase_page(uint8_t page_num) {
+void flash_erase_page(uint16_t page_num) {
     uint32_t page_addr = page_num * APP_SECTION_PAGE_SIZE;
     SP_EraseApplicationPage(page_addr);
     SP_WaitForSPM();

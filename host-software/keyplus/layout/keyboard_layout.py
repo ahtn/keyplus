@@ -5,8 +5,9 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import struct
 import math
+import struct
+import sys
 
 from keyplus.keycodes import *
 from keyplus.exceptions import *
@@ -164,7 +165,12 @@ class LayoutKeyboard(object):
                 self.layer_list[-1].add_device_layer(device_obj)
                 for keycode in device:
                     if keycode_type == int:
-                        keycode_name = self.keycode_mapper.keycode_to_string(keycode)
+                        try:
+                            keycode_name = self.keycode_mapper.keycode_to_string(keycode)
+                        except KeyplusParseError:
+                            print("Warning: Encountered unknown keycode: {:04X}"
+                                  .format(keycode), file=sys.stderr)
+                            keycode_name = "UnknownKeycode({})".format(keycode)
                     else:
                         keycode_name = keycode
                     device_obj.keycodes.append(keycode_name)

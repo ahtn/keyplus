@@ -44,7 +44,7 @@
 
 void flash_modify_enable(void);
 void flash_modify_disable(void);
-void flash_erase_page(uint8_t page_num);
+void flash_erase_page(uint16_t page_num);
 
 void flash_load_from_rom(XRAM uint8_t* dest, const ROM uint8_t* src, flash_size_t len);
 

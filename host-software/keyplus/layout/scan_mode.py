@@ -204,7 +204,7 @@ class ScanMode(object):
 
         if self.mode == NO_MATRIX:
             # If no matrix is set, then all values can be set to zero
-            scan_plan.pack(bytearray(keyplus.cdata_type.scan_plan_t.__size__))
+            scan_plan.unpack(bytearray(keyplus.cdata_types.scan_plan_t.__size__))
             return scan_plan
         elif self.mode in [COL_ROW, ROW_COL]:
             scan_plan.rows = self.number_rows

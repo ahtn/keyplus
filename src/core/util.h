@@ -159,3 +159,54 @@ void bitmap_clear_bit(uint8_t *array, uint8_t n);
 
 #endif
 
+#ifdef __SDCC_mcs51
+// Have to make all the compiler optimizations ourself
+#define read_u16le(ptr) (*((uint16_t*)(ptr)))
+#define read_u24le(ptr) (\
+      ((uint32_t)(ptr)[0] <<  0) \
+    | ((uint32_t)(ptr)[1] <<  8) \
+    | ((uint32_t)(ptr)[2] << 16) \
+)
+#define read_u32le(ptr) (*((uint32_t*)(ptr)))
+
+#else
+
+/// Read data from pointer as little endian uint16
+#define read_u16le(ptr) (\
+      ((uint16_t)(ptr)[0] << 0) \
+    | ((uint16_t)(ptr)[1] << 8) \
+)
+/// Read data from pointer as little endian uint24
+#define read_u24le(ptr) (\
+      ((uint32_t)(ptr)[0] <<  0) \
+    | ((uint32_t)(ptr)[1] <<  8) \
+    | ((uint32_t)(ptr)[2] << 16) \
+)
+/// Read data from pointer as little endian uint32
+#define read_u32le(ptr) (\
+      ((uint32_t)(ptr)[0] <<  0) \
+    | ((uint32_t)(ptr)[1] <<  8) \
+    | ((uint32_t)(ptr)[2] << 16) \
+    | ((uint32_t)(ptr)[3] << 24) \
+)
+#endif
+
+
+/// Read data from pointer as big endian uint16
+#define read_u16be(ptr) (\
+      ((uint16_t)(ptr)[1] << 0) \
+    | ((uint16_t)(ptr)[0] << 8) \
+)
+/// Read data from pointer as big endian uint24
+#define read_u24be(ptr) (\
+      ((uint32_t)(ptr)[2] <<  0) \
+    | ((uint32_t)(ptr)[1] <<  8) \
+    | ((uint32_t)(ptr)[0] << 16) \
+)
+/// Read data from pointer as big endian uint32
+#define read_u32be(ptr) (\
+      ((uint32_t)(ptr)[3] <<  0) \
+    | ((uint32_t)(ptr)[2] <<  8) \
+    | ((uint32_t)(ptr)[1] << 16) \
+    | ((uint32_t)(ptr)[0] << 24) \
+)

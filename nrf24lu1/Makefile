@@ -21,6 +21,8 @@ USE_NRF24 := 1
 USE_I2C := 0
 USE_SCANNER := 0
 
+KEYPLUS_CLI = ../host-software/keyplus-cli
+
 #######################################################################
 #                               config                                #
 #######################################################################
@@ -206,13 +208,15 @@ single_file_build:
 
 $(MERGED_HEX): $(TARGET).hex
 	@echo "=== merging layout settings files ==="
-	../host-software/keyplus_cli.py program \
+	$(KEYPLUS_CLI) program \
 		--new-id $(ID) \
 		--layout $(LAYOUT_FILE) \
 		--rf $(RF_FILE) \
 		--fw-hex $(TARGET).hex \
 		-M $(SETTINGS_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
-		-o $(TARGET)-$(LAYOUT_NAME).hex
+		-o $(TARGET)-$(LAYOUT_NAME).hex \
+		-F scan_method=none \
+		-F chip_name=nRF24LU1P-F32 \
 
 $(TARGET).hex: $(REL_FILES) $(BOOTLOADER)
 	@echo "=== compiling target ==="
@@ -263,7 +267,9 @@ clean:
 
 # program: flash
 program-boot: $(MERGED_HEX) size
-	./scripts/flash_hex.sh $(MERGED_HEX)
+	$(KEYPLUS_CLI) bootloader -d 6666:3333
+	sleep 1.0
+	./nrf24lu1p-512-bootloader/scripts/flash.py write_hex $<
 
 program-hard: flash
 flash: $(TARGET).hex size

@@ -1,22 +1,34 @@
 // Copyright 2017 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
+#include "nrf24lu1.h"
+
 #include "core/flash.h"
 #include "core/settings.h"
 
-#include "nrf24lu1.h"
+#include "usb_reports/vendor_report.h"
 
 void flash_modify_enable(void) {
+    disable_interrupts();
     FCR = 0xAA;
     FCR = 0x55;
     WEN = 1;
+    // NOTE: When flash is written on the nRF24LU1+, the CPU is halted. I'm
+    // pretty sure this can mess with the USB controller if it is in the middle
+    // of sending/receiving a packet. Since it is important that we
+    // send/receive the vendor out packets while updating, we make sure the
+    // vendor endpoint is not busy before writing to flash.
+    while (
+        !is_ready_vendor_in_report() && !is_ready_vendor_out_report()
+    );
 }
 
 void flash_modify_disable(void) {
     WEN = 0;
+    enable_interrupts();
 }
 
-void flash_erase_page(uint8_t page_num) {
+void flash_erase_page(uint16_t page_num) {
     FCR = page_num;
     while (RDYN);
 }

@@ -92,11 +92,6 @@ typedef struct matrix_scan_plan_t {
 extern XRAM uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT];
 extern XRAM uint8_t g_key_num_bitmap[KEY_NUMBER_BITMAP_SIZE];
 
-#if INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL
-// extern XRAM uint8_t g_col_masks[IO_PORT_COUNT];
-port_mask_t get_col_mask(uint8_t port_num);
-#endif
-
 extern const ROM uint8_t *g_scan_key_map;
 extern XRAM matrix_scan_plan_t g_scan_plan;
 

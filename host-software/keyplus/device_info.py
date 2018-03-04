@@ -63,7 +63,10 @@ class KeyboardPinMapping(object):
         self.mode = scan_plan.mode
         io_mapper = device_target.get_io_mapper()
         self.io_mapper = io_mapper
-        if self.internal_scan_method == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL:
+
+        if self.internal_scan_method == MATRIX_SCANNER_INTERNAL_NONE:
+            pass
+        elif self.internal_scan_method == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL:
             # row_data
             pos = 0
             row_size = MAX_NUM_ROWS
@@ -235,6 +238,8 @@ class KeyboardLayoutInfo(keyplus.cdata_types.layout_settings_t):
         layout
         """
         device_info = self.devices[device_id]
+        if device_info.layout_id == LAYOUT_ID_NONE:
+            return None
         assert(device_info.layout_id < MAX_NUMBER_LAYOUTS)
         devices = self.get_devices_in_layout(device_info.layout_id)
         offsets = sorted(list(set([dev.matrix_offset for dev in devices])))

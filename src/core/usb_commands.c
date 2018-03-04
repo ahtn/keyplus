@@ -33,7 +33,7 @@ XRAM static bool s_restore_rf_settings;
 
 XRAM static uint8_t s_usb_commands_in_progress;
 
-XRAM struct {
+static XRAM struct {
     // TODO: clean up most of the code related to this
     // TODO: must change to 16bit, need to check flashing software first
     flash_ptr_t offset_into_flash;
@@ -401,8 +401,13 @@ void parse_cmd(void) {
         /// byte1-4: start address for flash erase
         /// byte5-8: end address for flash erase
         case CMD_UPDATE_LAYOUT: {
-            uint32_t start = *((uint32_t*)g_vendor_report_out.data+1);
-            uint32_t end = *((uint32_t*)g_vendor_report_out.data+5);
+#if __SDCC_mcs51
+            XRAM flash_ptr_t start = read_u16le(g_vendor_report_out.data+1);
+            XRAM flash_ptr_t end = read_u16le(g_vendor_report_out.data+5);
+#else
+            XRAM flash_ptr_t start = read_u32le(g_vendor_report_out.data+1);
+            XRAM flash_ptr_t end = read_u32le(g_vendor_report_out.data+5);
+#endif
 
             if (end >= LAYOUT_SIZE) {
                 cmd_error(CMD_ERROR_CODE_TOO_MUCH_DATA);
@@ -424,12 +429,16 @@ void parse_cmd(void) {
 
             // Erase the required flash pages
             {
-                // Start is only an offset from the start of the layout section
+                // // Start is only an offset from the start of the layout section
+                end -= start;
+                end /= PAGE_SIZE;
+                end += 1;
                 start += LAYOUT_ADDR;
-                start = start / PAGE_SIZE; // star is now the start page number
-                // Now we convert them to page numbers
-                end = end / PAGE_SIZE; // end is now the number of pages
-                erase_page_range(start, end);
+                start /= PAGE_SIZE; // star is now the start page number
+                erase_page_range(
+                    start, // first page
+                    end // num pages
+                );
             }
 
             cmd_ok();
@@ -442,7 +451,7 @@ void parse_cmd(void) {
         /// byte5-63: bytes to be written to flash
         case CMD_WRITE_FLASH: {
             const uint8_t size = g_vendor_report_out.data[4];
-            if ((data1 & data2 & data3) == 0xff) {
+            if ((data1 & data2 & data3 & size) == 0xff) {
                 // If data1, data2, data3 are all 0xff, then the host is
                 // signaling that is finished writing to flash.
                 s_vendor_state = STATE_WAIT_CMD;
@@ -452,11 +461,15 @@ void parse_cmd(void) {
             }
 
             {
+#if 1
                 const uint32_t offset = (
                     ((uint32_t)data1 << 0) |
                     ((uint32_t)data2 << 8) |
                     ((uint32_t)data3 << 16)
                 );
+#else
+                const uint32_t offset = read_u24le(g_vendor_report_out.data+1);
+#endif
 
                 if (
                     (size > EP_SIZE_VENDOR-5) ||

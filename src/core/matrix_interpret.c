@@ -556,6 +556,7 @@ static void keyboard_interpret_layer_change(
                 continue;
             }
 
+
             old_keycode = get_keycode_from_layer(old_layer, byte, bit);
             new_keycode = get_keycode_from_layer(new_layer, byte, bit);
 

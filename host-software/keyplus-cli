@@ -193,7 +193,7 @@ class PassthroughCommand(GenericDeviceCommand):
 
         self.arg_parser.add_argument(
             '-t', '--timeout',
-            type=int, default=10,
+            type=int, default=20,
             help='Set passthrough state "on" or "off"'
         )
 
@@ -319,6 +319,13 @@ class ReadCommand(GenericDeviceCommand):
             help='Hexdump of the layout section'
         )
 
+        self.arg_parser.add_argument(
+            '-C', '--compact', dest='compact',
+            action='store_const',
+            const=True, default=False,
+            help='Make the output more compact'
+        )
+
     def task(self, args):
         kb = self.find_matching_device(args)
 
@@ -326,13 +333,19 @@ class ReadCommand(GenericDeviceCommand):
             if args.dump_settings:
                 print("Settings section hexdump:")
                 setings_data = kb.read_settings_section()
-                hexdump.hexdump(bytes(setings_data.to_bytes()))
+                if args.compact:
+                    print(hexdump.dump(bytes(setings_data.to_bytes())))
+                else:
+                    hexdump.hexdump(bytes(setings_data.to_bytes()))
                 print()
 
             if args.dump_layout:
                 print("Layout section hexdump:")
                 layout_data = kb.read_whole_layout()
-                hexdump.hexdump(bytes(layout_data))
+                if args.compact:
+                    print(hexdump.dump(bytes(layout_data)))
+                else:
+                    hexdump.hexdump(bytes(layout_data))
                 print()
 
 
@@ -462,21 +475,39 @@ class ProgramCommand(GenericDeviceCommand):
             ' to stdoutput'
         )
 
+        self.arg_parser.add_argument(
+            '-e', '--erase',
+            action='store_const',
+            const=True, default=False,
+            help='Erase all the settings and flash of this device'
+        )
+
     def task(self, args):
         if (
             args.layout_file == None and
             args.hex_file == None and
             args.rf_file == None and
             args.new_id == None and
-            args.merge_hex == None
+            args.merge_hex == None and
+            args.erase == None
         ):
             self.arg_parser.print_help()
             exit(EXIT_NO_ERROR)
 
-        if args.merge_hex:
+        if args.erase:
+            self.task_erase(args)
+        elif args.merge_hex:
             self.task_mereged_hex(args)
         else:
             self.task_program_device(args)
+
+    def task_erase(self, args):
+        kb = self.find_matching_device(args)
+
+        with kb:
+            kb.erase_settings_section()
+            kb.erase_layout_section()
+            kb.reset()
 
     def load_layout_file(self, args):
         try:
@@ -619,7 +650,7 @@ class ProgramCommand(GenericDeviceCommand):
             device_target = kb.get_device_target()
 
             # Set the target device id
-            if args.new_id:
+            if args.new_id != None:
                 device_target.device_id = args.new_id
 
             # If only a new id was provide, update the old settings section
@@ -627,7 +658,7 @@ class ProgramCommand(GenericDeviceCommand):
             if (
                 args.layout_file == None and
                 args.rf_file == None and
-                args.new_id
+                args.new_id != None
             ):
                 settings = kb.read_settings_section()
                 settings.header.device_id = args.new_id
@@ -640,11 +671,13 @@ class ProgramCommand(GenericDeviceCommand):
             # If this command is running, we always update the layout section
             settings = kp_layout.build_settings_section(device_target)
 
-            update_rf = False
+            keep_rf = True
             if args.rf_file:
-                update_rf = True
+                keep_rf = False
 
-            kb.update_settings_section(settings, update_rf)
+            kb.update_settings_section(settings, keep_rf)
+
+            layout = kp_layout.build_layout_section(device_target)
 
             # only update the layout section if a layout file was given
             if args.layout_file:

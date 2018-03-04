@@ -36,6 +36,9 @@ def _get_similar_serial_number(dev_list, serial_num):
             # found an exact match
             return serial_num
         else:
+            if dev.serial_number == None:
+                continue
+
             # didn't find an exact match, so keep track of partial matches
             match_pos = dev.serial_number.find(serial_num)
 
@@ -350,13 +353,20 @@ class KeyplusKeyboard(object):
                 hexdump.hexdump(bytes(response))
 
     def get_info_cmd(self, info_page_number):
-        response = self.simple_command(CMD_GET_INFO, [info_page_number])
-        if response[0] == INFO_UNSUPPORTED:
-            raise KeyplusUnsupportedError(
-                "Device doesn't have any data for info page number '{}'"
-                .format(info_page_number)
-            )
-        if response[0] != info_page_number:
+        retries = 2
+        while retries != 0:
+            response = self.simple_command(CMD_GET_INFO, [info_page_number])
+            if response[0] == INFO_UNSUPPORTED:
+                raise KeyplusUnsupportedError(
+                    "Device doesn't have any data for info page number '{}'"
+                    .format(info_page_number)
+                )
+            elif response[0] != info_page_number:
+                response = self.simple_command(CMD_GET_INFO, [info_page_number])
+                retries -= 1
+            else:
+                break
+        if retries == 0 and response[0] != info_page_number:
             raise KeyplusProtocolError(
                 "Error while getting info from device. "
                 "Expected data for info page: {}, but got from {}."
@@ -582,13 +592,7 @@ class KeyplusKeyboard(object):
                 .format(CMD_ERROR_CODE, packet_type)
             )
         if err_code != CMD_ERROR_CODE_NONE:
-            if err_code in CMD_ERROR_CODE_TABLE:
-                err_message = CMD_ERROR_CODE_TABLE[err_code]
-            else:
-                err_message = "UnknownCmdError({})".format(err_code)
-            raise KeyplusProtocolError(
-                "USB protocol error: {}".format(err_code)
-            )
+            raise_error_code(err_code)
 
     def create_flash_write_packet(self, write_pos, write_size, data):
         # CMD_WRITE_FLASH format:
@@ -622,7 +626,7 @@ class KeyplusKeyboard(object):
         finish_packet[0] = CMD_WRITE_FLASH
         self.hid_write(finish_packet);
 
-    def update_settings_section(self, settings_data, keep_rf=False):
+    def update_settings_section(self, settings_data, keep_rf):
         assert(isinstance(keep_rf, bool))
         keep_rf = int(keep_rf)
 
@@ -647,9 +651,9 @@ class KeyplusKeyboard(object):
 
         # TODO: change this to a uint32_t
         start_address = 0
-        end_address = len(layout_data)
+        end_address = len(layout_data) - 1
 
-        if end_address > self.firmware_info.layout_flash_size:
+        if end_address >= self.firmware_info.layout_flash_size:
             raise KeyplusSettingsError(
                 "Not enough storage space for layout settings. The device has "
                 "{} bytes of storage space. The given layout requires {} bytes."
@@ -666,6 +670,21 @@ class KeyplusKeyboard(object):
         chunk_list = self._get_chunks(layout_data, FLASH_WRITE_PACKET_LEN)
 
         self._write_flash_chunks(chunk_list, end_address)
+
+    def erase_settings_section(self):
+        self.update_settings_section(bytearray(), keep_rf=False)
+
+    def erase_layout_section(self):
+        flash_write_info = struct.pack(
+            "<L L",
+            0,
+            (self.firmware_info.layout_flash_size) - 1,
+        )
+        self.simple_command(CMD_UPDATE_LAYOUT, flash_write_info)
+        self._write_flash_chunks([], 0)
+
+
+
 
 
 if __name__ == '__main__':
