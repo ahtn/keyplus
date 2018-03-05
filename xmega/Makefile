@@ -200,12 +200,12 @@ all: fuse lock $(MERGED_HEX)
 $(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
 	 $(KEYPLUS_CLI) program \
 		--new-id $(ID) \
-		--layout $(LAYOUT_FILE) \
-		--rf $(RF_FILE) \
-		--fw-hex $(TARGET_HEX) \
+		--layout "$(LAYOUT_FILE)" \
+		--rf "$(RF_FILE)" \
+		--fw-hex "$(TARGET_HEX)" \
 		-M $(SETTING_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
-		-o $(MERGED_HEX) \
-		-F chip_name=$(MCU_STRING) \
+		-o "$(MERGED_HEX)" \
+		-F chip_name="$(MCU_STRING)" \
 		-F scan_method=fast_row_col \
 
 program: $(MERGED_HEX) program-boot

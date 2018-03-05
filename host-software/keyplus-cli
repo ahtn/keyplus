@@ -549,7 +549,7 @@ class ProgramCommand(GenericDeviceCommand):
         firmware_settings = {}
         for option in args.firmware_settings:
             try:
-                expression = option.split('=', maxsplit=1)
+                expression = option.split('=', )
                 key = expression[0].lower()
                 value = expression[1].lower()
                 if key not in known_settings:
