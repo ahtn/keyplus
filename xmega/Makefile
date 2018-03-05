@@ -57,8 +57,8 @@ include $(XMEGA_PATH)/hardware/hardware.mk
 # AVRDUDE_CMD=avrdude-pdi -C ~/local/etc/avrdude-pdi.conf -c usbasp -p $(AVRDUDE_PART)
 AVRDUDE_CMD=avrdude -p $(AVRDUDE_PART) -c avrispmkII
 
-KEYPLUS_CLI = ../host-software/keyplus-cli
-XUSBBOOT_CLI = ./xusb-boot/scripts/bin/xusbboot-cli
+KEYPLUS_CLI = python3 ../host-software/keyplus-cli
+XUSBBOOT_CLI = python3 ./xusb-boot/scripts/bin/xusbboot-cli
 
 #######################################################################
 #                             c settings                              #

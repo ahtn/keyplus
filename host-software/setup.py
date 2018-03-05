@@ -26,7 +26,8 @@ setup(
     packages = find_packages(include=['keyplus', 'keyplus.*']),
     install_requires = [
         'hexdump', 'intelhex', 'easyhid', 'pyyaml', 'pyusb',
-        'cstruct', 'kle', 'six', 'colorama', 'xusbboot'
+        'cstruct', 'kle', 'six', 'colorama', 'xusbboot',
+        'future'
     ],
     keywords = ['keyboard', 'usb', 'hid'],
     scripts = ['keyplus-cli'],

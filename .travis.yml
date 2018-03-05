@@ -1,0 +1,30 @@
+matrix:
+  include:
+    - os: linux
+      sudo: true
+      dist: trusty
+      language: c
+      addons:
+        apt:
+          packages:
+            - make
+            - python
+            - libpython-dev
+            - libffi-dev
+            - python3
+            - python3-pip
+      # before_install:
+      #   -
+      install:
+        - 'cd env'
+        - './ubuntu-14.04-setup.sh'
+        - 'cd ..'
+        - sudo pip3 install hexdump intelhex easyhid pyyaml pyusb cstruct kle six colorama xusbboot cffi future
+      script:
+        - 'source env/enter_env.sh'
+        - 'cd xmega'
+        - 'make BOARD=keyplus_mini'
+      # after_success:
+      #   - echo "After_Success"
+
+# vim:sw=2:
