@@ -25,12 +25,15 @@
 #define PAGE_SIZE           APP_SECTION_PAGE_SIZE
 
 // define flash pointer sizes
-#if MCU_FLASH_SIZE <= 128
+#if MCU_FLASH_SIZE <= 64
 typedef uint16_t flash_ptr_t;
-typedef uint16_t flash_size_t;
-#else
-typedef uint32_t flash_ptr_t;
+typedef uint16_t flash_addr_t;
 typedef uint32_t flash_size_t;
+#else
+typedef uint16_t flash_ptr_t;
+typedef uint32_t flash_addr_t;
+typedef uint32_t flash_size_t;
+#define XMEGA_FAR_FLASH
 #endif
 
 #define MCU_BITNESS 8

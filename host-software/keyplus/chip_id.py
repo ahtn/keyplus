@@ -89,7 +89,8 @@ def _generate_chip_name_table(table):
     """
     result = {}
     for chip_id in table:
-        result[table[chip_id].name.lower()] = table[chip_id]
+        name = table[chip_id].name.lower()
+        result[name] = table[chip_id]
     return result
 
 def get_chip_id_from_name(name):
@@ -113,28 +114,28 @@ CHIP_ID_TABLE = {
     ATMEL_ID | 0x0009 : _create_xmega(16 , 'A4U'),
     ATMEL_ID | 0x000A : _create_xmega(32 , 'A4U'),
     ATMEL_ID | 0x000B : _create_xmega(64 , 'A4U'),
-    ATMEL_ID | 0x000B : _create_xmega(128, 'A4U'),
-    ATMEL_ID | 0x000C : _create_xmega(64 , 'A3U'),
-    ATMEL_ID | 0x000D : _create_xmega(128, 'A3U'),
-    ATMEL_ID | 0x000E : _create_xmega(192, 'A3U'),
-    ATMEL_ID | 0x000F : _create_xmega(256, 'A3U'),
-    ATMEL_ID | 0x0010 : _create_xmega(256, 'A3BU'),
-    ATMEL_ID | 0x0011 : _create_xmega(64 , 'A1U'),
-    ATMEL_ID | 0x0012 : _create_xmega(128, 'A1U'),
+    ATMEL_ID | 0x000C : _create_xmega(128, 'A4U'),
+    ATMEL_ID | 0x000D : _create_xmega(64 , 'A3U'),
+    ATMEL_ID | 0x000E : _create_xmega(128, 'A3U'),
+    ATMEL_ID | 0x000F : _create_xmega(192, 'A3U'),
+    ATMEL_ID | 0x0010 : _create_xmega(256, 'A3U'),
+    ATMEL_ID | 0x0011 : _create_xmega(256, 'A3BU'),
+    ATMEL_ID | 0x0012 : _create_xmega(64 , 'A1U'),
+    ATMEL_ID | 0x0013 : _create_xmega(128, 'A1U'),
 
-    ATMEL_ID | 0x0013 : _create_xmega(64 , 'B3'),
-    ATMEL_ID | 0x0014 : _create_xmega(64 , 'B3'),
-    ATMEL_ID | 0x0015 : _create_xmega(128, 'B1'),
-    ATMEL_ID | 0x0016 : _create_xmega(128, 'B1'),
+    ATMEL_ID | 0x0020 : _create_xmega(64 , 'B3'),
+    ATMEL_ID | 0x0021 : _create_xmega(64 , 'B3'),
+    ATMEL_ID | 0x0022 : _create_xmega(128, 'B1'),
+    ATMEL_ID | 0x0023 : _create_xmega(128, 'B1'),
 
-    ATMEL_ID | 0x0017 : _create_xmega(16 , 'C4'),
-    ATMEL_ID | 0x0018 : _create_xmega(32 , 'C4'),
-    ATMEL_ID | 0x0019 : _create_xmega(32 , 'C3'),
-    ATMEL_ID | 0x001A : _create_xmega(64 , 'C3'),
-    ATMEL_ID | 0x001B : _create_xmega(128, 'C3'),
-    ATMEL_ID | 0x001C : _create_xmega(192, 'C3'),
-    ATMEL_ID | 0x001D : _create_xmega(256, 'C3'),
-    ATMEL_ID | 0x001E : _create_xmega(384, 'C3'),
+    ATMEL_ID | 0x0030 : _create_xmega(16 , 'C4'),
+    ATMEL_ID | 0x0031 : _create_xmega(32 , 'C4'),
+    ATMEL_ID | 0x0032 : _create_xmega(32 , 'C3'),
+    ATMEL_ID | 0x0033 : _create_xmega(64 , 'C3'),
+    ATMEL_ID | 0x0034 : _create_xmega(128, 'C3'),
+    ATMEL_ID | 0x0035 : _create_xmega(192, 'C3'),
+    ATMEL_ID | 0x0036 : _create_xmega(256, 'C3'),
+    ATMEL_ID | 0x0037 : _create_xmega(384, 'C3'),
 
     NORDIC_ID | 0x0001 : _create_nrf24(16, 'nRF24LU1-F16'),
     NORDIC_ID | 0x0002 : _create_nrf24(16, 'nRF24LU1P-F16'),

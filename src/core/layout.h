@@ -41,6 +41,6 @@
 // #define LAYOUT_PORT_KEY_NUM_MAP_ADDR (LAYOUT_ADDR + 16)
 
 AT__LAYOUT_ADDR extern const uint8_t g_layout_storage[];
-extern XRAM flash_ptr_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
+extern XRAM flash_addr_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
 
 void keyboard_layouts_init(void);

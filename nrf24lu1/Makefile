@@ -199,13 +199,6 @@ endif
 
 all: $(ALL_TARGET) size
 
-c_file_list:
-	echo $(C_SRC) > c_file_list
-
-.PHONY:
-single_file_build:
-	$(CC) $(CFLAGS) $(LFLAGS) c_file_list_merged.c
-
 $(MERGED_HEX): $(TARGET).hex
 	@echo "=== merging layout settings files ==="
 	$(KEYPLUS_CLI) program \
@@ -220,6 +213,7 @@ $(MERGED_HEX): $(TARGET).hex
 
 $(TARGET).hex: $(REL_FILES) $(BOOTLOADER)
 	@echo "=== compiling target ==="
+	$(CC) --version
 	$(CC) $(CFLAGS) $(LFLAGS) $(REL_FILES) -o $@
 	@echo "=== appending bootloader ==="
 	cat $(BOOTLOADER) >> $@

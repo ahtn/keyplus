@@ -8,7 +8,7 @@
 #include "core/macro.h"
 #include "core/settings.h"
 
-XRAM flash_size_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
+XRAM flash_addr_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
 
 #define KC_CTRL_ALT MODKEY(MODKEY_TAG_LCTL | MODKEY_TAG_LALT, 0)
 
@@ -374,13 +374,13 @@ void keyboard_layouts_init(void) {
 #if INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL
         // skip the key num map section, since it is in a known location at compile
         // time.
-        flash_size_t key_num_map_size = g_scan_plan.rows * (g_scan_plan.max_col_pin_num+1);
+        flash_addr_t key_num_map_size = g_scan_plan.rows * (g_scan_plan.max_col_pin_num+1);
         storage_pos += key_num_map_size;
 
 #elif INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_SLOW_ROW_COL
         // skip the key num map section, since it is in a known location at compile
         // time.
-        flash_size_t key_num_map_size = g_scan_plan.rows * g_scan_plan.cols;
+        flash_addr_t key_num_map_size = g_scan_plan.rows * g_scan_plan.cols;
         storage_pos += key_num_map_size;
 #else
 #error "Unknown scan method" INTERNAL_SCAN_METHOD
@@ -418,7 +418,7 @@ void keyboard_layouts_init(void) {
             for (i = 1; i < num_layouts; ++i) {
                 const uint8_t matrix_size = GET_SETTING(layout.layouts[i-1].matrix_size);
                 const uint8_t layer_count = GET_SETTING(layout.layouts[i-1].layer_count);
-                const flash_size_t this_layout_size = GET_SETTING(layout.layouts[i].matrix_size);
+                const flash_addr_t this_layout_size = GET_SETTING(layout.layouts[i].matrix_size);
 
                 storage_pos += 8*sizeof(keycode_t) * matrix_size * layer_count;
 

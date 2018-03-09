@@ -5,31 +5,35 @@
 
 #include "xusb-boot/spm_interface.h"
 
-uint8_t flash_read_byte(flash_ptr_t addr) {
+uint8_t flash_read_byte(flash_addr_t addr) {
     NVM.CMD = NVM_CMD_NO_OPERATION_gc;
-#if flash_ptr_t == uint32_t
+#ifdef XMEGA_FAR_FLASH
     return pgm_read_byte_far(addr);
 #else
     return pgm_read_byte(addr);
 #endif
 }
 
-uint16_t flash_read_word(flash_ptr_t addr) {
+uint16_t flash_read_word(flash_addr_t addr) {
     NVM.CMD = NVM_CMD_NO_OPERATION_gc;
-#if flash_ptr_t == uint32_t
+#ifdef XMEGA_FAR_FLASH
     return pgm_read_word_far(addr);
 #else
     return pgm_read_word(addr);
 #endif
 }
 
-void flash_read(uint8_t* dest, flash_ptr_t addr, flash_size_t len) {
+void flash_read(uint8_t* dest, flash_addr_t addr, flash_size_t len) {
     NVM.CMD = NVM_CMD_NO_OPERATION_gc;
+#ifdef XMEGA_FAR_FLASH
+    memcpy_PF(dest, (uint_farptr_t)(addr), len);
+#else
     memcpy_P(dest, (uint8_t*)(addr), len);
+#endif
 }
 
-void flash_erase_page(uint16_t page_num) {
-    uint32_t page_addr = page_num * APP_SECTION_PAGE_SIZE;
+void flash_erase_page(flash_addr_t page_num) {
+    uint32_t page_addr = (uint32_t)page_num * (uint32_t)APP_SECTION_PAGE_SIZE;
     SP_EraseApplicationPage(page_addr);
     SP_WaitForSPM();
 }
@@ -60,7 +64,7 @@ static inline void sp_write_flash_buffer(uint8_t *data, uint16_t offset, uint16_
     }
 }
 
-void flash_write(uint8_t* src, flash_ptr_t addr, flash_size_t len) {
+void flash_write(uint8_t* src, flash_addr_t addr, flash_size_t len) {
     uint32_t pos = 0;
 
     while (pos < len) {

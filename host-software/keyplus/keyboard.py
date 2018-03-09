@@ -123,9 +123,9 @@ def find_devices(name=None, serial_number=None, vid_pid=None, device_id=None,
                 continue
 
             new_kb = KeyplusKeyboard(hid_device)
-            if device_id != None and device_id != new_kb.get_device_id():
+            if device_id != None and device_id != new_kb.device_id:
                 continue
-            if name != None and (name not in new_kb.get_device_name()):
+            if name != None and (name not in new_kb.name):
                 continue
 
             matching_dev_list.append(new_kb)
@@ -192,6 +192,14 @@ class KeyplusKeyboard(object):
         """ Disconnect a device.  """
         self.hid_device.close()
         self._is_connected = False
+
+    @property
+    def device_id(self):
+        return self.device_info.device_id
+
+    @property
+    def name(self):
+        return self.device_info.name
 
 ###############################################################################
 #                                USB Commands                                 #
@@ -576,7 +584,7 @@ class KeyplusKeyboard(object):
         chunk_data = None
         remainder = len(data) % chunk_size
         if remainder != 0:
-            chunk_data = data[:] + bytearray([pad] * (chunk_size - remainder))
+            chunk_data = data[:] + [pad] * (chunk_size - remainder)
         else:
             chunk_data = data
         return [bytes(chunk_data[i*chunk_size:(i+1)*chunk_size]) for i in range(len(chunk_data)//chunk_size)]
@@ -670,6 +678,10 @@ class KeyplusKeyboard(object):
         chunk_list = self._get_chunks(layout_data, FLASH_WRITE_PACKET_LEN)
 
         self._write_flash_chunks(chunk_list, end_address)
+
+    def _test_update_layout(self):
+        data = [i & 0xff for i in range(self.firmware_info.layout_flash_size)]
+        self.update_layout_section(data)
 
     def erase_settings_section(self):
         self.update_settings_section(bytearray(), keep_rf=False)

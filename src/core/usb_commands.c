@@ -36,8 +36,9 @@ XRAM static uint8_t s_usb_commands_in_progress;
 static XRAM struct {
     // TODO: clean up most of the code related to this
     // TODO: must change to 16bit, need to check flashing software first
-    flash_ptr_t offset_into_flash;
-    flash_ptr_t max_addr;
+    flash_addr_t offset_into_flash;
+
+    uint32_t max_addr;
 } flash_cmd_info;
 
 static uint8_t usb_commands_is_locked(void) {
@@ -202,14 +203,12 @@ static void cmd_unifying_pairing(void) {
 
 static void erase_page_range(uint16_t start_page, uint16_t page_count) {
     uint16_t i;
-    wdt_kick();
 
     // erase all the pages for the layout
-    flash_modify_enable();
     for (i = 0; i < page_count; ++i) {
         flash_erase_page(start_page + i);
+        wdt_kick();
     }
-    flash_modify_disable();
 }
 
 #define CMD_READ_LAYOUT_START_ADDRESS 1
@@ -378,20 +377,20 @@ void parse_cmd(void) {
                 lock_usb_commands();
             }
 
+            flash_modify_enable();
             erase_page_range(SETTINGS_PAGE_NUM, SETTINGS_PAGE_COUNT);
 
             // If the update types keeps the RF info, we need to write it back.
             // The current RF info should already be held in RAM, so we can
             // just write it back to flash now.
             if (update_type == SETTING_UPDATE_KEEP_RF) {
-                flash_modify_enable();
                 flash_write(
                     (uint8_t*)&g_rf_settings,
                     SETTINGS_ADDR + SETTINGS_RF_INFO_OFFSET,
                     SETTINGS_RF_INFO_SIZE
                 );
-                flash_modify_disable();
             }
+            flash_modify_disable();
 
             cmd_ok();
         } break;
@@ -402,11 +401,11 @@ void parse_cmd(void) {
         /// byte5-8: end address for flash erase
         case CMD_UPDATE_LAYOUT: {
 #if __SDCC_mcs51
-            XRAM flash_ptr_t start = read_u16le(g_vendor_report_out.data+1);
-            XRAM flash_ptr_t end = read_u16le(g_vendor_report_out.data+5);
+            XRAM flash_addr_t start = read_u16le(g_vendor_report_out.data+1);
+            XRAM flash_addr_t end = read_u16le(g_vendor_report_out.data+5);
 #else
-            XRAM flash_ptr_t start = read_u32le(g_vendor_report_out.data+1);
-            XRAM flash_ptr_t end = read_u32le(g_vendor_report_out.data+5);
+            XRAM flash_addr_t start = read_u32le(g_vendor_report_out.data+1);
+            XRAM flash_addr_t end = read_u32le(g_vendor_report_out.data+5);
 #endif
 
             if (end >= LAYOUT_SIZE) {
@@ -431,14 +430,17 @@ void parse_cmd(void) {
             {
                 // // Start is only an offset from the start of the layout section
                 end -= start;
+                end += (PAGE_SIZE-1);
                 end /= PAGE_SIZE;
-                end += 1;
                 start += LAYOUT_ADDR;
                 start /= PAGE_SIZE; // star is now the start page number
+
+                flash_modify_enable();
                 erase_page_range(
                     start, // first page
                     end // num pages
                 );
+                flash_modify_disable();
             }
 
             cmd_ok();
