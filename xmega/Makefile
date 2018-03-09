@@ -221,10 +221,6 @@ program-boot: $(MERGED_HEX)
 program-boot-2: $(MERGED_HEX)
 	$(XUSBBOOT_CLI) -f $< -mcu $(MCU)
 
-# program a board using an external programmer
-program-hard: $(MERGED_HEX)
-	$(AVRDUDE_CMD) -U flash:w:$<:i -e -E noreset
-
 #######################################################################
 #                     fuse and lock bit settings                      #
 #######################################################################

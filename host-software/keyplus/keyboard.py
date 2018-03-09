@@ -175,10 +175,10 @@ class KeyplusKeyboard(object):
 
     def reconnect(self):
         """ Reconnect to a device after it has been reset.  """
-        if self.get_serial_number() not in ["", None]:
+        if self.serial_number not in ["", None]:
             self.hid_device.close()
             new_kb = find_devices(
-                serial_number=self.get_serial_number()
+                serial_number=self.serial_number
             )[0]
             self._copy_device_info(new_kb)
             self.connect()
@@ -200,6 +200,10 @@ class KeyplusKeyboard(object):
     @property
     def name(self):
         return self.device_info.name
+
+    @property
+    def serial_number(self):
+        return self.hid_device.get_serial_number()
 
 ###############################################################################
 #                                USB Commands                                 #
@@ -629,10 +633,12 @@ class KeyplusKeyboard(object):
             self._check_cmd_response(response)
             address_pos += FLASH_WRITE_PACKET_LEN;
             length_remaining -= FLASH_WRITE_PACKET_LEN
+
         # Writing to address 0xffffff ends flash write.
         finish_packet = bytearray([0xff]*64)
         finish_packet[0] = CMD_WRITE_FLASH
-        self.hid_write(finish_packet);
+        self.hid_write(finish_packet)
+        self._check_cmd_response( self.hid_read(timeout=30) ) # check response
 
     def update_settings_section(self, settings_data, keep_rf):
         assert(isinstance(keep_rf, bool))
