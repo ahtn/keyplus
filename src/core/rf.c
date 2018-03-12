@@ -405,7 +405,6 @@ bit_t read_packet(void) REENT {
     uint8_t width;
 
     // Disable the rf IRQ while access the packet buffer
-    rf_disable_receive_irq();
 
     pipe_num = packet_buffer_get();
     width = packet_buffer_get();
@@ -413,14 +412,11 @@ bit_t read_packet(void) REENT {
         debug_toggle(4);
         packet_buffer_clear();
 
-        rf_enable_receive_irq();
         return false;
     }
 
     // read out the packet payload into the buffer
     ring_buf128_take(&s_rx_buffer, packet_payload, width);
-
-    rf_enable_receive_irq();
 
     // NOTE: currently mouse pipes are disabled in passive listening mode
     if (pipe_num == 5 || pipe_num == 4) {
@@ -662,9 +658,11 @@ bit_t rf_task(void) {
     rf_isr();
 #endif
 
+    rf_disable_receive_irq();
     while (packet_buffer_has_data()) {
         has_data |= read_packet();
     }
+    rf_enable_receive_irq();
 
     return has_data;
 }

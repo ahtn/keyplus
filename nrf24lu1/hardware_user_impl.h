@@ -49,6 +49,7 @@ void dynamic_delay_us(uint16_t us);
 
 // flash pointer defines
 typedef uint16_t flash_ptr_t;
+typedef uint16_t flash_addr_t;
 typedef uint16_t flash_size_t;
 
 #define NO_IDLE_SLEEP

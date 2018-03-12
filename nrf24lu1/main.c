@@ -62,6 +62,7 @@ void dongle_init(void) {
 // TODO: remove later
 // #include "usb/hid/hut_consumer.h"
 
+
 void main(void) {
     dongle_init();
 
@@ -69,9 +70,7 @@ void main(void) {
     EA = 1;
 
     while (true) {
-        wdt_kick();
-
-    if (!g_input_disabled && !has_critical_error()) {
+        if (!g_input_disabled && !has_critical_error()) {
             if (unifying_is_pairing_active()) {
                 unifying_pairing_poll();
             } else {
@@ -93,5 +92,6 @@ void main(void) {
 
         send_vendor_report();
         handle_vendor_out_reports();
+        wdt_kick();
     }
 }

@@ -588,9 +588,9 @@ class KeyplusKeyboard(object):
         chunk_data = None
         remainder = len(data) % chunk_size
         if remainder != 0:
-            chunk_data = data[:] + [pad] * (chunk_size - remainder)
+            chunk_data = bytearray(data[:]) + bytearray([pad] * (chunk_size - remainder))
         else:
-            chunk_data = data
+            chunk_data = bytearray(data)
         return [bytes(chunk_data[i*chunk_size:(i+1)*chunk_size]) for i in range(len(chunk_data)//chunk_size)]
 
     def _check_cmd_response(self, packet):
