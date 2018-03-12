@@ -218,9 +218,7 @@ ISR(VBUS_INT_VECT) {
         // If running from battery power, abort the reset if the pin doesn't
         // stay LOW.
         return;
-    }
-
-    if (sample != 0) {
+    } else if ((power_mode == MODE_USB || power_mode == MODE_WIRED) && sample != 0) {
         // If running from USB power, abort the reset if the pin doesn't
         // stay HIGH.
         return;
