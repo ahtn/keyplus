@@ -59,9 +59,27 @@ void dongle_init(void) {
     reset_usb_reports();
 }
 
-// TODO: remove later
-// #include "usb/hid/hut_consumer.h"
+// NOTE: we use these functions to disable the RF and USB interrupt service
+// routines. The main reason for doing this is that the 8051 has a very limited
+// stack space. If these interrupt routines are triggered while the CPU is in a
+// deeply nested function call, then a stack over flow is likely to occur. So
+// before calling any function that needs to use a lot of stack space, these
+// functions should be used.
+//
+// NOTE: We only use 3 interrupts on the nRF24LU1+:
+// * USB_IRQ
+// * RF_IRQ
+// * T2_IRQ
+// We leave the T2 interrupt alone, since it does not need as much stack space.
+static void irq_off(void) {
+    USB_IRQEN = 0;
+    rf_disable_receive_irq();
+}
 
+static void irq_on(void) {
+    USB_IRQEN = 1;
+    rf_enable_receive_irq();
+}
 
 void main(void) {
     dongle_init();
@@ -71,27 +89,47 @@ void main(void) {
 
     while (true) {
         if (!g_input_disabled && !has_critical_error()) {
+            {
+                irq_off();
+                interpret_all_keyboard_matrices();
+                irq_on();
+            }
+
+            irq_off();
             if (unifying_is_pairing_active()) {
                 unifying_pairing_poll();
             } else {
                 rf_task();
             }
+            irq_on();
 
-            interpret_all_keyboard_matrices();
 
-            macro_task();
+            // Disable usb interrupt while processing USB events
+            irq_off();
+            {
+                macro_task();
 
-            unifying_mouse_handle();
-            send_keyboard_report();
-            send_media_report();
-            send_mouse_report();
+                // send reports
+                unifying_mouse_handle();
+                send_keyboard_report();
+                send_media_report();
+                send_mouse_report();
 
-            sticky_key_task();
-            hold_key_task();
+                // handle special key tasks
+                sticky_key_task();
+                hold_key_task();
+            }
+            irq_on();
         }
 
-        send_vendor_report();
-        handle_vendor_out_reports();
+        // Disable usb interrupt while processing USB events
+        irq_off();
+        {
+            send_vendor_report();
+            handle_vendor_out_reports();
+        }
+        irq_on();
+
         wdt_kick();
     }
 }

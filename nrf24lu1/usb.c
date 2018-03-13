@@ -2,7 +2,6 @@
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
 #include <stdint.h>
-#include <string.h>
 
 #include "nrf24lu1.h"
 #include "nrf24lu1_usb.h"
@@ -236,6 +235,16 @@ void usb_handle_interface_request(void) {
     }
 }
 
+// NOTE: This function is used to avoid calling memcpy which is not reentrant
+// and so should not be used in an ISR. It also saves a couple of bytes.
+static void usb_isr_memcpy_in0buf(void XRAM* src, uint8_t size) {
+    uint8_t i;
+    for (i = 0; i < size; ++i) {
+        in0buf[i] = ((uint8_t*)src)[i];
+    }
+    in0bc = size;
+}
+
 void usb_hid_request(void) {
     uint8_t bRequest = usb_request.val.bRequest;
     uint8_t interface = usb_request.val.wIndexLSB;
@@ -253,8 +262,10 @@ void usb_hid_request(void) {
             // These HID requests don't need to be sent over there specific
             // endpoints but also may be sent over endpoint 0.
             if (interface == INTERFACE_BOOT_KEYBOARD) {
-                memcpy(in0buf, &g_boot_keyboard_report, sizeof(hid_report_boot_keyboard_t));
-                in0bc = sizeof(hid_report_boot_keyboard_t);
+                usb_isr_memcpy_in0buf(
+                    &g_boot_keyboard_report,
+                    sizeof(hid_report_boot_keyboard_t)
+                );
             } else if (interface == INTERFACE_MEDIA) {
                 if (report_id == REPORT_ID_SYSTEM) {
                     in0buf[0] = REPORT_ID_SYSTEM;
@@ -269,14 +280,20 @@ void usb_hid_request(void) {
                     in0bc = 0;
                 }
             } else if (interface == INTERFACE_MOUSE) {
-                memcpy(in0buf, &g_mouse_report, sizeof(hid_report_mouse_t));
-                in0bc = sizeof(hid_report_mouse_t);
+                usb_isr_memcpy_in0buf(
+                    &g_mouse_report,
+                    sizeof(hid_report_mouse_t)
+                );
             } else if (interface == INTERFACE_VENDOR) {
-                memcpy(in0buf, g_vendor_report_in.data, EP_IN_SIZE_VENDOR);
-                in0bc = EP_IN_SIZE_VENDOR;
+                usb_isr_memcpy_in0buf(
+                    g_vendor_report_in.data,
+                    EP_IN_SIZE_VENDOR
+                );
             } else if (interface == INTERFACE_NKRO_KEYBOARD) {
-                memcpy(in0buf, &g_nkro_keyboard_report, sizeof(hid_report_nkro_keyboard_t));
-                in0bc = sizeof(hid_report_nkro_keyboard_t);
+                usb_isr_memcpy_in0buf(
+                    &g_nkro_keyboard_report,
+                    sizeof(hid_report_nkro_keyboard_t)
+                );
             } else {
                 in0bc = 0;
             }

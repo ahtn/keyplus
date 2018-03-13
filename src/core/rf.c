@@ -173,7 +173,7 @@ void rf_handle_ack_payloads(void) {
 #define PACKET_BUFFER_ITEM_SIZE (PACKET_BUFFER_MAX_LEN+2)
 #define RECEIVE_BUFFER_MAX_LENGTH (127 / PACKET_BUFFER_ITEM_SIZE)
 
-XRAM ring_buf128_type s_rx_buffer;
+static XRAM ring_buf128_type s_rx_buffer;
 
 static void packet_buffer_clear(void) {
     ring_buf128_clear(&s_rx_buffer);

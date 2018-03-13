@@ -6,7 +6,6 @@
 
 #include "nrf24lu1.h"
 #include "core/settings.h"
-#include "core/flash.h"
 
 static XRAM uint16_t packetizer_data_size = 0;
 static const XRAM uint8_t *XRAM packetizer_data_ptr;
@@ -29,7 +28,17 @@ void usb_ep0_packetizer_data_send(void) {
     if (packet_size == 0) {
         USB_EP0_HSNAK();
     } else {
-        flash_read(USB_EP0_IN_BUF, (uint16_t)packetizer_data_ptr, packet_size);
+        // Copy as many bytes as we can into endpoint 0
+        // NOTE: Instead of using a function like memcpy(), we use a for loop.
+        // This is because the functions for copying memory are not re-entrant
+        // in SDCC when targeting 8051. So if this interrupt was triggered
+        // while the code was using them, it would cause undefined behavior.
+        {
+            uint8_t i;
+            for (i = 0; i < packet_size; ++i) {
+                USB_EP0_IN_BUF[i] = packetizer_data_ptr[i];
+            }
+        }
         USB_EP0_IN_WRITE(packet_size);
 
         packetizer_data_size -= packet_size;
@@ -133,7 +142,9 @@ void usb_get_descriptor(const XRAM usb_request_t *request) {
                         packetizer_data_ptr = s_string_descriptor_buf;
                     } break;
                 }
-                packetizer_data_size = flash_read_byte((uint16_t)packetizer_data_ptr);
+
+                // packetizer_data_size = flash_read_byte((uint16_t)packetizer_data_ptr);
+                packetizer_data_size = packetizer_data_ptr[0];
             } else {
                 USB_EP0_STALL();
             }

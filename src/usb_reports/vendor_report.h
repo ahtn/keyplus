@@ -22,7 +22,7 @@ extern XRAM vendor_report_t g_vendor_report_out;
 bit_t is_ready_vendor_in_report(void);
 bit_t is_ready_vendor_out_report(void);
 bit_t send_vendor_report(void);
-uint8_t read_vendor_report(uint8_t *dest);
+uint8_t read_vendor_report(void);
 void reset_vendor_report(void);
 
 

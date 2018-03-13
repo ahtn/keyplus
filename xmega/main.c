@@ -247,10 +247,6 @@ void usb_mode_setup(void) {
     usb_init();
 #endif
 
-#if USE_I2C
-    i2c_init();
-#endif
-
     // enable all interrupt levels
     PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
 
@@ -272,6 +268,11 @@ void usb_mode_setup(void) {
     const uint8_t s_has_usb_port = true;
     usb_attach();
 #endif
+
+#if USE_I2C
+    i2c_init();
+#endif
+
 
     g_rf_enabled = false;
 #if USE_NRF24

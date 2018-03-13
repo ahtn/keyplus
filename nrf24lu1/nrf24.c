@@ -5,6 +5,7 @@
 
 #include "nrf24lu1.h"
 #include "core/nrf24.h"
+#include "core/rf.h"
 
 void nrf24_init(void) {
     RFCTL = 0x11;       // enable SPI, 1/2 clock
@@ -31,12 +32,12 @@ uint8_t nrf24_irq(void) {
     return RFIRQ;
 }
 
-void rf_init_receive_irq(void) {
-    rf_enable_receive_irq();
-}
-
 void rf_enable_receive_irq(void) {
     RF_IRQEN = 1;
+}
+
+void rf_init_receive_irq(void) {
+    rf_enable_receive_irq();
 }
 
 void rf_disable_receive_irq(void) {

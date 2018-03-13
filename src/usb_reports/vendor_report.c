@@ -176,7 +176,7 @@ bit_t is_ready_vendor_out_report(void) {
     return is_out_endpoint_ready(EP_NUM_VENDOR);
 }
 
-uint8_t read_vendor_report(uint8_t *dest) {
+uint8_t read_vendor_report(void) {
     if (!is_ready_vendor_out_report()) {
         return 1;
     }

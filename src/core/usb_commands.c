@@ -521,7 +521,7 @@ void handle_vendor_out_reports(void) {
         return;
     }
 
-    read_vendor_report(g_vendor_report_out.data);
+    read_vendor_report();
 
     if (g_vendor_report_out.len == 0) {
         return;
