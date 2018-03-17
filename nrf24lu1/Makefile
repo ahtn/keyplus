@@ -5,7 +5,7 @@
 #                        global build defines                         #
 #######################################################################
 
-TARGET	= nrf24lu1_keyboard
+TARGET_BASE_NAME = keyplus_nrf24lu1
 OBJ_DIR	= obj
 MCU		= NRF24LU1
 F_CPU	= 16000000
@@ -26,6 +26,8 @@ KEYPLUS_CLI = ../host-software/keyplus-cli
 #######################################################################
 #                               config                                #
 #######################################################################
+
+include scripts/boards.mk
 
 ifndef ID
   ID=0
@@ -91,36 +93,6 @@ endif
 #                     flash and storage settings                      #
 #######################################################################
 
-ifeq ($(UNIRECV), 1)
-  # Unifying receiver
-  SETTINGS_ADDR=0x6600
-  LAYOUT_ADDR=0x6800
-  LAYOUT_SIZE=0x0A00
-  NONCE_ADDR=0x7200
-  BOOTLOADER_ADDR=0x7400
-  FLASH_SIZE=32
-
-  CDEFS += -DUSE_UNIFYING_BOOTLOADER=1
-else
-  # Generic nRF24LU1+ dongle
-  SETTINGS_ADDR=0x6E00
-  LAYOUT_ADDR=0x7000
-  LAYOUT_SIZE=0x0C00
-  NONCE_ADDR=0x7C00
-  BOOTLOADER_ADDR=0x7E00
-  # Use default settings for the other values. (see ./hardware_user_impl.h)
-  CDEFS += -DUSE_UNIFYING_BOOTLOADER=0
-endif
-
-ifeq ($(FLASH_SIZE), 16)
-	BOOTLOADER=bins/nrf24lu1_bootloader-f16.hex
-	CODE_SIZE=0x4000
-else ifeq ($(FLASH_SIZE), 32)
-	BOOTLOADER=bins/nrf24lu1_bootloader-f32.hex
-	CODE_SIZE=0x8000
-else
-	$(error Invalid size for flash='$(FLASH_SIZE)')
-endif
 CDEFS += -DFLASH_$(FLASH_SIZE)
 
 #######################################################################
@@ -172,6 +144,7 @@ LFLAGS   = \
 
 ASFLAGS  = -xglospff
 
+# see the boards directory for these definitions
 CDEFS += -DSETTINGS_ADDR=$(SETTINGS_ADDR)
 CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
 CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
@@ -189,50 +162,35 @@ REL_FILES = $(C_REL_FILES) $(ASM_REL_FILES)
 
 LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
 MERGED_HEX="$(basename $(TARGET))-$(LAYOUT_NAME).hex"
+STRIPPED_HEX="$(basename $(TARGET))-$(STRIPPED_HEX).hex"
 
+all: $(TARGET_HEX) $(MERGED_HEX) size
 
-ifeq ($(UNIRECV), 1)
-ALL_TARGET=$(TARGET)-unirecv.hex
-else
-ALL_TARGET=$(MERGED_HEX)
-endif
-
-all: $(ALL_TARGET) size
-
-$(MERGED_HEX): $(TARGET).hex
-	@echo "=== merging layout settings files ==="
-	$(KEYPLUS_CLI) program \
-		--new-id $(ID) \
-		--layout $(LAYOUT_FILE) \
-		--rf $(RF_FILE) \
-		--fw-hex $(TARGET).hex \
-		-M $(SETTINGS_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
-		-o $(TARGET)-$(LAYOUT_NAME).hex \
-		-F scan_method=none \
-		-F chip_name=nRF24LU1P-F32 \
-
-$(TARGET).hex: $(REL_FILES) $(BOOTLOADER)
+$(TARGET_HEX): $(DEP_FILES) $(REL_FILES)
 	@echo "=== compiling target ==="
 	$(CC) --version
 	$(CC) $(CFLAGS) $(LFLAGS) $(REL_FILES) -o $@
+	# @mv *.lk *.map *.mem -t $(OBJ_DIR)
+
+$(MERGED_HEX): $(TARGET_HEX) $(BOOTLOADER)
 	@echo "=== appending bootloader ==="
-	cat $(BOOTLOADER) >> $@
+	cat $(BOOTLOADER) >> $(TARGET_HEX)
 # sort the hex for easier inspection
-	@scripts/sort-intel-hex $@ > $@-temp
-	@mv $@-temp $@
-	@mv *.lk *.map *.mem -t $(OBJ_DIR)
+	@echo "=== merging layout settings files ==="
+	$(KEYPLUS_CLI) program \
+		$(KEYPLUS_CLI_LAYOUT_FLAGS) \
+		--new-id $(ID) \
+		--layout $(LAYOUT_FILE) \
+		--rf $(RF_FILE) \
+		--fw-hex $(TARGET_HEX) \
+		-M $(SETTINGS_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
+		-o $(BUILD_TARGET_DIR)/$(TARGET)-$(LAYOUT_NAME).hex \
+		-F scan_method=none \
+		-F chip_name=nRF24LU1P-F32 \
 
-$(TARGET)-unirecv.hex: $(REL_FILES)
-	@echo "=== compiling target ==="
-	$(CC) $(CFLAGS) $(LFLAGS) $(REL_FILES) -o $@
-	@scripts/sort-intel-hex $@ > $@-temp
-	@mv $@-temp $@
-	@mv *.lk *.map *.mem -t $(OBJ_DIR)
-
-
-size: $(TARGET).hex
+size: $(TARGET_HEX)
 	@echo "=== Size Information ($(TARGET))==="
-	@scripts/hex-size.sh $< obj/$(TARGET).mem
+	@scripts/hex-size.sh $< $(BUILD_TARGET_DIR)/$(TARGET).mem
 
 # rule for c
 $(OBJ_DIR)/%.rel: %.c
@@ -253,9 +211,10 @@ $(OBJ_DIR)/%.dep: %.c
 	@$(PP) $(INC_PATHS) $(CDEFS) -MM -MT $(basename $@).rel $< -o $@
 
 clean:
-	rm -f $(TARGET).hex
-	rm -f $(TARGET)-*.hex
-	rm -f $(TARGET)-uni.hex
+	rm -f $(BUILD_TARGET_DIR)/*.hex
+	rm -f $(BUILD_TARGET_DIR)/*.lk
+	rm -f $(BUILD_TARGET_DIR)/*.map
+	rm -f $(BUILD_TARGET_DIR)/*.mem
 	rm -fr $(OBJ_DIR)
 	rm -fr nrfburn.txt
 

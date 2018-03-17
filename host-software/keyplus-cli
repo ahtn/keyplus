@@ -479,7 +479,8 @@ class ProgramCommand(GenericDeviceCommand):
             '-e', '--erase',
             action='store_const',
             const=True, default=False,
-            help='Erase all the settings and flash of this device'
+            help='Erase all the settings and flash of this device. If given'
+            ' with --merge-hex, generate a hex file with an erase layout.'
         )
 
     def task(self, args):
@@ -494,10 +495,10 @@ class ProgramCommand(GenericDeviceCommand):
             self.arg_parser.print_help()
             exit(EXIT_NO_ERROR)
 
-        if args.erase:
-            self.task_erase(args)
-        elif args.merge_hex:
+        if args.merge_hex:
             self.task_mereged_hex(args)
+        elif args.erase:
+            self.task_erase(args)
         else:
             self.task_program_device(args)
 
@@ -521,6 +522,20 @@ class ProgramCommand(GenericDeviceCommand):
         except KeyplusError as err:
             print_error(str(err))
             exit(EXIT_BAD_FILE)
+
+    def erase_hex_region(self, fw_hex, start, size):
+        # first erase anything that is in the layout section
+        for i in range(start, start+size):
+            fw_hex[i] = 0 # dummy, write so del always works
+            del fw_hex[i]
+
+    def write_hex_file(self, args, fw_hex):
+        if args.outfile:
+            with open(args.outfile, 'w') as outfile:
+                fw_hex.write_hex_file(outfile)
+        else:
+                fw_hex.write_hex_file(sys.stdout)
+
 
     def task_mereged_hex(self, args):
         if (
@@ -568,6 +583,24 @@ class ProgramCommand(GenericDeviceCommand):
                 )
                 exit(EXIT_COMMAND_ERROR)
 
+        # don't want to program the device, instead we want to build a
+        # hexfile with the settings preprogrammed
+        with open(args.hex_file) as f:
+            fw_hex = intelhex.IntelHex(f)
+
+        settings_addr = args.merge_hex[0]
+        layout_addr = args.merge_hex[1]
+        layout_size = args.merge_hex[2]
+
+        # first erase anything that is in the layout section
+        self.erase_hex_region(fw_hex, settings_addr, SETTINGS_SIZE)
+        self.erase_hex_region(fw_hex, layout_addr, layout_size)
+
+        if args.erase:
+            # If the erase flag is given, write the file now and exit
+            self.write_hex_file(args, fw_hex)
+            exit(EXIT_NO_ERROR)
+
         # TODO: build device target from command line parameters
         firmware_info = KeyboardFirmwareInfo()
         try:
@@ -587,16 +620,6 @@ class ProgramCommand(GenericDeviceCommand):
         )
 
         kp_layout = self.load_layout_file(args)
-
-        # don't want to program the device, instead we want to build a
-        # hexfile with the settings preprogrammed
-        with open(args.hex_file) as f:
-            fw_hex = intelhex.IntelHex(f)
-
-        settings_addr = args.merge_hex[0]
-        layout_addr = args.merge_hex[1]
-        layout_size = args.merge_hex[2]
-
 
         settings_data = kp_layout.build_settings_section(device_target)
         layout_data = kp_layout.build_layout_section(device_target)
@@ -623,19 +646,10 @@ class ProgramCommand(GenericDeviceCommand):
 
 
         fw_hex.merge(settings_hex, overlap='replace')
-
-        # first erase anything that is in the layout section
-        for i in range(layout_addr, layout_addr+layout_size):
-            fw_hex[i] = 0 # dummy, write so del always works
-            del fw_hex[i]
-
         fw_hex.merge(layout_hex, overlap='replace')
 
-        if args.outfile:
-            with open(args.outfile, 'w') as outfile:
-                fw_hex.write_hex_file(outfile)
-        else:
-                fw_hex.write_hex_file(sys.stdout)
+        self.write_hex_file(args, fw_hex)
+
         exit(EXIT_NO_ERROR)
 
     def task_program_device(self, args):

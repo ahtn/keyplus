@@ -1,0 +1,19 @@
+
+# Unifying receiver
+SETTINGS_ADDR=0x6600
+LAYOUT_ADDR=0x6800
+LAYOUT_SIZE=0x0A00
+NONCE_ADDR=0x7200
+BOOTLOADER_ADDR=0x7400
+FLASH_SIZE=32
+
+CDEFS += -DUSE_UNIFYING_BOOTLOADER=1
+
+# Hexes using the unifying bootloader need to have the layout section erased
+KEYPLUS_CLI_LAYOUT_FLAGS=-e
+BOOTLOADER=/dev/null
+CODE_SIZE=0x8000
+
+ifndef LAYOUT_FILE
+  LAYOUT_FILE=blank
+endif
