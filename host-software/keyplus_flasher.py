@@ -932,7 +932,10 @@ class Loader(QMainWindow):
             self.statusBar().showMessage("Finished updating RF settings", timeout=STATUS_BAR_TIMEOUT)
 
             for widget in self.deviceListWidget.deviceWidgets:
-                widget.updateLabel()
+                try:
+                    widget.updateLabel()
+                except easyhid.HIDException:
+                    pass
 
         elif programmingMode == FileSelector.ScopeFirmware:
             fw_file = self.fileSelectorWidget.getFirmwareFile()

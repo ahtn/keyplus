@@ -134,10 +134,16 @@ void cmd_ok(void) {
 }
 
 void cmd_reset(uint8_t reset_type) {
-    if (reset_type == RESET_TYPE_HARDWARE) {
+    // NOTE: if the device had a critical error, we assume that the software
+    // reset is not guaranteed to work correctly, so we use a proper reset
+    // in that case.
+    if (reset_type == RESET_TYPE_HARDWARE || has_critical_error()) {
         reset_mcu();
     } else if (reset_type == RESET_TYPE_SOFTWARE) {
         software_reset();
+        if (has_critical_error()) {
+            reset_mcu();
+        }
     }
 }
 
