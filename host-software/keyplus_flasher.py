@@ -102,7 +102,7 @@ class DeviceWidget(QGroupBox):
         super(DeviceWidget, self).__init__(None)
 
         self.device = device
-        self.label = None
+        self.label = QLabel()
 
         self.initUI()
 
@@ -126,7 +126,7 @@ class DeviceWidget(QGroupBox):
 
         if settingsInfo.crc == settingsInfo.computed_crc:
             build_time_str = protocol.timestamp_to_str(settingsInfo.timestamp)
-            self.label = QLabel('{} | {} | Firmware v{}.{}.{}\n'
+            self.label.setText('{} | {} | Firmware v{}.{}.{}\n'
                                 'Device id: {}\n'
                                 'Serial number: {}\n'
                                 'Last time updated: {}'
@@ -144,7 +144,7 @@ class DeviceWidget(QGroupBox):
         else:
             # CRC doesn't match
             if settingsInfo.is_empty:
-                self.label = QLabel('??? | ??? | Firmware v{}.{}.{}\n'
+                self.label.setText('??? | ??? | Firmware v{}.{}.{}\n'
                                     'Warning: Empty settings!\n'
                                     'Serial number: {}\n'
                     .format(
@@ -157,7 +157,7 @@ class DeviceWidget(QGroupBox):
             else:
                 # corrupt settings in the flash
                 build_time_str = protocol.timestamp_to_str(settingsInfo.timestamp)
-                self.label = QLabel('??? | ??? | Firmware v{}.{}.{}\n'
+                self.label.setText('??? | ??? | Firmware v{}.{}.{}\n'
                                     'WARNING: Settings are uninitialized\n'
                                     'Serial number: {}\n'
                     .format(
@@ -185,7 +185,7 @@ class DeviceWidget(QGroupBox):
                   file=sys.stderr
             )
 
-        self.label = QLabel('{} | {} | Bootloader v{}.{}\n'
+        self.label.setText('{} | {} | Bootloader v{}.{}\n'
                             'MCU: {}\n'
                             'Flash size: {}\n'
                             'Serial number: {}\n'
@@ -217,7 +217,7 @@ class DeviceWidget(QGroupBox):
         #           file=sys.stderr
         #     )
 
-        self.label = QLabel('nRF24LU1+ Bootloader v{}.{}\n'
+        self.label.setText('nRF24LU1+ Bootloader v{}.{}\n'
                             'MCU: nRF24LU1+\n'
             .format(
                 0,
@@ -227,10 +227,7 @@ class DeviceWidget(QGroupBox):
             )
         )
 
-    def initUI(self):
-        programIcon = QIcon('img/download.png')
-        infoIcon = QIcon('img/info.png')
-
+    def updateLabel(self):
         if is_keyplus_device(self.device):
             self.setup_keyplus_label()
         elif is_xusb_bootloader_device(self.device):
@@ -241,7 +238,13 @@ class DeviceWidget(QGroupBox):
             raise Exception("Unsupported USB device {}:{}".format(
                 self.device.vendor_id, self.device.product_id))
 
-        if self.label == None:
+    def initUI(self):
+        programIcon = QIcon('img/download.png')
+        infoIcon = QIcon('img/info.png')
+
+        self.updateLabel()
+
+        if self.label.text() == "":
             return
 
         self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -385,6 +388,10 @@ class DeviceList(QScrollArea):
         self.setWidget(self.listWidget)
 
         self.updateList()
+
+    # def updateLabels(self):
+    #     for dev in self.deviceWidgets:
+    #         dev.updateLabels()
 
     def updateList(self):
         self.updateCounter += 1
@@ -856,7 +863,8 @@ class Loader(QMainWindow):
             with kb:
                 kb.update_settings_section(settings_data, keep_rf=True)
                 kb.update_layout_section(layout_data)
-                kb.reset()
+                kb.reset(reset_type=RESET_TYPE_SOFTWARE)
+
 
             if warnings != []:
                 error_msg_box(
@@ -865,6 +873,9 @@ class Loader(QMainWindow):
                     "\n".join([str(warn) for warn in warnings]),
                     title = "Warnings",
                 )
+
+            for widget in self.deviceListWidget.deviceWidgets:
+                widget.updateLabel()
 
             self.statusBar().showMessage("Finished updating layout", timeout=STATUS_BAR_TIMEOUT)
         elif programmingMode == FileSelector.ScopeDevice:
@@ -908,7 +919,7 @@ class Loader(QMainWindow):
             with kb:
                 kb.update_settings_section(settings_data, keep_rf=False)
                 kb.update_layout_section(layout_data)
-                kb.reset()
+                kb.reset(reset_type=RESET_TYPE_SOFTWARE)
 
             if warnings != []:
                 error_msg_box(
@@ -919,6 +930,9 @@ class Loader(QMainWindow):
                 )
 
             self.statusBar().showMessage("Finished updating RF settings", timeout=STATUS_BAR_TIMEOUT)
+
+            for widget in self.deviceListWidget.deviceWidgets:
+                widget.updateLabel()
 
         elif programmingMode == FileSelector.ScopeFirmware:
             fw_file = self.fileSelectorWidget.getFirmwareFile()

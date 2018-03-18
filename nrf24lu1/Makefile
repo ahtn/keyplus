@@ -161,8 +161,7 @@ DEP_FILES = $(patsubst %.c, $(OBJ_DIR)/%.dep, $(C_SRC))
 REL_FILES = $(C_REL_FILES) $(ASM_REL_FILES)
 
 LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
-MERGED_HEX="$(basename $(TARGET))-$(LAYOUT_NAME).hex"
-STRIPPED_HEX="$(basename $(TARGET))-$(STRIPPED_HEX).hex"
+MERGED_HEX="$(BUILD_TARGET_DIR)/$(basename $(TARGET))-$(LAYOUT_NAME).hex"
 
 all: $(TARGET_HEX) $(MERGED_HEX) size
 
@@ -223,6 +222,11 @@ program-boot: $(MERGED_HEX) size
 	$(KEYPLUS_CLI) bootloader -d 6666:3333
 	sleep 1.0
 	./nrf24lu1p-512-bootloader/scripts/flash.py write_hex $<
+
+program-unirecv: $(MERGED_HEX)
+	$(KEYPLUS_CLI) bootloader -d 6666:3333
+	sleep 1.0
+	../host-software/uniflash/uniflash.py flash $<
 
 program-hard: flash
 flash: $(TARGET).hex size

@@ -137,7 +137,7 @@ void cmd_reset(uint8_t reset_type) {
     if (reset_type == RESET_TYPE_HARDWARE) {
         reset_mcu();
     } else if (reset_type == RESET_TYPE_SOFTWARE) {
-        // TODO: software reset
+        software_reset();
     }
 }
 

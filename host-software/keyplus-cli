@@ -698,8 +698,7 @@ class ProgramCommand(GenericDeviceCommand):
                 layout = kp_layout.build_layout_section(device_target)
                 kb.update_layout_section(layout)
 
-            kb.reset()
-
+            kb.reset(reset_type=RESET_TYPE_SOFTWARE)
 
 
 class PairCommand(GenericDeviceCommand):

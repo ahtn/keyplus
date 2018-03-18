@@ -9,8 +9,6 @@
 // Also, make sure that F_CPU and CLOCK_SPEED_SLOW are set
 #include "hardware_user_impl.h"
 
-extern bit_t g_slow_clock_mode;
-
 #include <stdint.h>
 
 #ifndef F_CPU
@@ -45,6 +43,18 @@ extern bit_t g_slow_clock_mode;
     } \
 }
 
+extern bit_t g_slow_clock_mode;
+
+#if USE_I2C && USE_USB
+extern bit_t g_has_usb_port;
+#endif
+
+/// Perform a software reset.
+void software_reset(void);
+
+/*********************************************************************
+ *              functions that need to be implemented                *
+ *********************************************************************/
 
 void dynamic_delay_ms(uint16_t ms);
 

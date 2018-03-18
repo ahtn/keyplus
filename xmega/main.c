@@ -280,6 +280,7 @@ void usb_mode_setup(void) {
         rf_init_receive();
     }
 #endif
+    g_has_usb_port = s_has_usb_port;
 }
 
 NO_RETURN_ATTR void recovery_mode_main_loop(void);
