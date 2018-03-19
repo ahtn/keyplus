@@ -583,10 +583,40 @@ class ProgramCommand(GenericDeviceCommand):
                 )
                 exit(EXIT_COMMAND_ERROR)
 
+        # TODO: build device target from command line parameters
+        firmware_info = KeyboardFirmwareInfo()
+        try:
+            firmware_info.chip_id = get_chip_id_from_name(firmware_settings['chip_name'])
+            firmware_info.set_internal_scan_method(firmware_settings['scan_method'])
+        except KeyplusSettingsError as err:
+            print_error(str(err))
+            exit(EXIT_COMMAND_ERROR)
+        except KeyError as err:
+            print_error("firmware setting '{}' must be set".format(err.args[0]))
+            exit(EXIT_COMMAND_ERROR)
+
+
         # don't want to program the device, instead we want to build a
         # hexfile with the settings preprogrammed
         with open(args.hex_file) as f:
             fw_hex = intelhex.IntelHex(f)
+
+        # Add chip id to hex file.
+        #
+        # NOTE:
+        # Intel hex files have 6 record types. The record type 0x05 is a 4
+        # byte value that is only used on 80386 processors, so here were going
+        # to use it for a different purpose. We want the firmware loader to
+        # know what microcontroller the hex was compiled for.
+        #
+        # NOTE: The 0x03 record looks like it can also be used, but it can't
+        # be used together with the 0x05 record, so we can't use it.
+        #
+        # Reference:
+        # https://en.wikipedia.org/wiki/Intel_HEX#Record_types
+        fw_hex.start_addr = {
+            'EIP': firmware_info.chip_id
+        }
 
         settings_addr = args.merge_hex[0]
         layout_addr = args.merge_hex[1]
@@ -600,18 +630,6 @@ class ProgramCommand(GenericDeviceCommand):
             # If the erase flag is given, write the file now and exit
             self.write_hex_file(args, fw_hex)
             exit(EXIT_NO_ERROR)
-
-        # TODO: build device target from command line parameters
-        firmware_info = KeyboardFirmwareInfo()
-        try:
-            firmware_info.chip_id = get_chip_id_from_name(firmware_settings['chip_name'])
-            firmware_info.set_internal_scan_method(firmware_settings['scan_method'])
-        except KeyplusSettingsError as err:
-            print_error(str(err))
-            exit(EXIT_COMMAND_ERROR)
-        except KeyError as err:
-            print_error("firmware setting '{}' must be set".format(err.args[0]))
-            exit(EXIT_COMMAND_ERROR)
 
         # firmware_info.chip_id =
         device_target = KeyboardDeviceTarget(
