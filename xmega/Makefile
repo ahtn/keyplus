@@ -213,8 +213,7 @@ program: $(MERGED_HEX) program-boot
 # reset a board into bootloader via usb, then program it via the bootloader
 program-boot: $(MERGED_HEX)
 	# ./scripts/flash_hex.sh $< $(MCU)
-	$(KEYPLUS_CLI) bootloader -d 6666:1111
-	sleep 1.5
+	$(KEYPLUS_CLI) bootloader -d 6666:1111 | sleep 1.5
 	$(XUSBBOOT_CLI) -d 6666:b007 -f $< -mcu $(MCU)
 
 # program a board that is already in in bootloader mode

@@ -219,13 +219,11 @@ clean:
 
 # program: flash
 program-boot: $(MERGED_HEX) size
-	$(KEYPLUS_CLI) bootloader -d 6666:3333
-	sleep 1.0
+	$(KEYPLUS_CLI) bootloader -d 6666:3333 | sleep 1.0
 	./nrf24lu1p-512-bootloader/scripts/flash.py write_hex $<
 
 program-unirecv: $(MERGED_HEX)
-	$(KEYPLUS_CLI) bootloader -d 6666:3333
-	sleep 1.0
+	$(KEYPLUS_CLI) bootloader -d 6666:3333 | sleep 1.0
 	../host-software/uniflash/uniflash.py flash $<
 
 program-hard: flash
