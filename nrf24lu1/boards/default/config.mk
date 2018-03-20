@@ -9,6 +9,8 @@ BOOTLOADER_ADDR=0x7E00
 # Use default settings for the other values. (see ./hardware_user_impl.h)
 CDEFS += -DUSE_UNIFYING_BOOTLOADER=0
 
+BOOTLOADER=bins/nrf24lu1_bootloader-f32.hex
+
 ifeq ($(FLASH_SIZE), 16)
 	BOOTLOADER=bins/nrf24lu1_bootloader-f16.hex
 	CODE_SIZE=0x4000

@@ -19,6 +19,7 @@ from pprint import pprint
 
 from keyplus.constants import *
 from keyplus.usb_ids import is_keyplus_usb_id
+from keyplus.chip_id import get_chip_id_from_name
 from keyplus.error_table import KeyplusErrorTable
 from keyplus.exceptions import *
 from keyplus.device_info import *
@@ -58,7 +59,7 @@ def _get_similar_serial_number(dev_list, serial_num):
         return serial_num
 
 def find_devices(name=None, serial_number=None, vid_pid=None, device_id=None,
-                 hid_enumeration=None):
+                 hid_enumeration=None, chip_name=None):
     """
     Returns a list of keyplus keyboards that are currently connected to the
     computer. The arguments can be used to filter result.
@@ -74,6 +75,11 @@ def find_devices(name=None, serial_number=None, vid_pid=None, device_id=None,
         hid_enumeration: an enumeration of USB devices to test. If this argument
             is not set, the function will call `easyhid.Enumeration()` itself.
     """
+    if chip_name != None:
+        chip_id =  get_chip_id_from_name(chip_name)
+    else:
+        chip_id = None
+
     if not hid_enumeration:
         hid_enumeration = easyhid.Enumeration()
 
@@ -113,6 +119,7 @@ def find_devices(name=None, serial_number=None, vid_pid=None, device_id=None,
         interface=INTERFACE_VENDOR
     )
 
+
     matching_dev_list = []
     for hid_device in matching_devices:
         try:
@@ -126,6 +133,9 @@ def find_devices(name=None, serial_number=None, vid_pid=None, device_id=None,
             if device_id != None and device_id != new_kb.device_id:
                 continue
             if name != None and (name not in new_kb.name):
+                continue
+
+            if chip_id != None and (chip_id != new_kb.firmware_info.chip_id):
                 continue
 
             matching_dev_list.append(new_kb)

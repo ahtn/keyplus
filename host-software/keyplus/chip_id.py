@@ -89,13 +89,15 @@ def _generate_chip_name_table(table):
     """
     result = {}
     for chip_id in table:
-        name = table[chip_id].name.lower()
-        result[name] = table[chip_id]
+        name = table[chip_id].name
+        lookup_name = name.lower().replace('-', '_')
+        result[lookup_name] = table[chip_id]
     return result
 
 def get_chip_id_from_name(name):
-    if name in CHIP_NAME_TABLE:
-        return CHIP_NAME_TABLE[name.lower()].chip_id
+    lookup_name = name.lower().replace('-', '_')
+    if lookup_name in CHIP_NAME_TABLE:
+        return CHIP_NAME_TABLE[lookup_name].chip_id
     else:
         raise KeyplusSettingsError("Unknown chip name '{}'".format(name))
 

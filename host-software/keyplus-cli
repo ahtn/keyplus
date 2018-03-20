@@ -124,6 +124,11 @@ class GenericDeviceCommand(GenericCommand):
         )
 
         self.arg_parser.add_argument(
+            '-p', '--chip_name', dest='chip_name', type=str, default=None,
+            help='Match devices which are using the given mcu chip name.'
+        )
+
+        self.arg_parser.add_argument(
             '-d', '--vid-pid', dest='vid_pid', type=str, default=None,
             help='Open a device based on a vid_pid pair'
         )
@@ -139,6 +144,7 @@ class GenericDeviceCommand(GenericCommand):
             device_id = args.device_id,
             vid_pid = args.vid_pid,
             serial_number = args.serial,
+            chip_name = args.chip_name,
         )
         num_matches = len(matching_devices)
 

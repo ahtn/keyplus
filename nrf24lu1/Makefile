@@ -23,6 +23,13 @@ USE_SCANNER := 0
 
 KEYPLUS_CLI = ../host-software/keyplus-cli
 
+# Prototype IDs
+# USB_VID = 6666
+# USB_PID = 3333
+
+USB_VID = 1209
+USB_PID = BB02
+
 #######################################################################
 #                               config                                #
 #######################################################################
@@ -173,7 +180,9 @@ $(TARGET_HEX): $(DEP_FILES) $(REL_FILES)
 
 $(MERGED_HEX): $(TARGET_HEX) $(BOOTLOADER)
 	@echo "=== appending bootloader ==="
-	cat $(BOOTLOADER) >> $(TARGET_HEX)
+	sed '/^:00000001FF/d' $(TARGET_HEX) > $(TARGET_HEX)_with_bootloader.hex
+	cat $(BOOTLOADER) >> $(TARGET_HEX)_with_bootloader.hex
+	echo ':00000001FF' >> $(TARGET_HEX)_with_bootloader.hex
 # sort the hex for easier inspection
 	@echo "=== merging layout settings files ==="
 	$(KEYPLUS_CLI) program \
@@ -181,7 +190,7 @@ $(MERGED_HEX): $(TARGET_HEX) $(BOOTLOADER)
 		--new-id $(ID) \
 		--layout $(LAYOUT_FILE) \
 		--rf $(RF_FILE) \
-		--fw-hex $(TARGET_HEX) \
+		--fw-hex $(TARGET_HEX)_with_bootloader.hex \
 		-M $(SETTINGS_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
 		-o $(BUILD_TARGET_DIR)/$(TARGET)-$(LAYOUT_NAME).hex \
 		-F scan_method=none \
@@ -217,18 +226,17 @@ clean:
 	rm -fr $(OBJ_DIR)
 	rm -fr nrfburn.txt
 
-# program: flash
 program-boot: $(MERGED_HEX) size
-	$(KEYPLUS_CLI) bootloader -d 6666:3333 | sleep 1.0
+	$(KEYPLUS_CLI) bootloader -p $(MCU_STRING) | sleep 1.0
 	./nrf24lu1p-512-bootloader/scripts/flash.py write_hex $<
 
 program-unirecv: $(MERGED_HEX)
-	$(KEYPLUS_CLI) bootloader -d 6666:3333 | sleep 1.0
+	$(KEYPLUS_CLI) bootloader -p $(MCU_STRING) | sleep 1.0
 	../host-software/uniflash/uniflash.py flash $<
 
-program-hard: flash
-flash: $(TARGET).hex size
-	nrfburn -f $(FLASH_SIZE) -w $(MERGED_HEX)
+program-hard:: $(MERGED_HEX) size
+	./scripts/strip_chip_id.sh $(MERGED_HEX) > $(MERGED_HEX)_no_chip_id.hex
+	nrfburn -f $(FLASH_SIZE) -w $(MERGED_HEX)_no_chip_id.hex
 
 
 version:

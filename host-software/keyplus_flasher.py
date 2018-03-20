@@ -21,6 +21,7 @@ from keyplus.device_info import KeyboardDeviceTarget, KeyboardFirmwareInfo
 import keyplus.chip_id
 from keyplus import KeyplusKeyboard
 from keyplus.exceptions import *
+import keyplus.usb_ids
 
 # TODO: clean up directory structure
 import sys
@@ -65,17 +66,26 @@ def msg_box(description="", title="Message"):
 def is_keyplus_device(device):
     if device.interface_number != protocol.DEFAULT_INTERFACE:
         return False
-    return (device.vendor_id, device.product_id) in [(0x6666, 0x1111*i) for i in range(16)]
+    usb_id = (device.vendor_id, device.product_id)
+    if (
+        usb_id in keyplus.usb_ids.KEYPLUS_USB_IDS or
+        usb_id in [(0x6666, 0x1111*i) for i in range(16)]
+    ):
+        return True
+
+def get_boot_loader_type(device):
+    usb_id = (device.vendor_id, device.product_id)
+    info = keyplus.usb_ids.BOOTLOADER_USB_IDS.get(usb_id)
+    if info == None:
+        return None
+    return info.bootloader
+
 
 def is_xusb_bootloader_device(device):
-    # if device.interface_number != xusbboot.DEFAULT_INTERFACE:
-    #     return False
-    return (device.vendor_id, device.product_id) == (xusbboot.DEFAULT_VID, xusbboot.DEFAULT_PID)
+    return get_boot_loader_type(device) == keyplus.usb_ids.BootloaderType.XUSB_BOOT
 
 def is_nrf24lu1p_bootloader_device(device):
-    ID_VENDOR = 0x1915
-    ID_PRODUCT = 0x0101
-    return (device.vendor_id, device.product_id) == (ID_VENDOR, ID_PRODUCT)
+    return get_boot_loader_type(device) == keyplus.usb_ids.BootloaderType.NRF24LU1P_FACTORY
 
 def is_unifying_bootloader_device(device):
     return False
