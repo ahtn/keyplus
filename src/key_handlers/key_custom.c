@@ -15,9 +15,11 @@
 
 static const ROM char msg[] = "hello world\n";
 
+#if USE_NRF24
 static bit_t is_dongle_key(keycode_t keycode) {
     return ( KC_DONGLE_0 <= keycode && keycode <= KC_DONGLE_7 );
 }
+#endif
 
 static bit_t keycode_checker(keycode_t keycode) {
     return ( KC_DONGLE_0 <= keycode && keycode <= KC_TEST_7);
@@ -26,12 +28,15 @@ static bit_t keycode_checker(keycode_t keycode) {
 /* TODO:  */
 static void handler(keycode_t keycode, key_event_t event) REENT {
     switch (keycode) {
+
+#if USE_NRF24
         case KC_UNIFYING_PAIR: {
             if (event == EVENT_PRESSED) {
                 unifying_begin_pairing();
             }
             return;
         } break;
+#endif
 
         case KC_TEST_3: {
             if (event == EVENT_PRESSED) {

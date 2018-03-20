@@ -219,8 +219,10 @@ class PassthroughCommand(GenericDeviceCommand):
             dev = kp_layout.get_device(kb.device_info.device_id)
             pin_mapping = dev.scan_mode.generate_pin_mapping(kb.get_device_target())
 
+            column_pins = pin_mapping.column_pins
+
             # List is (col_num, pin_num)
-            pin_and_col = list(enumerate(pin_mapping.column_pins))
+            pin_and_col = list(enumerate(column_pins))
             # Sort this list by it's pin_num field
             pin_and_col.sort(key=lambda x: x[1])
             # Make a mapping from physical column numbers -> logical column

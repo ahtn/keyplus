@@ -63,7 +63,9 @@ void xmega_common_init(void) {
     io_map_init();
     pin_init();
     settings_load_from_flash();
+#if USE_NRF24
     aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
+#endif
     led_testing_set(0, 0);
     matrix_scanner_init();
 }
@@ -227,7 +229,9 @@ void battery_mode_main_loop(void) {
 #if USE_USB
 
 void usb_mode_setup(void) {
+#if USE_NRF24 || USE_I2C
     set_power_mode(MODE_USB);
+#endif
 
     timer_init();
 
@@ -274,13 +278,18 @@ void usb_mode_setup(void) {
 #endif
 
 
-    g_rf_enabled = false;
 #if USE_NRF24
+    g_rf_enabled = false;
+
     if (s_has_usb_port) {
         rf_init_receive();
     }
 #endif
+
+#if USE_I2C || USE_NRF24
     g_has_usb_port = s_has_usb_port;
+#endif
+
 }
 
 NO_RETURN_ATTR void recovery_mode_main_loop(void);

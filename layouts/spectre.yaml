@@ -1,0 +1,35 @@
+# Written in 2017 by jem@seethis.link
+# This file is released into the public domain as per the CC0 Public Domain
+# Dedication (http://creativecommons.org/publicdomain/zero/1.0/)
+---
+
+version: 0.3.0
+
+devices:
+  spectre:
+    id: 0
+    layout: spectre
+    layout_offset: 0
+    scan_mode:
+      mode: pin_gnd
+      pins: [
+        E1, E0, E2, E3, E4, E5,  D5, D4, D3, D2, D1, D0,
+        F3, F2, F1, F0, E6, E7,  C7, C6, C5, C4, C3, C2,
+        F4, F5, F6, F7, R0, R1,  B7, B6, B5, B4, C0, C1,
+        A0, A1, A2, A3, A4, A5,  A6, A7, B0, B1, B3, B2,
+      ]
+      # maps how keys are physically wired, to how they appear visually
+
+layouts:
+  spectre:
+    default_layer: 0
+    layers: [
+      [ # layer 0 (base)
+        [
+          0   , q   , w   , e   , r   , t   , y   , u   , i   , o   , p   , a   ,
+          1   , a   , s   , d   , f   , g   , h   , j   , k   , l   , ";" , "'" ,
+          2   , z   , x   , c   , v   , b   , m   , n   , "," , "." , "/" , b   ,
+          0   , 1   , 2   , 3   , 4   , 5   , 6   , 7   , 8   , 9   , d   , c   ,
+        ]
+      ],
+    ]

@@ -79,7 +79,6 @@ CFLAGS += -fno-jump-tables
 
 # List C source files here.
 C_SRC += \
-	aes.c \
 	debug.c \
 	flash.c \
 	fuses.c \
@@ -133,7 +132,9 @@ endif
 
 # TODO: enable/disable nrf24 and i2c at run time using flash settings
 ifeq ($(USE_NRF24), 1)
-  C_SRC += nrf24.c
+  C_SRC += \
+	aes.c \
+	nrf24.c
 endif
 
 CDEFS += -DUSE_CHECK_PIN=$(USE_CHECK_PIN)
@@ -203,6 +204,8 @@ MERGED_HEX="$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex"
 
 all: fuse lock $(MERGED_HEX)
 
+$(LAYOUT_FILE):
+
 $(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
 	 $(KEYPLUS_CLI) program \
 		--new-id $(ID) \
@@ -214,13 +217,14 @@ $(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
 		-F chip_name="$(MCU_STRING)" \
 		-F scan_method=fast_row_col \
 
-program: $(MERGED_HEX) program-boot
+.PHONY:
+program: program-boot
 
 # reset a board into bootloader via usb, then program it via the bootloader
 program-boot: $(MERGED_HEX)
 	# ./scripts/flash_hex.sh $< $(MCU)
-	$(KEYPLUS_CLI) bootloader -d 6666:1111 | sleep 1.5
-	$(XUSBBOOT_CLI) -d 6666:b007 -f $< -mcu $(MCU)
+	$(KEYPLUS_CLI) bootloader -p $(MCU_STRING) | sleep 1.5
+	$(XUSBBOOT_CLI) -f $< -mcu $(MCU)
 
 # program a board that is already in in bootloader mode
 program-boot-2: $(MERGED_HEX)

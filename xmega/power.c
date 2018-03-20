@@ -17,6 +17,8 @@
 #include "core/nrf24.h"
 #include "core/matrix_scanner.h"
 
+#if (USE_I2C || USE_NRF24)
+
 #define PR_ALL_GENERAL_bm (PR_USB_bm | PR_AES_bm | PR_EBI_bm | \
             PR_RTC_bm | PR_EVSYS_bm | PR_DMA_bm)
 
@@ -144,6 +146,8 @@ void battery_mode_clock_init(void) {
 
     g_slow_clock_mode = 1;
 }
+
+#endif
 
 
 void enter_sleep_mode(uint8_t sleep_mode) {

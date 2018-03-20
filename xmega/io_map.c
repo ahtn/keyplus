@@ -3,6 +3,8 @@
 
 #include "core/io_map.h"
 
+#if XMEGA_PIN_COUNT == 44
+
 io_port_t * const g_io_port_map[IO_PORT_COUNT] = {
     &PORTA,
     &PORTB,
@@ -11,3 +13,17 @@ io_port_t * const g_io_port_map[IO_PORT_COUNT] = {
     &PORTE,
     &PORTR,
 };
+
+#elif XMEGA_PIN_COUNT == 64
+
+io_port_t * const g_io_port_map[IO_PORT_COUNT] = {
+    &PORTA,
+    &PORTB,
+    &PORTC,
+    &PORTD,
+    &PORTE,
+    &PORTF,
+    &PORTR,
+};
+
+#endif

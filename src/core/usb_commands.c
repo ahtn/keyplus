@@ -203,10 +203,6 @@ static void cmd_custom_bootloader(void) {
     bootloader_jmp();
 }
 
-static void cmd_unifying_pairing(void) {
-    unifying_begin_pairing();
-}
-
 static void erase_page_range(uint16_t start_page, uint16_t page_count) {
     uint16_t i;
 
@@ -510,9 +506,12 @@ void parse_cmd(void) {
             cmd_read_layout();
         } break;
 
+#if USE_NRF24
         case CMD_UNIFYING_PAIR: {
-            cmd_unifying_pairing();
+            unifying_begin_pairing();
         } break;
+#endif
+
         default: {
             cmd_error(CMD_ERROR_UNKNOWN_CMD);
         } break;

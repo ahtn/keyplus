@@ -18,7 +18,7 @@ from PySide.QtCore import Slot, Signal, QAbstractTableModel
 
 from keyplus.layout import KeyplusLayout
 from keyplus.device_info import KeyboardDeviceTarget, KeyboardFirmwareInfo
-import keyplus.chip_id
+from keyplus import chip_id
 from keyplus import KeyplusKeyboard
 from keyplus.exceptions import *
 import keyplus.usb_ids
@@ -34,7 +34,7 @@ import hexdump
 import easyhid
 import protocol
 import layout.parser
-import io_map.chip_id as chip_id
+# import io_map.chip_id as chip_id
 import xusbboot
 
 STATUS_BAR_TIMEOUT=4500

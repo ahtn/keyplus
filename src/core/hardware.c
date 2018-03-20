@@ -19,12 +19,13 @@ bit_t g_has_usb_port;
 void software_reset(void) {
     init_error_system();
     settings_load_from_flash();
-    aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
 #if USE_SCANNER
     io_map_init();
     matrix_scanner_init();
 #endif
 #if USE_RF
+    aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
+
     if (!g_runtime_settings.feature.ctrl.rf_disabled) {
         rf_init_receive();
     }

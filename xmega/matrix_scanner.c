@@ -79,7 +79,7 @@ static void setup_columns(void) {
     // Note: If MPCMASK=0, then its function is disabled, so writing to PIN0CTRL
     // would actually affect update PIN0CTRL instead of updating no pins.
     const uint8_t max_col_pin_num = g_scan_plan.max_col_pin_num;
-    const uint8_t max_port_num = (max_col_pin_num + (IO_PORT_SIZE-1)) / IO_PORT_SIZE;
+    const uint8_t max_port_num = INT_DIV_ROUND_UP(max_col_pin_num, IO_PORT_SIZE);
     uint8_t port_ii;
     for (port_ii = 0; port_ii < max_port_num; ++port_ii) {
         io_port_t *port = IO_MAP_GET_PORT(port_ii);
@@ -199,11 +199,15 @@ static void setup_rows(void) {
 
 ///  makes all rows floating inputs
 static inline void unselect_all_rows(void) {
+// #if XMEGA_SERIES == A OR B
     PORTA.OUTSET = s_row_port_masks[PORT_A_NUM];
     PORTB.OUTSET = s_row_port_masks[PORT_B_NUM];
     PORTC.OUTSET = s_row_port_masks[PORT_C_NUM];
     PORTD.OUTSET = s_row_port_masks[PORT_D_NUM];
     PORTE.OUTSET = s_row_port_masks[PORT_E_NUM];
+#if IO_PORT_COUNT >= 7
+    PORTF.OUTSET = s_row_port_masks[PORT_F_NUM];
+#endif
     PORTR.OUTSET = s_row_port_masks[PORT_R_NUM];
 }
 
@@ -214,6 +218,9 @@ static inline void select_all_rows(void) {
     PORTC.OUTCLR = s_row_port_masks[PORT_C_NUM];
     PORTD.OUTCLR = s_row_port_masks[PORT_D_NUM];
     PORTE.OUTCLR = s_row_port_masks[PORT_E_NUM];
+#if IO_PORT_COUNT >= 7
+    PORTF.OUTCLR = s_row_port_masks[PORT_F_NUM];
+#endif
     PORTR.OUTCLR = s_row_port_masks[PORT_R_NUM];
 }
 
@@ -225,6 +232,9 @@ bool matrix_has_active_row(void) {
            (PORTC.IN & s_col_masks[PORT_C_NUM]) ||
            (PORTD.IN & s_col_masks[PORT_D_NUM]) ||
            (PORTE.IN & s_col_masks[PORT_E_NUM]) ||
+#if IO_PORT_COUNT >= 7
+           (PORTF.IN & s_col_masks[PORT_F_NUM]) ||
+#endif
            (PORTR.IN & s_col_masks[PORT_R_NUM]);
 }
 
@@ -258,7 +268,7 @@ void matrix_scanner_init(void) {
     }
 
 
-    s_bytes_per_row = INT_DIV_ROUND_UP(g_scan_plan.max_col_pin_num, 8);
+    s_bytes_per_row = INT_DIV_ROUND_UP(g_scan_plan.max_col_pin_num, IO_PORT_SIZE);
 
     if (
         g_scan_plan.mode == MATRIX_SCANNER_MODE_COL_ROW ||
@@ -295,6 +305,9 @@ static void matrix_scan_irq_clear_flags(void) {
     PORTC.INTFLAGS |= PORT_INT0IF_bm;
     PORTD.INTFLAGS |= PORT_INT0IF_bm;
     PORTE.INTFLAGS |= PORT_INT0IF_bm;
+#if IO_PORT_COUNT >= 7
+    PORTF.INTFLAGS |= PORT_INT0IF_bm;
+#endif
     PORTR.INTFLAGS |= PORT_INT0IF_bm;
 }
 
@@ -323,6 +336,9 @@ void matrix_scan_irq_enable(void) {
     PORTC.INTCTRL = (PORTC.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_LO_gc;
     PORTD.INTCTRL = (PORTD.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_LO_gc;
     PORTE.INTCTRL = (PORTE.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_LO_gc;
+#if IO_PORT_COUNT >= 7
+    PORTF.INTCTRL = (PORTF.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_LO_gc;
+#endif
     PORTR.INTCTRL = (PORTR.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_LO_gc;
 }
 
@@ -332,6 +348,9 @@ void matrix_scan_irq_disable(void) {
     PORTC.INTCTRL = (PORTC.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_OFF_gc;
     PORTD.INTCTRL = (PORTD.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_OFF_gc;
     PORTE.INTCTRL = (PORTE.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_OFF_gc;
+#if IO_PORT_COUNT >= 7
+    PORTF.INTCTRL = (PORTF.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_OFF_gc;
+#endif
     PORTR.INTCTRL = (PORTR.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_OFF_gc;
     unselect_all_rows();
 }
@@ -355,6 +374,9 @@ static inline uint8_t scan_row(uint8_t row) {
         PORTC.IN & s_col_masks[PORT_C_NUM],
         PORTD.IN & s_col_masks[PORT_D_NUM],
         PORTE.IN & s_col_masks[PORT_E_NUM],
+#if IO_PORT_COUNT >= 7
+        PORTF.IN & s_col_masks[PORT_F_NUM],
+#endif
         PORTR.IN & s_col_masks[PORT_R_NUM],
     };
 

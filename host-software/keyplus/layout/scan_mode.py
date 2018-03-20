@@ -217,16 +217,17 @@ class ScanMode(object):
             for pin_number in column_pin_numbers:
                 max_column_pin = max(max_column_pin, pin_number)
             scan_plan.max_col_pin_num = max_column_pin
-        elif self.mode == [PIN_GND, PIN_VCC]:
+        elif self.mode in [PIN_GND, PIN_VCC]:
             scan_plan.cols = self.number_direct_wiring_pins
-            scan_plan.rows = 0
-            scan_plan.max_key_num = max(self.matrix_pin_map.values())
+            scan_plan.rows = 1
 
             # Find the maximum direct wiring pin number used
             max_pin = 0
             for pin_name in self.direct_wiring_pins:
                 pin_number = io_mapper.get_pin_number(pin_name)
                 max_pin = max(max_pin, pin_number)
+
+            scan_plan.max_key_num = max_pin
             scan_plan.max_col_pin_num = max_pin
         else:
             raise KeyplusSettingsError("Unknown scan mode '{}'".format(self.mode))
@@ -250,7 +251,7 @@ class ScanMode(object):
             for (pin_i, pin_name) in enumerate(self.direct_wiring_pins):
                 if is_blank_pin(pin_name):
                     continue
-                matrix_map[MatrixPosition(1, pin_i)] = pin_i
+                matrix_map[MatrixPosition(0, pin_i)] = pin_i
             num_rows = 1
         else:
             matrix_map = self.matrix_map
@@ -293,13 +294,19 @@ class ScanMode(object):
 
             pin_mapping.row_pins = row_pin_numbers
             pin_mapping.column_pins = column_pin_numbers
-            pin_mapping.key_number_map = self._generate_key_number_map(column_pin_numbers)
+            pin_mapping.key_number_map = self._generate_key_number_map(
+                column_pin_numbers
+            )
         elif self.mode in [PIN_VCC, PIN_GND]:
             # NOTE: The direct wiring pins are treated the same way as column
             # pins
             direct_pins = io_mapper.get_pin_numbers(self.direct_wiring_pins)
             pin_mapping.column_pins = direct_pins
-            pin_mapping.key_number_map = self._generate_key_number_map(direct_pins, pin_mode = True)
+            pin_mapping.row_pins = [0] # dummy value
+            pin_mapping.key_number_map = self._generate_key_number_map(
+                direct_pins,
+                pin_map = True
+            )
 
         return pin_mapping
 
@@ -312,8 +319,11 @@ class ScanMode(object):
         io_mapper = pin_mapping.io_mapper
 
         if pin_mapping.internal_scan_method == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL:
-            self.row_pins = io_mapper.get_pin_names(pin_mapping.row_pins)
-            self.column_pins = io_mapper.get_pin_names(pin_mapping.column_pins)
+            if self.mode in [ROW_COL, COL_ROW]:
+                self.row_pins = io_mapper.get_pin_names(pin_mapping.row_pins)
+                self.column_pins = io_mapper.get_pin_names(pin_mapping.column_pins)
+            if self.mode in [PIN_GND, PIN_VCC]:
+                self.direct_wiring_pins = io_mapper.get_pin_names(pin_mapping.column_pins)
 
             pin_to_column_map = inverse_map(list_to_map(pin_mapping.column_pins))
 
@@ -421,7 +431,6 @@ class ScanMode(object):
             self.parse_matrix_map(parser_info.try_get("matrix_map", field_type=list))
         elif self.mode in [PIN_GND, PIN_VCC]:
             self.direct_wiring_pins = parser_info.try_get("pins", field_type=[list, int])
-            self.parse_pin_map(parser_info.try_get("pin_map", field_type=list))
 
         if parser_info.has_field('debounce', field_type=str):
             debounce_profile = parser_info.try_get("debounce", field_type=str)
