@@ -23,7 +23,9 @@ matrix:
       script:
         - 'source env/enter_env.sh'
         - 'cd xmega'
-        - 'make BOARD=keyplus_mini'
+        - 'make MCU=atxmega32a4u BOARD=keyplus_mini'
+        - 'make MCU=atxmega128a4u BOARD=alpha_split'
+        - 'make MCU=atxmega64c3 BOARD=plain'
       # after_success:
       #   - echo "After_Success"
 

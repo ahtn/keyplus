@@ -12,12 +12,12 @@
 // #define PORTE    (*(PORT_t *) 0x0680)  /* I/O Ports */
 // #define PORTR    (*(PORT_t *) 0x07E0)  /* I/O Ports */
 #define PORT_TO_NUM(port) ( \
-    ((uint16_t)&port == (uint16_t)&PORTA) ? (0) : \
-    ((uint16_t)&port == (uint16_t)&PORTB) ? (1) : \
-    ((uint16_t)&port == (uint16_t)&PORTC) ? (2) : \
-    ((uint16_t)&port == (uint16_t)&PORTD) ? (3) : \
-    ((uint16_t)&port == (uint16_t)&PORTE) ? (4) : \
-    ((uint16_t)&port == (uint16_t)&PORTR) ? (5) : 255 \
+    (&port == &PORTA) ? (PORT_A_NUM) : \
+    (&port == &PORTB) ? (PORT_B_NUM) : \
+    (&port == &PORTC) ? (PORT_C_NUM) : \
+    (&port == &PORTD) ? (PORT_D_NUM) : \
+    (&port == &PORTE) ? (PORT_E_NUM) : \
+    (&port == &PORTR) ? (PORT_R_NUM) : 255 \
 )
 
 #define IO_PORT_COUNT 6
@@ -41,3 +41,4 @@
     PORT_E_USABLE_PINS, \
     PORT_R_USABLE_PINS, \
 }
+#endif
