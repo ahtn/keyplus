@@ -2,3 +2,7 @@
 *.hex
 *.pyc
 *.fuse
+*.spec
+*.egg-info
+build
+dist

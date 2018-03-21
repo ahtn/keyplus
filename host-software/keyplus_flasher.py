@@ -123,7 +123,7 @@ class DeviceWidget(QGroupBox):
             settingsInfo = protocol.get_device_info(self.device)
             firmwareInfo = protocol.get_firmware_info(self.device)
             self.device.close()
-        except TimeoutError as err:
+        except easyhid.HIDException as err:
             # Incase opening the device fails
             raise Exception ("Error Opening Device: {} | {}:{}"
                     .format(
@@ -184,7 +184,7 @@ class DeviceWidget(QGroupBox):
             self.device.open()
             bootloader_info = xusbboot.get_boot_info(self.device)
             self.device.close()
-        except TimeoutError as err:
+        except easyhid.HIDException as err:
             # Incase opening the device fails
             raise Exception ("Error Opening Device: {} | {}:{}"
                     .format(

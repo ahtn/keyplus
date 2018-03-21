@@ -27,7 +27,7 @@ setup(
     install_requires = [
         'hexdump', 'intelhex', 'easyhid', 'pyyaml', 'pyusb',
         'cstruct', 'kle', 'six', 'colorama', 'xusbboot',
-        'future'
+        'future', 'enum34'
     ],
     keywords = ['keyboard', 'usb', 'hid'],
     scripts = ['keyplus-cli'],
