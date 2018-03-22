@@ -18,10 +18,26 @@ from array import array
 import hexdump
 from btool import *
 
+
 VID_LOGITECH = 0x046d
 PID_UNIFYING = 0xc52b
-PID_BOOTLOADER = 0xaaaa # nRF24LU1+
-PID_BOOTLOADER_TI = 0xaaac # TI CC2544
+
+PID_NRF24_1 = 0xaaaa # nRF24LU1+
+PID_NRF24_2 = 0xaaae
+
+NRF_PIDS = [
+    PID_NRF24_1,
+    PID_NRF24_2,
+]
+
+PID_BOOTLOADER_TI_1 = 0xaaac # TI CC2544
+PID_BOOTLOADER_TI_2 = 0xaaad # TI CC2544
+
+# Can find PID's for bootloaders here: https://github.com/Logitech/fw_updates
+TI_PIDS = [
+    PID_BOOTLOADER_TI_1,
+    PID_BOOTLOADER_TI_2,
+]
 
 debug = True
 
@@ -351,7 +367,10 @@ if __name__ == "__main__":
         enter_icp()
 
     elif args.command == "reset":
-        boot_dev = usb.core.find(idVendor=VID_LOGITECH, idProduct=PID_BOOTLOADER)
+        for pid in (NRF_PIDS + TI_PIDS):
+            boot_dev = usb.core.find(idVendor=VID_LOGITECH, idProduct=pid)
+            if boot_dev != None:
+                break
         detach_kernel_drivers(boot_dev, [0, 1])
 
         boot_writer = BootloaderWriter(boot_dev)
@@ -363,11 +382,44 @@ if __name__ == "__main__":
             fileName = args.hex_file
 
 
-        boot_dev = None
-        if args.command == "info_ti":
-            boot_dev = usb.core.find(idVendor=VID_LOGITECH, idProduct=PID_BOOTLOADER_TI)
-        else:
-            boot_dev = usb.core.find(idVendor=VID_LOGITECH, idProduct=PID_BOOTLOADER)
+        boot_devices = list(usb.core.find(
+            idVendor=VID_LOGITECH,
+            find_all=True,
+        ))
+
+        # from the list of devices, try and filter out those that are known
+        # to be for unifying receiver bootloaders
+        nrf_devices = [
+            dev for dev in boot_devices if dev.idProduct in NRF_PIDS
+        ]
+        ti_devices = [
+            dev for dev in boot_devices if dev.idProduct in TI_PIDS
+        ]
+
+        if (len(ti_devices) + len(nrf_devices) == 0):
+            print("Couldn't find any devices to program", file=sys.stderr)
+        elif (len(ti_devices) + len(nrf_devices) > 1):
+            print(
+                "Found multiple matching devices, try disconnecting the "
+                "other devices and try again. Devices found: {}."
+                .format([(hex(dev.idVendor), hex(dev.idProduct)) for dev in boot_devices]),
+                file=sys.stderr
+            )
+        elif (len(ti_devices) == 1):
+            dev = ti_devices[0]
+            print(
+                "Found a device with unsupported bootloader: ({}, {}). Disconnect "
+                "the device to reset it."
+                .format(hex(dev.idVendor), hex(dev.idProduct)),
+                file=sys.stderr
+            )
+        elif (len(nrf_devices) == 1):
+            dev = nrf_devices[0]
+            print(
+                "Found a supported device with bootloader: ({}, {})"
+                .format(hex(dev.idVendor), hex(dev.idProduct))
+            )
+            boot_dev = boot_devices[0]
 
         detach_kernel_drivers(boot_dev, [0, 1])
 
@@ -385,6 +437,7 @@ if __name__ == "__main__":
             raise UnsupportedMCU("Unsupported microcontroller: {}".format(mcu_str))
         print("mcu: {}".format(mcu_str))
 
+        # terminate early for the info command
         if args.command == "info" or args.command == "info_ti":
             sys.exit(0);
 
