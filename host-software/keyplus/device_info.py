@@ -33,7 +33,7 @@ class KeyboardPinMapping(object):
             # NOTE: This should work for both the matrix and direct wiring
             # pin scanning modes, since the pin mode emulates matrix scanning
             # with one row.
-            assert_less_than(len(self.row_pins), MAX_NUM_ROWS)
+            assert_less_eq(len(self.row_pins), MAX_NUM_ROWS+1)
             row_pin_padding = MAX_NUM_ROWS - len(self.row_pins)
             result += bytearray(self.row_pins) + bytearray([0]*row_pin_padding)
 

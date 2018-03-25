@@ -396,6 +396,8 @@ if __name__ == "__main__":
             dev for dev in boot_devices if dev.idProduct in TI_PIDS
         ]
 
+        is_ti_device = False
+
         if (len(ti_devices) + len(nrf_devices) == 0):
             print("Couldn't find any devices to program", file=sys.stderr)
         elif (len(ti_devices) + len(nrf_devices) > 1):
@@ -413,6 +415,8 @@ if __name__ == "__main__":
                 .format(hex(dev.idVendor), hex(dev.idProduct)),
                 file=sys.stderr
             )
+            boot_dev = boot_devices[0]
+            is_ti_device = True
         elif (len(nrf_devices) == 1):
             dev = nrf_devices[0]
             print(
@@ -438,7 +442,7 @@ if __name__ == "__main__":
         print("mcu: {}".format(mcu_str))
 
         # terminate early for the info command
-        if args.command == "info" or args.command == "info_ti":
+        if args.command == "info" or args.command == "info_ti" or is_ti_device:
             sys.exit(0);
 
         pp.print(boot_writer.cmd_sum16())

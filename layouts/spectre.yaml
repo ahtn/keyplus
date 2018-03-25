@@ -23,13 +23,39 @@ devices:
 layouts:
   spectre:
     default_layer: 0
+    # This layout shows how layer keys can be chained together. If L1 and
+    # L2 are pressed on the base layer, then L3 is activated.
     layers: [
       [ # layer 0 (base)
         [
-          0   , q   , w   , e   , r   , t   , y   , u   , i   , o   , p   , a   ,
-          1   , a   , s   , d   , f   , g   , h   , j   , k   , l   , ";" , "'" ,
-          2   , z   , x   , c   , v   , b   , m   , n   , "," , "." , "/" , b   ,
-          0   , 1   , 2   , 3   , 4   , 5   , 6   , 7   , 8   , 9   , d   , c   ,
+          tab , q   , w   , e   , r   , t   , y   , u   , i   , o   , p   , bspc,
+          esc , a   , s   , d   , f   , g   , h   , j   , k   , l   , ";" , "'" ,
+          lsft, z   , x   , c   , v   , b   , m   , n   , "," , "." , "/" , ent ,
+          ____, lctl, lalt, lgui, L1  , SPC , SPC , L2  , left, down, up  , right,
         ]
       ],
-    ]
+      [ # layer 1 (lower)
+        [
+          '~' , '!' , '@' , '#' , '$' , '%' , '^' , '&' , '*' , '(' , ')' , ____ ,
+          del , F1  , F2  , F3  , F4  , F5  , F6  , '_' , '+' , '{' , '}' , '|'  ,
+          ____, F7  , F8  , F9  , F10 , F11 , F12 , iso~, iso|, home, end , ____ ,
+          ____, ____, ____, ____, ____, ____, ____, L3  , ____, ____, ____, ____ ,
+        ]
+      ],
+      [ # layer 2 (raise)
+        [
+          '`' ,  1  ,  2  ,  3  ,  4  ,  5  ,  6  ,  7  ,  8  ,  9  ,  0  , ____ ,
+          del , F1  , F2  , F3  , F4  , F5  , F6  , '-' , '=' , '[' , ']' , '\'  ,
+          ____, F7  , F8  , F9  , F10 , F11 , F12 , iso#, iso|, pgup, pgdn, ____ ,
+          ____, ____, ____, ____, L3  , ____, ____, ____, ____, ____, ____, ____ ,
+        ]
+      ],
+      [ # layer 3 (media 'lower+raise'), press L1+L2 on base layer
+        [
+          ____, pscr, mply, volu, mstp, ____, wh_u, btn1, ms_u, btn2, ____, nlck ,
+          ____, mute, mprv, vold, mnxt, app , wh_d, ms_l, ms_d, ms_r, btn3, slck ,
+          ____, C-y , CS-z, C-i , ____, ____, ____, ____, ____, ____, ____, caps ,
+          ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____ ,
+        ]
+      ],
+]

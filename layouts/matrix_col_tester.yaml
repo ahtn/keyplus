@@ -9,7 +9,7 @@ version: 0
 report_mode: auto_nkro # options: auto_nkro, 6kro, nkro
 
 devices:
-  "Matrix Tester - max columns":
+  "Matrix Tester - 6x16":
     id: 0
     scan_mode:
       mode: col_row

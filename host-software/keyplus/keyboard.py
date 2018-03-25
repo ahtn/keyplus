@@ -209,7 +209,7 @@ class KeyplusKeyboard(object):
 
     @property
     def name(self):
-        return self.device_info.name
+        return self.device_info.get_name_str()
 
     @property
     def serial_number(self):
@@ -669,6 +669,7 @@ class KeyplusKeyboard(object):
 
         self._write_flash_chunks(chunk_list, size)
 
+        self.get_device_info()
 
     def update_layout_section(self, layout_data):
         self._layout_info_dirty = True

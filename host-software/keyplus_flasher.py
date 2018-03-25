@@ -30,6 +30,7 @@ import datetime, time, binascii
 import yaml
 import colorama
 import hexdump
+import copy
 
 import easyhid
 import protocol
@@ -131,7 +132,6 @@ class DeviceWidget(QGroupBox):
                         self.device.vendor_id,
                         self.device.product_id
                     ),
-                  file=sys.stderr
             )
 
         if settingsInfo.crc == settingsInfo.computed_crc:
@@ -871,10 +871,22 @@ class Loader(QMainWindow):
             hexdump.hexdump(bytes(layout_data))
 
             with kb:
+                old_name = copy.copy(kb.name)
                 kb.update_settings_section(settings_data, keep_rf=True)
                 kb.update_layout_section(layout_data)
-                kb.reset(reset_type=RESET_TYPE_SOFTWARE)
+                if old_name != kb.name:
+                    kb.reset(reset_type=RESET_TYPE_HARDWARE)
+                    needs_label_update = True
+                else:
+                    kb.reset(reset_type=RESET_TYPE_SOFTWARE)
+                    needs_label_update = False
 
+            if needs_label_update:
+                for widget in self.deviceListWidget.deviceWidgets:
+                    try:
+                        widget.updateLabel()
+                    except easyhid.HIDException:
+                        pass
 
             if warnings != []:
                 error_msg_box(
@@ -883,9 +895,6 @@ class Loader(QMainWindow):
                     "\n".join([str(warn) for warn in warnings]),
                     title = "Warnings",
                 )
-
-            for widget in self.deviceListWidget.deviceWidgets:
-                widget.updateLabel()
 
             self.statusBar().showMessage("Finished updating layout", timeout=STATUS_BAR_TIMEOUT)
         elif programmingMode == FileSelector.ScopeDevice:
@@ -927,9 +936,22 @@ class Loader(QMainWindow):
                 return
 
             with kb:
+                old_name = copy.copy(kb.name)
                 kb.update_settings_section(settings_data, keep_rf=False)
                 kb.update_layout_section(layout_data)
-                kb.reset(reset_type=RESET_TYPE_SOFTWARE)
+                if old_name != kb.name:
+                    kb.reset(reset_type=RESET_TYPE_HARDWARE)
+                    needs_label_update = True
+                else:
+                    kb.reset(reset_type=RESET_TYPE_SOFTWARE)
+                    needs_label_update = False
+
+            if needs_label_update:
+                for widget in self.deviceListWidget.deviceWidgets:
+                    try:
+                        widget.updateLabel()
+                    except easyhid.HIDException:
+                        pass
 
             if warnings != []:
                 error_msg_box(
@@ -940,12 +962,6 @@ class Loader(QMainWindow):
                 )
 
             self.statusBar().showMessage("Finished updating RF settings", timeout=STATUS_BAR_TIMEOUT)
-
-            for widget in self.deviceListWidget.deviceWidgets:
-                try:
-                    widget.updateLabel()
-                except easyhid.HIDException:
-                    pass
 
         elif programmingMode == FileSelector.ScopeFirmware:
             fw_file = self.fileSelectorWidget.getFirmwareFile()
