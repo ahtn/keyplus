@@ -1,5 +1,8 @@
 // Copyright 2018 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
+/// @file core/crc.h
+///
+/// CRC functions used for RF packets and verifying the settings section.
 
 #pragma once
 

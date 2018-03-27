@@ -26,14 +26,14 @@ devices:
         r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
         r3c0, r3c1, r3c2, r3c3, r3c4, r3c5,
       ]
-      ## Debounce settings
-      # debounce:
-      #   debounce_time_press: 5
-      #   debounce_time_release: 5
-      #   trigger_time_press: 1
-      #   trigger_time_release: 1
-      #   parasitic_discharge_delay_idle: 10.0
-      #   parasitic_discharge_delay_debouncing: 10.0
+      # Debounce settings
+      debounce:
+         debounce_time_press: 5
+         debounce_time_release: 5
+         trigger_time_press: 1
+         trigger_time_release: 1
+         parasitic_discharge_delay_idle: 10.0
+         parasitic_discharge_delay_debouncing: 10.0
 
   "alpha split - right":
     id: 1

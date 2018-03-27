@@ -24,9 +24,8 @@ the keyboards will generate
 
 | Field   | Description   |
 |---------|---------------|
-| report_mode | The default keyboard report_mode. Possible values: `auto_nkro`, `6kro`, `nkro`.  The `auto_nkro` mode will start the keyboard in `6kro` mode, and will automatically switch to `nkro` mode if more than 6 keys are pressed. This mode is useful as some BIOS's don't handle NKRO, so this mode allows you till still access your BIOS without having to worry about configuring NKRO. |
+| report_mode | The default keyboard report_mode. Possible values: `auto_nkro`, `6kro`, `nkro`.  The `auto_nkro` mode will start the keyboard in `6kro` mode, and will automatically switch to `nkro` mode if more than 6 keys are pressed. This mode is useful as some BIOS's don't handle NKRO, so this mode allows you still access your BIOS without having to worry about configuring NKRO. |
 | default_lang | TODO |
-| name    | TODO |
 
 ### Devices section
 
@@ -47,20 +46,37 @@ devices:
         # device properties
 ```
 
-
 #### Valid properties for devices
 
 | Field   | Description   |
 |---------|---------------|
-| id      | A unique id between 0-64 |
-| layout  | A string that references which layout this key maps to in the layout section. |
-| layout_offset  | An integer that represent which component of a split keyboard this device should represent. Starts at `0` and must be less than the number of split components found in this device's `layout` field |
-| scan_mode | Settings that control how the keyboard matrix is wired |
-| scan_mode.mode | Possible values: `none, col_row, row_col(TODO), built_in(TODO)` |
-| scan_mode.rows | The number of rows in the keyboard matrix. |
-| scan_mode.cols | The number of columns in the keyboard matrix. |
-| scan_mode.matrix_map | Describes how the (row,column) pairs map to keys in the layout section. This field is a list were each entry can either be a row,column pair`rXcY`, or 'none' to skip an entry. This list must have `scan_mode.rows * scan_mode.cols` entries. |
+| id      | A unique id between 0-64. |
+| layout  | The name of the layout which this device maps to in the `layouts` section. |
+| layout_offset  | When mapping to a split layout, this value determines which component this device will map to. It starts at `0` and must be less than the number of split components found in this device's `layout` field. |
+| wireless_split | Enables or disables wireless split support (using nRF24). Note: this value needs to be enabled for non-split nRF24 keyboards as well (TODO: maybe it should be renamed?) |
+| wireless_mouse | Enables unifying mouse support. Requires `wireless_split` to be enabled. |
+| wired_split | Enables wired split support (using i2c). |
+| scan_mode | A section for settings that control how the keyboard matrix is wired and functions. |
+| scan_mode.mode | Possible values: `none, col_row, row_col, pin_gnd, pin_vcc`. |
+| scan_mode.rows | Controls what row pins are used. Can simple be a number (in which case the default rows will be used). Alternatively, it can be a list of microcontroller pins to use as the row pins (e.g. `[A0, A1, B0, C7]`). |
+| scan_mode.cols | Controls what column pins are used. Can simple be a number in which case the default columns will be used. Alternatively, it can be a list of microcontroller pins to use as the column pins (e.g. `[A0, A1, B0, C7]`).|
+| scan_mode.matrix_map | Describes how the (row,column) pairs map to keys in the layout section. The field is a list of row, column pairs in the form `rXcY` (e.g. `[r0c0, r0c3, r0c1]`). The values are used to map a given (row,column) pair in the physical matrix to a key in a layout. That is the first value in the list will be mapped to the first key in the target `layout`, etc. If a device has no (row,column) pair to map to a key in the target `layout`, then the value `none` can be used to skip a key in the target layout. |
+| scan_mode.pins | When pin scanning mode is used this value maps microcontroller pins to pins on the target `layout`. The values used here depend on what microcontroller you are using. For example, if target microcontroller was an AVR, your pin map might look like this: `[A3, A2, B0, B1]`. See the `spectre.yaml` layout for an example of pin scanning mode. NOTE: This value is only used when `scan_mode.mode` is set to `pin_gnd` or `pin_vcc`.|
 
+##### Debounce settings
+
+In side the `scan_mode` section you add a `debounce` section which will allow
+you to tune various parameters in the key debouncing algorithm. If you omit
+this section, then the some safe default values will be used.
+
+| Field                                | Description     |
+| ---------                            | --------------- |
+| debounce_time_press                  | The amount of time to debounce a key when it is pressed (given in milliseconds). Basically, the amount of time that must pass before a key release can be registered. |
+| debounce_time_release                | The amount of time to debounce a key after it is released (given in milliseconds). Basically, the amount of time that must pass before a new key press can be registered. |
+| trigger_time_press                   | The minimum amount of time that a key must remain down before a key press will be generated. If a value of 0 is used, the key press will be registered immediately. |
+| trigger_time_release                 | The minimum amount of time that a key must remain up before a key release will be generated. If a value of 0 is used, the key release will be registered immediately. |
+| parasitic_discharge_delay_idle       | The delay between reading each row when scanning the matrix, given as a value between 0.0 to 48.0 in microseconds. When scanning a key matrix the microcontroller will read the keys in the matrix one row at a time. When the microcontroller reads a row, it will need to wait some amount of time before it can read a stable value for the keys in that row. This value allows you to modify the amount of time the microcontroller will wait before attempting to read the row.|
+| parasitic_discharge_delay_debouncing | The same as `parasitic_discharge_delay_idle` except this value will be used when any key in the matrix is debouncing. |
 
 #### The `matrix_map` field
 
@@ -111,6 +127,9 @@ two boards with the `abc_layout` example, you could define two different
 devices each using one of the `matrix_map`'s given above and for both set
 `layout: abc_layout`, and then they would both use the `abc_layout` without
 having to make a separate layout for each board.
+
+TODO: show how to use `keyplus-cli passthrough` to easily generate the matrix_map
+section.
 
 ### Layouts section
 

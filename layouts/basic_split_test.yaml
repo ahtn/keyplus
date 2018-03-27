@@ -73,6 +73,44 @@ devices:
         r4c0, ____, r4c2, ____,
       ]
 
+  "jemini acrylic - left":
+    id: 3
+    wireless_split: true
+    wireless_mouse: true
+    wired_split: false
+    layout: split_layout
+    layout_offset: 0
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: 4
+      cols: 6
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+          r3c4, r3c5, r3c2, r3c3, r3c0, r3c1,
+          r2c4, r2c5, r2c2, r2c3, r2c0, r2c1,
+          r1c4, r1c5, r1c2, r1c3, r1c0, r1c1,
+          ____, r0c0, r0c1, r0c2, r0c5,
+      ]
+
+
+  "jemini acrylic - right":
+    id: 4
+    wireless_split: true
+    wireless_mouse: true
+    wired_split: false
+    layout: split_layout
+    layout_offset: 1
+    scan_mode:
+      mode: col_row # options: col_row, pins, no_matrix
+      rows: 4
+      cols: 6
+      matrix_map: [
+          r0c1, r0c2, r0c3, r0c0, r0c4, r0c5,
+          r3c1, r3c2, r3c3, r3c0, r3c4, r3c5,
+          r2c1, r2c2, r2c3, r2c0, r2c4, r2c5,
+          r1c4, r1c0, r1c1, r1c2, ____
+      ]
+
   "XMEGA test board left":
     id: 10
     wireless_split: true

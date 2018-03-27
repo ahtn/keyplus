@@ -1,5 +1,8 @@
 // Copyright 2018 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
+/// @file core/error.h
+///
+/// keyplus' error reporting mechanism.
 
 #pragma once
 
@@ -8,6 +11,17 @@
 #define NUM_ERROR_CODES 128
 #define SIZE_ERROR_CODE_TABLE (NUM_ERROR_CODES / 8)
 
+/// Error code values.
+///
+/// There are two classes of errors:
+/// * Values <64 are non-critical errors.
+/// * Values >=64 are critical errors.
+///
+/// When a critical error is encountered, the firmware should disable all
+/// features except those necessary to recover from the error. Typically
+/// happens when invalid settings are loaded to the device, and the device
+/// will disable all functionality except for USB interface which is needed
+/// to update a correct layout file.
 typedef enum error_code_type {
     // non-critical errors
     ERROR_EKC_OUT_OF_BOUNDS_ACCESS = 0,
@@ -32,13 +46,17 @@ typedef enum error_code_type {
     ERROR_MAXIMUM_KEY_NUMBER_EXCEEDED = 72,
 } error_code_type;
 
+/// Bitmap that holds the list of errors that have been triggered.
 extern XRAM uint8_t g_error_code_table[SIZE_ERROR_CODE_TABLE];
 
+/// Initialize the error system (clearing all errors)
 void init_error_system(void);
+
+/// Checks if a critical error has been triggered.
 bit_t has_critical_error(void);
+
+/// Add an error to the error table.
 void register_error(uint8_t code);
+
+/// Clear an error from the error table.
 void unregister_error(uint8_t code);
-// #define init_error_system() do {} while(0)
-// #define has_critical_error() true
-// #define register_error(code) do {} while(0)
-// #define unregister_error(code) do {} while(0)
