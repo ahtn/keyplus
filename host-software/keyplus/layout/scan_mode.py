@@ -387,14 +387,15 @@ class ScanMode(object):
             for field in profile:
                 setattr(self, field, profile[field])
 
-    def parse_matrix_map_refrence(self, refrence):
-        refrence = refrence.lower()
-        if is_blank_pin(refrence):
+    def parse_matrix_map_refrence(self, reference):
+        reference = reference.lower()
+        if is_blank_pin(reference):
             return None
-        results = re.match('r(\d+)c(\d+)', refrence)
+        results = re.match('^r(\d+)c(\d+)$', reference)
         if results == None:
-            raise KeyplusParseError("Expected string of the form rXcY, but got '{}' "
-                    "in matrix_map '{}'".format(map_key, kb_name))
+            raise KeyplusParseError(
+                "Expected string of the form rXcY, but got '{}'".format(reference)
+            )
         r, c = results.groups()
         return MatrixPosition(int(r), int(c))
 
@@ -428,7 +429,11 @@ class ScanMode(object):
         elif self.mode in [ROW_COL, COL_ROW]:
             self.row_pins = parser_info.try_get("rows", field_type=[list, int])
             self.column_pins = parser_info.try_get("cols", field_type=[list, int])
-            self.parse_matrix_map(parser_info.try_get("matrix_map", field_type=list))
+            parser_info.try_get(
+                "matrix_map",
+                field_type=list,
+                remap_function=self.parse_matrix_map,
+            )
         elif self.mode in [PIN_GND, PIN_VCC]:
             self.direct_wiring_pins = parser_info.try_get("pins", field_type=[list, int])
 

@@ -65,7 +65,6 @@ class KeyplusParserInfo(object):
         self.current_obj = self.current_obj[field]
         self.untouched_fields = list(self.current_obj.keys())
 
-
     def get_current_path(self):
         def sanitize_field(field):
             if field.isalnum():
@@ -181,7 +180,17 @@ class KeyplusParserInfo(object):
                     )
 
             if remap_function != None:
-                value = remap_function(value)
+                try:
+                    value = remap_function(value)
+                except KeyplusParseError as err:
+                    raise KeyplusParseError(
+                        "Error in '{}' for field '{}': {}".format(
+                            self.get_current_path(),
+                            field,
+                            err
+                        )
+                    )
+
 
             if field_range:
                 self.check_range(field_range[0], field_range[1])
