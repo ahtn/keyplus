@@ -8,12 +8,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import copy
 import struct
 
-class IoMapperError(Exception):
-    pass
+from keyplus.exceptions import KeyplusSettingsError
 
 class IoMapper(object):
     def __init__(self):
         self.pin_mapper = None
+        self.chip_info = None
 
     def get_pin_number(self, pin_name):
         raise Exception("InternalError: get_pin_number() not implemented")
@@ -81,12 +81,36 @@ class IoMapper(object):
 
     def get_default_cols(self, count):
         result = []
+
+        if count > len(self.pin_mapper.default_cols):
+            raise KeyplusSettingsError(
+                "Couldn't find {} column pins for {}. Maximum is {}. You might"
+                " need to specify the pins manually."
+                .format(
+                    count,
+                    self.chip_info.name,
+                    len(self.pin_mapper.default_cols)
+                )
+            )
+
         for i in range(count):
             result.append(self.get_pin_number(self.pin_mapper.default_cols[i]))
         return result
 
     def get_default_rows(self, count):
         result = []
+
+        if count > len(self.pin_mapper.default_rows):
+            raise KeyplusSettingsError(
+                "Couldn't find {} row pins for {}. Maximum is {}. You might"
+                " need to specify the pins manually."
+                .format(
+                    count,
+                    self.chip_info.name,
+                    len(self.pin_mapper.default_rows)
+                )
+            )
+
         for i in range(count):
             result.append(self.get_pin_number(self.pin_mapper.default_rows[i]))
         return result
