@@ -65,7 +65,6 @@ C_SRC += \
 	$(CORE_PATH)/flash.c \
 	$(CORE_PATH)/hardware.c \
 	$(CORE_PATH)/layout.c \
-	$(CORE_PATH)/nonce.c \
 	$(CORE_PATH)/packet.c \
 	$(CORE_PATH)/ring_buf.c \
 	$(CORE_PATH)/settings.c \
@@ -75,7 +74,8 @@ C_SRC += \
 ifeq ($(USE_NRF24), 1)
     C_SRC += \
         $(CORE_PATH)/nrf24.c \
-        $(CORE_PATH)/rf.c
+        $(CORE_PATH)/rf.c \
+        $(CORE_PATH)/nonce.c
     CDEFS += -DUSE_NRF24=1
 
     ifeq ($(USE_UNIFYING), 0)

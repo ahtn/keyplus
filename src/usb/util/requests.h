@@ -47,43 +47,49 @@
 #define USB_REQ_HID_SET_IDLE      0x0a
 #define USB_REQ_HID_SET_PROTOCOL  0x0b
 
+
+typedef struct {
+    uint8_t   bmRequestType;
+    uint8_t   bRequest;
+    uint16_t  wValue;
+    uint16_t  wIndex;
+    uint16_t  wLength;
+} usb_request_std_t;
+
+typedef struct {
+    uint8_t   bmRequestType;
+    uint8_t   bRequest;
+    uint8_t   wValueLSB;
+    uint8_t   wValueMSB;
+    uint8_t   wIndexLSB;
+    uint8_t   wIndexMSB;
+    uint8_t   wLengthLSB;
+    uint8_t   wLengthMSB;
+} usb_request_val_t;
+
+typedef struct {
+    uint8_t   bmRequestType;
+    uint8_t   bRequest;
+    uint8_t   index;
+    uint8_t   type;
+    uint16_t  language_id;
+    uint16_t  length;
+} usb_request_get_desc_t;
+
+typedef struct {
+    uint8_t   bmRequestType;
+    uint8_t   bRequest;
+    uint8_t   index;
+    uint8_t   type;
+    // TODO: change to uint16_t
+    uint8_t   interface;
+    uint8_t   filler;
+    uint16_t  length;
+} usb_request_get_hid_desc_t;
+
 typedef union usb_request_t {
-    struct {
-        uint8_t   bmRequestType;
-        uint8_t   bRequest;
-        uint16_t  wValue;
-        uint16_t  wIndex;
-        uint16_t  wLength;
-    } std;
-
-    struct {
-        uint8_t   bmRequestType;
-        uint8_t   bRequest;
-        uint8_t   wValueLSB;
-        uint8_t   wValueMSB;
-        uint8_t   wIndexLSB;
-        uint8_t   wIndexMSB;
-        uint8_t   wLengthLSB;
-        uint8_t   wLengthMSB;
-    } val;
-
-    struct {
-        uint8_t   bmRequestType;
-        uint8_t   bRequest;
-        uint8_t   index;
-        uint8_t   type;
-        uint16_t  language_id;
-        uint16_t  length;
-    } get_desc;
-
-    struct {
-        uint8_t   bmRequestType;
-        uint8_t   bRequest;
-        uint8_t   index;
-        uint8_t   type;
-        // TODO: change to uint16_t
-        uint8_t   interface;
-        uint8_t   filler;
-        uint16_t  length;
-    } get_hid_desc;
+    usb_request_std_t std;
+    usb_request_val_t val;
+    usb_request_get_desc_t get_desc;
+    usb_request_get_hid_desc_t get_hid_desc;
 } usb_request_t;
