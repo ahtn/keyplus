@@ -16,6 +16,8 @@ enum chip_id_controller_type {
  *                               Atmel                               *
  *********************************************************************/
 
+    // xmega AVR
+
     CHIP_ID_ATxmega16A4 = CHIP_ID_ATMEL | 0x0001,
     CHIP_ID_ATxmega32A4 = CHIP_ID_ATMEL | 0x0002,
     CHIP_ID_ATxmega64A3 = CHIP_ID_ATMEL | 0x0003,
@@ -50,6 +52,22 @@ enum chip_id_controller_type {
     CHIP_ID_ATxmega192C3 = CHIP_ID_ATMEL | 0x0035,
     CHIP_ID_ATxmega256C3 = CHIP_ID_ATMEL | 0x0036,
     CHIP_ID_ATxmega384C3 = CHIP_ID_ATMEL | 0x0037,
+
+
+    // mega AVR with USB
+    CHIP_ID_ATmega8U2   = CHIP_ID_ATMEL | 0x1000,
+    CHIP_ID_ATmega16U2  = CHIP_ID_ATMEL | 0x1001,
+    CHIP_ID_ATmega32U2  = CHIP_ID_ATMEL | 0x1002,
+
+    CHIP_ID_ATmega16U4  = CHIP_ID_ATMEL | 0x1003,
+    CHIP_ID_ATmega32U4  = CHIP_ID_ATMEL | 0x1004,
+
+    CHIP_ID_ATmega32U6  = CHIP_ID_ATMEL | 0x1005,
+    CHIP_ID_AT90USB646  = CHIP_ID_ATMEL | 0x1006,
+    CHIP_ID_AT90USB647  = CHIP_ID_ATMEL | 0x1007,
+    CHIP_ID_AT90USB1286 = CHIP_ID_ATMEL | 0x1008,
+    CHIP_ID_AT90USB1287 = CHIP_ID_ATMEL | 0x1009,
+
 
 /*********************************************************************
  *                     Nordic Semiconductor                          *

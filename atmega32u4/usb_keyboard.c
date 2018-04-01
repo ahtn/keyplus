@@ -34,7 +34,7 @@
 #include <util/delay.h>
 
 #include "usb/descriptors.h"
-#include "core/keyboard_report.h"
+#include "usb_reports/keyboard_report.h"
 
 
 /**************************************************************************

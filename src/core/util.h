@@ -110,12 +110,14 @@
 #define bit_t bool
 #endif
 
-// TODO: The names of these functions are very common and probably will cause
-// naming conflicts in the future. Should probably rename them.
 #define SIGN(x) ((x) == 0 ? 0 : ((x) < 0 ? -1 : +1))
-#define LSB(x) ((x) & 0xff)
-#define MSB(x) (((x) >> 8) & 0xff)
+
+#define LSB_U16(x) ((x) & 0xff)
+#define MSB_U16(x) (((x) >> 8) & 0xff)
+
+#ifndef MAX
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
+#endif
 
 /// Perform integer division and round up instead of down
 ///

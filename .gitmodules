@@ -7,3 +7,6 @@
 [submodule "xmega/avr-makefile"]
 	path = xmega/avr-makefile
 	url = https://github.com/ahtn/avr-makefile
+[submodule "atmega32u4/avr-makefile"]
+	path = atmega32u4/avr-makefile
+	url = https://github.com/ahtn/avr-makefile
