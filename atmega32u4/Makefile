@@ -69,6 +69,7 @@ C_SRC += \
 	usb_keyboard.c \
 	fuses.c \
 	timer.c \
+	flash.c \
 
 # List Assembler source files here.
 # NOTE: Use *.S for user written asm files. *.s is used for compiler generated
@@ -91,7 +92,7 @@ MCU_STRING = "ATmega32U4"
 # LD_SCRIPT = avrxmega2.xn
 
 ATMEL_VID=0x03EB
-FLIP_USB_DFU_32u4=0x2FF
+FLIP_USB_DFU_32u4=0x02FF
 
 # see avr-gcc for information on avrxmega2, avrxmega4, etc
 # NOTE: haven't tested on all these chips
@@ -103,6 +104,7 @@ ifeq ($(BOOTLOADER), atmel_dfu)
   CFLAGS += -I$(BOOTLOADER_PATH)
   CFLAGS += -DBOOTLOADER_VID=$(ATMEL_VID)
   CFLAGS += -DBOOTLOADER_PID=$(FLIP_USB_DFU_32u4)
+  CFLAGS += -DBOOTLOADER_ATMEL_DFU
 else ifeq ($(BOOTLOADER), lufa_dfu)
   BOOT_SECTION_START = 0x007000
   BOOTLOADER_SIZE = 0x1000
@@ -182,7 +184,7 @@ ATMEL_DFU = bootloaders/atmel_dfu/ATMega32U4-usbdevice_dfu-1_0_0.hex
 program-atmel-dfu-bootloader:
 	$(AVRDUDE_CMD) -U flash:w:$(ATMEL_DFU):i
 
-program-dfu:
+program-dfu: hex
 	dfu-programmer $(MCU) erase --force
 	dfu-programmer $(MCU) flash $(TARGET_HEX)
 	dfu-programmer $(MCU) start

@@ -25,7 +25,9 @@
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+
 #include "usb_keyboard.h"
+#include "core/flash.h"
 
 #define LED_CONFIG	(DDRD |= (1<<6))
 #define LED_ON		(PORTD &= ~(1<<6))
@@ -36,6 +38,8 @@ uint8_t number_keys[10]=
 	{KEY_0,KEY_1,KEY_2,KEY_3,KEY_4,KEY_5,KEY_6,KEY_7,KEY_8,KEY_9};
 
 uint16_t idle_count=0;
+
+#include "bootloaders/atmel_dfu/atmel_bootloader.h"
 
 int main(void)
 {
@@ -52,6 +56,25 @@ int main(void)
 	DDRB = 0x00;
 	PORTB = 0xFF;
 	PORTD = 0xFF;
+
+    flash_modify_enable();
+#if 0
+    // Hello wold of writing to flash
+	for (int i = 0; i < SPM_PAGESIZE; i += 2) {
+		flash_fill_temp_buffer((i & 0xff) | (((i+1) & 0xff)<<8), i);
+    }
+    flash_page_erase_and_write(0x4000);
+    // flash_erase_page(0x4000 / PAGE_SIZE); // check erase page works
+#elif 1
+    // test flash.c interface
+    flash_erase_page(0x4000 / PAGE_SIZE);
+    flash_write(
+        number_keys,
+        0x4000,
+        0x10
+    );
+#endif
+    flash_modify_disable();
 
 	// Initialize the USB, and then wait for the host to set configuration.
 	// If the Teensy is powered without a PC connected to the USB port,
