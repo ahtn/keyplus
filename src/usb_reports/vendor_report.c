@@ -158,9 +158,6 @@ bit_t send_vendor_report(void) {
 #endif
 
     if (is_ready_vendor_in_report() && g_vendor_report_in.len > 0) {
-        // PORTF ^= _BV(6);
-        PORTF &= ~_BV(6);
-
         usb_write_in_endpoint(
             EP_NUM_VENDOR_IN,
             g_vendor_report_in.data,
