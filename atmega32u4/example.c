@@ -63,6 +63,9 @@ int main(void)
     PORTB = 0xFF;
     PORTD = 0xFF;
 
+    DDRF |= _BV(7) | _BV(6);
+    PORTF |= _BV(7) | _BV(6);
+
     flash_modify_enable();
 #if 0
     // Hello wold of writing to flash

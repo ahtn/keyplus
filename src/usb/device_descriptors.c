@@ -170,7 +170,7 @@ ROM const usb_config_desc_keyboard_t usb_config_desc = {
     {
         .bLength          = sizeof(usb_endpoint_desc_t),
         .bDescriptorType  = USB_DESC_ENDPOINT,
-        .bEndpointAddress = USB_DIR_IN | EP_NUM_VENDOR,
+        .bEndpointAddress = USB_DIR_IN | EP_NUM_VENDOR_IN,
         .bmAttributes     = USB_EP_TYPE_INT,
         .wMaxPacketSize   = EP_SIZE_VENDOR,
         .bInterval        = REPORT_INTERVAL_VENDOR_IN,
@@ -179,7 +179,7 @@ ROM const usb_config_desc_keyboard_t usb_config_desc = {
     {
         .bLength          = sizeof(usb_endpoint_desc_t),
         .bDescriptorType  = USB_DESC_ENDPOINT,
-        .bEndpointAddress = USB_DIR_OUT | EP_NUM_VENDOR,
+        .bEndpointAddress = USB_DIR_OUT | EP_NUM_VENDOR_OUT,
         .bmAttributes     = USB_EP_TYPE_INT,
         .wMaxPacketSize   = EP_SIZE_VENDOR,
         .bInterval        = REPORT_INTERVAL_VENDOR_OUT,

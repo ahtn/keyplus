@@ -9,11 +9,11 @@
 #include "usb_32u4.h"
 
 bit_t is_in_endpoint_ready(uint8_t endpoint_num) {
-    return usb_is_endpoint_ready(USB_DIR_IN | endpoint_num);
+    return usb_is_endpoint_ready(endpoint_num);
 }
 
 bit_t is_out_endpoint_ready(uint8_t endpoint_num) {
-    return usb_is_endpoint_ready(USB_DIR_OUT | endpoint_num);
+    return usb_is_endpoint_ready(endpoint_num);
 }
 
 void usb_write_in_endpoint(
@@ -21,7 +21,7 @@ void usb_write_in_endpoint(
     const uint8_t *data,
     uint8_t size
 ) {
-    usb_write_endpoint(USB_DIR_IN | endpoint_num, data, size);
+    usb_write_endpoint(endpoint_num, data, size);
 }
 
 void usb_read_out_endpoint(
@@ -29,5 +29,5 @@ void usb_read_out_endpoint(
     uint8_t *dest,
     uint8_t length
 ) {
-    usb_read_endpoint(USB_DIR_OUT | endpoint_num, dest, length);
+    usb_read_endpoint(endpoint_num, dest, length);
 }

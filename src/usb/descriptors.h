@@ -54,8 +54,19 @@ typedef struct usb_config_desc_keyboard_t {
 #define EP_NUM_BOOT_KEYBOARD    1
 #define EP_NUM_MOUSE            2
 #define EP_NUM_MEDIA            3
-#define EP_NUM_VENDOR           4
-#define EP_NUM_NKRO_KEYBOARD    5
+
+#ifdef ENDPOINT_IN_OUT_SEPARATE
+// On some ports (atmega32u4), the USB hardware must assign IN and OUT endpoints
+// to separate ENDPOINT numbers.
+#  define EP_NUM_VENDOR_IN        4
+#  define EP_NUM_VENDOR_OUT       5
+#  define EP_NUM_NKRO_KEYBOARD    6
+#else
+#  define EP_NUM_VENDOR           4
+#  define EP_NUM_VENDOR_IN        EP_NUM_VENDOR
+#  define EP_NUM_VENDOR_OUT       EP_NUM_VENDOR
+#  define EP_NUM_NKRO_KEYBOARD    5
+#endif
 
 // endpoint sizes
 #define EP_SIZE_VENDOR 0x40
