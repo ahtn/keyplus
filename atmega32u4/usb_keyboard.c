@@ -192,13 +192,15 @@ void usb_write_endpoint(uint8_t ep_number, const uint8_t *src, uint8_t length) {
     }
 }
 
-void usb_read_endpoint(uint8_t ep_number, uint8_t *dest, uint8_t length) {
+void usb_read_endpoint(uint8_t ep_number, uint8_t *dest, uint8_t *length) {
     uint8_t i;
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
         UENUM = ep_number;
-        for (i = 0; i < length; ++i) {
+        *length = UEBCX;
+        for (i = 0; i < *length; ++i) {
             dest[i] = UEDATX;
         }
+        UEINTX = 0x6B;
     }
 }
 
@@ -727,7 +729,10 @@ ISR(USB_COM_vect) {
     // }
 
     UENUM = 0;
-    usb_read_endpoint(0, (uint8_t*)&req, sizeof(usb_request_t));
+    {
+        uint8_t length;
+        usb_read_endpoint(0, (uint8_t*)&req, &length);
+    }
     UEINTX = ~((1<<RXSTPI) | (1<<RXOUTI) | (1<<TXINI));
 
     const uint8_t req_type = req.val.bmRequestType & USB_REQTYPE_TYPE_MASK;

@@ -32,7 +32,7 @@ typedef struct fat_ptr_t {
 } fat_ptr_t;
 
 void usb_write_endpoint(uint8_t ep_number, const uint8_t *src, uint8_t length);
-void usb_read_endpoint(uint8_t ep_number, uint8_t *dest, uint8_t length);
+void usb_read_endpoint(uint8_t ep_number, uint8_t *dest, uint8_t *length);
 
 /// Checks if the given USB endpoint is ready
 static inline bool usb_is_endpoint_ready(uint8_t ep_num) {

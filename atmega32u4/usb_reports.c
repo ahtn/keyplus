@@ -27,7 +27,7 @@ void usb_write_in_endpoint(
 void usb_read_out_endpoint(
     uint8_t endpoint_num,
     uint8_t *dest,
-    uint8_t length
+    uint8_t *length
 ) {
     usb_read_endpoint(endpoint_num, dest, length);
 }
