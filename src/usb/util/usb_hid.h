@@ -209,7 +209,9 @@ typedef enum {
 #define HID_SUBLANG_HID_VENDOR_DEFINED_3       0x3e
 #define HID_SUBLANG_HID_VENDOR_DEFINED_4       0x3f
 
-#define HID_LANG_ID(lang_id, sub_lang_id) (((sub_lang_id<<10)&0xffc0) | (lang_id&0x003f))
+#define HID_LANG_ID(lang_id, sub_lang_id) (\
+    ((sub_lang_id<<10)&0xffc0) | (lang_id&0x003f) \
+)
 
 
 // HID Item types

@@ -11,7 +11,7 @@
 #include "core/flash.h"
 
 enum {
-    PTR_RAM = 0,
+    PTR_DATA = 0,
     PTR_FLASH = 1,
     PTR_EEPROM = 2,
 };

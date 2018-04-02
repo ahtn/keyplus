@@ -21,7 +21,7 @@ typedef struct usb_device_desc_t {
     uint8_t   iProduct;
     uint8_t   iSerialNumber;
     uint8_t   bNumConfigurations;
-} usb_device_desc_t;
+} ATTR_PACKED usb_device_desc_t;
 
 // configuration descriptor
 typedef struct usb_config_desc_t {
@@ -33,7 +33,14 @@ typedef struct usb_config_desc_t {
     uint8_t   iConfiguration;
     uint8_t   bmAttributes;
     uint8_t   bMaxPower;
-} usb_config_desc_t;
+} ATTR_PACKED usb_config_desc_t;
+
+// string descriptor
+typedef struct usb_string_desc_t {
+    uint8_t bLength;
+    uint8_t bDescriptorType;
+    uint8_t* bString;
+} ATTR_PACKED usb_string_desc_t;
 
 // interface descriptor
 typedef struct usb_if_desc_t {
@@ -46,7 +53,7 @@ typedef struct usb_if_desc_t {
     uint8_t   bInterfaceSubClass;
     uint8_t   bInterfaceProtocol;
     uint8_t   iInterface;
-} usb_interface_desc_t;
+} ATTR_PACKED usb_interface_desc_t;
 
 // endpoint descriptor
 typedef struct usb_ep_desc_t {
@@ -56,7 +63,7 @@ typedef struct usb_ep_desc_t {
     uint8_t   bmAttributes;
     uint16_t  wMaxPacketSize;
     uint8_t   bInterval;
-} usb_endpoint_desc_t;
+} ATTR_PACKED usb_endpoint_desc_t;
 
 // hid descriptor
 typedef struct usb_hid_desc_t {
@@ -67,7 +74,7 @@ typedef struct usb_hid_desc_t {
     uint8_t   bNumDescriptors;
     uint8_t   bDescriptorType_HID;
     uint16_t  wDescriptorLength;
-} usb_hid_desc_t;
+} ATTR_PACKED usb_hid_desc_t;
 
 typedef enum {
     USB_ATTACHED,

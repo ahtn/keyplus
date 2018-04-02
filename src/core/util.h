@@ -23,6 +23,9 @@
 #define AT(address) __at (address)
 // sdcc doesn't have no return attribute.
 #define NO_RETURN_ATTR
+// sdcc has no attribute for packed structs, however since the target is 8
+// bit, padding won't be used anyway so it's not needed
+#define ATTR_PACKED
 
 #elif defined(AVR) && defined(__GNUC__)
 
@@ -34,6 +37,7 @@
 #define PRAM
 #define ROM __flash
 #define WEAK __attribute__((weak))
+#define ATTR_PACKED __attribute__((packed))
 #define AT(address)
 #define NO_RETURN_ATTR __ATTR_NORETURN__
 
@@ -91,6 +95,9 @@
 /// `assert()` implementations in debug builds that hang the CPU when an
 /// assertion fails.
 #define NO_RETURN_ATTR
+
+/// Compiler attribute to specify no padding in C structs
+#define ATTR_PACKED
 
 // TODO: probably won't use these
 // #define IRAM
