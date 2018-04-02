@@ -78,13 +78,16 @@
 #define KEYBOARD_SIZE       8
 #define KEYBOARD_BUFFER     EP_DOUBLE_BUFFER
 
+#define DEFAULT_BUFFERING EP_SINGLE_BUFFER
+// #define DEFAULT_BUFFERING EP_DOUBLE_BUFFER
+
 static const uint8_t PROGMEM endpoint_config_table[] = {
-    1, EP_TYPE_INTERRUPT_IN,  EP_SIZE(EP_IN_SIZE_BOOT_KEYBOARD) | KEYBOARD_BUFFER,
-    1, EP_TYPE_INTERRUPT_IN,  EP_SIZE(EP_IN_SIZE_MOUSE) | KEYBOARD_BUFFER,
-    1, EP_TYPE_INTERRUPT_IN,  EP_SIZE(EP_IN_SIZE_MEDIA) | KEYBOARD_BUFFER,
-    1, EP_TYPE_INTERRUPT_IN,  EP_SIZE(EP_SIZE_VENDOR) | KEYBOARD_BUFFER,
-    1, EP_TYPE_INTERRUPT_OUT, EP_SIZE(EP_SIZE_VENDOR) | KEYBOARD_BUFFER,
-    1, EP_TYPE_INTERRUPT_IN,  EP_SIZE(EP_IN_SIZE_NKRO_KEYBOARD) | KEYBOARD_BUFFER,
+    1, 1, EP_TYPE_INTERRUPT_IN,  EP_SIZE(EP_IN_SIZE_BOOT_KEYBOARD) | DEFAULT_BUFFERING,
+    1, 2, EP_TYPE_INTERRUPT_IN,  EP_SIZE(EP_IN_SIZE_MOUSE) | DEFAULT_BUFFERING,
+    1, 3, EP_TYPE_INTERRUPT_IN,  EP_SIZE(EP_IN_SIZE_MEDIA) | DEFAULT_BUFFERING,
+    1, 4, EP_TYPE_INTERRUPT_IN,  EP_SIZE(EP_SIZE_VENDOR) | DEFAULT_BUFFERING,
+    1, 4, EP_TYPE_INTERRUPT_OUT, EP_SIZE(EP_SIZE_VENDOR) | DEFAULT_BUFFERING,
+    1, 5, EP_TYPE_INTERRUPT_IN,  EP_SIZE(EP_IN_SIZE_NKRO_KEYBOARD) | DEFAULT_BUFFERING,
     0
 };
 
@@ -253,21 +256,23 @@ ISR(USB_GEN_vect) {
 
     // USB SOF interrupt
     if ((irq_flags & (1<<SOFI)) && usb_configuration) {
-        if (keyboard_idle_config && (++div4 & 3) == 0) {
-            UENUM = KEYBOARD_ENDPOINT;
-            if (UEINTX & (1<<RWAL)) {
-                keyboard_idle_count++;
-                if (keyboard_idle_count == keyboard_idle_config) {
-                    keyboard_idle_count = 0;
-                    usb_read_endpoint(
-                        KEYBOARD_ENDPOINT,
-                        (uint8_t*)&kb_report,
-                        sizeof(kb_report)
-                    );
-                    UEINTX = (1<<STALLEDI) | (1<<RXSTPI) | (1<<NAKOUTI) | (1<<RWAL);
-                }
-            }
-        }
+
+        // if (keyboard_idle_config && (++div4 & 3) == 0) {
+        //     UENUM = KEYBOARD_ENDPOINT;
+        //     if (UEINTX & (1<<RWAL)) {
+        //         keyboard_idle_count++;
+        //         if (keyboard_idle_count == keyboard_idle_config) {
+        //             keyboard_idle_count = 0;
+        //             usb_read_endpoint(
+        //                 KEYBOARD_ENDPOINT,
+        //                 (uint8_t*)&kb_report,
+        //                 sizeof(kb_report)
+        //             );
+        //             UEINTX = (1<<STALLEDI) | (1<<RXSTPI) | (1<<NAKOUTI) | (1<<RWAL);
+        //         }
+        //     }
+        // }
+
     }
 
     // USB end of reset interrupt
@@ -505,11 +510,13 @@ uint8_t usb_handle_ep0(usb_request_std_t *req) {
                 usb_configuration = req->wValue;
                 usb_send_in();
                 cfg = endpoint_config_table;
-                for (i=1; i<5; i++) {
-                    uint8_t en;
+                for (i=0; i<6; i++) {
+                    uint8_t en, ep_num;
 
-                    UENUM = i;
                     en = pgm_read_byte(cfg++);
+                    ep_num = pgm_read_byte(cfg++);
+                    UENUM = ep_num;
+
                     UECONX = en;
                     if (en) {
                         UECFG0X = pgm_read_byte(cfg++);
@@ -674,36 +681,38 @@ void usb_hid_request(usb_request_std_t *req) {
     USB_EP0_STALL();
 }
 
-void usb_handle_endpoint_request(usb_request_t *req) {
-    switch (req->val.bRequest) {
-        case USB_REQ_GET_STATUS: {
-            uint8_t endpoint = req->val.wIndexLSB;
+// void usb_handle_endpoint_request(usb_request_t *req) {
+//     switch (req->val.bRequest) {
+//         case USB_REQ_GET_STATUS: {
+//             uint8_t endpoint = req->val.wIndexLSB;
 
-            if (usb_configuration != USB_CONFIGURED) {
-                USB_EP0_STALL();
-                return;
-            }
+//             if (usb_configuration != USB_CONFIGURED) {
+//                 USB_EP0_STALL();
+//                 return;
+//             }
 
-            // switch (endpoint) {
-            //     case USB_DIR_IN | 0x01: {in0buf[0] = in1cs & 0x01;} break;
-            //     case USB_DIR_IN | 0x02: {in0buf[0] = in2cs & 0x01;} break;
-            //     case USB_DIR_IN | 0x03: {in0buf[0] = in3cs & 0x01;} break;
-            //     case USB_DIR_IN | 0x04: {in0buf[0] = in4cs & 0x01;} break;
-            //     case USB_DIR_IN | 0x05: {in0buf[0] = in5cs & 0x01;} break;
-            // }
+//             // switch (endpoint) {
+//             //     case USB_DIR_IN | 0x01: {in0buf[0] = in1cs & 0x01;} break;
+//             //     case USB_DIR_IN | 0x02: {in0buf[0] = in2cs & 0x01;} break;
+//             //     case USB_DIR_IN | 0x03: {in0buf[0] = in3cs & 0x01;} break;
+//             //     case USB_DIR_IN | 0x04: {in0buf[0] = in4cs & 0x01;} break;
+//             //     case USB_DIR_IN | 0x05: {in0buf[0] = in5cs & 0x01;} break;
+//             // }
 
-            // all values are reserved for interfaces
-            {
-                uint8_t response[2] = {0, 0};
-                usb_write_endpoint(0, response, sizeof(response));
-            }
-        } break;
+//             // all values are reserved for interfaces
+//             {
+//                 uint8_t response[2] = {0, 0};
+//                 UENUM = endpoint & 0x7F;
+//                 response[0] = !!(UEINTX & _BV(STALLEDI));
+//                 usb_write_endpoint(0, response, sizeof(response));
+//             }
+//         } break;
 
-        default: {
-            USB_EP0_STALL();
-        }
-    }
-}
+//         default: {
+//             USB_EP0_STALL();
+//         }
+//     }
+// }
 
 // USB Endpoint Interrupt - endpoint 0 is handled here.  The
 // other endpoints are manipulated by the user-callable
@@ -757,9 +766,9 @@ ISR(USB_COM_vect) {
                     }
                 } break;
 
-                case USB_REQTYPE_RECIPIENT_ENDPOINT: {
-                    usb_handle_endpoint_request(&req);
-                } break;
+                // case USB_REQTYPE_RECIPIENT_ENDPOINT: {
+                //     usb_handle_endpoint_request(&req);
+                // } break;
 
                 default: {
                     USB_EP0_STALL();

@@ -67,6 +67,8 @@ CFLAGS += $(INC_PATHS)
 C_SRC += \
 	example.c \
 	usb_keyboard.c \
+	matrix_scanner.c \
+	hardware.c \
 	usb_reports.c \
 	fuses.c \
 	timer.c \
