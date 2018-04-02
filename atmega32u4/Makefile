@@ -44,6 +44,8 @@ include avr-makefile/boards.mk
 #                        common build settings                        #
 #######################################################################
 
+include avr-makefile/avr-mega.mk
+
 include $(KEYPLUS_PATH)/core/core.mk
 include $(KEYPLUS_PATH)/usb/usb.mk
 include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
@@ -52,7 +54,9 @@ include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
 #                         programming options                         #
 #######################################################################
 
-AVRDUDE_PROGRAMMER = avrispmkII
+# AVRDUDE_PROGRAMMER = avrispmkII
+AVRDUDE_PROGRAMMER = usbasp
+
 AVRDUDE_CMD=avrdude -p $(AVRDUDE_PART) -c $(AVRDUDE_PROGRAMMER)
 
 KEYPLUS_CLI = python3 ../host-software/keyplus-cli
@@ -83,7 +87,7 @@ ASM_SRC =
 OPT = s
 
 # List any extra directories to look for include files here.
-EXTRAINCDIRS = $(XMEGA_PATH)/
+# EXTRAINCDIRS = $(XMEGA_PATH)/
 
 FUSE_SECTION_START=0x08F0020
 
@@ -178,10 +182,9 @@ $(TARGET).fuse: $(TARGET).elf
 
 # fuse options, see fuses.c (fuses values generated in $(TARGET).fuse)
 
-LFUSE = 0x5E
-HFUSE = 0xD9
-# EFUSE = 0xF3
-EFUSE = 0xc3
+LFUSE = 5E
+HFUSE = D9
+EFUSE = C3 # --> EFUSE = F3
 
 $(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
 	 $(KEYPLUS_CLI) program \
@@ -193,12 +196,6 @@ $(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
 		-o "$(MERGED_HEX)" \
 		-F chip_name="$(MCU_STRING)" \
 		-F scan_method=fast_row_col \
-
-program-fuses:
-	$(AVRDUDE_CMD) \
-		-U lfuse:w:$(LFUSE):m \
-		-U hfuse:w:$(HFUSE):m \
-		-U efuse:w:$(EFUSE):m \
 
 ATMEL_DFU = bootloaders/atmel_dfu/ATMega32U4-usbdevice_dfu-1_0_0.hex
 program-atmel-dfu-bootloader:

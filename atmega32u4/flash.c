@@ -3,6 +3,7 @@
 
 #include "core/flash.h"
 #include <avr/pgmspace.h>
+#include <avr/interrupt.h>
 #include <avr/io.h>
 
 /// Saves the state of the interrupt flags while writing flash
@@ -34,6 +35,7 @@ void flash_read(uint8_t* dest, flash_addr_t addr, flash_size_t len) {
 
 void flash_modify_enable(void) {
     s_irq_state = SREG;
+    cli();
 }
 
 void flash_modify_disable(void) {

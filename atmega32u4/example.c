@@ -99,6 +99,14 @@ int main(void)
             sizeof(sig_data)
         );
     }
+#elif 0
+    // flash_erase_page(0x5E00 / PAGE_SIZE);
+    // flash_erase_page(0x5E80 / PAGE_SIZE);
+    flash_erase_page(0x5F00 / PAGE_SIZE);
+    flash_erase_page(0x5F80 / PAGE_SIZE);
+    flash_erase_page(0x6000 / PAGE_SIZE);
+    // flash_erase_page(0x5F00 / PAGE_SIZE);
+    // flash_erase_page(0x6F00 / PAGE_SIZE);
 #endif
     flash_modify_disable();
 

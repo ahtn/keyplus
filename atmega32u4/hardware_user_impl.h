@@ -5,6 +5,8 @@
 
 #include <stdint.h>
 
+#include <util/delay.h>
+
 #define static_delay_us(x) _delay_us(x)
 #define static_delay_ms(x) _delay_ms(x)
 
@@ -31,8 +33,11 @@ typedef uint32_t flash_size_t;
 
 typedef uint16_t io_port_t;
 
-// SPM_PAGESIZE is in words (uint16_t), so convert to bytes
-#define PAGE_SIZE           (SPM_PAGESIZE * 2)
+// SPM_PAGESIZE is in bytes
+// WARNING: some old versions of the datasheet incorrectly states that the page
+// size is 128 WORDS (i.e. 256 bytes), however the correct value should be 64
+// WORDS  (i.e. 128 bytes).
+#define PAGE_SIZE           (SPM_PAGESIZE)
 
 #if defined (__AVR_ATmega32U4__)
 #include "io_map/iom32u4.h"
