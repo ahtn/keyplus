@@ -264,7 +264,7 @@ void usb_cb_control_setup(void) {
         uint8_t bRequest = usb_setup.bRequest;
         uint8_t interface = usb_setup.wIndex;
         uint8_t length = usb_setup.wLength;
-        uint8_t report_id = LSB(usb_setup.wValue);
+        uint8_t report_id = LSB_U16(usb_setup.wValue);
         /* uint8_t interface = 1; */
 
         if (bRequest == USB_REQ_HID_SET_REPORT) {
