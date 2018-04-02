@@ -1197,7 +1197,7 @@ class Loader(QMainWindow):
             firmware_settings,
             error_codes,
         )
-        self.info_window.setModal(True)
+
         self.info_window.exec_()
 
         self.deviceListWidget.updateList()

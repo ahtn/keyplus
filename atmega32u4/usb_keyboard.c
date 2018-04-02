@@ -30,9 +30,11 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include <avr/boot.h>
 #include <util/atomic.h>
 #include <util/delay.h>
 
+#include "core/settings.h"
 #include "usb/descriptors.h"
 #include "usb_reports/keyboard_report.h"
 
@@ -45,25 +47,12 @@
  *
  **************************************************************************/
 
-// You can change these to give your code its own name.
-#define STR_MANUFACTURER    L"keyplus"
-#define STR_PRODUCT     L"Keyboard"
-
-// Mac OS-X and Linux automatically load the correct drivers.  On
-// Windows, even though the driver is supplied by Microsoft, an
-// INF file is needed to load the driver.  These numbers need to
-// match the INF file.
-#define VENDOR_ID       0x16C0
-#define PRODUCT_ID      0x047C
-
 // USB devices are supposed to implment a halt feature, which is
 // rarely (if ever) used.  If you comment this line out, the halt
 // code will be removed, saving 102 bytes of space (gcc 4.3.0).
 // This is not strictly USB compliant, but works with all major
 // operating systems.
 #define SUPPORT_ENDPOINT_HALT
-
-
 
 /**************************************************************************
  *
@@ -251,7 +240,7 @@ int8_t usb_keyboard_send(void)
 //
 ISR(USB_GEN_vect) {
     uint8_t irq_flags;
-    static uint8_t div4=0;
+    // static uint8_t div4=0;
 
     irq_flags = UDINT;
     UDINT = 0;
@@ -333,6 +322,55 @@ static inline void usb_ack_out(void)
 
 #include "usb/util/usb_hid.h"
 
+#define MAX_STRING_LEN 32
+uint16_t string_desc_buf[MAX_STRING_LEN+32+1];
+char string_copy_buf[MAX_STRING_LEN+32];
+static uint8_t s_serial_string_write_pos;
+
+static void make_string_desc(char *str) {
+    char c;
+    uint8_t i = 0;
+    uint8_t len = 0;
+    while ( ((c = str[i]) != '\0') && len != MAX_STRING_LEN) {
+        string_desc_buf[i+1] = c; // char -> uint16_t
+        len++;
+        i++;
+    }
+    string_desc_buf[0] = USB_STRING_DESC_SIZE((len+1)*sizeof(uint16_t));
+}
+
+static char hexdigit_to_char(uint8_t d) {
+    d = d & 0x0f;
+    if (d < 0x0a) {
+        return '0' + d;
+    } else {
+        return 'a' + (d - 0x0a);
+    }
+}
+
+static void write_serial_helper(uint8_t byte) {
+    string_copy_buf[s_serial_string_write_pos++] = byte;
+}
+
+static void write_serial_hex_byte(uint8_t hex_char) {
+    write_serial_helper(hexdigit_to_char(hex_char >> 4));
+    write_serial_helper(hexdigit_to_char(hex_char >> 0));
+}
+
+#define SERIAL_SIG_START_ADDR 0x0E
+#define SERIAL_SIG_END_ADDR 0x18
+#define SERIAL_LENGTH 10
+static void make_serial_string(void) {
+    s_serial_string_write_pos = 0;
+    uint8_t i;
+    for (i = 0; i < SERIAL_LENGTH; ++i) {
+        write_serial_hex_byte(
+            boot_signature_byte_get(SERIAL_SIG_START_ADDR + i)
+        );
+    }
+    write_serial_helper('\0'); // (1 byte)
+}
+
 
 void get_descriptor(
     usb_request_t* req,
@@ -360,55 +398,44 @@ void get_descriptor(
         // USB Host requested a string descriptor
         case USB_DESC_STRING: {
             switch (req->get_desc.index) {
+                case STRING_DESC_PRODUCT: {
+                    ptr->type = PTR_DATA;
+                    flash_read(
+                        (uint8_t*) string_copy_buf,
+                        (flash_ptr_t)&(GET_SETTING(device_name)),
+                        MAX_STRING_LEN
+                    );
+                    make_string_desc(string_copy_buf);
+                    address = (raw_ptr_t)string_desc_buf;
+                } break;
+
+                case STRING_DESC_SERIAL_NUMBER: {
+                    make_serial_string();
+                    make_string_desc(string_copy_buf);
+                    ptr->type = PTR_DATA;
+                    address = (raw_ptr_t)string_desc_buf;
+                } break;
+
+                case STRING_DESC_MANUFACTURER: {
+                    address = (raw_ptr_t)((uint8_t*)usb_string_desc_1);
+                } break;
 
                 default:
                 case STRING_DESC_NONE: {
                     address = (raw_ptr_t)((uint8_t*)usb_string_desc_0);
-                    length = sizeof(usb_string_desc_0);
                 } break;
 
-                // case STRING_DESC_MANUFACTURER: {
-                //     // make_string_desc(manufacturer_string);
-                //     // address = (raw_ptr_t)string_desc_buf;
-                // } break;
-
-                // case STRING_DESC_MANUFACTURER: {
-                //     ptr->type = PTR_DATA;
-                //     // make_string_desc(manufacturer_string);
-                //     // address = (raw_ptr_t)string_desc_buf;
-                // } break;
-
-                // case STRING_DESC_PRODUCT: {
-                // } break;
-
-                // case STRING_DESC_PRODUCT: {
-                //     ptr->type = PTR_DATA;
-                //     flash_read(
-                //         (uint8_t*) string_copy_buf,
-                //         (flash_ptr_t)&(GET_SETTING(device_name)),
-                //         MAX_STRING_LEN
-                //     );
-                //     make_string_desc(string_copy_buf);
-                //     address = (raw_ptr_t)string_desc_buf;
-                // } break;
-
-                // case STRING_DESC_SERIAL_NUMBER: {
-                //     make_serial_string();
-                //     make_string_desc(string_copy_buf);
-                //     ptr->type = PTR_DATA;
-                //     address = (raw_ptr_t)string_desc_buf;
-                // } break;
             }
 
-            // if (address != 0) {
-            //     if (ptr->type == PTR_FLASH) {
-            //         length = flash_read_byte(
-            //             (flash_ptr_t)&(((usb_string_desc_t*)address)->bLength)
-            //         );
-            //     } else if (ptr->type == PTR_DATA) {
-            //         length = ((usb_string_desc_t*)address)->bLength;
-            //     }
-            // }
+            if (address != 0) {
+                if (ptr->type == PTR_FLASH) {
+                    length = flash_read_byte(
+                        (flash_ptr_t)&(((usb_string_desc_t*)address)->bLength)
+                    );
+                } else if (ptr->type == PTR_DATA) {
+                    length = ((usb_string_desc_t*)address)->bLength;
+                }
+            }
         } break;
 
         // USB Host requested a HID descriptor

@@ -125,7 +125,7 @@ typedef struct usb_config_desc_keyboard_t {
 extern ROM const usb_config_desc_keyboard_t usb_config_desc;
 extern ROM const usb_device_desc_t usb_device_desc;
 extern ROM const uint16_t usb_string_desc_0[2];
-extern ROM const uint16_t usb_string_desc_1[];
+extern ROM const uint16_t usb_string_desc_1[8];
 extern ROM const uint16_t usb_string_desc_2[];
 extern ROM const uint16_t usb_string_desc_3[];
 extern ROM const uint8_t sizeof_hid_desc_boot_keyboard;

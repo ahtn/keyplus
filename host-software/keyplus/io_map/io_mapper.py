@@ -6,10 +6,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import keyplus.io_map.xmega
+import keyplus.io_map.mega
 import keyplus.chip_id
 
 IO_MAPPER_LOOKUP_TABLE = {
-    ('XMEGA', '') : keyplus.io_map.xmega.IoMapperXmega,
+    ('AVR_XMEGA', '') : keyplus.io_map.xmega.IoMapperXmega,
+    ('AVR_MEGA', '') : keyplus.io_map.mega.IoMapperAVRMega,
 }
 
 def get_io_mapper_for_chip(chip_id):

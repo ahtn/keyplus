@@ -622,9 +622,10 @@ class ProgramCommand(GenericDeviceCommand):
         #
         # Reference:
         # https://en.wikipedia.org/wiki/Intel_HEX#Record_types
-        fw_hex.start_addr = {
-            'EIP': firmware_info.chip_id
-        }
+
+        # fw_hex.start_addr = {
+        #     'EIP': firmware_info.chip_id
+        # }
 
         settings_addr = args.merge_hex[0]
         layout_addr = args.merge_hex[1]

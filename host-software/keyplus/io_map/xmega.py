@@ -66,8 +66,32 @@ XmegaPinsA3U = IoMapperPins(
 )
 
 XmegaPinsA1U = IoMapperPins(
-    ports = {},
-    pins = None,
+    ports = {
+        'A':  0,
+        'B':  1,
+        'C':  2,
+        'D':  3,
+        'E':  4,
+        'F':  5,
+        'H':  6,
+        'J':  7,
+        'K':  8,
+        'Q':  9,
+        'R': 10,
+    },
+    pins = [
+        0xff,
+        0xff,
+        0xff,
+        0x3f,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0xff,
+        0x03,
+        0x03,
+    ],
     gpio_count = 78 - 2,
     port_size = 8
 )
@@ -86,7 +110,7 @@ class IoMapperXmega(IoMapper):
         self.chip_info = keyplus.chip_id.lookup_chip_id(chip_id)
 
         assert(self.chip_info != None)
-        assert(self.chip_info.architecture == 'XMEGA')
+        assert(self.chip_info.architecture == 'AVR_XMEGA')
         assert(self.chip_info.series in self.XMEGA_SERIES_TABLE)
         self.pin_mapper = IoMapperXmega.XMEGA_SERIES_TABLE[self.chip_info.series]
 

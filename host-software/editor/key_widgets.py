@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright 2017 jem@seethis.link
+# Copyright 2018 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-# # PyQt <-> PySide signal compatability
-# from PyQt5.QtCore import pyqtSlot, pyqtSignal
-# Signal = pyqtSignal
-# Slot = pyqtSlot
-# from PyQt5.QtWidgets import (
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 from PySide.QtCore import QSize, Qt, QRectF, QPointF, QPoint, QLine, QObject, \
     QTimer
@@ -21,21 +17,8 @@ from PySide.QtCore import Slot, Signal
 import os
 import json
 import kle
-import led_vm
 
 DEFAULT_KEY_SIZE = 50
-
-class KeycodeConfigWidget:
-    pass
-
-class PhysicalKeyConfigWidget:
-    pass
-
-class DeviceConfigWidget:
-    pass
-
-class LayoutWidget:
-    pass
 
 class KeyboardDeviceWidget(QGraphicsItem):
 
@@ -46,19 +29,6 @@ class KeyboardDeviceWidget(QGraphicsItem):
         self.keys = key_layout.get_keys()
         self.keyList = []
         self.keySize = self.key_layout.spacing
-
-        with open("rgb.cl") as f:
-            main_program = f.read()
-
-        with open("rgb_init.cl") as f:
-            init_program = f.read()
-
-        vm_parser = led_vm.LEDEffectVMParser()
-        led_programs = {
-            'init': vm_parser.parse_asm(init_program),
-            'main': vm_parser.parse_asm(main_program)
-        }
-        self.vm = led_vm.LEDEffectVM(led_programs, num_pixels=64)
 
         for(i, key) in enumerate(self.keys):
             key = KeyWidget(
@@ -71,8 +41,6 @@ class KeyboardDeviceWidget(QGraphicsItem):
             # self.updateBoundingRect(key)
             key.positionUpdateSignal.connect(self.handlePositionUpdate)
             self.keyList.append(key)
-
-        self.vm.execute_program('init')
 
         self.updateBoundingRect()
 
@@ -115,9 +83,6 @@ class KeyboardDeviceWidget(QGraphicsItem):
         key_layout = kle.KLEKeyboard.from_json(json_layout, spacing=key_size)
         return KeyboardDeviceWidget(key_layout, name)
 
-    # @Slot(str)
-    # def updateLEDAnimation(self):
-
     #     # def slide_color(key, x):
     #     #     if (key.color_dir == +1):
     #     #         if x >= 255:
@@ -154,36 +119,6 @@ class KeyboardDeviceWidget(QGraphicsItem):
 
     #         key.color = new_color
     #         key.update()
-
-    def updateLEDFromVM(self):
-        for (i, key) in enumerate(self.keyList):
-
-            pixel = self.vm.get_pixel(i)
-            pixel_type = self.vm.get_pixel_type(i)
-
-            if pixel_type == led_vm.Register.OUTPUT_TYPE_HSV:
-                new_color = QColor.fromHsv(
-                    pixel[0],
-                    pixel[1],
-                    pixel[2]
-                )
-            elif pixel_type == led_vm.Register.OUTPUT_TYPE_RGB:
-                new_color = QColor(
-                    pixel[0],
-                    pixel[1],
-                    pixel[2]
-                )
-
-            key.color = new_color
-            key.update()
-
-    @Slot(str)
-    def updateLEDAnimation(self):
-        # self.vm.execute_program('main')
-
-        self.vm.execute_program('main')
-        self.updateLEDFromVM()
-
 
     @Slot(str)
     def handlePositionUpdate(self):
@@ -410,77 +345,3 @@ class KeyboardEditorScene(QGraphicsScene):
         self.selectedItem = None
 
 
-class Window(QWidget):
-
-    def __init__(self):
-        super(Window, self).__init__()
-
-        self.inputType = QComboBox()
-
-        # layout of the widgets in the window
-        self.layout = QVBoxLayout()
-        self.layout.addWidget(self.inputType)
-        self.key_size = DEFAULT_KEY_SIZE
-
-        self.setLayout(self.layout)
-
-        self.resize(1600, 900)
-
-        self.scene = KeyboardEditorScene(
-            -200, -200, 1000, 600,
-            key_size = self.key_size
-        )
-
-        keyFont = self.font()
-        keyFont.setPixelSize(20)
-
-        self.view = GraphicsView(self.scene)
-        self.view.setRenderHint(QPainter.Antialiasing)
-        self.view.setViewportUpdateMode(QGraphicsView.BoundingRectViewportUpdate)
-        self.view.setBackgroundBrush(QColor(0xFF, 0xFF, 0xFF))
-        self.view.setFont(keyFont)
-
-        test_items = [
-            ("dox-left",  os.path.join("layouts", "dox-left.json")),
-            ("dox-right", os.path.join("layouts", "dox-right.json")),
-            ("60%", os.path.join("layouts", "60-percent.json")),
-            ("jemini-v5", os.path.join("layouts", "jemini-v5.json")),
-            ("ortho-left",  os.path.join("layouts", "ortho_4x6.json")),
-            ("ortho-right", os.path.join("layouts", "ortho_4x6.json")),
-        ]
-
-        self.test_objs = [
-            KeyboardDeviceWidget.from_file(
-                kb[1],
-                kb[0],
-                key_size=self.key_size
-            ) for kb in test_items
-        ]
-
-        print(test_items)
-        print(self.test_objs)
-
-        for kb in self.test_objs:
-            self.scene.addItem(kb)
-
-        self.refreshEvent = QTimer()
-        self.refreshEvent.setInterval(33)
-        # self.refreshEvent.timeout.connect(self.USBUpdate)
-        self.refreshEvent.timeout.connect(self.test_objs[0].updateLEDAnimation)
-        self.refreshEvent.timeout.connect(self.test_objs[1].updateLEDAnimation)
-        self.refreshEvent.start()
-
-
-
-        # make a view port for the scene
-        self.view.show()
-
-        self.layout.addWidget(self.view)
-
-if __name__ == '__main__':
-    import sys
-
-    app = QApplication(sys.argv)
-    window = Window()
-    window.show()
-    sys.exit(app.exec_())

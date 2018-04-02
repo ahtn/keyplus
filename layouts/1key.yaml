@@ -1,0 +1,22 @@
+# Written in 2017 by jem@seethis.link
+# This file is released into the public domain as per the CC0 Public Domain
+# Dedication (http://creativecommons.org/publicdomain/zero/1.0/)
+---
+
+devices:
+  pro micro 1 key:
+    id: 0
+    scan_mode:
+      mode: pin_gnd # options: col_row, pins, none
+      pins: [B0]
+    layout: 1key
+
+layouts:
+  1key:
+    layers: [
+      [ # layer 0 (base)
+        [
+          a
+        ]
+      ],
+    ]

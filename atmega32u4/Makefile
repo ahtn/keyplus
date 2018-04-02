@@ -151,7 +151,10 @@ ADEFS += $(USB_OPTS)
 #                              recepies                               #
 #######################################################################
 
-all: hex lock fuse
+LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
+MERGED_HEX="$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex"
+
+all: hex lock fuse $(MERGED_HEX)
 
 # program the device using the bootloader
 
@@ -180,6 +183,17 @@ HFUSE = 0xD9
 # EFUSE = 0xF3
 EFUSE = 0xc3
 
+$(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
+	 $(KEYPLUS_CLI) program \
+		--new-id $(ID) \
+		--layout "$(LAYOUT_FILE)" \
+		--rf "$(RF_FILE)" \
+		--fw-hex "$(TARGET_HEX)" \
+		-M $(SETTING_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
+		-o "$(MERGED_HEX)" \
+		-F chip_name="$(MCU_STRING)" \
+		-F scan_method=fast_row_col \
+
 program-fuses:
 	$(AVRDUDE_CMD) \
 		-U lfuse:w:$(LFUSE):m \
@@ -190,9 +204,9 @@ ATMEL_DFU = bootloaders/atmel_dfu/ATMega32U4-usbdevice_dfu-1_0_0.hex
 program-atmel-dfu-bootloader:
 	$(AVRDUDE_CMD) -U flash:w:$(ATMEL_DFU):i
 
-program-dfu: hex
+program-dfu: $(MERGED_HEX)
 	dfu-programmer $(MCU) erase --force
-	dfu-programmer $(MCU) flash $(TARGET_HEX)
+	dfu-programmer $(MCU) flash $(MERGED_HEX)
 	dfu-programmer $(MCU) start
 
 # lock options, see fuses.c (lock bit values written to $(TARGET).lock)

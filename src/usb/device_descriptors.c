@@ -239,6 +239,12 @@ ROM const uint16_t usb_string_desc_0[2] = {
     HID_LANG_ID(HID_LANG_ENGLISH, HID_SUBLANG_ENGLISH_US),
 };
 
+// language id in string 0 descriptor
+ROM const uint16_t usb_string_desc_1[8] = {
+    USB_STRING_DESC_SIZE(sizeof(usb_string_desc_1)),
+    'k', 'e', 'y', 'p', 'l', 'u', 's'
+};
+
 #ifdef USE_WEBUSB
 ROM const uint8_t usb_url_desc_1[17] = {
     sizeof(usb_url_desc_1),
