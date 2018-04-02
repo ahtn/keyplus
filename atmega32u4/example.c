@@ -21,9 +21,10 @@
  * THE SOFTWARE.
  */
 
+#include <avr/boot.h>
+#include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
-#include <avr/interrupt.h>
 #include <util/delay.h>
 
 #include "usb_keyboard.h"
@@ -65,7 +66,7 @@ int main(void)
     }
     flash_page_erase_and_write(0x4000);
     // flash_erase_page(0x4000 / PAGE_SIZE); // check erase page works
-#elif 1
+#elif 0
     // test flash.c interface
     flash_erase_page(0x4000 / PAGE_SIZE);
     flash_write(
@@ -73,6 +74,23 @@ int main(void)
         0x4000,
         0x10
     );
+#elif 1
+    // Dump the signature section to flash at address 0x4000
+    {
+        uint8_t sig_data[256];
+        uint8_t i;
+
+        do {
+            sig_data[i] = boot_signature_byte_get(i);
+            i++;
+        } while (i != 0);
+        flash_erase_page(0x4000 / PAGE_SIZE);
+        flash_write(
+            sig_data,
+            0x4000,
+            sizeof(sig_data)
+        );
+    }
 #endif
     flash_modify_disable();
 

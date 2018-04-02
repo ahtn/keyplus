@@ -67,6 +67,7 @@ CFLAGS += $(INC_PATHS)
 C_SRC += \
 	example.c \
 	usb_keyboard.c \
+	usb_reports.c \
 	fuses.c \
 	timer.c \
 	flash.c \
@@ -86,6 +87,13 @@ FUSE_SECTION_START=0x08F0020
 
 # Compiler flag to set the C Standard level.
 CSTANDARD = -std=gnu99
+
+# TODO: remove this setting later
+CFLAGS += -Wno-error=unused-const-variable
+
+CFLAGS += -Wno-error=unused-variable
+CFLAGS += -Wno-error=unused-function
+CFLAGS += -Wno-error=unused-but-set-variable
 
 AVRDUDE_PART = m32u4
 MCU_STRING = "ATmega32U4"
@@ -130,10 +138,6 @@ LAYOUT_SIZE := 0x1000
 CDEFS += -DSETTINGS_ADDR=$(SETTING_ADDR)
 CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
 CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
-
-CFLAGS += -Wno-error=unused-variable
-CFLAGS += -Wno-error=unused-function
-CFLAGS += -Wno-error=unused-but-set-variable
 
 # workaround for bad code generation on avr-gcc on linux (as of version 6.2.0)
 CFLAGS += -fno-jump-tables

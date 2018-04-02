@@ -36,6 +36,8 @@
 #include "usb/descriptors.h"
 #include "usb_reports/keyboard_report.h"
 
+#include "usb_32u4.h"
+
 
 /**************************************************************************
  *
@@ -44,9 +46,8 @@
  **************************************************************************/
 
 // You can change these to give your code its own name.
-#define STR_MANUFACTURER    L"MfgName"
+#define STR_MANUFACTURER    L"keyplus"
 #define STR_PRODUCT     L"Keyboard"
-
 
 // Mac OS-X and Linux automatically load the correct drivers.  On
 // Windows, even though the driver is supplied by Microsoft, an
@@ -54,7 +55,6 @@
 // match the INF file.
 #define VENDOR_ID       0x16C0
 #define PRODUCT_ID      0x047C
-
 
 // USB devices are supposed to implment a halt feature, which is
 // rarely (if ever) used.  If you comment this line out, the halt
@@ -306,7 +306,6 @@ uint8_t usb_configured(void)
     return usb_configuration;
 }
 
-static inline bool usb_endpoint_ready(uint8_t ep_num);
 static inline int8_t usb_wait_endpoint(uint8_t ep_num);
 
 int8_t usb_keyboard_send_blocking(void) {
@@ -331,26 +330,25 @@ int8_t usb_keyboard_press(uint8_t key, uint8_t modifier)
     return usb_keyboard_send_blocking();
 }
 
-static void usb_write_endpoint(uint8_t ep_number, const uint8_t *src, uint8_t length) {
+void usb_write_endpoint(uint8_t ep_number, const uint8_t *src, uint8_t length) {
     uint8_t i;
-    UENUM = ep_number;
-    for (i = 0; i < length; ++i) {
-        UEDATX = src[i];
-    }
-    UEINTX = (1<<STALLEDI) | (1<<RXSTPI) | (1<<NAKOUTI) | (1<<RWAL);
-}
-
-static void usb_read_endpoint(uint8_t ep_number, uint8_t *dest, uint8_t length) {
-    uint8_t i;
-    UENUM = ep_number;
-    for (i = 0; i < length; ++i) {
-        dest[i] = UEDATX;
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+        UENUM = ep_number;
+        for (i = 0; i < length; ++i) {
+            UEDATX = src[i];
+        }
+        UEINTX = (1<<STALLEDI) | (1<<RXSTPI) | (1<<NAKOUTI) | (1<<RWAL);
     }
 }
 
-static inline bool usb_endpoint_ready(uint8_t ep_num) {
-    UENUM = ep_num;
-    return UEINTX & (1<<RWAL);
+void usb_read_endpoint(uint8_t ep_number, uint8_t *dest, uint8_t length) {
+    uint8_t i;
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+        UENUM = ep_number;
+        for (i = 0; i < length; ++i) {
+            dest[i] = UEDATX;
+        }
+    }
 }
 
 static inline int8_t usb_wait_endpoint(uint8_t ep_num) {
@@ -358,7 +356,7 @@ static inline int8_t usb_wait_endpoint(uint8_t ep_num) {
     while (1) {
         bool ready = false;
         ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-            ready = usb_endpoint_ready(ep_num);
+            ready = usb_is_endpoint_ready(ep_num);
         }
         if (ready) {
             return 0;
@@ -371,7 +369,6 @@ static inline int8_t usb_wait_endpoint(uint8_t ep_num) {
 // send the contents of keyboard_keys and keyboard_modifier_keys
 int8_t usb_keyboard_send(void)
 {
-    uint8_t intr_state;
     uint8_t ret_val = -1;
 
     if (!usb_configuration) {
@@ -379,7 +376,7 @@ int8_t usb_keyboard_send(void)
     }
 
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-        if (usb_endpoint_ready(KEYBOARD_ENDPOINT)) {
+        if (usb_is_endpoint_ready(KEYBOARD_ENDPOINT)) {
             usb_write_endpoint(KEYBOARD_ENDPOINT, (uint8_t*)&kb_report, 8);
             ret_val = 0;
         }
@@ -400,7 +397,7 @@ int8_t usb_keyboard_send(void)
 // the transmit buffer flushing is triggered by the start of frame
 //
 ISR(USB_GEN_vect) {
-    uint8_t irq_flags, i;
+    uint8_t irq_flags;
     static uint8_t div4=0;
 
     irq_flags = UDINT;
@@ -476,30 +473,172 @@ static inline void usb_ack_out(void)
 
 #define USB_EP0_STALL() (UECONX = (1<<STALLRQ)|(1<<EPEN))
 
-// USB Endpoint Interrupt - endpoint 0 is handled here.  The
-// other endpoints are manipulated by the user-callable
-// functions, and the start-of-frame interrupt.
-//
-ISR(USB_COM_vect)
-{
-    const uint8_t *list;
-    const uint8_t *cfg;
-    uint8_t i, n, len, en;
-    usb_request_std_t req;
-    uint16_t desc_val;
-    const uint8_t *desc_addr;
-    uint8_t desc_length;
+// TODO: descriptor stuff move to another file later
+#include "usb/descriptors.h"
 
-    UENUM = 0;
+void get_descriptor(usb_request_t* req, fat_ptr_t *ptr) {
+    uint16_t length   = 0;
+    raw_ptr_t address = (raw_ptr_t)NULL;
 
-    // if (!is_setup_packet(UEINTX)) {
-    //     USB_EP0_STALL();
-    // }
+    switch (req->get_desc.type) {
+        // USB Host requested a device descriptor
+        case USB_DESC_DEVICE: {
+            address = (raw_ptr_t)&usb_device_desc;
+            length  = sizeof(usb_device_desc);
+        } break;
 
-    usb_read_endpoint(0, (uint8_t*)&req, sizeof(usb_request_t));
+        // USB Host requested a configuration descriptor
+        case USB_DESC_CONFIGURATION: {
+            address = (raw_ptr_t)&usb_config_desc;
+            length  = sizeof(usb_config_desc);
+        } break;
+
+        // USB Host requested a string descriptor
+        case USB_DESC_STRING: {
+            switch (req->get_desc.index) {
+                case STRING_DESC_NONE: {
+                    address = (raw_ptr_t)usb_string_desc_0;
+                } break;
+
+                case STRING_DESC_MANUFACTURER: {
+                    ptr->type = PTR_RAM;
+                    // make_string_desc(manufacturer_string);
+                    // address = (raw_ptr_t)string_desc_buf;
+                } break;
+
+                case STRING_DESC_PRODUCT: {
+                } break;
+
+                // case STRING_DESC_PRODUCT: {
+                //     ptr->type = PTR_RAM;
+                //     flash_read(
+                //         (uint8_t*) string_copy_buf,
+                //         (flash_ptr_t)&(GET_SETTING(device_name)),
+                //         MAX_STRING_LEN
+                //     );
+                //     make_string_desc(string_copy_buf);
+                //     address = (raw_ptr_t)string_desc_buf;
+                // } break;
+
+                // case STRING_DESC_SERIAL_NUMBER: {
+                //     make_serial_string();
+                //     make_string_desc(string_copy_buf);
+                //     ptr->type = PTR_RAM;
+                //     address = (raw_ptr_t)string_desc_buf;
+                // } break;
+            }
+        }
+
+        // USB Host requested a HID descriptor
+        case USB_DESC_HID_REPORT: {
+            switch (req->get_hid_desc.interface) {
+                case INTERFACE_BOOT_KEYBOARD: {
+                    address = (raw_ptr_t)hid_desc_boot_keyboard;
+                    length  = sizeof_hid_desc_boot_keyboard;
+                } break;
+                case INTERFACE_MOUSE: {
+                    address = (raw_ptr_t)hid_desc_mouse;
+                    length  = sizeof_hid_desc_mouse;
+                } break;
+                case INTERFACE_MEDIA: {
+                    address = (raw_ptr_t)hid_desc_media;
+                    length  = sizeof_hid_desc_media;
+                } break;
+                case INTERFACE_VENDOR: {
+                    address = (raw_ptr_t)hid_desc_vendor;
+                    length  = sizeof_hid_desc_vendor;
+                } break;
+                case INTERFACE_NKRO_KEYBOARD: {
+                    address = (raw_ptr_t)hid_desc_nkro_keyboard;
+                    length  = sizeof_hid_desc_nkro_keyboard;
+                } break;
+            }
+        } break;
+
+    }
+
+    ptr->len = length;
+    ptr->ptr.raw = address;
+}
+
+
+            // case USB_REQ_GetDescriptor: {
+            //     uint8_t index = (usb_setup.wValue & 0xFF);
+            //     uint8_t type = (usb_setup.wValue >> 8);
+            //     fat_ptr_t desc_ptr = {0};
+            //     uint16_t interface = (usb_setup.wIndex);
+            //     usb_cb_get_descriptor(type, index, interface, &desc_ptr);
+
+            //     if (desc_ptr.size && desc_ptr.ptr.raw) {
+            //         if (desc_ptr.size > usb_setup.wLength) {
+            //             desc_ptr.size = usb_setup.wLength;
+            //         }
+
+            //         desc_data = desc_ptr;
+
+            //         usb_ep0_in_multi();
+            //         return;
+            //     } else {
+            //         return usb_ep0_stall();
+            //     }
+            // }
+            //
+// list = (const uint8_t *)descriptor_list;
+//             for (i=0; ; i++) {
+//                 if (i >= NUM_DESC_LIST) {
+//                     USB_EP0_STALL();
+//                     return;
+//                 }
+//                 desc_val = pgm_read_word(list);
+//                 if (desc_val != req.wValue) {
+//                     list += sizeof(struct descriptor_list_struct);
+//                     continue;
+//                 }
+//                 list += 2;
+//                 desc_val = pgm_read_word(list);
+//                 if (desc_val != req.wIndex) {
+//                     list += sizeof(struct descriptor_list_struct)-2;
+//                     continue;
+//                 }
+//                 list += 2;
+//                 desc_addr = (const uint8_t *)pgm_read_word(list);
+//                 list += 2;
+//                 desc_length = pgm_read_byte(list);
+//                 break;
+//             }
+//             len = (req.wLength < 256) ? req.wLength : 255;
+//             if (len > desc_length) len = desc_length;
+//             do {
+//                 // wait for host ready for IN packet
+//                 do {
+//                     i = UEINTX;
+//                 } while (!(i & ((1<<TXINI)|(1<<RXOUTI))));
+//                 if (i & (1<<RXOUTI)) return;    // abort
+//                 // send IN packet
+//                 n = len < ENDPOINT0_SIZE ? len : ENDPOINT0_SIZE;
+//                 for (i = n; i; i--) {
+//                     UEDATX = pgm_read_byte(desc_addr++);
+//                 }
+//                 len -= n;
+//                 usb_send_in();
+//             } while (len || n == ENDPOINT0_SIZE);
+// return;
+
+void usb_handle_ep0(usb_request_std_t *req_in) {
+    usb_request_std_t req = *req_in;
+
     UEINTX = ~((1<<RXSTPI) | (1<<RXOUTI) | (1<<TXINI));
     switch(req.bRequest) {
+
         case GET_DESCRIPTOR: {
+            const uint8_t *list;
+            const uint8_t *cfg;
+            uint8_t i, n, len, en;
+            usb_request_std_t req;
+            uint16_t desc_val;
+            const uint8_t *desc_addr;
+            uint8_t desc_length;
+
             list = (const uint8_t *)descriptor_list;
             for (i=0; ; i++) {
                 if (i >= NUM_DESC_LIST) {
@@ -540,19 +679,65 @@ ISR(USB_COM_vect)
                 usb_send_in();
             } while (len || n == ENDPOINT0_SIZE);
             return;
-        }
+        } break;
+
+        // case USB_REQ_GET_DESCRIPTOR: {
+        //     uint8_t len, i, n;
+        //     fat_ptr_t desc_ptr;
+        //     get_descriptor((usb_request_t*)&req, &desc_ptr);
+
+        //     len = (req.wLength < 256) ? req.wLength : 255;
+        //     if (len > desc_ptr.len) {
+        //         len = desc_ptr.len;
+        //     }
+        //     do {
+        //         // wait for host ready for IN packet
+        //         do {
+        //             i = UEINTX;
+        //         } while (!(i & ((1<<TXINI)|(1<<RXOUTI))));
+
+        //         if (i & (1<<RXOUTI)) {
+        //             return;    // abort
+        //         }
+
+        //         // send IN packet
+        //         n = len < ENDPOINT0_SIZE ? len : ENDPOINT0_SIZE;
+        //         for (i = n; i; i--) {
+        //             switch (desc_ptr.type) {
+        //                 case PTR_FLASH: {
+        //                     UEDATX = pgm_read_byte(desc_ptr.ptr.flash++);
+        //                 } break;
+
+        //                 case PTR_RAM: {
+        //                     UEDATX = desc_ptr.ptr.data[0];
+        //                     desc_ptr.ptr.data++;
+        //                 } break;
+        //             }
+        //         }
+        //         len -= n;
+        //         usb_send_in();
+        //     } while (len || n == ENDPOINT0_SIZE);
+        //     return;
+        // } break;
+
         case SET_ADDRESS: {
             usb_send_in();
             usb_wait_in_ready();
             UDADDR = req.wValue | (1<<ADDEN);
             return;
-        }
+        } break;
+
         case SET_CONFIGURATION: {
+            const uint8_t *cfg;
+            uint8_t i;
+
             if (req.bmRequestType == 0) {
                 usb_configuration = req.wValue;
                 usb_send_in();
                 cfg = endpoint_config_table;
                 for (i=1; i<5; i++) {
+                    uint8_t en;
+
                     UENUM = i;
                     en = pgm_read_byte(cfg++);
                     UECONX = en;
@@ -565,7 +750,8 @@ ISR(USB_COM_vect)
             UERST = 0x1E;
             UERST = 0;
             return;
-        }
+        } break;
+
         case GET_CONFIGURATION: {
             if (req.bmRequestType == 0x80) {
                 usb_wait_in_ready();
@@ -573,8 +759,11 @@ ISR(USB_COM_vect)
                 usb_send_in();
                 return;
             }
-        }
+        } break;
+
         case GET_STATUS: {
+            uint8_t i;
+
             usb_wait_in_ready();
             i = 0;
 #ifdef SUPPORT_ENDPOINT_HALT
@@ -588,11 +777,14 @@ ISR(USB_COM_vect)
             UEDATX = 0;
             usb_send_in();
             return;
-        }
+        } break;
+
 #ifdef SUPPORT_ENDPOINT_HALT
         case CLEAR_FEATURE:
         case SET_FEATURE: {
             if (req.bmRequestType == 0x02 && req.wValue == 0) {
+                uint8_t i;
+
                 i = req.wIndex & 0x7F;
                 if (i >= 1 && i <= MAX_ENDPOINT) {
                     usb_send_in();
@@ -607,9 +799,27 @@ ISR(USB_COM_vect)
                     return;
                 }
             }
-        }
+        } break;
 #endif
     }
+}
+
+// USB Endpoint Interrupt - endpoint 0 is handled here.  The
+// other endpoints are manipulated by the user-callable
+// functions, and the start-of-frame interrupt.
+//
+ISR(USB_COM_vect) {
+    usb_request_std_t req;
+
+
+    // if (!is_setup_packet(UEINTX)) {
+    //     USB_EP0_STALL();
+    // }
+
+    UENUM = 0;
+    usb_read_endpoint(0, (uint8_t*)&req, sizeof(usb_request_t));
+
+    usb_handle_ep0((usb_request_std_t*) &req);
 
     if (req.wIndex == KEYBOARD_INTERFACE) {
         if (req.bmRequestType == 0xA1) {
@@ -656,5 +866,3 @@ ISR(USB_COM_vect)
 
     USB_EP0_STALL();
 }
-
-
