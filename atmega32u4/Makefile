@@ -40,6 +40,10 @@ INC_PATHS += -I$(KEYPLUS_PATH)
 
 include avr-makefile/boards.mk
 
+ifndef LAYOUT_FILE
+  LAYOUT_FILE = ../layouts/1key.yaml
+endif
+
 #######################################################################
 #                        common build settings                        #
 #######################################################################
@@ -69,7 +73,7 @@ CFLAGS += $(INC_PATHS)
 
 # List C source files here.
 C_SRC += \
-	example.c \
+	main.c \
 	usb_keyboard.c \
 	matrix_scanner.c \
 	hardware.c \

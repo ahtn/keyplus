@@ -10,3 +10,6 @@
 [submodule "atmega32u4/avr-makefile"]
 	path = atmega32u4/avr-makefile
 	url = https://github.com/ahtn/avr-makefile
+[submodule "atmega32u4/bootloaders/kp_boot_32u4"]
+	path = atmega32u4/bootloaders/kp_boot_32u4
+	url = https://github.com/ahtn/kp_boot_32u4
