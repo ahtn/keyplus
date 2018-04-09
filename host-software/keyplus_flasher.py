@@ -37,6 +37,7 @@ import protocol
 import layout.parser
 # import io_map.chip_id as chip_id
 import xusbboot
+import kp_boot_32u4
 
 STATUS_BAR_TIMEOUT=4500
 
@@ -85,6 +86,9 @@ def get_boot_loader_type(device):
 def is_xusb_bootloader_device(device):
     return get_boot_loader_type(device) == keyplus.usb_ids.BootloaderType.XUSB_BOOT
 
+def is_kp_boot_device(device):
+    return get_boot_loader_type(device) == keyplus.usb_ids.BootloaderType.KP_BOOT_32U4
+
 def is_nrf24lu1p_bootloader_device(device):
     return get_boot_loader_type(device) == keyplus.usb_ids.BootloaderType.NRF24LU1P_FACTORY
 
@@ -92,11 +96,11 @@ def is_unifying_bootloader_device(device):
     return False
 
 def is_supported_device(device):
-    return is_keyplus_device(device) or is_xusb_bootloader_device(device) or \
-        is_nrf24lu1p_bootloader_device(device) or is_unifying_bootloader_device(device)
+    return is_keyplus_device(device) or is_bootloader_device(device)
 
 def is_bootloader_device(device):
     return is_xusb_bootloader_device(device) or \
+        is_kp_boot_device(device) or \
         is_nrf24lu1p_bootloader_device(device) or \
         is_unifying_bootloader_device(device)
 
@@ -192,7 +196,6 @@ class DeviceWidget(QGroupBox):
                         self.device.vendor_id,
                         self.device.product_id
                     ),
-                  file=sys.stderr
             )
 
         self.label.setText('{} | {} | Bootloader v{}.{}\n'
@@ -207,6 +210,32 @@ class DeviceWidget(QGroupBox):
                 bootloader_info.mcu_string,
                 bootloader_info.flash_size,
                 self.device.serial_number
+            )
+        )
+
+    def setup_kp_boot_32u4_label(self):
+        try:
+            boot_dev = kp_boot_32u4.BootloaderDevice(self.device)
+        except easyhid.HIDException as err:
+            # Incase opening the device fails
+            raise Exception ("Error Opening Device: {} | {}:{}"
+                    .format(
+                        self.device.path,
+                        self.device.vendor_id,
+                        self.device.product_id
+                    ),
+            )
+
+        self.label.setText('kp_boot_32u4 - v{}\n'
+                            'MCU: {}\n'
+                            'Flash size: {}    EEPROM size: {}\n'
+                            'Bootloader size: {}\n'
+            .format(
+                boot_dev.version,
+                boot_dev.chip_name,
+                boot_dev.flash_size,
+                boot_dev.eeprom_size,
+                boot_dev.boot_size,
             )
         )
 
@@ -242,6 +271,8 @@ class DeviceWidget(QGroupBox):
             self.setup_keyplus_label()
         elif is_xusb_bootloader_device(self.device):
             self.setup_xusb_bootloader_label()
+        elif is_kp_boot_device(self.device):
+            self.setup_kp_boot_32u4_label()
         elif is_nrf24lu1p_bootloader_device(self.device):
             self.setup_nrf24lu1p_label()
         else:
@@ -974,6 +1005,8 @@ class Loader(QMainWindow):
 
                 if is_xusb_bootloader_device(target_device):
                     self.program_xusb_boot_firmware_hex(target_device, fw_file)
+                elif is_kp_boot_device(target_device):
+                    self.program_kp_boot_32u4_firmware_hex(target_device, fw_file)
                 elif is_keyplus_device(target_device):
                     try:
                         serial_num = target_device.serial_number
@@ -988,6 +1021,8 @@ class Loader(QMainWindow):
                         self.bootloaderProgramTimer.start()
                     except (easyhid.HIDException, protocol.KBProtocolException):
                         error_msg_box("Programming hex file failed: '{}'".format(fw_file))
+                else:
+                    error_msg_box("This bootloader is currently unsupported")
         else:
             try:
                 target_device.close()
@@ -1032,6 +1067,16 @@ class Loader(QMainWindow):
             error_msg_box("Error programming the bootloader to hex file: " + str(err))
         finally:
             device.close()
+
+    def program_kp_boot_32u4_firmware_hex(self, device, file_name):
+        try:
+            device.close()
+            boot_dev = kp_boot_32u4.BootloaderDevice(device)
+            with boot_dev:
+                boot_dev.write_flash_hex(file_name)
+                boot_dev.reset_mcu()
+        except Exception as err:
+            error_msg_box("Error programming the bootloader to hex file: " + str(err))
 
     def tryOpenDevicePath2(self, device_path):
         try:
@@ -1082,6 +1127,11 @@ class Loader(QMainWindow):
             protocol.reset_device(device)
         elif is_xusb_bootloader_device(device):
             xusbboot.reset(device)
+        elif is_kp_boot_device(device):
+            device.close()
+            dev = kp_boot_32u4.BootloaderDevice(device)
+            with dev:
+                dev.reset_mcu()
         elif is_nrf24lu1p_bootloader_device(device):
             print("TODO: reset: ", device_path, file=sys.stderr)
         else:

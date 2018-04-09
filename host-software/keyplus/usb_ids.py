@@ -43,6 +43,7 @@ class BootloaderType(Enum):
     XUSB_BOOT = 0
     NRF24LU1P_512 = 1
     NRF24LU1P_FACTORY = 2
+    KP_BOOT_32U4 = 3
 
 
 KEYPLUS_USB_IDS = {
@@ -91,6 +92,14 @@ BOOTLOADER_USB_IDS = {
         pid = 0xBB03,
         bootloader = BootloaderType.NRF24LU1P_512,
         description = "keyplus nrf24lu1p-512 bootloader",
+    ),
+
+    # (0x1209, 0xBB08): USBBootloaderInfo(
+    (0x6666, 0x9999): USBBootloaderInfo(
+        vid = 0x6666,
+        pid = 0x9999,
+        bootloader = BootloaderType.KP_BOOT_32U4,
+        description = "kp_boot_32u4 bootloader",
     ),
 
     (0x1915, 0x0101): USBBootloaderInfo(
