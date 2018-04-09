@@ -11,6 +11,7 @@
 #include "core/crc.h"
 #include "core/flash.h"
 #include "core/util.h"
+#include "core/version.h"
 
 #ifndef NO_MATRIX
 #include "core/io_map.h"
@@ -47,9 +48,9 @@ AT__SETTINGS_ADDR const settings_t g_settings_storage = {
 
 // TODO: correct the values used here
 const ROM firmware_build_settings_t g_firmware_build_settings = {
-    .version_major = 0,
-    .version_minor = 2,
-    .version_patch = 2,
+    .version_major = KEYPLUS_VERSION_MAJOR,
+    .version_minor = KEYPLUS_VERSION_MINOR,
+    .version_patch = KEYPLUS_VERSION_PATCH,
 
     .layout_flash_size = LAYOUT_SIZE,
     .timestamp = { BUILD_TIME_STAMP },

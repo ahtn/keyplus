@@ -91,6 +91,13 @@ devices:
           r1c4, r1c5, r1c2, r1c3, r1c0, r1c1,
           ____, r0c0, r0c1, r0c2, r0c5,
       ]
+      debounce:
+        debounce_time_press: 5
+        debounce_time_release: 5
+        trigger_time_press: 5
+        trigger_time_release: 5
+        parasitic_discharge_delay_idle: 30.0
+        parasitic_discharge_delay_debouncing: 30.0
 
 
   "jemini acrylic - right":
@@ -233,6 +240,60 @@ devices:
         r1c2, r1c1, r1c0, r1c3, r1c4, r1c5,
         r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
       ]
+
+
+  jade split - left:
+    id: 16
+    wireless_split: true
+    wireless_mouse: true
+    wired_split: false
+    layout: gamma_split
+    layout_offset: 0
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: [D2, D3, D1, D0]
+      cols: [A2, A1, A0, A3, A4, A5]
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+        r3c0, r3c1, r3c2, r3c3, r3c4, r3c5,
+      ]
+      # debounce:
+      #   debounce_time_press: 5
+      #   debounce_time_release: 5
+      #   trigger_time_press: 1
+      #   trigger_time_release: 1
+      #   parasitic_discharge_delay_idle: 10.0
+      #   parasitic_discharge_delay_debouncing: 10.0
+
+  jade split - right:
+    id: 17
+    wireless_split: true
+    wireless_mouse: true
+    wired_split: false
+    layout: gamma_split
+    layout_offset: 1
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: [D2, D3, D1, D0]
+      cols: [A2, A1, A0, A3, A4, A5]
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+        r3c0, r3c1, r3c2, r3c3, r3c4, r3c5,
+      ]
+      # debounce:
+      #   debounce_time_press: 5
+      #   debounce_time_release: 5
+      #   trigger_time_press: 1
+      #   trigger_time_release: 1
+      #   parasitic_discharge_delay_idle: 10.0
+      #   parasitic_discharge_delay_debouncing: 10.0
+
 
   # rf dongle
   nrf_dongle:

@@ -208,6 +208,7 @@ $(LAYOUT_FILE):
 
 $(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
 	 $(KEYPLUS_CLI) program \
+		$(KEYPLUS_CLI_EXTRA) \
 		--new-id $(ID) \
 		--layout "$(LAYOUT_FILE)" \
 		--rf "$(RF_FILE)" \
