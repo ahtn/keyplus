@@ -861,8 +861,10 @@ class Loader(QMainWindow):
         programmingMode = self.fileSelectorWidget.getProgramingInfo()
 
         if is_bootloader_device(target_device) and programmingMode != FileSelector.ScopeFirmware:
-            error_msg_box("Can only upload firmware while bootloader is running. "
-                          "Either reset it, or upload a firmware hex instead")
+            error_msg_box("The device's bootloader is running. "
+                          "Choose 'Update Firmware' from the drop down box "
+                          "to flash new firmware, or reset it to use to run "
+                          "the currently loaded firmware (if any).")
             self.abort_update(target_device)
             return
 
