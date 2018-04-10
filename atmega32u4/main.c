@@ -13,8 +13,11 @@
 #include "usb_reports/vendor_report.h"
 #include "core/usb_commands.h"
 #include "core/flash.h"
+#include "core/hardware.h"
 
 #define CPU_PRESCALE(n) (CLKPR = 0x80, CLKPR = (n))
+
+#include "bootloaders/kp_boot_32u4/interface/kp_boot_32u4.h"
 
 int main(void)
 {
@@ -35,5 +38,6 @@ int main(void)
 
         send_vendor_report();
         handle_vendor_out_reports();
+        wdt_kick();
     }
 }

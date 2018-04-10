@@ -2,6 +2,7 @@
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
 #include "core/flash.h"
+
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>
@@ -42,7 +43,13 @@ void flash_modify_disable(void) {
     SREG = s_irq_state;
 }
 
-#ifdef BOOTLOADER_ATMEL_DFU
+
+#if defined(BOOTLOADER_ATMEL_DFU)
+
+/*********************************************************************
+ *                     atmel dfu flash interface                     *
+ *********************************************************************/
+
 
 #include "bootloaders/atmel_dfu/atmel_bootloader.h"
 
@@ -58,11 +65,46 @@ static inline void sp_load_flash_byte(uint16_t offset, uint8_t byte) {
     }
 }
 
+static inline void sp_write_page(uint16_t address) {
+    flash_prg_page(address);
+}
+
+#elif defined(BOOTLOADER_KP_BOOT_32U4)
+
+/*********************************************************************
+ *              kp_boot_32u4 bootloader flash interface              *
+ *********************************************************************/
+
+#include "bootloaders/kp_boot_32u4/interface/kp_boot_32u4.h"
+
+void flash_erase_page(flash_addr_t page_num) {
+    spm_erase_page(page_num * PAGE_SIZE);
+}
+
+static inline void sp_load_flash_byte(uint16_t offset, uint8_t byte) {
+    if (offset % 2 == 0) {
+        spm_load_temporary_buffer(offset, (0xff00 | byte));
+    } else {
+        spm_load_temporary_buffer(offset, (0x00ff | byte << 8 ));
+    }
+}
+
+static inline void sp_write_page(uint16_t address) {
+    spm_write_page(address);
+}
+
+#elif defined(BOOTLOADER_WITHOUT_SPM)
+
+// TODO: Use EEPROM instead
+
+#else
+
+#error "No valid bootloader value was specified"
+
+#endif
+
 static inline void sp_write_flash_buffer(uint8_t *data, uint16_t offset, uint16_t len) {
     uint16_t pos = 0;
-
-    // Erase the temporary buffer.
-    // SPMCSR = _BV(RWWSRE):
 
     while (pos + offset < PAGE_SIZE && pos < len) {
         sp_load_flash_byte(offset + pos, data[pos]);
@@ -96,16 +138,10 @@ void flash_write(uint8_t* src, flash_addr_t addr, flash_size_t len) {
         }
 
         sp_write_flash_buffer(src+pos, buffer_write_offset, write_len);
-
-        flash_prg_page(write_pos);
+        sp_write_page(write_pos);
 
         // src += write_len;
         pos += write_len;
     }
 }
 
-#else
-
-#error "No valid bootloader value was specified"
-
-#endif

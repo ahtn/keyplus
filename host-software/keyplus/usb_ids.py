@@ -53,6 +53,12 @@ KEYPLUS_USB_IDS = {
         description = "keyplus keyboard xmega (prototype)",
     ),
 
+    (0x6666, 0x2222): USBKeyplusKeyboardInfo(
+        vid = 0x6666,
+        pid = 0x2222,
+        description = "keyplus keyboard atmega32u4 (prototype)",
+    ),
+
     (0x6666, 0x3333): USBKeyplusKeyboardInfo(
         vid = 0x6666,
         pid = 0x3333,

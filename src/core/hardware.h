@@ -70,5 +70,4 @@ void idle_sleep(void);
 #endif
 
 void wdt_init(void);
-void wdt_disable(void);
 void wdt_kick(void);

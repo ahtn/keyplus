@@ -194,10 +194,12 @@ void cmd_send_layer(uint8_t kb_id) {
     send_vendor_report();
 }
 
+#if USE_SECONDARY_BOOTLOADER
 /// Resets into the Logitech unifying receiver bootloader.
 void cmd_logitech_bootloader(void) {
     bootloader_jmp_2();
 }
+#endif
 
 static void cmd_custom_bootloader(void) {
     bootloader_jmp();
@@ -334,9 +336,13 @@ void parse_cmd(void) {
         case CMD_LAYER_STATE: {
             cmd_send_layer(data1);
         } break;
+
+#if USE_SECONDARY_BOOTLOADER
         case CMD_LOGITECH_BOOTLOADER: {
             cmd_logitech_bootloader();
         } break;
+#endif
+
 #ifndef NO_MATRIX
         case CMD_SET_PASSTHROUGH_MODE: {
             if (g_scan_plan.mode == MATRIX_SCANNER_MODE_NO_MATRIX ) {

@@ -8,8 +8,6 @@
 # TODO: build system needs cleanup for building for different hardware
 MCU = atmega32u4
 ARCH = AVR
-BOOTLOADER = atmel_dfu
-# BOOTLOADER = lufa_dfu
 
 USB_VID = 6666
 USB_PID = 2222
@@ -42,6 +40,12 @@ include avr-makefile/boards.mk
 
 ifndef LAYOUT_FILE
   LAYOUT_FILE = ../layouts/1key.yaml
+endif
+
+ifndef BOOTLOADER
+	BOOTLOADER = kp_boot_32u4
+# BOOTLOADER = atmel_dfu
+# BOOTLOADER = lufa_dfu
 endif
 
 #######################################################################
@@ -109,17 +113,22 @@ AVRDUDE_PART = m32u4
 MCU_STRING = "ATmega32U4"
 # LD_SCRIPT = avrxmega2.xn
 
+#######################################################################
+#                         bootloader options                          #
+#######################################################################
+
 ATMEL_VID=0x03EB
 FLIP_USB_DFU_32u4=0x02FF
+
+BOOTLOADER_PATH = bootloaders
+CFLAGS += -I$(BOOTLOADER_PATH)
 
 # see avr-gcc for information on avrxmega2, avrxmega4, etc
 # NOTE: haven't tested on all these chips
 ifeq ($(BOOTLOADER), atmel_dfu)
   BOOT_SECTION_START = 0x007000
   BOOTLOADER_SIZE = 0x1000
-  BOOTLOADER_PATH = bootloaders
   C_SRC += $(BOOTLOADER_PATH)/atmel_dfu/atmel_bootloader.c
-  CFLAGS += -I$(BOOTLOADER_PATH)
   CFLAGS += -DBOOTLOADER_VID=$(ATMEL_VID)
   CFLAGS += -DBOOTLOADER_PID=$(FLIP_USB_DFU_32u4)
   CFLAGS += -DBOOTLOADER_ATMEL_DFU
@@ -129,10 +138,22 @@ else ifeq ($(BOOTLOADER), lufa_dfu)
   # lufa dfu uses the same VID/PID as the atmel version
   CFLAGS += -DBOOTLOADER_VID=$(ATMEL_VID)
   CFLAGS += -DBOOTLOADER_PID=$(FLIP_USB_DFU_32u4)
+  $(error Bootloader lufa_dfu not supported yet.)
+else ifeq ($(BOOTLOADER), kp_boot_32u4)
+  # lufa dfu uses the same VID/PID as the atmel version
+  CFLAGS += -DBOOTLOADER_VID=0x1209
+  CFLAGS += -DBOOTLOADER_PID=0xBB08
+  CFLAGS += -DBOOTLOADER_KP_BOOT_32U4
+  C_SRC += $(BOOTLOADER_PATH)/kp_boot_32u4/interface/kp_boot_32u4.c
 else
   $(error Unsupported bootloader BOOTLOADER='$(BOOTLOADER)')
 endif
 
+CFLAGS += -DBOOT_SECTION_START=$(BOOT_SECTION_START)
+
+#######################################################################
+#                           linking options                           #
+#######################################################################
 
 LD_SCRIPT_DIR = /usr/lib/ldscripts
 # LD_SCRIPT_DIR = ./ld-scripts
@@ -202,13 +223,20 @@ $(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
 		-F scan_method=fast_row_col \
 
 ATMEL_DFU = bootloaders/atmel_dfu/ATMega32U4-usbdevice_dfu-1_0_0.hex
+
 program-atmel-dfu-bootloader:
+	$(AVRDUDE_CMD) -U flash:w:$(ATMEL_DFU):i
+
+program-kp-boot-32u4:
 	$(AVRDUDE_CMD) -U flash:w:$(ATMEL_DFU):i
 
 program-dfu: $(MERGED_HEX)
 	dfu-programmer $(MCU) erase --force
 	dfu-programmer $(MCU) flash $(MERGED_HEX)
 	dfu-programmer $(MCU) start
+
+program-kp-boot: $(MERGED_HEX)
+	$(BOOTLOADER_PATH)/kp_boot_32u4/kp_boot_32u4_cli.py -f $(MERGED_HEX)
 
 # lock options, see fuses.c (lock bit values written to $(TARGET).lock)
 #
