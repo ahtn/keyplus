@@ -22,33 +22,12 @@
 
 #include "xmega_hardware.h"
 
+// avr common code
+#include "arch/avr/matrix_scanner.h"
+
 // TODO: make these settings configurable from the settings module
 
 static bool has_scan_irq_triggered;
-
-#if F_CPU == 48000000UL
-#define PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(x) do {\
-    _delay_loop_1(x); \
-    _delay_loop_1(x); \
-    _delay_loop_1(x); \
-} while(0)
-#elif F_CPU == 32000000UL
-#define PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(x) do {\
-    _delay_loop_1(x); \
-    _delay_loop_1(x); \
-} while(0)
-#elif F_CPU == 16000000UL
-#define PARASITIC_DISCHARGE_DELAY_FAST_CLOCK(x) do {\
-    _delay_loop_1(x); \
-} while(0)
-#else
-#error "Unsupported clock speed for PARASITIC_DISCHARGE_DELAY"
-#endif
-
-#define PARASITIC_DISCHARGE_DELAY_SLOW_CLOCK(x) do {\
-    _delay_loop_1(x); \
-} while(0)
-
 
 #if !USE_HARDWARE_SPECIFIC_SCAN
 
@@ -328,7 +307,11 @@ void matrix_scan_irq_clear(void) {
 // any key is pressed.
 void matrix_scan_irq_enable(void) {
     select_all_rows();
-    static_delay_variable_clock_us(2); // TODO: check if more error margin is needed
+
+    PARASITIC_DISCHARGE_DELAY_SLOW_CLOCK(
+        s_parasitic_discharge_delay_idle
+    );
+
     matrix_scan_irq_clear_flags();
     matrix_scan_irq_clear();
     PORTA.INTCTRL = (PORTA.INTCTRL & ~PORT_INT0LVL_gm) | PORT_INT0LVL_LO_gc;

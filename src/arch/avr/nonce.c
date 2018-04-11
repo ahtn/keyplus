@@ -5,7 +5,7 @@
 
 #include <avr/eeprom.h>
 
-#include "eeprom_map.h"
+#include "arch/avr/eeprom_map.h"
 
 // TODO: let atmega8 and xmega both use this implementation
 

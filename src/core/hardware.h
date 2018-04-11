@@ -70,4 +70,5 @@ void idle_sleep(void);
 #endif
 
 void wdt_init(void);
+void wdt_disable_(void); // NOTE: cannot be supported on some platforms
 void wdt_kick(void);

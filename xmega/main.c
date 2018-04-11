@@ -411,7 +411,7 @@ NO_RETURN_ATTR void recovery_mode_main_loop(void) {
 
 int main(void) {
     // Disable the wdt incase it was running
-    wdt_disable();
+    wdt_disable_();
     init_debug();
 
 #if USE_CHECK_PIN

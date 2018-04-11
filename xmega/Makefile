@@ -56,6 +56,8 @@ include $(XMEGA_PATH)/xusb/makefile
 include $(XMEGA_PATH)/xusb/xmega/makefile
 include $(XMEGA_PATH)/hardware/hardware.mk
 
+include $(KEYPLUS_PATH)/arch/avr/avr.mk
+
 #######################################################################
 #                         programmer options                          #
 #######################################################################
@@ -88,7 +90,6 @@ C_SRC += \
 	main.c \
 	matrix_scanner.c \
 	io_map.c \
-	nonce.c \
 	power.c \
 	timer.c \
 	ws2812.c \
