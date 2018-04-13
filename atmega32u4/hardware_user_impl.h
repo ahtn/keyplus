@@ -7,6 +7,8 @@
 
 #include <util/delay.h>
 
+#include "io_map/avr_port_util.h"
+
 #define static_delay_us(x) _delay_us(x)
 #define static_delay_ms(x) _delay_ms(x)
 
@@ -31,7 +33,7 @@ typedef uint32_t flash_size_t;
 
 #define MCU_BITNESS 8
 
-typedef uint16_t io_port_t;
+typedef PORT_t io_port_t;
 
 // SPM_PAGESIZE is in bytes
 // WARNING: some old versions of the datasheet incorrectly states that the page

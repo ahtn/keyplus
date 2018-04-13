@@ -22,7 +22,7 @@ AVRMegaU4 = IoMapperPins(
         0x44,
         0xf3,
     ],
-    gpio_count = 25,
+    gpio_count = 26,
     default_rows = [
     ],
     default_cols = [

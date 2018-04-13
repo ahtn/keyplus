@@ -82,6 +82,7 @@ C_SRC += \
 	matrix_scanner.c \
 	hardware.c \
 	usb_reports.c \
+	io_map.c \
 	fuses.c \
 	timer.c \
 	flash.c \
@@ -199,7 +200,7 @@ program-boot-2: $(TARGET).hex
 
 
 # program a board using an external programmer
-program-hard: $(TARGET).hex
+program-hard: $(MERGED_HEX)
 	$(AVRDUDE_CMD) -U flash:w:$<:i -E noreset
 
 $(TARGET).fuse: $(TARGET).elf

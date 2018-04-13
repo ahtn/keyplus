@@ -3,7 +3,18 @@
 
 #include "core/hardware.h"
 
+#include <avr/io.h>
 #include <avr/wdt.h>
+
+#define CPU_PRESCALE(n) (CLKPR = 0x80, CLKPR = (n))
+
+void hardware_init(void) {
+    // set for 16 MHz clock
+    CPU_PRESCALE(0);
+
+    wdt_reset();
+    wdt_disable();
+}
 
 void led_init(void) {
 }

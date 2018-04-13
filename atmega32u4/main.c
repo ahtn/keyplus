@@ -11,26 +11,41 @@
 #include "usb_reports/media_report.h"
 #include "usb_reports/mouse_report.h"
 #include "usb_reports/vendor_report.h"
+#include "core/timer.h"
 #include "core/flash.h"
 #include "core/hardware.h"
+#include "core/macro.h"
 #include "core/matrix_interpret.h"
 #include "core/matrix_scanner.h"
 #include "core/usb_commands.h"
 #include "core/settings.h"
 
-#define CPU_PRESCALE(n) (CLKPR = 0x80, CLKPR = (n))
+#include "key_handlers/key_hold.h"
 
 #include "bootloaders/kp_boot_32u4/interface/kp_boot_32u4.h"
 
+#include "io_map/avr_port_util.h"
+
+
+void pin_init(void) {
+}
+
+void setup_everything(void) {
+    hardware_init();
+    timer_init();
+    io_map_init();
+    pin_init();
+    settings_load_from_flash();
+#if USE_NRF24
+    aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
+#endif
+    matrix_scanner_init();
+    reset_usb_reports();
+    keyboards_init();
+}
+
 int main(void) {
-    // set for 16 MHz clock
-    CPU_PRESCALE(0);
-
-    wdt_reset();
-    wdt_disable();
-
-    DDRF |= _BV(7) | _BV(6);
-    PORTF |= _BV(7) | _BV(6);
+    setup_everything();
 
     usb_init();
     sei();
@@ -45,14 +60,26 @@ int main(void) {
             uint8_t matrix_data[32];
             const uint8_t use_deltas = true;
             const uint8_t data_size = get_matrix_data(matrix_data, use_deltas);
+
             keyboard_update_device_matrix(GET_SETTING(device_id), matrix_data);
         }
 
         // passthrough_keycodes_task();
         interpret_all_keyboard_matrices();
 
+        macro_task();
+
+        send_keyboard_report();
+        send_media_report();
+        send_mouse_report();
         send_vendor_report();
+
+        // usb out reports
         handle_vendor_out_reports();
+
+        sticky_key_task();
+        hold_key_task();
+
         wdt_kick();
     }
 }

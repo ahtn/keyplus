@@ -293,6 +293,11 @@ class KeyboardFirmwareInfo(keyplus.cdata_types.firmware_info_t):
         (major, minor, patch) = [int(x) for x in version_str.split('.')]
 
         return \
-            self.version_major >= major and \
-            self.version_minor >= minor and \
-            self.version_patch >= patch
+            self.version_major > major or (
+                self.version_major == major and
+                self.version_minor >  minor
+            ) or (
+                self.version_major == major and
+                self.version_minor == minor and
+                self.version_patch >= patch
+            )
