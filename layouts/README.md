@@ -139,8 +139,8 @@ layers the keyboards have, and how the pieces of a split keyboard work together.
 Ultimately, the layouts are made up of a list of keycodes which define what a
 key does when it is pressed. Keyplus provides all the traditional keycodes
 found on a standard keyboard, as well as its own special keycodes that can be
-used to achieve advanced functionality. The documentation for the keycodes
-provided by keyplus can be found here: (TODO: add link to keycode documentation)
+used to achieve advanced functionality. The [documentation for the keycodes
+provided by keyplus can be found here](../doc/keycodes.md).
 
 The next few sections will cover examples of how to make a simple keyboard
 layout with multiple layers, as well as some examples of split keyboards.
