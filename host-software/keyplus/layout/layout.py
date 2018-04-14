@@ -223,8 +223,26 @@ class KeyplusLayout(object):
         self._parse_layouts(parser_info)
 
         for dev in six.itervalues(self._devices):
-            layout = self.get_layout_by_id(dev.device_id)
-            layout_size = layout.layer_list[0].device_sizes[dev.split_device_num]
+            if dev.scan_mode.mode == MATRIX_SCANNER_MODE_NO_MATRIX:
+                continue
+
+            layout = self.get_layout_by_name(dev.layout)
+            dev_sizes = layout.layer_list[0].device_sizes
+
+            if dev.split_device_num >= len(dev_sizes):
+                raise KeyplusParseError(
+                    "Layout doesn't have the given split device number. The "
+                    "device \"{}\" maps to split device {}, but "
+                    "the layout \"{}\" only has {} split devices."
+                    .format(
+                        dev.name,
+                        dev.split_device_num,
+                        layout.name,
+                        len(dev_sizes),
+                    )
+                )
+            layout_size = dev_sizes[dev.split_device_num]
+
             if dev.scan_mode.number_mapped_keys != layout_size:
                 raise KeyplusParseError(
                     "Layout size doesn't match device matrix_map size. The "

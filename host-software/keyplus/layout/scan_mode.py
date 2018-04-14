@@ -60,6 +60,8 @@ class ScanMode(object):
         self.matrix_map = {}
         self.matrix_pin_map = {}
 
+        self._unused_key_numbers = []
+
         self.set_debounce_profile('default')
 
         self.max_number_supported_keys = 127
@@ -94,9 +96,9 @@ class ScanMode(object):
         if self.mode == NO_MATRIX:
             return 0
         elif self.mode in [COL_ROW, ROW_COL]:
-            return len(self.matrix_map)
+            return len(self.matrix_map) + len(self._unused_key_numbers)
         elif self.mode in [PIN_GND, PIN_VCC]:
-            return len(self.direct_wiring_pins)
+            return len(self.direct_wiring_pins) + len(self._unused_key_numbers)
 
     def is_pin_in_use(self, pin_name):
         """ Returns True if the pin has already been assigned for matrix scanning """
@@ -143,25 +145,25 @@ class ScanMode(object):
     def add_key_to_matrix_map(self, key_number, row, col):
         """ Assign a key number to (row,column) position in the matrix """
         self._check_key_number(key_number)
-        if (col >= len(self.column_pins)):
+        if (col >= self.number_columns):
             raise KeyplusParseError(
                 "Invalid matrix map position r{}c{}. This matrix uses {} "
                 " columns, so the largest allowed column number "
                 " is {}, but got {}.".format(
                     row, col,
-                    len(self.column_pins),
-                    len(self.column_pins)-1,
+                    self.number_columns,
+                    self.number_columns-1,
                     col
                 )
             )
-        if (row >= len(self.row_pins)):
+        if (row >= self.number_rows):
             raise KeyplusParseError(
                 "Invalid matrix map position r{}c{}. This matrix uses {} "
                 " rows, so the largest allowed row number "
                 " is {}, but got {}.".format(
                     row, col,
-                    len(self.row_pins),
-                    len(self.row_pins)-1,
+                    self.number_rows,
+                    self.number_rows-1,
                     row
                 )
             )
@@ -444,6 +446,9 @@ class ScanMode(object):
         self.matrix_map = {}
         for (key_num, row_col_refrence) in enumerate(mapping):
             pos = self.parse_matrix_map_refrence(row_col_refrence)
+            if pos == None:
+                self._unused_key_numbers.append(key_num)
+                continue
             self.add_key_to_matrix_map(key_num, pos.row, pos.col)
 
     def parse_json(self, json_obj=None, parser_info=None):
