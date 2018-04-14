@@ -22,6 +22,7 @@ from keyplus import chip_id
 from keyplus import KeyplusKeyboard
 from keyplus.exceptions import *
 import keyplus.usb_ids
+from keyplus.debug import DEBUG
 
 # TODO: clean up directory structure
 import sys
@@ -895,13 +896,11 @@ class Loader(QMainWindow):
                 error_msg_box(str(err))
                 return
 
-            print('#'*80)
-            print("settings_data:", type(settings_data), settings_data)
-            print('#'*80)
-            print("layout_data:", type(layout_data), layout_data)
-            print('#'*80)
-            hexdump.hexdump(bytes(settings_data))
-            hexdump.hexdump(bytes(layout_data))
+            if DEBUG.layout:
+                print("settings_data:", type(settings_data), settings_data)
+                hexdump.hexdump(bytes(settings_data))
+                print("layout_data:", type(layout_data), layout_data)
+                hexdump.hexdump(bytes(layout_data))
 
             with kb:
                 old_name = copy.copy(kb.name)
