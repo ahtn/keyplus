@@ -103,9 +103,6 @@ FUSE_SECTION_START=0x08F0020
 # Compiler flag to set the C Standard level.
 CSTANDARD = -std=gnu99
 
-# TODO: remove this setting later
-CFLAGS += -Wno-error=unused-const-variable
-
 CFLAGS += -Wno-error=unused-variable
 CFLAGS += -Wno-error=unused-function
 CFLAGS += -Wno-error=unused-but-set-variable

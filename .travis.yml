@@ -33,7 +33,7 @@ matrix:
 
         # Test ATmega32u4 variants
         - 'cd atmega32u4'
-        - 'make MCU=atmega32u4 LAYOUT_FILE=../layouts/1key.yaml'
+        - 'make MCU=atmega32u4 BOARD=default LAYOUT_FILE=../layouts/1key.yaml'
         - 'make MCU=atmega32u4 BOARD=atmel-dfu LAYOUT_FILE=../layouts/1key.yaml'
         - 'cd ..'
 
