@@ -12,6 +12,14 @@ void hardware_init(void) {
     // set for 16 MHz clock
     CPU_PRESCALE(0);
 
+    // NOTE: the security mechanism on the MCUCR register requires that we write
+    // The JTD bit twice before changes will take effect.
+    {
+        uint8_t new_value = MCUCR | _BV(JTD);
+        MCUCR = new_value;
+        MCUCR = new_value;
+    }
+
     wdt_reset();
     wdt_disable();
 }
