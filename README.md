@@ -22,7 +22,7 @@ To compile the code on Linux, you will need the following programs installed:
 Linux:
 
 ```
-sudo pacman -S avr-gcc avr-libc avr-binutils python3 make hidapi
+sudo pacman -S avr-gcc avr-libc avr-binutils python3 make hidapi python-pyside
 ```
 
 Make sure that you have a relatively recent version of
@@ -35,7 +35,7 @@ The build scripts need some python libraries installed. You should get
 all the necessary packages if you install the `keyplus` python library with:
 
 ```
-sudo pip install keyplus
+sudo pip install -U keyplus
 ```
 
 Also, you need to initialize the git submodules:
