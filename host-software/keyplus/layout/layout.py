@@ -225,14 +225,14 @@ class KeyplusLayout(object):
         for dev in six.itervalues(self._devices):
             layout = self.get_layout_by_id(dev.device_id)
             layout_size = layout.layer_list[0].device_sizes[dev.split_device_num]
-            if len(dev.scan_mode.matrix_map) != layout_size:
+            if dev.scan_mode.number_mapped_keys != layout_size:
                 raise KeyplusParseError(
                     "Layout size doesn't match device matrix_map size. The "
                     "device \"{}\" has a matrix map of length {}, but "
                     "the layout \"{}\" has length {} for split device {}."
                     .format(
                         dev.name,
-                        len(dev.scan_mode.matrix_map),
+                        dev.scan_mode.number_mapped_keys,
                         layout.name,
                         layout_size,
                         dev.split_device_num

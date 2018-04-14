@@ -8,7 +8,7 @@ devices:
     id: 0
     scan_mode:
       mode: pin_gnd # options: col_row, pins, none
-      pins: [B0]
+      pins: [D1]
     layout: 1key
 
 layouts:

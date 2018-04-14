@@ -89,6 +89,15 @@ class ScanMode(object):
     def max_pin_key_number(self):
         return max(self.matrix_pin_map.values())
 
+    @property
+    def number_mapped_keys(self):
+        if self.mode == NO_MATRIX:
+            return 0
+        elif self.mode in [COL_ROW, ROW_COL]:
+            return len(self.matrix_map)
+        elif self.mode in [PIN_GND, PIN_VCC]:
+            return len(self.direct_wiring_pins)
+
     def is_pin_in_use(self, pin_name):
         """ Returns True if the pin has already been assigned for matrix scanning """
         return (
@@ -324,8 +333,6 @@ class ScanMode(object):
             row_pin_numbers = self.get_row_pin_numbers(io_mapper)
             column_pin_numbers = self.get_column_pin_numbers(io_mapper)
 
-            print(column_pin_numbers)
-
             pin_mapping.row_pins = row_pin_numbers
             pin_mapping.column_pins = column_pin_numbers
             pin_mapping.key_number_map = self._generate_key_number_map(
@@ -437,7 +444,6 @@ class ScanMode(object):
         self.matrix_map = {}
         for (key_num, row_col_refrence) in enumerate(mapping):
             pos = self.parse_matrix_map_refrence(row_col_refrence)
-            print(pos)
             self.add_key_to_matrix_map(key_num, pos.row, pos.col)
 
     def parse_json(self, json_obj=None, parser_info=None):
