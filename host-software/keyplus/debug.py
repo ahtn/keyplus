@@ -14,4 +14,4 @@ class DEBUG(object):
     usb_cmd = False
     parsing = False
     parsing_extra = False
-
+    debug = False

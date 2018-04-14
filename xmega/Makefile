@@ -42,6 +42,10 @@ USB_PID = BB00
 
 include avr-makefile/boards.mk
 
+ifndef SCANNER_MAX_ROWS
+   SCANNER_MAX_ROWS=18
+endif
+
 #######################################################################
 #                        common build settings                        #
 #######################################################################
@@ -218,6 +222,7 @@ $(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
 		-o "$(MERGED_HEX)" \
 		-F chip_name="$(MCU_STRING)" \
 		-F scan_method=fast_row_col \
+		-F max_rows=$(SCANNER_MAX_ROWS) \
 
 .PHONY:
 program: program-boot

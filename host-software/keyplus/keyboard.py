@@ -492,7 +492,7 @@ class KeyplusKeyboard(object):
             pin_mapping_section = 0
         elif self.firmware_info.internal_scan_method == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL:
             header_size = 0
-            header_size += MAX_NUM_ROWS
+            header_size += self.firmware_info.scanner_max_rows
             header_size += device_target.get_io_mapper().get_gpio_count()
             scan_plan = self.device_info.scan_plan
             map_size = (scan_plan.max_col_pin_num+1) * scan_plan.rows

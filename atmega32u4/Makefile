@@ -48,6 +48,10 @@ ifndef BOOTLOADER
 # BOOTLOADER = lufa_dfu
 endif
 
+ifndef SCANNER_MAX_ROWS
+   SCANNER_MAX_ROWS=18
+endif
+
 #######################################################################
 #                        common build settings                        #
 #######################################################################
@@ -219,6 +223,7 @@ $(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
 		-o "$(MERGED_HEX)" \
 		-F chip_name="$(MCU_STRING)" \
 		-F scan_method=fast_row_col \
+		-F max_rows=$(SCANNER_MAX_ROWS) \
 
 ATMEL_DFU = bootloaders/atmel_dfu/ATMega32U4-usbdevice_dfu-1_0_0.hex
 

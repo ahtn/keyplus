@@ -108,6 +108,10 @@ else
         $(CORE_PATH)/io_map.c \
         $(CORE_PATH)/matrix_scanner.c
     CDEFS += -DUSE_SCANNER=1
+    ifndef SCANNER_MAX_ROWS
+        $(error "Need to define SCANNER_MAX_ROWS")
+    endif
+    CDEFS += -DMAX_NUM_ROWS=$(SCANNER_MAX_ROWS)
 endif
 
 # Hardware specific scan, defaults to 0

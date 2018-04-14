@@ -98,11 +98,16 @@ const ROM firmware_build_settings_t g_firmware_build_settings = {
 
     .chip_id = MCU_CHIP_ID,
     .board_id = 0,
+
 #ifdef NO_MATRIX
     .internal_scan_method = MATRIX_SCANNER_INTERNAL_NONE,
 #else
     .internal_scan_method = INTERNAL_SCAN_METHOD,
 #endif
+
+    .page_size = PAGE_SIZE_TO_LOG2(PAGE_SIZE),
+
+    .scanner_max_rows = MAX_NUM_ROWS,
 };
 
 void settings_load_from_flash(void) {

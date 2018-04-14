@@ -176,7 +176,9 @@ class firmware_info_t(CStructWithBytes):
     uint32_t chip_id;
     uint16_t board_id;
     uint8_t internal_scan_method;
-    uint8_t reserved[23];
+    uint8_t page_size;
+    uint8_t max_rows;
+    uint8_t reserved[21];
     """
 
 make_bit_field_variables(firmware_info_t, [

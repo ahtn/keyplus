@@ -287,9 +287,17 @@ typedef struct firmware_build_settings_t {
     /// Internal matrix scanning method used by the device. This field
     /// tells the host what format to use for the pin map in the layout section.
     uint8_t internal_scan_method;
+
+    // offset 39
+    /// Page size used when writing to layout and data sections
     uint8_t page_size;
 
-    uint8_t reserved[23]; // pad to 62 bytes
+    // offset 40
+    /// Maximum number of rows supported by the firmware. Some devices my set
+    /// this value lower to conserve RAM.
+    uint8_t scanner_max_rows;
+
+    uint8_t reserved[21]; // pad to 62 bytes
 } firmware_build_settings_t;
 
 /// Lookup a setting from the devices settings table in flash.

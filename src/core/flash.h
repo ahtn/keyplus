@@ -42,6 +42,28 @@
 #define LAYOUT_PAGE_NUM     (LAYOUT_ADDR / PAGE_SIZE)
 #define SETTINGS_PAGE_NUM   (SETTINGS_ADDR / PAGE_SIZE)
 
+/// Converts PAGE_SIZE to LOG2(x) of the page size at compile time.
+#define PAGE_SIZE_TO_LOG2(x) (\
+    x ==      1 ? 0  : \
+    x ==      2 ? 1  : \
+    x ==      4 ? 2  : \
+    x ==      8 ? 3  : \
+    x ==     16 ? 4  : \
+    x ==     32 ? 5  : \
+    x ==     64 ? 6  : \
+    x ==    128 ? 7  : \
+    x ==    256 ? 8  : \
+    x ==    512 ? 9  : \
+    x ==   1024 ? 10  : \
+    x ==   2048 ? 11 : \
+    x ==   4096 ? 12 : \
+    x ==   8192 ? 13 : \
+    x ==  16384 ? 14 : \
+    x ==  32768 ? 15 : \
+    "SETTINGS_ERROR_PAGE_SIZE_UNSUPPORTED"[0] / 0 \
+)
+
+
 void flash_modify_enable(void);
 void flash_modify_disable(void);
 void flash_erase_page(flash_addr_t page_num);

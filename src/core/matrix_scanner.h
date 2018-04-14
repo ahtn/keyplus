@@ -18,8 +18,11 @@
 /// Size of the bitmap used to store key numbers
 #define KEY_NUMBER_BITMAP_SIZE (MAX_NUM_KEYS/8)
 
+#ifndef MAX_NUM_ROWS
 /// Max number of rows allowed for the matrix scanner
-#define MAX_NUM_ROWS 10
+#error "MAX_NUM_ROWS needs to be defined"
+#endif
+
 #define MAX_NUM_COLS IO_MAP_GPIO_COUNT
 
 /// How much ram is needed to store the matrix in the matrix scanner module

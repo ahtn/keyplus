@@ -19,6 +19,7 @@ class KeyboardPinMapping(object):
     def __init__(self):
         self.mode = MATRIX_SCANNER_MODE_NO_MATRIX
         self.internal_scan_method = MATRIX_SCANNER_INTERNAL_NONE
+        self.max_rows = None
         self.row_pins = None
         self.column_pins = None
         self.key_number_map = None
@@ -33,8 +34,8 @@ class KeyboardPinMapping(object):
             # NOTE: This should work for both the matrix and direct wiring
             # pin scanning modes, since the pin mode emulates matrix scanning
             # with one row.
-            assert_less_eq(len(self.row_pins), MAX_NUM_ROWS+1)
-            row_pin_padding = MAX_NUM_ROWS - len(self.row_pins)
+            assert_less_eq(len(self.row_pins), self.max_rows+1)
+            row_pin_padding = self.max_rows - len(self.row_pins)
             result += bytearray(self.row_pins) + bytearray([0]*row_pin_padding)
 
             col_pin_padding = self.io_mapper.get_gpio_count() - len(self.column_pins)
@@ -44,7 +45,7 @@ class KeyboardPinMapping(object):
             # Check that the resulting object has the correct size
             row_size = max(self.column_pins) + 1
             total_size = (
-                MAX_NUM_ROWS +
+                self.max_rows +
                 self.io_mapper.get_gpio_count() +
                 len(self.row_pins) * row_size
             )
@@ -69,7 +70,7 @@ class KeyboardPinMapping(object):
         elif self.internal_scan_method == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL:
             # row_data
             pos = 0
-            row_size = MAX_NUM_ROWS
+            row_size = self.scanner
             row_data = raw_data[:row_size]
             pos += row_size
             # column_data
@@ -272,6 +273,12 @@ class KeyboardFirmwareInfo(keyplus.cdata_types.firmware_info_t):
             self.internal_scan_method = new_value
         else:
             raise TypeError("Expected a string or integer for scan_method")
+
+    def set_max_rows(self, new_value):
+        try:
+            self.max_rows = int(new_value)
+        except:
+            raise TypeError("Expected an integer for max_rows")
 
     def internal_scan_method_from_str(self, scan_method):
         if scan_method in INTERNAL_SCAN_METHOD_NAME_TABLE:

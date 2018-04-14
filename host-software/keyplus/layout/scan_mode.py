@@ -211,6 +211,16 @@ class ScanMode(object):
             scan_plan.cols = self.number_columns
             scan_plan.max_key_num = max(self.matrix_map.values())
 
+            if scan_plan.rows > device_target.firmware_info.max_rows:
+                raise KeyplusSettingsError(
+                    "Maximum number of rows exceeded. This version of the firmware "
+                    " only supports {}, but {} rows were used."
+                    .format(
+                        device_target.firmware_info.max_rows,
+                        scan_plan.rows
+                    )
+                )
+
             # Find the maximum column pin number used
             max_column_pin = 0
             column_pin_numbers = self.get_column_pin_numbers(io_mapper)
@@ -275,15 +285,16 @@ class ScanMode(object):
 
         return result
 
-    def generate_pin_mapping(self, device_target):
+    def generate_pin_mapping(self, dev_target):
         pin_mapping = KeyboardPinMapping()
 
-        internal_scan_method = device_target.firmware_info.internal_scan_method
+        fw_info = dev_target.firmware_info
 
         pin_mapping.mode = self.mode
-        pin_mapping.internal_scan_method = internal_scan_method
+        pin_mapping.internal_scan_method = fw_info.internal_scan_method
+        pin_mapping.max_rows = fw_info.max_rows
 
-        io_mapper = device_target.get_io_mapper()
+        io_mapper = dev_target.get_io_mapper()
         pin_mapping.io_mapper = io_mapper
 
         if self.mode == NO_MATRIX:
