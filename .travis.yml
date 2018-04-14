@@ -21,11 +21,22 @@ matrix:
         - 'cd ..'
         - sudo pip3 install hexdump intelhex easyhid pyyaml pyusb cstruct kle six colorama xusbboot cffi future
       script:
+        # Setup the AVR build environment
         - 'source env/enter_env.sh'
+
+        # Test building building xmega with various MCU and boards
         - 'cd xmega'
         - 'make MCU=atxmega32a4u ID=0 BOARD=keyplus_mini'
         - 'make MCU=atxmega128a4u ID=14 BOARD=alpha_split'
         - 'make MCU=atxmega64c3 LAYOUT_FILE=../layouts/spectre.yaml BOARD=plain'
+        - 'cd ..' # leave xmega folder
+
+        # Test ATmega32u4 variants
+        - 'cd atmega32u4'
+        - 'make MCU=atmega32u4 LAYOUT_FILE=../layouts/1key.yaml'
+        - 'make MCU=atmega32u4 BOARD=dfu LAYOUT_FILE=../layouts/1key.yaml'
+        - 'cd ..'
+
       # after_success:
       #   - echo "After_Success"
 
