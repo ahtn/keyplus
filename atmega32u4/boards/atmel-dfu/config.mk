@@ -2,6 +2,8 @@
 
 C_SRC += # extra includes
 
+BOOTLOADER = atmel_dfu
+
 USE_USB := 1
 USE_SCANNER := 1
 USE_NRF24 := 0
