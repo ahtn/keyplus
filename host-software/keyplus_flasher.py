@@ -42,9 +42,9 @@ import kp_boot_32u4
 
 STATUS_BAR_TIMEOUT=4500
 
-if 1:
+if DEBUG.gui:
     # debug settings
-    DEFAULT_LAYOUT_FILE = "../layouts/basic_split_test.yaml"
+    DEFAULT_LAYOUT_FILE = "../layouts/1key.yaml"
     DEFAULT_RF_FILE = "../layouts/test_rf_config.yaml"
     DEFAULT_FIRMWARE_FILE = ""
     DEFAULT_DEVICE_ID = 10
@@ -895,6 +895,9 @@ class Loader(QMainWindow):
             except (KeyplusError, IOError) as err:
                 error_msg_box(str(err))
                 return
+            except (yaml.YAMLError) as err:
+                error_msg_box("YAML syntax error: \n" + str(err))
+                self.abort_update(target_device)
 
             if DEBUG.layout:
                 print("settings_data:", type(settings_data), settings_data)
@@ -965,6 +968,12 @@ class Loader(QMainWindow):
             except (KeyplusError, IOError) as err:
                 error_msg_box(str(err))
                 self.abort_update(target_device)
+            except (yaml.YAMLError) as err:
+                error_msg_box("YAML syntax error: \n" + str(err))
+                self.abort_update(target_device)
+            except Exception as err:
+                error_msg_box(str(err))
+                self.abort_update(target_device)
                 return
 
             with kb:
@@ -1029,7 +1038,7 @@ class Loader(QMainWindow):
                 target_device.close()
             except:
                 pass
-            raise Exception("Unimplementend programming mode")
+            raise Exception("Unimplemented programming mode")
 
 
     def programFirmwareHex(self, boot_vid, boot_pid, serial_num, file_name):
@@ -1081,7 +1090,6 @@ class Loader(QMainWindow):
 
     def tryOpenDevicePath2(self, device_path):
         try:
-            print(device_path)
             device = easyhid.Enumeration().find(path=device_path)[0]
             return KeyplusKeyboard(device)
         except Exception as err:

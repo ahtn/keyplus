@@ -134,6 +134,28 @@ class ScanMode(object):
     def add_key_to_matrix_map(self, key_number, row, col):
         """ Assign a key number to (row,column) position in the matrix """
         self._check_key_number(key_number)
+        if (col >= len(self.column_pins)):
+            raise KeyplusParseError(
+                "Invalid matrix map position r{}c{}. This matrix uses {} "
+                " columns, so the largest allowed column number "
+                " is {}, but got {}.".format(
+                    row, col,
+                    len(self.column_pins),
+                    len(self.column_pins)-1,
+                    col
+                )
+            )
+        if (row >= len(self.row_pins)):
+            raise KeyplusParseError(
+                "Invalid matrix map position r{}c{}. This matrix uses {} "
+                " rows, so the largest allowed row number "
+                " is {}, but got {}.".format(
+                    row, col,
+                    len(self.row_pins),
+                    len(self.row_pins)-1,
+                    row
+                )
+            )
         self.matrix_map[MatrixPosition(row, col)] = key_number
 
     def add_pin_to_matrix_map(self, key_number, pin_number):
@@ -275,8 +297,7 @@ class ScanMode(object):
             # ordering for the column pin numbers. Where col=0 is the
             # lowest pin number on the device, col=1 the next lowest, etc.
             # Since the ScanMode object can supply the pins in an arbitrary
-            # order, we need to remapped them the their fixed column
-            # positions.
+            # order, we need to remapped them to their fixed column positions.
             mapped_col_num = column_pins[col]
 
             # Store the key number at the correct (row,col) position.
@@ -302,6 +323,8 @@ class ScanMode(object):
         elif self.mode in [ROW_COL, COL_ROW]:
             row_pin_numbers = self.get_row_pin_numbers(io_mapper)
             column_pin_numbers = self.get_column_pin_numbers(io_mapper)
+
+            print(column_pin_numbers)
 
             pin_mapping.row_pins = row_pin_numbers
             pin_mapping.column_pins = column_pin_numbers
@@ -413,10 +436,9 @@ class ScanMode(object):
     def parse_matrix_map(self, mapping):
         self.matrix_map = {}
         for (key_num, row_col_refrence) in enumerate(mapping):
-            matrix_pos = self.parse_matrix_map_refrence(row_col_refrence)
-            if matrix_pos == None:
-                continue
-            self.matrix_map[matrix_pos] = key_num
+            pos = self.parse_matrix_map_refrence(row_col_refrence)
+            print(pos)
+            self.add_key_to_matrix_map(key_num, pos.row, pos.col)
 
     def parse_json(self, json_obj=None, parser_info=None):
         if parser_info == None:

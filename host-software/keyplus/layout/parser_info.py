@@ -169,7 +169,7 @@ class KeyplusParserInfo(object):
                     value = remap_table[value]
                 else:
                     raise KeyplusSettingsError(
-                        "In {}, for the field '{}' got unknown value '{}'. Expecting "
+                        "In {}, for the field '{}' got unknown value '{}'.\nExpecting "
                         "one of: {}".format(
                             self.get_current_path(),
                             field,
@@ -184,7 +184,7 @@ class KeyplusParserInfo(object):
                     value = remap_function(value)
                 except KeyplusParseError as err:
                     raise KeyplusParseError(
-                        "Error in '{}' for field '{}': {}".format(
+                        "Error in '{}' for field '{}':\n{}".format(
                             self.get_current_path(),
                             field,
                             err
