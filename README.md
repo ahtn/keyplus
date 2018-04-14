@@ -18,13 +18,15 @@ Just download the EXE file.
 Clone the repository:
 ```bash
 git clone https://github.com/ahtn/keyplus
-git checkout v0.3.0```
+git checkout v0.3.0
+```
 
 Next, install the packages `avr-gcc`, `avr-libc`, `avr-binutils`, `python3`, `make`, `hidapi`, and `python3-pyside`. 
 
 Then, install the python dependencies:
 ```bash
-sudo pip install -U keyplus```
+sudo pip install -U keyplus
+```
 
 Also, you need to initialize the git submodules:
 
@@ -37,7 +39,8 @@ Now, you can run the program:
 
 ```bash
 cd host-software
-sudo python3 keyplus_flasher.py```
+sudo python3 keyplus_flasher.py
+```
 
 ## Using the GUI
 
