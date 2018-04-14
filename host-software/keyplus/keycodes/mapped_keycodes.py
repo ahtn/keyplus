@@ -260,7 +260,7 @@ SYMBOL_TO_KEYCODE_MAP = {
 
     # special keycodes
 
-    "trans": KC_TRANSPARENT, "____": KC_TRANSPARENT,
+    "trns": KC_TRANSPARENT, "trans": KC_TRANSPARENT, "____": KC_TRANSPARENT,
 
 # mouse movement keycodes
     "mouse_up": KC_MOUSE_UP, "ms_u": KC_MOUSE_UP,

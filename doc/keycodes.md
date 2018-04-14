@@ -252,7 +252,7 @@ setting.
 | ~        | s-`         |                            |
 | iso~         |             |                            |
 | iso|         |             |                            |
-| trans        |             |                            |
+| trns        | transparent | Checks for an active layer below the current layer, and uses the key in the same position on that layer. Uses the closest layer below the current one that is currently active. |
 | ms_u      | mouse_up      |           |
 | ms_d      | mouse_down    |           |
 | ms_l      | mouse_left    |           |
