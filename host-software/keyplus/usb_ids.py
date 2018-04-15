@@ -100,8 +100,14 @@ BOOTLOADER_USB_IDS = {
         description = "keyplus nrf24lu1p-512 bootloader",
     ),
 
-    # (0x1209, 0xBB08): USBBootloaderInfo(
     (0x6666, 0x9999): USBBootloaderInfo(
+        vid = 0x6666,
+        pid = 0x9999,
+        bootloader = BootloaderType.KP_BOOT_32U4,
+        description = "kp_boot_32u4 bootloader (prototype id)",
+    ),
+
+    (0x1209, 0xBB05): USBBootloaderInfo(
         vid = 0x6666,
         pid = 0x9999,
         bootloader = BootloaderType.KP_BOOT_32U4,

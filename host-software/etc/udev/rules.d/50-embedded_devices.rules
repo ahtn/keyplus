@@ -1,0 +1,30 @@
+# WARNING: udev expects LOWER CASE for hex a-f for PID and VID
+
+# usb production dev
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="b007", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="1111", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="2222", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="3333", TAG+="uaccess", TAG+="udev-acl"
+TAG+="uaccess", TAG+="udev-acl"
+
+# nordic nrf24lu1p bootloader
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1915", ATTRS{idProduct}=="0101", TAG+="uaccess", TAG+="udev-acl"
+
+# silabs usb debug adapter
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="8044", TAG+="uaccess", TAG+="udev-acl"
+
+# atmel dfu bootloader (atmega32u4) 03eb:2ff4
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ff4", TAG+="uaccess", TAG+="udev-acl"
+
+# avrispmkII
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2104", TAG+="uaccess", TAG+="udev-acl"
+
+# arduino pro micro
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b4f", ATTRS{idProduct}=="9206", TAG+="uaccess", TAG+="udev-acl"
+
+# keyplus usb ids
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="bb00", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="bb01", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="bb02", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="bb03", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="bb05", TAG+="uaccess", TAG+="udev-acl"
