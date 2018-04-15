@@ -93,7 +93,6 @@ def _create_mega(flash_size, series):
     )
 
 def get_chip_name_from_id(chip_id):
-    print(chip_id, CHIP_ID_TABLE)
     if chip_id in CHIP_ID_TABLE:
         return CHIP_ID_TABLE[chip_id].name
     else:

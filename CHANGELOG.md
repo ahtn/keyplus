@@ -1,5 +1,16 @@
 
-0.3.0 (unreleased)
+0.3.1 (unreleased)
+==================
+
+* `firmware` atmega32u4 support
+* `firmware` made the maximum number of supported rows configurable at compile
+  time, and increased the default value from 10 to 18.
+
+* `keyplus-flasher` more error messages
+* `keyplus-flasher` fixed labels not updating properly
+
+
+0.3.0
 ==================
 
 Changes to layout and config files:

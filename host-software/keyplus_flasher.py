@@ -47,7 +47,7 @@ if DEBUG.gui:
     DEFAULT_LAYOUT_FILE = "../layouts/1key.yaml"
     DEFAULT_RF_FILE = "../layouts/test_rf_config.yaml"
     DEFAULT_FIRMWARE_FILE = ""
-    DEFAULT_DEVICE_ID = 10
+    DEFAULT_DEVICE_ID = 0
 else:
     DEFAULT_LAYOUT_FILE = ""
     DEFAULT_RF_FILE = ""
@@ -118,36 +118,32 @@ class DeviceWidget(QGroupBox):
         super(DeviceWidget, self).__init__(None)
 
         self.device = device
+        self.has_critical_error = False
         self.label = QLabel()
 
         self.initUI()
 
     # label for generic keyplus device
     def setup_keyplus_label(self):
-        try:
-            self.device.open()
-            settingsInfo = protocol.get_device_info(self.device)
-            firmwareInfo = protocol.get_firmware_info(self.device)
-            self.device.close()
-        except easyhid.HIDException as err:
-            # Incase opening the device fails
-            raise Exception ("Error Opening Device: {} | {}:{}"
-                    .format(
-                        self.device.path,
-                        self.device.vendor_id,
-                        self.device.product_id
-                    ),
-            )
+        self.device.open()
+        settingsInfo = protocol.get_device_info(self.device)
+        firmwareInfo = protocol.get_firmware_info(self.device)
+        errorInfo = protocol.get_error_info(self.device)
+        self.has_critical_error = errorInfo.has_critical_error()
+        self.device.close()
 
         if settingsInfo.crc == settingsInfo.computed_crc:
             build_time_str = protocol.timestamp_to_str(settingsInfo.timestamp)
+            device_name = settingsInfo.device_name_str()
+            device_name = device_name.strip('\x00').strip('\xff').strip()
+
             self.label.setText('{} | {} | Firmware v{}.{}.{}\n'
                                 'Device id: {}\n'
                                 'Serial number: {}\n'
                                 'Last time updated: {}'
                 .format(
                     self.device.manufacturer_string,
-                    self.device.product_string,
+                    device_name,
                     firmwareInfo.version_major,
                     firmwareInfo.version_minor,
                     firmwareInfo.version_patch,
@@ -188,7 +184,6 @@ class DeviceWidget(QGroupBox):
         try:
             self.device.open()
             bootloader_info = xusbboot.get_boot_info(self.device)
-            self.device.close()
         except easyhid.HIDException as err:
             # Incase opening the device fails
             raise Exception ("Error Opening Device: {} | {}:{}"
@@ -277,8 +272,33 @@ class DeviceWidget(QGroupBox):
         elif is_nrf24lu1p_bootloader_device(self.device):
             self.setup_nrf24lu1p_label()
         else:
+            self.device.close()
             raise Exception("Unsupported USB device {}:{}".format(
                 self.device.vendor_id, self.device.product_id))
+        self.device.close()
+        self.updateStyle()
+
+    def updateStyle(self):
+        if self.has_critical_error:
+            self.label.setStyleSheet("""
+            QLabel {
+                background: #F88;
+                border: 1px solid;
+                padding: 2px;
+                font: 11pt;
+            }
+            """)
+        else:
+            self.label.setStyleSheet("""
+            QLabel {
+                background: #FFF;
+                                     self.updateLabel
+                border: 1px solid;
+                padding: 2px;
+                font: 11pt;
+            }
+            """)
+
 
     def initUI(self):
         programIcon = QIcon('img/download.png')
@@ -290,14 +310,7 @@ class DeviceWidget(QGroupBox):
             return
 
         self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        self.label.setStyleSheet("""
-        QLabel {
-            background: #FFF;
-            border: 1px solid;
-            padding: 2px;
-            font: 11pt;
-        }
-        """)
+        self.updateStyle()
         self.label.setFixedHeight(90)
         self.label.setMinimumWidth(390)
 
@@ -906,22 +919,16 @@ class Loader(QMainWindow):
                 hexdump.hexdump(bytes(layout_data))
 
             with kb:
-                old_name = copy.copy(kb.name)
                 kb.update_settings_section(settings_data, keep_rf=True)
                 kb.update_layout_section(layout_data)
-                if old_name != kb.name:
-                    kb.reset(reset_type=RESET_TYPE_HARDWARE)
-                    needs_label_update = True
-                else:
-                    kb.reset(reset_type=RESET_TYPE_SOFTWARE)
-                    needs_label_update = False
+                kb.reset(reset_type=RESET_TYPE_SOFTWARE)
+                kb.disconnect()
 
-            if needs_label_update:
-                for widget in self.deviceListWidget.deviceWidgets:
-                    try:
-                        widget.updateLabel()
-                    except easyhid.HIDException:
-                        pass
+            for widget in self.deviceListWidget.deviceWidgets:
+                try:
+                    widget.updateLabel()
+                except easyhid.HIDException:
+                    pass
 
             if warnings != []:
                 error_msg_box(
@@ -980,19 +987,14 @@ class Loader(QMainWindow):
                 old_name = copy.copy(kb.name)
                 kb.update_settings_section(settings_data, keep_rf=False)
                 kb.update_layout_section(layout_data)
-                if old_name != kb.name:
-                    kb.reset(reset_type=RESET_TYPE_HARDWARE)
-                    needs_label_update = True
-                else:
-                    kb.reset(reset_type=RESET_TYPE_SOFTWARE)
-                    needs_label_update = False
+                kb.reset(reset_type=RESET_TYPE_SOFTWARE)
+                kb.disconnect()
 
-            if needs_label_update:
-                for widget in self.deviceListWidget.deviceWidgets:
-                    try:
-                        widget.updateLabel()
-                    except easyhid.HIDException:
-                        pass
+            for widget in self.deviceListWidget.deviceWidgets:
+                try:
+                    widget.updateLabel()
+                except easyhid.HIDException:
+                    pass
 
             if warnings != []:
                 error_msg_box(

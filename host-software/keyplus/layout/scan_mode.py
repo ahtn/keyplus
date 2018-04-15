@@ -123,6 +123,7 @@ class ScanMode(object):
 
     def add_direct_wiring_pin(self, pin_name):
         """ Add a pin to the list of column pins for direct wiring """
+        print(self.direct_wiring_pins, pin_name)
         self._check_pin_not_in_use(pin_name)
         self.direct_wiring_pins.append(pin_name)
 
@@ -166,6 +167,11 @@ class ScanMode(object):
                     self.number_rows-1,
                     row
                 )
+            )
+        if MatrixPosition(row, col) in self.matrix_map:
+            raise KeyplusParseError(
+                "Duplicate use of matrix map position r{}c{}."
+                .format(row, col)
             )
         self.matrix_map[MatrixPosition(row, col)] = key_number
 

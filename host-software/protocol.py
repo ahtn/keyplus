@@ -218,6 +218,7 @@ class KBInfoErrorSystem(object):
     CRITICAL_ERROR_START = 64
 
     def __init__(self, error_table):
+        self._has_critical_error = False
         self._error_table = error_table;
 
         if len(error_table) != self.SIZE_ERROR_CODE_TABLE:
