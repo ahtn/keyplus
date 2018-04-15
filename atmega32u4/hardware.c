@@ -28,7 +28,9 @@ void led_init(void) {
 }
 
 void reset_mcu(void) {
-
+    wdt_enable(WDTO_15MS);
+    wdt_reset();
+    while (1);
 }
 
 #if defined(BOOTLOADER_ATMEL_DFU)
