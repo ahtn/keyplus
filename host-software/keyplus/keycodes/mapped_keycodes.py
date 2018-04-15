@@ -323,9 +323,9 @@ SYMBOL_TO_KEYCODE_MAP = {
     "dongle_6": KC_DONGLE_6,
     "dongle_7": KC_DONGLE_7,
 
-    "bootloader": KC_BOOTLOADER,
-    "bootloader_2": KC_BOOTLOADER_2,
-    "reset": KC_RESET,
+    "boot": KC_BOOTLOADER, "bootloader": KC_BOOTLOADER,
+    "boot2": KC_BOOTLOADER_2, "bootloader_2": KC_BOOTLOADER_2,
+    "rst": KC_RESET, "reset": KC_RESET,
     "kro_6": KC_KRO_6,
     "kro_n": KC_KRO_N,
     "kro_auto": KC_KRO_AUTO,
