@@ -5,6 +5,7 @@
 
 #include "config.h"
 
+#include "core/hardware.h"
 #include "core/keycode.h"
 #include "core/rf.h"
 #include "core/settings.h"
@@ -28,6 +29,14 @@ static bit_t keycode_checker(keycode_t keycode) {
 /* TODO:  */
 static void handler(keycode_t keycode, key_event_t event) REENT {
     switch (keycode) {
+
+        case KC_BOOTLOADER: {
+            bootloader_jmp();
+        } break;
+
+        case KC_RESET: {
+            reset_mcu();
+        } break;
 
 #if USE_NRF24
         case KC_UNIFYING_PAIR: {
