@@ -1,0 +1,28 @@
+# Written in 2017 by jem@seethis.link
+# This file is released into the public domain as per the CC0 Public Domain
+# Dedication (http://creativecommons.org/publicdomain/zero/1.0/)
+---
+
+devices:
+  32u4 many row test:
+    id: 0
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      cols: [B6]
+      # NOTE: D5 is the TX_LED on the pro micro
+      rows: [ D0,D1,D2,D3,D4,C6,D7,E6,B4,B5,F4,F5,F6,F7,B1,B3,B2, D5 ]
+      matrix_map: [
+        r0c0, r1c0, r2c0, r3c0, r4c0, r5c0, r6c0, r7c0, r8c0, r9c0, r10c0,
+        r11c0, r12c0, r13c0, r14c0, r15c0, r16c0, r17c0
+      ]
+    layout: 1key
+
+layouts:
+  1key:
+    layers: [
+      [ # layer 0 (base)
+        [
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F, G, H
+        ]
+      ],
+    ]
