@@ -7,3 +7,5 @@
 #include "core/util.h"
 
 extern XRAM keycode_callbacks_t mouse_keycodes;
+
+void mouse_key_task(void);

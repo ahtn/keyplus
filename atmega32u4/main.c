@@ -23,6 +23,7 @@
 #include "core/timer.h"
 
 #include "key_handlers/key_hold.h"
+#include "key_handlers/key_mouse.h"
 
 #include "bootloaders/kp_boot_32u4/interface/kp_boot_32u4.h"
 
@@ -80,6 +81,7 @@ int main(void) {
         // passthrough_keycodes_task();
         interpret_all_keyboard_matrices();
 
+        mouse_key_task();
         macro_task();
 
         send_keyboard_report();

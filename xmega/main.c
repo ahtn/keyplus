@@ -30,6 +30,7 @@
 #include "usb_reports/vendor_report.h"
 
 #include "key_handlers/key_hold.h"
+#include "key_handlers/key_mouse.h"
 
 #include "xmega/usb_xmega.h"
 #include "hardware_user_impl.h"
@@ -368,6 +369,7 @@ void usb_mode_main_loop(void) {
         }
 #endif
         macro_task();
+        mouse_key_task();
 
         send_keyboard_report();
         send_media_report();

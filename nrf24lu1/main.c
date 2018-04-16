@@ -25,6 +25,7 @@
 
 #include "core/macro.h"
 #include "key_handlers/key_hold.h"
+#include "key_handlers/key_mouse.h"
 
 #include "usb_reports/keyboard_report.h"
 #include "usb_reports/media_report.h"
@@ -107,6 +108,7 @@ void main(void) {
             // Disable usb interrupt while processing USB events
             irq_off();
             {
+                mouse_key_task();
                 macro_task();
 
                 // send reports
