@@ -14,18 +14,20 @@ bit_t is_mouse_keycode(keycode_t keycode) {
     return IS_MOUSEKEY(keycode);
 }
 
-#define MOUSE_SPEED 10
+#define MOUSE_SPEED 8
 #define MOUSE_WHEEL_SPEED 1
 #define MOUSE_REPORT_RATE 8
 
 static XRAM hid_report_mouse_t s_mouse_state;
 static XRAM uint8_t s_mouse_keys_down;
+static XRAM uint8_t s_force_update;
 static XRAM uint8_t s_report_time;
 
 /* TODO: proper mouse handling */
 void handle_mouse_keycode(keycode_t kc, key_event_t event) REENT {
     if (event == EVENT_RESET) {
         s_mouse_keys_down = 0;
+        s_force_update = 0;
         return;
     }
 
@@ -40,7 +42,10 @@ void handle_mouse_keycode(keycode_t kc, key_event_t event) REENT {
             s_mouse_keys_down += 1;
         } else {
             s_mouse_state.buttons_1 &= ~(1 << (MOUSEKEY_BUTTON_NUM(kc)));
-            s_mouse_keys_down -= 1;
+            if (s_mouse_keys_down != 0) {
+                s_mouse_keys_down -= 1;
+            }
+            s_force_update = 1;
         }
     } else if (kc >= KC_MOUSE_UP && kc <= KC_MOUSE_WH_RIGHT) {
         if (event == EVENT_PRESSED) {
@@ -73,6 +78,7 @@ void handle_mouse_keycode(keycode_t kc, key_event_t event) REENT {
             }
         }
     }
+    s_mouse_keys_down += s_force_update;
 }
 
 void mouse_key_task(void) {
@@ -83,6 +89,8 @@ void mouse_key_task(void) {
         memcpy(&g_mouse_report, &s_mouse_state, sizeof(hid_report_mouse_t));
         g_report_pending_mouse = true;
         s_report_time = timer_read8_ms();
+        s_mouse_keys_down -= s_force_update;
+        s_force_update = 0;
     }
 }
 
