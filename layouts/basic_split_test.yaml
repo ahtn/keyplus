@@ -305,12 +305,11 @@ devices:
 
 keycodes:
   SFTEnt:
-    keycode: KC_HOLD
+    keycode: hold
     delay: 200
     tap_key: enter
     hold_key: sticky_lshift
     # options:
-
 
 layouts:
   split_layout:
@@ -319,7 +318,7 @@ layouts:
       [ # layer 0 (colemak)
         [ # left hand
           tab , q   , w   , f   , p   , g   ,
-          ent , a   , r   , s   , t   , d   ,
+          SFTENT , a   , r   , s   , t   , d   ,
           lalt, z   , x   , c   , v   , b   ,
           esc , L6  , lctl, spc , L5  ,
         ],
@@ -441,8 +440,7 @@ layouts:
       [ # layer 0 (colemak)
         [ # left hand
           tab , q   , w   , f   , p   , g   ,
-          # SFTEnt , a   , r   , s   , t   , d   ,
-          ent , a   , r   , s   , t   , d   ,
+          SFTEnt , a   , r   , s   , t   , d   ,
           lalt, z   , x   , c   , v   , b   ,
           esc , L4  , L4  , lctl  , L3  , spc ,
         ],

@@ -13,8 +13,9 @@ from keyplus.exceptions import *
 import keyplus.keycodes as keycodes
 
 class EKCData(object):
-    def __init__(self, data):
+    def __init__(self, data=None, addr=None):
         self.data = data
+        self.addr = addr
 
     def set_keycode_map_function(self, kc_map_function):
         self.kc_map_function = kc_map_function
@@ -37,7 +38,7 @@ class EKCHoldKey(EKCData):
 
     DEFAULT_DELAY = 200
 
-    def __init__(self, tap_key, hold_key, delay=200, options=None, kc_map_function=None):
+    def __init__(self, tap_key=None, hold_key=None, delay=200, options=None, kc_map_function=None):
         self.tap_key = tap_key
         self.hold_key = hold_key
         self.delay = delay
@@ -67,7 +68,7 @@ class EKCHoldKey(EKCData):
 
         return result
 
-    def parse_json(self, keycode_name, json_obj=None, parser_info=None):
+    def parse_json(self, kc_name, json_obj=None, parser_info=None):
 
         print_warnings = False
 
@@ -76,31 +77,32 @@ class EKCHoldKey(EKCData):
             print_warnings = True
             parser_info = KeyplusParserInfo(
                 "<EKCHoldKeycode Dict>",
-                {keycode_name : json_obj}
+                {kc_name : json_obj}
             )
-        parser_info.enter(keycode_name)
+
+        parser_info.enter(kc_name)
 
         # Get the tap key field
         self.keycode = parser_info.try_get(
             'keycode',
             field_type=str
         )
-        assert_equal(self.keycode, 'kc_hold')
+        assert_equal(self.keycode, 'hold')
 
         # Get the hold key field
         self.hold_key = parser_info.try_get(
             'hold_key',
-            type=str
+            field_type=str
         )
 
         # Get the tap key field
         self.tap_key = parser_info.try_get(
             'tap_key',
-            type=str
+            field_type=str
         )
 
         # Get the delay key field
-        self.delay = try_get(
+        self.delay = parser_info.try_get(
             'delay',
             field_type=int,
             default=EKCHoldKey.DEFAULT_DELAY
@@ -140,6 +142,7 @@ class EKCDataTable(EKCData):
         child_id = len(self.children)
         self.children.append(child)
         self.children_addresses.append(self.current_size)
+        child.addr = self.current_size
         self.current_size += child.size()
         return child_id
 

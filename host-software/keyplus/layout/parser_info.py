@@ -42,7 +42,8 @@ class KeyplusParserInfo(object):
     def touch_field(self, field):
         if DEBUG.parsing:
             self._debug_message("Touch:", "{}.{}".format(self.get_current_path(), field))
-        self.untouched_fields.remove(field)
+        if field in self.untouched_fields:
+            self.untouched_fields.remove(field)
 
     def _debug_message(self, *message, **kwargs):
         indent = '  ' * (len(self.property_stack))
@@ -256,11 +257,8 @@ class KeyplusParserInfo(object):
         else:
             return True
 
-    def peek_field(self, *fields):
-        current_field_obj = self.current_obj
-        for field in fields:
-            current_field_obj = current_field_obj[field]
-        return current_field_obj
+    def peek_field(self, field):
+        return self.current_obj[field]
 
     def iter_fields(self):
         return six.iterkeys(self.current_obj)

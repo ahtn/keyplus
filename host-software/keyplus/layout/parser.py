@@ -27,7 +27,7 @@ from uniflash.crc16 import crc16_bytes
 
 RF_INFO_SIZE = 64
 
-class SettingsGenerator:
+class SettingsGenerator(object):
     def __init__(self, layout_data, rf_settings):
         self.layout = layout_data
         self.rf = rf_settings
@@ -170,7 +170,9 @@ class SettingsGenerator:
         self.user_keycodes = UserKeycodes([])
 
         if 'keycodes' not in self.layout:
+            print("no user keycodes")
             return
+        print("got some keycodes")
 
         self.user_keycodes = UserKeycodes(self.layout['keycodes'])
         ekc_data = self.user_keycodes.generate_ekc_data()

@@ -17,6 +17,10 @@ class KeycodeMapper(object):
     def __init__(self):
         self.symbol_to_keycode_map = copy(SYMBOL_TO_KEYCODE_MAP)
         self.keycode_to_symbol_map = self.build_inverse_keycode_map(SYMBOL_TO_KEYCODE_MAP)
+        self.user_keycodes = None
+
+    def set_user_keycodes(self, user_keycodes):
+        self.user_keycodes = user_keycodes
 
     def build_inverse_keycode_map(self, keycode_map, inverse_override=None):
         """
@@ -101,6 +105,10 @@ class KeycodeMapper(object):
 
     def from_string(self, kc_in):
         kc_str = str(kc_in).lower()
+
+        if self.user_keycodes and self.user_keycodes.has_keycode(kc_str):
+            return self.user_keycodes.get_ekc_keycode_value(kc_str)
+
         if kc_str in SYMBOL_TO_KEYCODE_MAP:
             return SYMBOL_TO_KEYCODE_MAP[kc_str]
         elif "-" in kc_str:

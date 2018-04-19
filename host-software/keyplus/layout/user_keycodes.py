@@ -12,33 +12,36 @@ import keyplus.keycodes.mapped_keycodes as mapped_keycodes
 from keyplus.keycodes.keycodes import *
 from keyplus.layout.parser_info import KeyplusParserInfo
 from keyplus.exceptions import *
+from keyplus.layout.ekc_data import EKCDataTable
 
 class UserKeycode(object):
-    def __init__(self, name, data, ekc):
+    def __init__(self, name, ekc):
         self.name = name
         self.has_been_parsed_before = False
         self.ekc = ekc
-        self.ekc_pos = None
 
 class UserKeycodes(object):
 
     def __init__(self):
         self.user_keycode_table = {}
 
+    def has_keycode(self, kc_name):
+        return kc_name in self.user_keycode_table
+
     def get_ekc_keycode_value(self, kc_name):
         kc_name = kc_name.lower()
-        if kc_name in mapped_keycodes.key_symbols:
-            return mapped_keycodes.key_symbols[kc_name]
+        if kc_name in mapped_keycodes.SYMBOL_TO_KEYCODE_MAP:
+            return mapped_keycodes.SYMBOL_TO_KEYCODE_MAP[kc_name]
 
         if kc_name not in self.user_keycode_table:
             raise ParseLayoutError("Undefined keycode: {}".format(kc_name))
 
         kc = self.user_keycode_table[kc_name]
 
-        return keycodes.gen_ekc(kc.ekc_pos)
+        return keycodes.generate_external_keycode(kc.ekc.addr)
 
     def generate_ekc_data(self):
-        result = EKCDataMain()
+        result = EKCDataTable()
 
         for kc_name in self.user_keycode_table:
             kc = self.user_keycode_table[kc_name]
@@ -59,23 +62,51 @@ class UserKeycodes(object):
             kc.ekc_pos = ekc_pos
             ekc_pos += kc.ekc.size()
 
-    def add_keycode(self, kc_name, json_obj=None, parse_info=None):
+    def add_keycode(self, kc_name, json_obj=None, parser_info=None):
         print_warnings = False
 
-        if not parser_info.has_field(kc_name, 'keycode'):
-            raise KeyplusSettingsError("The field 'keycode' must be defined"
-                                       "for '{}'.".format(kc_name))
+        keycode_data = parser_info.peek_field(kc_name)
+        if 'keycode' not in keycode_data:
+            raise ParseLayoutError(
+                "User keycode '{}' must include the 'keycode' field."
+                .format(kc_name)
+            )
 
-        kc_type = self.peek_field(kc_name, 'keycode')
+        kc_type = keycode_data['keycode']
         kc_type = kc_type.lower()
 
-        if kc_type == "kc_hold":
+
+        if kc_type == "hold":
             hold_key = EKCHoldKey()
             hold_key.parse_json(kc_name, parser_info=parser_info)
             hold_key.set_keycode_map_function(self.get_ekc_keycode_value)
 
-            self.user_keycode_table[kc_name] = UserKeycode(
-                kc_name,
-                data,
+            self.user_keycode_table[kc_name.lower()] = UserKeycode(
+                kc_name.lower(),
                 ekc = hold_key,
             )
+        else:
+            raise ParseLayoutError(
+                "Unknown keycode type: '{}'".format(kc_type)
+            )
+
+    def parse_json(self, json_obj=None, parser_info=None):
+
+        print_warnings = False
+
+        if parser_info == None:
+            assert(json_obj != None)
+            print_warnings = True
+            parser_info = KeyplusParserInfo(
+                "<keycodes Dict>",
+                {'keycodes' : json_obj}
+            )
+
+        parser_info.enter('keycodes')
+        for kc_name in parser_info.iter_fields():
+            self.add_keycode(
+                kc_name = kc_name,
+                json_obj = parser_info.try_get(kc_name),
+                parser_info = parser_info
+            )
+        parser_info.exit()
