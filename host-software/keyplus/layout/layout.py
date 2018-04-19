@@ -42,7 +42,6 @@ class KeyplusLayout(object):
         self._layout_id_map = {}
 
         self.user_keycodes = UserKeycodes()
-
         self.ekc_data = EKCDataTable()
 
     def _from_file_common(self, layout_file=None, rf_file=None, print_warnings=False,
@@ -177,6 +176,8 @@ class KeyplusLayout(object):
         parser_info.exit()
 
     def _parse_keycodes(self, parser_info):
+        if not parser_info.has_field('keycodes'):
+            return
         self.user_keycodes.parse_json(parser_info = parser_info)
         self.ekc_data = self.user_keycodes.generate_ekc_data()
 
