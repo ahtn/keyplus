@@ -2,6 +2,12 @@
 0.3.1 (unreleased)
 ==================
 
+* `layout` add support for `keycodes` section in the layout file for defining
+  custom special keycodes
+* `layout` add support for `hold` key in `keycodes` section
+* `layout` add more alternative names to some keycodes: `trns`, `space`, 's_l0`,
+  `s_lctl`
+
 * `firmware` atmega32u4 support
 * `firmware` made the maximum number of supported rows configurable at compile
   time, and increased the default value from 10 to 18.
