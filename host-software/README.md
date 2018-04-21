@@ -11,7 +11,7 @@ Other dependencies: hidapi
 
 To run the GUI programming tool
 ```
-./loader.py
+./keyplus_flasher.py
 ```
 
 ## Command line tool
