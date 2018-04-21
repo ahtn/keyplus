@@ -226,11 +226,11 @@ SYMBOL_TO_KEYCODE_MAP = {
     "lctl": MODKEY_LEFT_CONTROL, "lctrl": MODKEY_LEFT_CONTROL,
     "lsft": MODKEY_LEFT_SHIFT, "lshift": MODKEY_LEFT_SHIFT,
     "lalt": MODKEY_LEFT_ALT,
-    "lgui": MODKEY_LEFT_GUI, "lwin": MODKEY_LEFT_GUI,
+    "lgui": MODKEY_LEFT_GUI, "lwin": MODKEY_LEFT_GUI, "lmeta": MODKEY_LEFT_GUI,
     "rctl": MODKEY_RIGHT_CONTROL, "rctrl": MODKEY_RIGHT_CONTROL,
     "rsft": MODKEY_RIGHT_SHIFT, "rshift": MODKEY_RIGHT_SHIFT,
     "ralt": MODKEY_RIGHT_ALT, "altgr": MODKEY_RIGHT_ALT,
-    "rgui": MODKEY_RIGHT_GUI, "rwin": MODKEY_RIGHT_GUI,
+    "rgui": MODKEY_RIGHT_GUI, "rwin": MODKEY_RIGHT_GUI, "rmeta": MODKEY_RIGHT_GUI,
     # end normal HID keycodes
 
     "!": generate_modkey(KC_1, shift=True),
@@ -412,10 +412,10 @@ SYMBOL_TO_KEYCODE_MAP = {
     "sticky_l14": KC_STICKY_L14, "s_l14": KC_STICKY_L14,
     "sticky_l15": KC_STICKY_L15, "s_l15": KC_STICKY_L15,
 
-    "sticky_lctrl": KC_STICKY_LCTRL, "s_lctrl": KC_STICKY_LCTRL,
-    "sticky_lshift": KC_STICKY_LSHIFT, "s_lsft": KC_STICKY_LSHIFT,
-    "sticky_lalt": KC_STICKY_LALT, "s_lalt": KC_STICKY_LALT,
-    "sticky_lgui": KC_STICKY_LGUI, "s_lgui": KC_STICKY_LGUI,
+    "sticky_lctrl": KC_STICKY_LCTRL, "s_lctrl": KC_STICKY_LCTRL, "s_ctrl": KC_STICKY_LCTRL,
+    "sticky_lshift": KC_STICKY_LSHIFT, "s_lsft": KC_STICKY_LSHIFT, "s_sft": KC_STICKY_LSHIFT,
+    "sticky_lalt": KC_STICKY_LALT, "s_lalt": KC_STICKY_LALT, "s_alt": KC_STICKY_LALT,
+    "sticky_lgui": KC_STICKY_LGUI, "s_lgui": KC_STICKY_LGUI, "s_gui": KC_STICKY_LGUI,
     "sticky_rctrl": KC_STICKY_RCTRL, "s_rctrl": KC_STICKY_RCTRL,
     "sticky_rshift": KC_STICKY_RSHIFT, "s_rsft": KC_STICKY_RSHIFT,
     "sticky_ralt": KC_STICKY_RALT, "s_ralt": KC_STICKY_RALT,

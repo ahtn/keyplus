@@ -10,6 +10,7 @@ from layout.common import *
 from keyplus.layout.ekc_data import *
 import keyplus.keycodes.mapped_keycodes as mapped_keycodes
 from keyplus.keycodes.keycodes import *
+from keyplus.keycodes.keycode_mapper import KeycodeMapper
 from keyplus.layout.parser_info import KeyplusParserInfo
 from keyplus.exceptions import *
 from keyplus.layout.ekc_data import EKCDataTable
@@ -22,22 +23,22 @@ class UserKeycode(object):
 
 class UserKeycodes(object):
 
-    def __init__(self):
+    def __init__(self, kc_mapper=None):
         self.user_keycode_table = {}
 
+        if kc_mapper == None:
+            self.kc_mapper = KeycodeMapper()
+        else:
+            self.kc_mapper = kc_mapper
+        self.kc_mapper.set_user_keycodes(self)
+
     def has_keycode(self, kc_name):
+        kc_name = kc_name.lower()
         return kc_name in self.user_keycode_table
 
     def get_ekc_keycode_value(self, kc_name):
         kc_name = kc_name.lower()
-        if kc_name in mapped_keycodes.SYMBOL_TO_KEYCODE_MAP:
-            return mapped_keycodes.SYMBOL_TO_KEYCODE_MAP[kc_name]
-
-        if kc_name not in self.user_keycode_table:
-            raise ParseLayoutError("Undefined keycode: {}".format(kc_name))
-
         kc = self.user_keycode_table[kc_name]
-
         return keycodes.generate_external_keycode(kc.ekc.addr)
 
     def generate_ekc_data(self):
@@ -75,11 +76,10 @@ class UserKeycodes(object):
         kc_type = keycode_data['keycode']
         kc_type = kc_type.lower()
 
-
         if kc_type == "hold":
             hold_key = EKCHoldKey()
             hold_key.parse_json(kc_name, parser_info=parser_info)
-            hold_key.set_keycode_map_function(self.get_ekc_keycode_value)
+            hold_key.set_keycode_map_function(self.kc_mapper.from_string)
 
             self.user_keycode_table[kc_name.lower()] = UserKeycode(
                 kc_name.lower(),

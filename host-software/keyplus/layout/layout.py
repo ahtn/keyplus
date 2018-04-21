@@ -44,6 +44,10 @@ class KeyplusLayout(object):
         self.user_keycodes = UserKeycodes()
         self.ekc_data = EKCDataTable()
 
+        self.kc_mapper = KeycodeMapper()
+        self.kc_mapper.set_user_keycodes(self.user_keycodes)
+
+
     def _from_file_common(self, layout_file=None, rf_file=None, print_warnings=False,
                            load_method=yaml.load, warnings=None):
         basename = os.path.basename(layout_file)
@@ -185,9 +189,7 @@ class KeyplusLayout(object):
         parser_info.enter("layouts")
         for (layout_num, field) in enumerate(parser_info.iter_fields()):
             layout = LayoutKeyboard(field)
-            kc_mapper = KeycodeMapper()
-            kc_mapper.set_user_keycodes(self.user_keycodes)
-            layout.set_keycode_mapper(kc_mapper)
+            layout.set_keycode_mapper(self.kc_mapper)
 
             layout.parse_json(
                 name = field,
