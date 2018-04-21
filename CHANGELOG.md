@@ -6,7 +6,7 @@
   custom special keycodes
 * `layout` add support for `hold` key in `keycodes` section
 * `layout` add more alternative names to some keycodes: `trns`, `space`, 's_l0`,
-  `s_lctl`
+  `s_lctl`, `int1`. Changed `lang_1` to `lang1` etc.
 
 * `firmware` atmega32u4 support
 * `firmware` made the maximum number of supported rows configurable at compile
