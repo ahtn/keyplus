@@ -15,17 +15,22 @@
 #include "core/util.h"
 
 typedef enum event_type_t {
-    ///< This event will be triggered when the microcontroller is reset
+    /// This event will be triggered when the microcontroller is reset
     EVENT_RESET = 0,
 
-    ///< This event will be generated when the keycode is pressed
-    EVENT_PRESSED,
+    /// This event will be generated when the keycode is pressed
+    EVENT_PRESSED = 1,
 
-    ///< This event will be generated when the keycode is released
-    EVENT_RELEASED,
+    /// This event will be generated when the keycode is released
+    EVENT_RELEASED = 2,
 
     EVENT_TIMER_TASK,
     // EVENT_DISABLE, // disable key handler
+
+    /// This event is used to buffer a key press based on the key number,
+    /// instead of its keycode. It will not be seen by the key handlers.
+    /// Internal use only.
+    EVENT_BUFFERED_KEY_PRESS = 64,
 } event_type_t;
 
 typedef struct event_t {

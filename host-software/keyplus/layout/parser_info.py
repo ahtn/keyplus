@@ -108,8 +108,9 @@ class KeyplusParserInfo(object):
         if DEBUG.parsing:
             self._debug_message("Exit field({})".format(old_field))
 
-    def try_get(self, field, default=None, ignore_case=True, field_type=None,
-                field_range=None, remap_function=None, remap_table=None,
+    def try_get(self, field, default=None, ignore_case=True,
+                field_type=None, field_range=None, field_valid_values=None,
+                remap_function=None, remap_table=None,
                 optional = False):
         """
         Arguments:
@@ -126,6 +127,7 @@ class KeyplusParserInfo(object):
             remap_table: Similar to remap_function, except us a dictionary
                 to remap the value. If the value is not in the dictionary,
                 raise an error.
+            field_valid_values: check if the field value is in the given set.
             optional: the same as default, except return `None` instead of the
                 default value
         """
@@ -165,20 +167,26 @@ class KeyplusParserInfo(object):
             if ignore_case and isinstance(value, six.string_types):
                 value = value.lower()
 
-            if remap_table != None:
-                if value in remap_table:
-                    value = remap_table[value]
-                else:
-                    raise KeyplusSettingsError(
-                        "In {}, for the field '{}' got unknown value '{}'.\nExpecting "
-                        "one of: {}".format(
-                            self.get_current_path(),
-                            field,
-                            value,
-                            ", ".join(six.iterkeys(remap_table))
-                        )
+            def check_in_set(valid_values):
+                if value in valid_values:
+                    return
 
+                raise KeyplusSettingsError(
+                    "In {}, for the field '{}' got unknown value '{}'.\nExpecting "
+                    "one of: {}".format(
+                        self.get_current_path(),
+                        field,
+                        value,
+                        ", ".join(valid_values)
                     )
+                )
+
+            if remap_table != None:
+                check_in_set(remap_table)
+                value = remap_table[value]
+
+            if field_valid_values:
+                check_in_set(field_valid_values)
 
             if remap_function != None:
                 try:
@@ -231,17 +239,6 @@ class KeyplusParserInfo(object):
                     low, high,
                     last_value
                 )
-            )
-
-    def check_in_set(self, valid_values):
-        """
-        Check that the last parsed value is one of a given set of values.
-        """
-        last_value = self.get_last_value()
-        if last_value not in valid_values:
-            raise KeyplusParseError(
-                "For the field '{}', expected one of the following values: {}"
-                .format(self.last_field, valid_values)
             )
 
     def has_field(self, *fields, **kwargs):

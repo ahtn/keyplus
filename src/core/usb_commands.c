@@ -148,7 +148,7 @@ void cmd_reset(uint8_t reset_type) {
 }
 
 // send data to the host for debugging purposes
-uint8_t usb_print(const uint8_t *data, uint8_t len) {
+uint8_t usb_print(const void *data, uint8_t len) {
 #if USB_BUFFERED
     if (usb_commands_is_locked()) {
         return 1;

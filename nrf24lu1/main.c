@@ -119,7 +119,7 @@ void main(void) {
 
                 // handle special key tasks
                 sticky_key_task();
-                hold_key_task();
+                hold_key_task(false);
             }
             irq_on();
         }

@@ -303,13 +303,18 @@ devices:
     scan_mode: # rf dongle, so don't need a matrix
       mode: no_matrix # options: col_row, pins, no_matrix
 
+
 keycodes:
   SFTEnt:
     keycode: hold
-    delay: 200
     tap_key: enter
     hold_key: sticky_lshift
-    # options:
+
+    activate_type: other_key # activate hold_key when other key is pressed
+    # delay: 200 # currently doesn't do anything for other_key activation
+
+    # activate_type: delay # activate hold_key after delay
+    # delay: 200 # delay in milliseconds
 
   # space_fn:
   #   keycode: hold

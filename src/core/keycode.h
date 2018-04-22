@@ -402,5 +402,5 @@ enum {
 extern XRAM flash_ptr_t g_ekc_storage_ptr;
 extern XRAM uint32_t g_ekc_storage_size;
 
-uint8_t get_ekc_data(uint8_t *dest, uint16_t offset, uint16_t size) REENT;
+uint8_t get_ekc_data(void *dest, uint16_t offset, uint16_t size) REENT;
 keycode_t get_ekc_class(keycode_t kc);

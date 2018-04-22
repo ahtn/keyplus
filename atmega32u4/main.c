@@ -93,7 +93,7 @@ int main(void) {
         handle_vendor_out_reports();
 
         sticky_key_task();
-        hold_key_task();
+        hold_key_task(false);
 
         if (has_critical_error()) {
             recovery_mode_main_loop();

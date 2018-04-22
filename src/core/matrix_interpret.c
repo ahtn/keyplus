@@ -32,6 +32,7 @@
 #include "core/util.h"
 
 #include "key_handlers/key_handlers.h"
+#include "key_handlers/key_hold.h"
 
 #include "usb_reports/keyboard_report.h"
 
@@ -52,6 +53,8 @@ XRAM key_event_queue_t s_key_event_queues[2];
 
 XRAM uint8_t s_has_dirty_matrix;
 XRAM uint8_t s_has_dirty_event_queue;
+
+XRAM uint8_t s_buffered_key_len;
 
 bit_t g_input_disabled = false;
 bit_t dongle_active = true;
@@ -84,6 +87,7 @@ static XRAM uint8_t s_sticky_has_stuck_layer;
 
 static void keyboard_trigger_event(keycode_t keycode, key_event_t event) REENT;
 static void keyboard_reset_event_handlers(void);
+static keycode_t get_keycode_from_layer(layer_mask_t layer_mask, uint8_t row, uint8_t col) REENT;
 
 void layer_queue_add(uint8_t layer) {
     s_layer_dirty = 1;
@@ -156,7 +160,8 @@ void layer_queue_apply(uint8_t kb_slot_id) {
     flush_queues();
 }
 
-static bool sticky_relase_timer_done(void) {
+static
+bool sticky_relase_timer_done(void) {
     return (uint16_t)(timer_read16_ms() - s_sticky_clear_start_time) > STICKY_KEY_RELEASE_DELAY;
 }
 
@@ -220,10 +225,19 @@ static void apply_event_trigger_queue(uint8_t keyboard_id) {
             continue;
         }
 
-        keyboard_trigger_event(
-            queue->events[i].keycode,
-            queue->events[i].type
-        );
+        if (queue->events[i].type == EVENT_BUFFERED_KEY_PRESS) {
+            const uint8_t key_num = queue->events[i].keycode;
+            const layer_mask_t active_layer =
+                keyboard_get_layer_mask(get_slot_id(keyboard_id));
+            const keycode_t keycode =
+                get_keycode_from_layer(active_layer, key_num/8, key_num%8);
+            keyboard_trigger_event(keycode, EVENT_PRESSED);
+        } else {
+            keyboard_trigger_event(
+                queue->events[i].keycode,
+                queue->events[i].type
+            );
+        }
     }
 }
 
@@ -622,8 +636,8 @@ void keyboard_interpret_matrix(uint8_t kb_slot_id) {
     keyboard->layer_changed = false;
     keyboard->is_dirty = 0;
 
+    s_buffered_key_len = 0;
     s_active_slot = kb_slot_id;
-
 
     active_layer = keyboard_get_layer_mask(kb_slot_id);
     start_layer = get_partial_layer_mask(kb_slot_id);
@@ -661,6 +675,21 @@ void keyboard_interpret_matrix(uint8_t kb_slot_id) {
                 } else if (pressed) {
                     event = EVENT_PRESSED;
                     keyboard->num_keys_down += 1;
+
+                    // TODO: make this a more generic mechanism?
+                    if (hold_key_buffer_other_keys() || (s_buffered_key_len>0)) {
+                        const uint8_t key_num = byte*8 + bit;
+
+                        // If s_buffered_key_len > 0, then that means we have
+                        // already started adding keys to the buffer, and don't
+                        // need to retrigger the hold key task.
+                        if (s_buffered_key_len == 0) {
+                            hold_key_task(true);
+                        }
+                        s_buffered_key_len++;
+                        queue_keycode_event(key_num, EVENT_BUFFERED_KEY_PRESS, keyboard->kb_id);
+                        continue;
+                    }
                 } else if (released) {
                     event = EVENT_RELEASED;
                     keyboard->num_keys_down -= 1;
@@ -707,14 +736,15 @@ void keyboard_interpret_matrix(uint8_t kb_slot_id) {
         }
     }
 
+    // wait until all layer and key events have been processed before handling
+    // modifiers
+    apply_mods();
+
+
     /* // if we changed layers, notify the host on the custom interface */
     /* if (keyboard->layer_changed) { */
     /*  cmd_send_layer(kb_slot_id); */
     /* } */
-
-    // wait until all layer and key events have been processed before handling
-    // modifiers
-    apply_mods();
 
     memcpy(keyboard->matrix_prev, keyboard->matrix, keyboard->matrix_size);
 }

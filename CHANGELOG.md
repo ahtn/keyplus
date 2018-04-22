@@ -4,9 +4,12 @@
 
 * `layout` add support for `keycodes` section in the layout file for defining
   custom special keycodes
-* `layout` add support for `hold` key in `keycodes` section
-* `layout` add more alternative names to some keycodes: `trns`, `space`, 's_l0`,
+* `layout/keycodes` add support for `hold` key in `keycodes` section
+* `layout/keycodes` add more alternative names to some keycodes: `trns`, `space`, 's_l0`,
   `s_lctl`, `int1`. Changed `lang_1` to `lang1` etc.
+* `layout/keycodes` add alternative activation method for hold keys. Instead of
+  using a delay to activate the hold key, allow the hold key to be activated
+  when other keys are pressed.
 
 * `firmware` atmega32u4 support
 * `firmware` made the maximum number of supported rows configurable at compile

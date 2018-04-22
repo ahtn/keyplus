@@ -380,7 +380,7 @@ void usb_mode_main_loop(void) {
         handle_vendor_out_reports();
 
         sticky_key_task();
-        hold_key_task();
+        hold_key_task(false);
 
         // led_task();
 
