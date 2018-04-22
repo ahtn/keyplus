@@ -27,12 +27,6 @@ void hardware_init(void) {
 void led_init(void) {
 }
 
-void reset_mcu(void) {
-    wdt_enable(WDTO_15MS);
-    wdt_reset();
-    while (1);
-}
-
 #if defined(BOOTLOADER_ATMEL_DFU)
 
 #include "bootloaders/atmel_dfu/atmel_bootloader.h"
@@ -41,17 +35,25 @@ void bootloader_jmp(void) {
     run_bootloader();
 }
 
+void reset_mcu(void) {
+    wdt_enable(WDTO_15MS);
+    wdt_reset();
+    while (1);
+}
+
+
 #elif defined(BOOTLOADER_KP_BOOT_32U4)
 
 #include "bootloaders/kp_boot_32u4/interface/kp_boot_32u4.h"
 
-void bootloader_jmp(void) {
-    cli();
-    wdt_enable(WDTO_15MS);
-    wdt_reset();
-    *(uint16_t*)MAGIC_ADDRESS = MAGIC_ENTER_BOOT;
-    while (1);
+void reset_mcu(void) {
+    kp_boot_reset();
 }
+
+void bootloader_jmp(void) {
+    kp_boot_jmp();
+}
+
 #endif
 
 void wdt_init(void) {

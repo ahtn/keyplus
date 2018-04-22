@@ -142,9 +142,10 @@ else ifeq ($(BOOTLOADER), lufa_dfu)
   CFLAGS += -DBOOTLOADER_PID=$(FLIP_USB_DFU_32u4)
   $(error Bootloader lufa_dfu not supported yet.)
 else ifeq ($(BOOTLOADER), kp_boot_32u4)
-  # lufa dfu uses the same VID/PID as the atmel version
+  BOOT_SECTION_START = 0x007C00
+  BOOTLOADER_SIZE = 0x0400
   CFLAGS += -DBOOTLOADER_VID=0x1209
-  CFLAGS += -DBOOTLOADER_PID=0xBB08
+  CFLAGS += -DBOOTLOADER_PID=0xBB05
   CFLAGS += -DBOOTLOADER_KP_BOOT_32U4
   C_SRC += $(BOOTLOADER_PATH)/kp_boot_32u4/interface/kp_boot_32u4.c
 else

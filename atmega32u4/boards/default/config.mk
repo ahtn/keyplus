@@ -2,6 +2,8 @@
 
 C_SRC += # extra includes
 
+BOOTLOADER = kp_boot_32u4
+
 USE_USB := 1
 USE_SCANNER := 1
 USE_NRF24 := 0
