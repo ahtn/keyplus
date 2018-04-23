@@ -28,9 +28,14 @@ typedef enum event_type_t {
     // EVENT_DISABLE, // disable key handler
 
     /// This event is used to buffer a key press based on the key number,
-    /// instead of its keycode. It will not be seen by the key handlers.
+    /// instead of its keycode. It will not be seen by the key handlers directly,
+    /// but will be used to generate an EVENT_PRESSED event later with whatever
+    /// the active layer is at the time. Applied in the next iteration of
+    /// `apply_event_trigger_queue()`.
     /// Internal use only.
-    EVENT_BUFFERED_KEY_PRESS = 64,
+    EVENT_BUFFERED_KEY_PRESS0 = 64,
+    /// Same as EVENT_BUFFERED_KEY_PRESS0, except applied one iteration later.
+    EVENT_BUFFERED_KEY_PRESS1 = 65,
 } event_type_t;
 
 typedef struct event_t {

@@ -220,18 +220,23 @@ static void apply_event_trigger_queue(uint8_t keyboard_id) {
     key_event_queue_t XRAM* queue = &s_key_event_queues[READ_EVENT_QUEUE()];
 
     for (i = 0; i < queue->length; ++i) {
-
+        const uint8_t type = queue->events[i].type;
         if (queue->events[i].keyboard_id != keyboard_id) {
             continue;
         }
 
-        if (queue->events[i].type == EVENT_BUFFERED_KEY_PRESS) {
+        if (type == EVENT_BUFFERED_KEY_PRESS0 ||
+            type == EVENT_BUFFERED_KEY_PRESS1) {
             const uint8_t key_num = queue->events[i].keycode;
             const layer_mask_t active_layer =
                 keyboard_get_layer_mask(get_slot_id(keyboard_id));
             const keycode_t keycode =
                 get_keycode_from_layer(active_layer, key_num/8, key_num%8);
-            keyboard_trigger_event(keycode, EVENT_PRESSED);
+            if (type == EVENT_BUFFERED_KEY_PRESS1) {
+                queue_keycode_event(key_num, EVENT_BUFFERED_KEY_PRESS0, keyboard_id);
+            } else if (type == EVENT_BUFFERED_KEY_PRESS0) {
+                keyboard_trigger_event(keycode, EVENT_PRESSED);
+            }
         } else {
             keyboard_trigger_event(
                 queue->events[i].keycode,
@@ -687,7 +692,7 @@ void keyboard_interpret_matrix(uint8_t kb_slot_id) {
                             hold_key_task(true);
                         }
                         s_buffered_key_len++;
-                        queue_keycode_event(key_num, EVENT_BUFFERED_KEY_PRESS, keyboard->kb_id);
+                        queue_keycode_event(key_num, EVENT_BUFFERED_KEY_PRESS1, keyboard->kb_id);
                         continue;
                     }
                 } else if (released) {
