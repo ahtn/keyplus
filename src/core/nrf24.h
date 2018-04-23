@@ -31,8 +31,8 @@ uint8_t nrf24_read_reg(nrf24_register_t reg);
 void nrf24_write_reg(nrf24_register_t reg, uint8_t val);
 
 // read and write address registers
-nrf24_status_t nrf24_read_addr(nrf24_register_t reg, uint8_t XRAM* IRAM dest, uint8_t len);
-nrf24_status_t nrf24_write_addr(nrf24_register_t reg, const uint8_t * IRAM src, uint8_t len);
+nrf24_status_t nrf24_read_addr(nrf24_register_t reg, XRAM uint8_t *dest, uint8_t len) REENT;
+nrf24_status_t nrf24_write_addr(nrf24_register_t reg, const XRAM uint8_t *src, uint8_t len) REENT;
 
 // fn for reading rx payloads
 uint8_t nrf24_read_rx_payload_width(void);
@@ -47,7 +47,7 @@ nrf24_status_t nrf24_flush_tx(void);
 void nrf24_power_set(bool on);
 
 // fn for writing and sending tx packets
-nrf24_status_t nrf24_write_tx_payload(uint8_t *buf, uint8_t len);
-nrf24_status_t nrf24_write_ack_payload(uint8_t *buf, uint8_t len, uint8_t pipe_num);
+nrf24_status_t nrf24_write_tx_payload(XRAM uint8_t *buf, uint8_t len);
+nrf24_status_t nrf24_write_ack_payload(XRAM uint8_t *buf, uint8_t len, uint8_t pipe_num);
 void nrf24_send_one(void);
 void nrf24_send_all(void);

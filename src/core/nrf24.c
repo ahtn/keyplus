@@ -13,7 +13,7 @@ static uint8_t nrf24_reg(nrf24_register_t reg, uint8_t val) {
     return result;
 }
 
-static nrf24_status_t nrf24_read_buf(nrf24_spi_command_t cmd, uint8_t *dest, uint8_t len) {
+static nrf24_status_t nrf24_read_buf(nrf24_spi_command_t cmd, XRAM uint8_t *dest, uint8_t len) {
     uint8_t result;
     uint8_t i;
     nrf24_csn(0);
@@ -25,7 +25,7 @@ static nrf24_status_t nrf24_read_buf(nrf24_spi_command_t cmd, uint8_t *dest, uin
     return result;
 }
 
-static nrf24_status_t nrf24_write_buf(nrf24_spi_command_t cmd, const uint8_t *src, uint8_t len) {
+static nrf24_status_t nrf24_write_buf(nrf24_spi_command_t cmd, const XRAM uint8_t *src, uint8_t len) {
     uint8_t result;
     uint8_t i;
     nrf24_csn(0);
@@ -54,11 +54,11 @@ void nrf24_write_reg(nrf24_register_t reg, uint8_t val) {
 }
 
 
-nrf24_status_t nrf24_read_addr(nrf24_register_t reg, uint8_t XRAM* IRAM dest, uint8_t len) {
+nrf24_status_t nrf24_read_addr(nrf24_register_t reg, uint8_t XRAM* dest, uint8_t len) REENT {
     return nrf24_read_buf(R_REGISTER | reg, dest, len);
 }
 
-nrf24_status_t nrf24_write_addr(nrf24_register_t reg, const uint8_t * IRAM src, uint8_t len) {
+nrf24_status_t nrf24_write_addr(nrf24_register_t reg, const XRAM uint8_t * src, uint8_t len) REENT {
     return nrf24_write_buf(W_REGISTER | reg, src, len);
 }
 
@@ -75,7 +75,7 @@ nrf24_status_t nrf24_read_rx_payload(uint8_t XRAM* dest, uint8_t len) {
 }
 
 uint8_t nrf24_read_rx_payload_width(void) {
-    uint8_t result;
+    XRAM uint8_t result;
     nrf24_read_buf(R_RX_PL_WID, &result, 1);
     return result;
 }
@@ -84,12 +84,12 @@ uint8_t nrf24_get_rx_pipe_num(void) {
     return NRF24_STATUS_RX_PIPE(nrf24_read_status());
 }
 
-nrf24_status_t nrf24_write_tx_payload(uint8_t *buf, uint8_t len) {
+nrf24_status_t nrf24_write_tx_payload(XRAM uint8_t *buf, uint8_t len) {
     return nrf24_write_buf(W_TX_PAYLOAD, buf, len);
 }
 
 // write an ack payload packet
-nrf24_status_t nrf24_write_ack_payload(uint8_t *buf, uint8_t len, uint8_t pipe_num) {
+nrf24_status_t nrf24_write_ack_payload(XRAM uint8_t *buf, uint8_t len, uint8_t pipe_num) {
     return nrf24_write_buf(W_ACK_PAYLOAD | (pipe_num & 0b0111), buf, len);
 }
 

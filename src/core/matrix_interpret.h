@@ -64,8 +64,8 @@ typedef struct key_event_queue_t {
 extern XRAM keyboard_t g_keyboard_slots[MAX_NUM_KEYBOARD_SLOTS];
 
 void keyboards_init(void);
-void keyboard_update_device_matrix(uint8_t device_id, const uint8_t *matrix_packet) REENT;
-void keyboard_interpret_matrix(uint8_t keyboard_id);
+void keyboard_update_device_matrix(uint8_t device_id, const XRAM uint8_t *matrix_packet) REENT;
+void keyboard_interpret_matrix(uint8_t keyboard_id) ;
 void keyboard_reset_matrix(uint8_t keyboard_id);
 layer_mask_t keyboard_get_layer_mask(uint8_t keyboard_id);
 void reset_layer_state(uint8_t keyboard_id);
@@ -79,9 +79,9 @@ void interpret_all_keyboard_matrices(void);
 // NOTE: Most of these functions below rely on static state stored by the matrix
 // interpreter. These functions are used in the key handlers, and directly read
 // and write to the static state of the matrix configurator.
-uint8_t get_active_keyboard_id(void) REENT;
-uint8_t get_active_slot_id(void) REENT;
-bool is_keyboard_active(uint8_t kb_id);
+uint8_t get_active_keyboard_id(void);
+uint8_t get_active_slot_id(void);
+bit_t is_keyboard_active(uint8_t kb_id);
 void queue_keycode_event(keycode_t keycode, uint8_t event_type, uint8_t kb_id);
 
 // Because we don't want the layer to update in the middle of the scan, we

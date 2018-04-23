@@ -188,8 +188,8 @@ PROTO_RING_BUF_SKIP_FUNCTION(size, ptr_type, data_type, type_name, fn_type) { \
     PROTO_RING_BUF_GET_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY); \
     PROTO_RING_BUF_PEEK_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY); \
     PROTO_RING_BUF_PUT_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY); \
-    PROTO_RING_BUF_FILL_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY); \
     PROTO_RING_BUF_TAKE_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY)
+    // PROTO_RING_BUF_FILL_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY);
 
 #define DEFINE_BODY_RING_BUF_VARIANT(buf_len, ptr_type, data_type, buf_name) \
     DEFINE_RING_BUF_CLEAR_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
@@ -199,8 +199,8 @@ PROTO_RING_BUF_SKIP_FUNCTION(size, ptr_type, data_type, type_name, fn_type) { \
     DEFINE_RING_BUF_GET_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
     DEFINE_RING_BUF_PEEK_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
     DEFINE_RING_BUF_PUT_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
-    DEFINE_RING_BUF_FILL_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY) \
     DEFINE_RING_BUF_TAKE_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY)
+    // DEFINE_RING_BUF_FILL_FUNCTION(buf_len+1, ptr_type, data_type, buf_name, EMPTY)
 
 
 /*********************************************************************

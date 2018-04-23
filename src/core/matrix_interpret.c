@@ -161,15 +161,15 @@ void layer_queue_apply(uint8_t kb_slot_id) {
 }
 
 static
-bool sticky_relase_timer_done(void) {
+bit_t sticky_relase_timer_done(void) {
     return (uint16_t)(timer_read16_ms() - s_sticky_clear_start_time) > STICKY_KEY_RELEASE_DELAY;
 }
 
-uint8_t get_active_slot_id(void) REENT {
+uint8_t get_active_slot_id(void) {
     return s_active_slot;
 }
 
-uint8_t get_active_keyboard_id(void) REENT {
+uint8_t get_active_keyboard_id(void) {
     return g_keyboard_slots[s_active_slot].kb_id;
 }
 
@@ -317,7 +317,7 @@ uint8_t get_slot_id(uint8_t kb_id) {
     return s_slot_id_map[kb_id];
 }
 
-bool is_keyboard_active(uint8_t kb_id) {
+bit_t is_keyboard_active(uint8_t kb_id) {
     return get_slot_id(kb_id) != INVALID_DEVICE_ID;
 }
 
@@ -387,7 +387,7 @@ void keyboards_init(void) {
 // TODO: update this
 // NOTE: this should not be called from an interrupt, as it will break
 // how the matrix interpreting step.
-void keyboard_update_device_matrix(uint8_t device_id, const uint8_t *matrix_packet) REENT {
+void keyboard_update_device_matrix(uint8_t device_id, const XRAM uint8_t *matrix_packet) REENT {
     // first figure out what sort of packet was received and
     const uint8_t packet_type = matrix_packet[0] >> PACKET_MATRIX_TYPE_BIT_POS;
     const uint8_t packet_data_size = matrix_packet[0] & PACKET_MATRIX_SIZE_MASK;
@@ -397,11 +397,11 @@ void keyboard_update_device_matrix(uint8_t device_id, const uint8_t *matrix_pack
     const uint8_t device_matrix_size = GET_SETTING(layout.devices[device_id].matrix_size);
 
     // matrix_data now points to the start of the key list
-    const uint8_t* matrix_data = &matrix_packet[1];
+    const XRAM uint8_t* matrix_data = &matrix_packet[1];
 
     // get matrix slot from kb_id
 
-    uint8_t *matrix_write_pos;
+    XRAM uint8_t* matrix_write_pos;
 
     uint8_t kb_slot_id = get_slot_id(kb_id);
 

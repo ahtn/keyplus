@@ -146,7 +146,7 @@ LFLAGS   = \
 	--xram-size 0x800 \
 	--iram-size 0x100 \
 	--stack-loc 0x080 \
-	--stack-size 0x060 \
+	--stack-size 0x080 \
 	# --parms-in-bank1
 
 ASFLAGS  = -xglospff
@@ -195,6 +195,7 @@ $(MERGED_HEX): $(TARGET_HEX) $(BOOTLOADER)
 		-o $(BUILD_TARGET_DIR)/$(TARGET)-$(LAYOUT_NAME).hex \
 		-F scan_method=none \
 		-F chip_name=nRF24LU1P-F32 \
+		-F max_rows=0 \
 
 size: $(TARGET_HEX)
 	@echo "=== Size Information ($(TARGET))==="
