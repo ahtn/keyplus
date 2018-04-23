@@ -189,7 +189,12 @@ class DebugCommand(GenericDeviceCommand):
 class PassthroughCommand(GenericDeviceCommand):
     def __init__(self):
         super(PassthroughCommand, self).__init__(
-            'Prints the matrix row and column pairs of pressed keys. '
+            'Prints the matrix row and column pairs of pressed keys from a '
+            'device directly connected by USB. \n'
+            '\n'
+            'NOTE: If you have a wired/wireless '
+            'split device, you will need to connect it directly by USB for this '
+            'function to work.'
         )
 
         self.arg_parser.add_argument(
