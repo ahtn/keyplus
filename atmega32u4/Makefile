@@ -56,8 +56,6 @@ endif
 #                        common build settings                        #
 #######################################################################
 
-include avr-makefile/avr-mega.mk
-
 include $(KEYPLUS_PATH)/core/core.mk
 include $(KEYPLUS_PATH)/usb/usb.mk
 include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
@@ -129,21 +127,21 @@ CFLAGS += -I$(BOOTLOADER_PATH)
 # NOTE: haven't tested on all these chips
 ifeq ($(BOOTLOADER), atmel_dfu)
   BOOT_SECTION_START = 0x007000
-  BOOTLOADER_SIZE = 0x1000
+  BOOT_SIZE = 4096
   C_SRC += $(BOOTLOADER_PATH)/atmel_dfu/atmel_bootloader.c
   CFLAGS += -DBOOTLOADER_VID=$(ATMEL_VID)
   CFLAGS += -DBOOTLOADER_PID=$(FLIP_USB_DFU_32u4)
   CFLAGS += -DBOOTLOADER_ATMEL_DFU
 else ifeq ($(BOOTLOADER), lufa_dfu)
   BOOT_SECTION_START = 0x007000
-  BOOTLOADER_SIZE = 0x1000
+  BOOT_SIZE = 4096
   # lufa dfu uses the same VID/PID as the atmel version
   CFLAGS += -DBOOTLOADER_VID=$(ATMEL_VID)
   CFLAGS += -DBOOTLOADER_PID=$(FLIP_USB_DFU_32u4)
   $(error Bootloader lufa_dfu not supported yet.)
 else ifeq ($(BOOTLOADER), kp_boot_32u4)
   BOOT_SECTION_START = 0x007C00
-  BOOTLOADER_SIZE = 0x0400
+  BOOT_SIZE = 1024
   CFLAGS += -DBOOTLOADER_VID=0x1209
   CFLAGS += -DBOOTLOADER_PID=0xBB05
   CFLAGS += -DBOOTLOADER_KP_BOOT_32U4
@@ -256,6 +254,7 @@ LOCKBITS = NO_LOCK
 program-lock:
 	$(AVRDUDE_CMD) -U lock:w:$(LOCKBITS):m
 
+include avr-makefile/avr-mega.mk
 include avr-makefile/avr.mk
 include avr-makefile/avr-program.mk
 
