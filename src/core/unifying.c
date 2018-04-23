@@ -14,6 +14,8 @@
 #include "core/timer.h"
 #include "core/usb_commands.h"
 
+#include "key_handlers/key_hold.h"
+
 #include "usb_reports/mouse_report.h"
 
 /* #include "core/.h" */
@@ -67,6 +69,8 @@ void unifying_read_packet(XRAM uint8_t *nrf_packet) {
             g_unifying_mouse_state.wheel_y = nrf_packet[7];
             g_unifying_mouse_state.wheel_x = nrf_packet[8];
             g_unifying_mouse_state_changed = true;
+
+            hold_key_task(true);
         } break;
 
         /* case 0x4f: { */
