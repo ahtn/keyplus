@@ -183,16 +183,6 @@ uint8_t usb_init(void);
 void USBD_SetUsbState(USBD_State_TypeDef newState);
 void USBD_SofCb(uint16_t sofNr);
 
-USB_Status_TypeDef USBD_SetupCmdCb(SI_VARIABLE_SEGMENT_POINTER(
-                                     setup,
-                                     USB_Setup_TypeDef,
-                                     MEM_MODEL_SEG));
-int8_t USBD_Write(uint8_t epAddr,
-                  SI_VARIABLE_SEGMENT_POINTER(dat, uint8_t, SI_SEG_GENERIC),
-                  uint16_t byteCount,
-                  bool callback);
-
-int8_t USBD_Read(uint8_t epAddr,
-                 SI_VARIABLE_SEGMENT_POINTER(dat, uint8_t, SI_SEG_GENERIC),
-                 uint16_t byteCount,
-                 bool callback);
+USB_Status_TypeDef USBD_SetupCmdCb(XRAM USB_Setup_TypeDef *setup);
+int8_t USBD_Write(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback);
+int8_t USBD_Read(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback);

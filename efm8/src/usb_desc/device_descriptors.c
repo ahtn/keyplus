@@ -7,12 +7,11 @@
 #include "usb/util/usb_hid.h"
 #include "usb_desc/descriptors.h"
 
-// we include this *.c file here instead of compiling separately so the c
+// We include this *.c file here instead of compiling separately so the c
 // compiler can calculate the hid descriptor sizes at compile time
-#include "usb/hid_descriptors.c"
+#include "usb_desc/hid_descriptors.c"
 
 // NOTE: since we're not using high speed, USB 1.1 works fine here
-
 #define USB_REVISION USB_REVISION_1_1
 #define USB_HID_REVISION USB_HID_REVISION_1_11
 
@@ -80,6 +79,38 @@ ROM const usb_config_desc_keyboard_t usb_config_desc = {
         .bmAttributes     = USB_EP_TYPE_INT,
         .wMaxPacketSize   = EP_IN_SIZE_BOOT_KEYBOARD,
         .bInterval        = REPORT_INTERVAL_BOOT_KEYBOARD,
+    },
+
+    // shared HID interface descriptor
+    {
+        .bLength            = sizeof(usb_interface_desc_t),
+        .bDescriptorType    = USB_DESC_INTERFACE,
+        .bInterfaceNumber   = INTERFACE_SHARED_HID,
+        .bAlternateSetting  = 0,
+        .bNumEndpoints      = 1,
+        .bInterfaceClass    = USB_CLASS_HID,
+        .bInterfaceSubClass = 0, // TODO
+        .bInterfaceProtocol = 0,
+        .iInterface         = STRING_DESC_NONE,
+    },
+    // shared HID descriptor
+    {
+        .bLength             = sizeof(usb_hid_desc_t),
+        .bDescriptorType     = USB_DESC_HID,
+        .bcdHID              = USB_HID_REVISION,
+        .bCountryCode        = HID_COUNTRY_NONE,
+        .bNumDescriptors     = 1,
+        .bDescriptorType_HID = USB_DESC_HID_REPORT,
+        .wDescriptorLength   = sizeof(hid_desc_shared_hid),
+    },
+    // shared HID in endpoint descriptor
+    {
+        .bLength          = sizeof(usb_endpoint_desc_t),
+        .bDescriptorType  = USB_DESC_ENDPOINT,
+        .bEndpointAddress = (uint8_t)(USB_DIR_IN | EP_NUM_SHARED_HID),
+        .bmAttributes     = USB_EP_TYPE_INT,
+        .wMaxPacketSize   = EP_IN_SIZE_SHARED_HID,
+        .bInterval        = REPORT_INTERVAL_SHARED_HID,
     },
 
 };

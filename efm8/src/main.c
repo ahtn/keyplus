@@ -13,6 +13,7 @@
 
 #include "usb_test.h"
 #include "usb/util/hut_keyboard.h"
+#include "usb/util/hut_consumer.h"
 
 
 #if DEVICE_PKG_QFP32 || DEVICE_PKG_QFN32
@@ -34,6 +35,37 @@
 void usb_isr(void) __interrupt (USB0_IRQn);
 
 extern XRAM uint8_t keyboardReport[8];
+
+#define NKRO_REPORT_BYTES (0xe0/8)
+typedef struct {
+    uint8_t id;
+
+    union {
+        struct {
+            uint16_t value;
+        } system;
+
+        struct {
+            uint16_t value;
+        } consumer;
+
+        struct {
+            uint8_t modifiers;
+            uint8_t bitmask[NKRO_REPORT_BYTES];
+        } nkro;
+
+        struct {
+            uint8_t buttons_1;
+            uint8_t buttons_2;
+            int16_t x;
+            int16_t y;
+            int8_t wheel_y;
+            int8_t wheel_x;
+        } mouse;
+    } report;
+} shared_hid_report_t;
+
+XRAM shared_hid_report_t g_shared_hid;
 
 // A sequence of keystroke input reports.
 extern SI_SEGMENT_VARIABLE(reportTable[], const KeyReport_TypeDef, SI_SEG_CODE);
@@ -122,7 +154,26 @@ void main(void) {
                 }
 
                 IE_EA = 0;
-                USBD_Write(EP1IN, keyboardReport, sizeof(KeyReport_TypeDef), false);
+                if (currentKeycode % 2 == 1) {
+                    USBD_Write(EP1IN, keyboardReport, sizeof(KeyReport_TypeDef), false);
+                }
+
+                // NOTE: On the Shared HID interface, we can only send one
+                // kind of report at a time.
+                if (currentKeycode % 3 == 0) {
+                    g_shared_hid.id = REPORT_ID_CONSUMER;
+                    g_shared_hid.report.consumer.value = HID_CONSUMER_PLAY_PAUSE;
+                    USBD_Write(EP2IN, &g_shared_hid, 3, false);
+                } else if (currentKeycode % 4 == 0) {
+                    g_shared_hid.id = REPORT_ID_MOUSE;
+                    g_shared_hid.report.mouse.x = 100;
+                    USBD_Write(EP2IN, &g_shared_hid, 8, false);
+                } else if (currentKeycode % 2 == 0) {
+                    g_shared_hid.id = REPORT_ID_NKRO;
+                    g_shared_hid.report.nkro.modifiers  = (1 << (KC_LEFT_SHIFT-0xE0));
+                    g_shared_hid.report.nkro.bitmask[0] = (1 << KC_A);
+                    USBD_Write(EP2IN, &g_shared_hid, NKRO_REPORT_BYTES+1, false);
+                }
                 IE_EA = 1;
                 LED1 = !LED1;
             }
@@ -132,7 +183,24 @@ void main(void) {
                 // Send an empty (key released) report
                 keyboardReport[2] = 0;
                 IE_EA = 0;
-                USBD_Write(EP1IN, keyboardReport, sizeof(KeyReport_TypeDef), false);
+                if (currentKeycode % 2 == 1) {
+                    USBD_Write(EP1IN, keyboardReport, sizeof(KeyReport_TypeDef), false);
+                }
+
+                if (currentKeycode % 3 == 0) {
+                    g_shared_hid.id = REPORT_ID_CONSUMER;
+                    g_shared_hid.report.consumer.value = 0;
+                    USBD_Write(EP2IN, &g_shared_hid, 3, false);
+                } else if (currentKeycode % 4 == 0) {
+                    g_shared_hid.id = REPORT_ID_MOUSE;
+                    g_shared_hid.report.mouse.x = 0;
+                    USBD_Write(EP2IN, &g_shared_hid, 8, false);
+                } else if (currentKeycode % 2 == 0) {
+                    g_shared_hid.id = REPORT_ID_NKRO;
+                    g_shared_hid.report.nkro.modifiers  = 0;
+                    g_shared_hid.report.nkro.bitmask[0] = 0;
+                    USBD_Write(EP2IN, &g_shared_hid, NKRO_REPORT_BYTES+1, false);
+                }
                 IE_EA = 1;
             }
             keyState = 0;
