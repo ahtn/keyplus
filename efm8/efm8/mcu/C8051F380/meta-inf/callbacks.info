@@ -1,0 +1,33 @@
+#include PLATFORM_HEADER
+#include CONFIGURATION_HEADER
+#include "stack/include/ember.h"
+
+void main(void)
+{
+  emberInit();
+  emberNetworkInit();
+  while (TRUE) {
+    emberTick();
+  }
+}
+
+void emberIncomingMessageHandler(EmberIncomingMessage *message)
+{
+  UNUSED_VAR(message);
+}
+
+void emberMessageSentHandler(EmberStatus status, EmberOutgoingMessage *message)
+{
+  UNUSED_VAR(status);
+  UNUSED_VAR(message);
+}
+
+void emberStackStatusHandler(EmberStatus status)
+{
+  UNUSED_VAR(status);
+}
+
+void emberPacketTraceHandler(EmberMessageTrace *trace)
+{
+  UNUSED_VAR(trace);
+}

@@ -1,0 +1,8 @@
+Copy and paste F340 original USB files into T620. Image file no modification yet.
+7/14 4:51PM
+
+change all text "F340" to "T620", leave the addresses and values (especially for SI_C8051T620_Register_Enums.h) unchanged.
+7/14 5:07PM
+
+Change name from T620 to T321.
+7/21 10:00AM
