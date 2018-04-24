@@ -399,7 +399,9 @@ if __name__ == "__main__":
         is_ti_device = False
 
         if (len(ti_devices) + len(nrf_devices) == 0):
-            print("Couldn't find any devices to program", file=sys.stderr)
+            print("Couldn't find any devices to program. Make sure that they "
+                  "have first entered the bootloader by running: "
+                  "`./uniflash.py icp` or `./keyplus-cli.py bootloader`.", file=sys.stderr)
             exit(1);
         elif (len(ti_devices) + len(nrf_devices) > 1):
             print(

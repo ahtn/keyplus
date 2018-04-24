@@ -75,7 +75,7 @@ void bootloader_jmp(void) {
     usbcs = USBCS_DISCON_bm;
     static_delay_ms(100);
 
-#if USE_UNIFYING_BOOTLOADER == 1
+#if USE_UNIFYING_BOOTLOADER
     bootloader_jmp_2();
 #else
     __asm
@@ -84,6 +84,7 @@ void bootloader_jmp(void) {
 #endif
 }
 
+#if USE_UNIFYING_BOOTLOADER
 void bootloader_jmp_2(void) {
     uint8_t i = 0;
     // Need to load 16 bytes into AESIV to complete the read, so overflowing the
@@ -99,3 +100,4 @@ void bootloader_jmp_2(void) {
         ljmp #LOGITECH_BOOTLOADER_ADDR
     __endasm;
 }
+#endif

@@ -409,9 +409,7 @@ bit_t read_packet(void) REENT {
     pipe_num = packet_buffer_get();
     width = packet_buffer_get();
     if (width > PACKET_BUFFER_MAX_LEN || width > packet_buffer_len())  {
-        debug_toggle(4);
         packet_buffer_clear();
-
         return false;
     }
 
