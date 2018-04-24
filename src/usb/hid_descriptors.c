@@ -140,6 +140,14 @@ ROM const uint8_t hid_desc_mouse[] = {
 };
 ROM const uint8_t sizeof_hid_desc_mouse = sizeof(hid_desc_mouse);
 
+/// Media HID descriptor. Combines Media and System reports into one interface.
+///
+/// These HID devices each have a different report ID so that the USB Host
+/// can identify what the data inside the endpoint represents. These report
+/// IDs are as follows:
+///
+/// Report ID = 1 -> System (power, reset etc.)
+/// Report ID = 2 -> Consumer (media buttons)
 ROM const uint8_t hid_desc_media[] = {
     HID_USAGE_PAGE(1), HID_USAGE_PAGE_GENERIC_DESKTOP, /* Generic Desktop */
     HID_USAGE(1), HID_USAGE_SYSTEM_CONTROL, /* System Control */

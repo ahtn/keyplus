@@ -17,35 +17,59 @@ typedef struct usb_config_desc_keyboard_t {
     usb_hid_desc_t hid0;
     usb_endpoint_desc_t ep1in;
 
+    usb_interface_desc_t intf1;
+    usb_hid_desc_t hid1;
+    usb_endpoint_desc_t ep2in;
 } usb_config_desc_keyboard_t;
 
 // endpoint and interface numbers
-#define INTERFACE_BOOT_KEYBOARD 0
-#define NUM_INTERFACES (INTERFACE_BOOT_KEYBOARD+1)
+#define INTERFACE_BOOT_KEYBOARD     0
+#define INTERFACE_SHARED_HID        1
+
+#define NUM_INTERFACES (INTERFACE_SHARED_HID+1)
 
 #define EP_NUM_BOOT_KEYBOARD    1
+#define EP_NUM_SHARED_HID       2
+#define EP_NUM_VENDOR           3
 
 // endpoint sizes
-#define EP_SIZE_VENDOR 0x40
-#define EP0_SIZE 0x40
+#define EP_SIZE_VENDOR  0x40
+#define EP0_SIZE        0x40
 
+// EP 1 -> boot keyboard
 #define EP_IN_SIZE_BOOT_KEYBOARD    0x08
 #define EP_OUT_SIZE_BOOT_KEYBOARD   0
 
-#define EP0_IN_SIZE EP0_SIZE
-#define EP1_IN_SIZE EP_IN_SIZE_BOOT_KEYBOARD
+// EP 2 -> shared hid (media, nkro, mouse)
+#define EP_IN_SIZE_SHARED_HID       0x20
+#define EP_OUT_SIZE_SHARED_HID      0
 
-#define EP0_OUT_SIZE EP0_SIZE
-#define EP1_OUT_SIZE 0
+// EP 3 -> vendor in/out
+#define EP_IN_SIZE_VENDOR           0x40
+#define EP_OUT_SIZE_VENDOR          0x40
+
+#define EP0_IN_SIZE     EP0_SIZE
+#define EP1_IN_SIZE     EP_IN_SIZE_BOOT_KEYBOARD
+#define EP2_IN_SIZE     EP_IN_SIZE_SHARED_HID
+#define EP3_IN_SIZE     EP_IN_SIZE_VENDOR
+
+#define EP0_OUT_SIZE    EP0_SIZE
+#define EP1_OUT_SIZE    EP_OUT_SIZE_BOOT_KEYBOARD
+#define EP2_OUT_SIZE    EP_OUT_SIZE_SHARED_HID
+#define EP3_OUT_SIZE    EP_OUT_SIZE_VENDOR
 
 // report intervals for enpdoints (in ms)
-#define REPORT_INTERVAL_BOOT_KEYBOARD 1
+#define REPORT_INTERVAL_BOOT_KEYBOARD   1
+#define REPORT_INTERVAL_SHARED_HID      1
+#define REPORT_INTERVAL_VENDOR          1
 
 // string descriptors
 #define USB_STRING_DESC_COUNT 0
 
-#define REPORT_ID_CONSUMER 0
-#define REPORT_ID_SYSTEM 1
+#define REPORT_ID_SYSTEM    1
+#define REPORT_ID_CONSUMER  2
+#define REPORT_ID_NKRO      3
+#define REPORT_ID_MOUSE     4
 
 #if USB_STRING_DESC_COUNT == 0
 #  define STRING_DESC_NONE 0
@@ -65,8 +89,12 @@ extern ROM const uint16_t usb_string_desc_0[2];
 extern ROM const uint16_t usb_string_desc_1[8];
 extern ROM const uint16_t usb_string_desc_2[];
 extern ROM const uint16_t usb_string_desc_3[];
+
 extern ROM const uint8_t sizeof_hid_desc_boot_keyboard;
 extern ROM const uint8_t hid_desc_boot_keyboard[];
+
+extern ROM const uint8_t sizeof_hid_desc_shared_hid;
+extern ROM const uint8_t hid_desc_shared_hid[];
 
 void usb_ep0_packetizer_data_set(const ROM uint8_t *data, uint16_t size);
 void usb_ep0_packetizer_data_send(void);
