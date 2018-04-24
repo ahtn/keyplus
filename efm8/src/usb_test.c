@@ -17,10 +17,11 @@
 #include "efm8_sfr.h"
 
 #define GetEp(epAddr)  (\
-    epAddr == 0 ? &ep0 : \
-    epAddr == 1 ? &ep1in : \
-    epAddr == 2 ? &ep2in : \
-    epAddr == 3 ? &ep3in : &ep0 \
+    epAddr == EP0    ? &ep0    : \
+    epAddr == EP1IN  ? &ep1in  : \
+    epAddr == EP2IN  ? &ep2in  : \
+    epAddr == EP3IN  ? &ep3in  : \
+    epAddr == EP3OUT ? &ep3out : &ep0 \
     )
 
 static XRAM uint8_t s_usb_state;
@@ -32,6 +33,7 @@ static XRAM USBD_Ep_TypeDef ep0;
 static XRAM USBD_Ep_TypeDef ep1in;
 static XRAM USBD_Ep_TypeDef ep2in;
 static XRAM USBD_Ep_TypeDef ep3in;
+static XRAM USBD_Ep_TypeDef ep3out;
 // static XRAM USBD_Ep_TypeDef ep1out;
 static XRAM USB_Setup_TypeDef setup;
 
@@ -243,28 +245,28 @@ static void USBD_ActivateAllEps(bool forceIdle) {
     }
 
 #if SLAB_USB_EP1IN_USED
-    USB_ActivateEp(1,                                                   // ep
+    USB_ActivateEp(1,                                        // ep
         SLAB_USB_EP1IN_MAX_PACKET_SIZE,                      // packetSize
         1,                                                   // inDir
         SLAB_USB_EP1OUT_USED,                                // splitMode
         0);                                                  // isoMod
 #endif // SLAB_USB_EP1IN_USED
 #if SLAB_USB_EP2IN_USED
-    USB_ActivateEp(2,                                                   // ep
+    USB_ActivateEp(2,                                        // ep
         SLAB_USB_EP2IN_MAX_PACKET_SIZE,                      // packetSize
         1,                                                   // inDir
         SLAB_USB_EP2OUT_USED,                                // splitMode
         0);                                                  // isoMod
 #endif // SLAB_USB_EP2IN_USED
 #if SLAB_USB_EP3IN_USED
-    USB_ActivateEp(3,                                                   // ep
+    USB_ActivateEp(3,                                        // ep
         SLAB_USB_EP3IN_MAX_PACKET_SIZE,                      // packetSize
         1,                                                   // inDir
         SLAB_USB_EP3OUT_USED,                                // splitMode
         (SLAB_USB_EP3IN_TRANSFER_TYPE == USB_EPTYPE_ISOC));  // isoMod
 #endif // SLAB_USB_EP3IN_USED
 #if SLAB_USB_EP1OUT_USED
-    USB_ActivateEp(1,                                                   // ep
+    USB_ActivateEp(1,                                        // ep
         SLAB_USB_EP1OUT_MAX_PACKET_SIZE,                     // packetSize
         0,                                                   // inDir
         SLAB_USB_EP1IN_USED,                                 // splitMode
@@ -435,6 +437,7 @@ static USB_Status_TypeDef GetDescriptor(void) {
         // If there is a descriptor to send, get the proper length, then call
         // EP0_Write() to send.
         if (length) {
+            // If length != 0, then dat is defined
             if (length > setup.wLength) {
                 length = setup.wLength;
             }
@@ -542,6 +545,24 @@ void USB_WriteFIFO(uint8_t fifoNum, uint8_t numBytes, uint8_t *dat, bool txPacke
         USB_SetIndex(fifoNum);
         USB_EpnSetInPacketReady();
     }
+}
+
+bool USBD_EpIsBusy(uint8_t epAddr) {
+    XRAM USBD_Ep_TypeDef *ep;
+
+    // Verify this is a valid endpoint address
+    if (epAddr >= SLAB_USB_NUM_EPS_USED) {
+        SLAB_ASSERT(false);
+        return true;
+    }
+
+    ep = GetEp(epAddr);
+
+    if (ep->state == D_EP_IDLE) {
+        return false;
+    }
+
+    return true;
 }
 
 void SendEp0Stall(void) {
@@ -842,7 +863,95 @@ void handleUsbIn2Int(void) {
 }
 #endif // SLAB_USB_EP2IN_USED
 
+#if SLAB_USB_EP3IN_USED
+void handleUsbIn3Int(void) {
+    bool callback;
 
+    USB_SetIndex(3);
+
+    if (USB_EpnInGetSentStall()) {
+        USB_EpnInClearSentStall();
+    } else if (ep3in.state == D_EP_TRANSMITTING) {
+        uint8_t xferred;
+
+        if (ep3in.remaining > SLAB_USB_EP3IN_MAX_PACKET_SIZE) {
+            xferred =SLAB_USB_EP3IN_MAX_PACKET_SIZE;
+        } else {
+            xferred = ep3in.remaining;
+        }
+
+        ep3in.remaining -= xferred;
+        ep3in.buf += xferred;
+
+        callback = ep3in.misc.bits.callback;
+        // Load more data
+        if (ep3in.remaining > 0) {
+            uint8_t num_bytes;
+            if (ep3in.remaining > SLAB_USB_EP3IN_MAX_PACKET_SIZE) {
+                num_bytes = SLAB_USB_EP3IN_MAX_PACKET_SIZE;
+            } else {
+                num_bytes = ep3in.remaining;
+            }
+            USB_WriteFIFO(3, num_bytes, ep3in.buf, true);
+        } else {
+            ep3in.misc.bits.callback = false;
+            ep3in.state = D_EP_IDLE;
+        }
+    }
+}
+#endif
+
+#if SLAB_USB_EP3OUT_USED
+void handleUsbOut3Int(void) {
+    uint8_t count;
+    USB_Status_TypeDef status;
+    bool xferComplete = false;
+
+    USB_SetIndex(3);
+
+    if (USB_EpnOutGetSentStall()) {
+        USB_EpnOutClearSentStall();
+    } else if (USB_EpnGetOutPacketReady()) {
+        count = USB_EpOutGetCount();
+
+        // If USBD_Read() has not been called, return an error
+        if (ep3out.state != D_EP_RECEIVING) {
+            ep3out.misc.bits.outPacketPending = true;
+            status = USB_STATUS_EP_ERROR;
+        } else if (ep3out.remaining < count) {
+            // Check for overrun of user buffer
+            ep3out.state = D_EP_IDLE;
+            ep3out.misc.bits.outPacketPending = true;
+            status = USB_STATUS_EP_RX_BUFFER_OVERRUN;
+        } else {
+            USB_ReadFIFO(3, count, ep3out.buf);
+
+            ep3out.misc.bits.outPacketPending = false;
+            ep3out.remaining -= count;
+            ep3out.buf += count;
+
+            if ((ep3out.remaining == 0) ||
+                (count != SLAB_USB_EP3OUT_MAX_PACKET_SIZE)
+            ) {
+                ep3out.state = D_EP_IDLE;
+                xferComplete = true;
+            }
+
+            status = USB_STATUS_OK;
+            USB_EpnClearOutPacketReady();
+        }
+
+        if (ep3out.misc.bits.callback == true) {
+            if (xferComplete == true) {
+                ep3out.misc.bits.callback = false;
+            }
+#if 0
+            USBD_XferCompleteCb(EP3OUT, status, count, ep3out.remaining);
+#endif
+        }
+    }
+}
+#endif
 
 #if (SLAB_USB_POLLED_MODE == 0)
 void usb_isr(void) __interrupt (USB0_IRQn) {
@@ -1181,6 +1290,16 @@ USB_Status_TypeDef USBD_SetupCmdCb(XRAM USB_Setup_TypeDef *setup) {
                             retVal = USB_STATUS_OK;
                         } break;
 
+                        case INTERFACE_VENDOR: {
+                            USBD_Write(
+                                EP0,
+                                hid_desc_vendor,
+                                EFM8_MIN(sizeof_hid_desc_vendor, setup->wLength),
+                                false
+                            );
+                            retVal = USB_STATUS_OK;
+                        } break;
+
                         default: // Unhandled Interface
                             break;
                     }
@@ -1195,6 +1314,13 @@ USB_Status_TypeDef USBD_SetupCmdCb(XRAM USB_Setup_TypeDef *setup) {
 
                         case INTERFACE_SHARED_HID: {
                             USBD_Write(EP0, &usb_config_desc.hid1,
+                                EFM8_MIN(sizeof(usb_hid_desc_t), setup->wLength),
+                                false);
+                            retVal = USB_STATUS_OK;
+                        } break;
+
+                        case INTERFACE_VENDOR: {
+                            USBD_Write(EP0, &usb_config_desc.hid2,
                                 EFM8_MIN(sizeof(usb_hid_desc_t), setup->wLength),
                                 false);
                             retVal = USB_STATUS_OK;
@@ -1340,13 +1466,6 @@ int8_t USBD_Read(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback) {
     ep->state = D_EP_RECEIVING;
     ep->misc.bits.callback = callback;
     ep->misc.bits.waitForRead = false;
-
-    // If isochronous, set the buffer index to 0
-#if ((SLAB_USB_EP3OUT_USED) && (SLAB_USB_EP3OUT_TRANSFER_TYPE == USB_EPTYPE_ISOC))
-    if (epAddr == EP3OUT) {
-        ep3outIsoIdx = 0;
-    }
-#endif
 
     ENABLE_USB_INTS;
     USB_RestoreSfrPage();

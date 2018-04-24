@@ -194,7 +194,7 @@ ROM const uint8_t hid_desc_vendor[] = {
         HID_LOGICAL_MINIMUM(1) , DB8(0),
         HID_LOGICAL_MAXIMUM(2) , DB16(0x00ff),
         HID_REPORT_SIZE(1)     , 8,
-        HID_REPORT_COUNT(1)    , 64,
+        HID_REPORT_COUNT(1)    , VENDOR_REPORT_SIZE,
         HID_USAGE(1)           , HID_USAGE_VENDOR_1,
         HID_INPUT(1)           , IOF_DATA | IOF_VARIABLE | IOF_ABSOLUTE,
         // Vendor output usage:
@@ -206,5 +206,4 @@ ROM const uint8_t hid_desc_vendor[] = {
         HID_OUTPUT(1)          , IOF_DATA | IOF_VARIABLE | IOF_ABSOLUTE,
     HID_END_COLLECTION(0),
 };
-
 ROM const uint8_t sizeof_hid_desc_vendor = sizeof(hid_desc_vendor);

@@ -20,21 +20,30 @@ typedef struct usb_config_desc_keyboard_t {
     usb_interface_desc_t intf1;
     usb_hid_desc_t hid1;
     usb_endpoint_desc_t ep2in;
+
+    usb_interface_desc_t intf2;
+    usb_hid_desc_t hid2;
+    usb_endpoint_desc_t ep3in;
+    usb_endpoint_desc_t ep3out;
 } usb_config_desc_keyboard_t;
 
 // endpoint and interface numbers
 #define INTERFACE_BOOT_KEYBOARD     0
 #define INTERFACE_SHARED_HID        1
+#define INTERFACE_VENDOR            2
 
-#define NUM_INTERFACES (INTERFACE_SHARED_HID+1)
+#define NUM_INTERFACES (INTERFACE_VENDOR+1)
 
 #define EP_NUM_BOOT_KEYBOARD    1
 #define EP_NUM_SHARED_HID       2
-#define EP_NUM_VENDOR           3
+
+#define EP_NUM_VENDOR_IN        3
+#define EP_NUM_VENDOR_OUT       3
 
 // endpoint sizes
-#define EP_SIZE_VENDOR  0x40
-#define EP0_SIZE        0x40
+#define VENDOR_REPORT_SIZE  0x40
+#define EP_SIZE_VENDOR      0x40
+#define EP0_SIZE            0x40
 
 // EP 1 -> boot keyboard
 #define EP_IN_SIZE_BOOT_KEYBOARD    0x08
@@ -45,8 +54,8 @@ typedef struct usb_config_desc_keyboard_t {
 #define EP_OUT_SIZE_SHARED_HID      0
 
 // EP 3 -> vendor in/out
-#define EP_IN_SIZE_VENDOR           0x40
-#define EP_OUT_SIZE_VENDOR          0x40
+#define EP_IN_SIZE_VENDOR           EP_SIZE_VENDOR
+#define EP_OUT_SIZE_VENDOR          EP_SIZE_VENDOR
 
 #define EP0_IN_SIZE     EP0_SIZE
 #define EP1_IN_SIZE     EP_IN_SIZE_BOOT_KEYBOARD
@@ -61,7 +70,8 @@ typedef struct usb_config_desc_keyboard_t {
 // report intervals for enpdoints (in ms)
 #define REPORT_INTERVAL_BOOT_KEYBOARD   1
 #define REPORT_INTERVAL_SHARED_HID      1
-#define REPORT_INTERVAL_VENDOR          1
+#define REPORT_INTERVAL_VENDOR_IN       1
+#define REPORT_INTERVAL_VENDOR_OUT      1
 
 // string descriptors
 #define USB_STRING_DESC_COUNT 0
@@ -95,6 +105,9 @@ extern ROM const uint8_t hid_desc_boot_keyboard[];
 
 extern ROM const uint8_t sizeof_hid_desc_shared_hid;
 extern ROM const uint8_t hid_desc_shared_hid[];
+
+extern ROM const uint8_t sizeof_hid_desc_vendor;
+extern ROM const uint8_t hid_desc_vendor[];
 
 void usb_ep0_packetizer_data_set(const ROM uint8_t *data, uint16_t size);
 void usb_ep0_packetizer_data_send(void);

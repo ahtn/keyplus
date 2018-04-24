@@ -7,7 +7,7 @@ F_CPU            = 48000000
 
 EFM8_PATH        = ./efm8
 PROJECT_PATH     = ./src
-KEYPLUS_PATH	 = ../src
+KEYPLUS_PATH     = ../src
 
 VPATH += $(PROJECT_PATH)
 VPATH += $(KEYPLUS_PATH)

@@ -113,8 +113,7 @@ typedef enum {
 } USBD_EpState_TypeDef;
 /// @endcond DO_NOT_INCLUDE_WITH_DOXYGEN
 
-typedef enum
-{
+typedef enum {
   EP0,
 #if (SLAB_USB_EP1IN_USED)
   EP1IN,
@@ -153,8 +152,7 @@ typedef struct {
 
 /// @brief USB Setup type.
 typedef struct {
-    struct
-    {
+    struct {
         uint8_t Recipient : 5;           ///< Request recipient (device, interface, endpoint, other)
         uint8_t Type : 2;                ///< Request type (standard, class or vendor).
         uint8_t Direction : 1;           ///< Transfer direction of SETUP data phase.
@@ -166,14 +164,12 @@ typedef struct {
     uint16_t wLength;
 } USB_Setup_TypeDef;
 
-typedef union
-{
-struct
-{
-    uint8_t type : 7;
-    uint8_t init : 1;
-} encoding;
-uint8_t c;
+typedef union {
+  struct {
+      uint8_t type : 7;
+      uint8_t init : 1;
+  } encoding;
+  uint8_t c;
 } ep0String_type;
 
 typedef uint8_t KeyReport_TypeDef[8];
@@ -186,3 +182,4 @@ void USBD_SofCb(uint16_t sofNr);
 USB_Status_TypeDef USBD_SetupCmdCb(XRAM USB_Setup_TypeDef *setup);
 int8_t USBD_Write(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback);
 int8_t USBD_Read(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback);
+bool USBD_EpIsBusy(uint8_t epAddr);
