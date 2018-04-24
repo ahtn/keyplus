@@ -107,12 +107,14 @@ typedef struct usb_config_desc_keyboard_t {
 #define REPORT_INTERVAL_NKRO_KEYBOARD 1
 
 // report id for media report
-#define REPORT_ID_SYSTEM    0x01
-#define REPORT_ID_CONSUMER  0x02
+#define REPORT_ID_SYSTEM        0x01
+#define REPORT_ID_CONSUMER      0x02
 
 // report sizes (including report ID)
-#define REPORT_SIZE_SYSTEM 0x02
-#define REPORT_SIZE_CONSUMER 0x03
+#define REPORT_SIZE_SYSTEM      0x02
+#define REPORT_SIZE_CONSUMER    0x03
+
+#define VENDOR_REPORT_SIZE      EP_SIZE_VENDOR
 
 // string descriptors
 #define USB_STRING_DESC_COUNT 5

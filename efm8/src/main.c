@@ -15,6 +15,7 @@
 #include "usb/util/hut_keyboard.h"
 #include "usb/util/hut_consumer.h"
 
+#include "usb_desc/descriptors.h"
 
 #if DEVICE_PKG_QFP32 || DEVICE_PKG_QFN32
 #  define LED0 P2_B2
@@ -66,6 +67,12 @@ typedef struct {
 } shared_hid_report_t;
 
 XRAM shared_hid_report_t g_shared_hid;
+
+// XRAM uint8_t g_vendor_in_report[VENDOR_REPORT_SIZE];
+// XRAM uint8_t g_vendor_out_report[VENDOR_REPORT_SIZE];
+
+XRAM uint8_t g_vendor_in_report[8];
+XRAM uint8_t g_vendor_out_report[8];
 
 // A sequence of keystroke input reports.
 extern SI_SEGMENT_VARIABLE(reportTable[], const KeyReport_TypeDef, SI_SEG_CODE);
@@ -173,6 +180,8 @@ void main(void) {
                     g_shared_hid.report.nkro.modifiers  = (1 << (KC_LEFT_SHIFT-0xE0));
                     g_shared_hid.report.nkro.bitmask[0] = (1 << KC_A);
                     USBD_Write(EP2IN, &g_shared_hid, NKRO_REPORT_BYTES+1, false);
+                } else if (currentKeycode % 5 == 0) {
+                    USBD_Write(EP3IN, &g_shared_hid, VENDOR_REPORT_SIZE, false);
                 }
                 IE_EA = 1;
                 LED1 = !LED1;
@@ -204,6 +213,18 @@ void main(void) {
                 IE_EA = 1;
             }
             keyState = 0;
+        }
+
+        if (!USBD_EpIsBusy(EP3OUT)) {
+            USBD_Read(EP3OUT, g_vendor_out_report, sizeof(g_vendor_out_report), true);
+
+            if (g_vendor_out_report[0] == 1 && !USBD_EpIsBusy(EP3IN)) {
+                g_vendor_in_report[0] = 0xAA;
+                g_vendor_in_report[1] = 0x55;
+                g_vendor_in_report[2] = 0xAA;
+                g_vendor_in_report[3] = 0x55;
+                USBD_Write(EP3IN, g_vendor_in_report, VENDOR_REPORT_SIZE, false);
+            }
         }
         efm8_delay_ms(5);
     }
