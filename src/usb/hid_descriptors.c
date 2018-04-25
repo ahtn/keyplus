@@ -154,7 +154,7 @@ ROM const uint8_t hid_desc_media[] = {
     HID_COLLECTION(1), HID_COLLECTION_APPLICATION,
         HID_REPORT_ID(1), REPORT_ID_SYSTEM,
         HID_LOGICAL_MINIMUM(1) , HID_DESKTOP_System_Control,
-        HID_LOGICAL_MAXIMUM(1) , HID_DESKTOP_System_Display_LCD_Autoscale,
+        HID_LOGICAL_MAXIMUM(2) , DB16(HID_DESKTOP_System_Display_LCD_Autoscale),
         HID_USAGE_MINIMUM(1)   , HID_DESKTOP_System_Control,
         HID_USAGE_MAXIMUM(1)   , HID_DESKTOP_System_Display_LCD_Autoscale,
         HID_REPORT_SIZE(1)     , 8,
