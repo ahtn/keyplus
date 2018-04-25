@@ -236,11 +236,14 @@ class ScanMode(object):
 
     def generate_scan_plan(self, device_target):
         scan_plan = keyplus.cdata_types.scan_plan_t()
+
         scan_plan.mode = self.mode
+
+        fw_info = device_target.firmware_info
+        use_basic_scan = (fw_info.internal_scan_method == MATRIX_SCANNER_INTERNAL_BASIC_SCAN)
 
         if self.mode != NO_MATRIX:
             io_mapper = device_target.get_io_mapper()
-
         if self.mode == NO_MATRIX:
             # If no matrix is set, then all values can be set to zero
             scan_plan.unpack(bytearray(keyplus.cdata_types.scan_plan_t.__size__))
@@ -248,6 +251,16 @@ class ScanMode(object):
         elif self.mode in [COL_ROW, ROW_COL]:
             scan_plan.rows = self.number_rows
             scan_plan.cols = self.number_columns
+
+            if use_basic_scan and self.mode == ROW_COL:
+                # BASIC_SCAN mode emulates ROW_COL mode by swapping COLS and
+                # ROWS
+                scan_plan.rows, scan_plan.cols = scan_plan.cols, scan_plan.rows
+                scan_plan.mode = COL_ROW
+                column_pin_numbers = self.get_row_pin_numbers(io_mapper)
+            else:
+                column_pin_numbers = self.get_column_pin_numbers(io_mapper)
+
             scan_plan.max_key_num = max(self.matrix_map.values())
 
             if scan_plan.rows > device_target.firmware_info.max_rows:
@@ -262,11 +275,18 @@ class ScanMode(object):
 
             # Find the maximum column pin number used
             max_column_pin = 0
-            column_pin_numbers = self.get_column_pin_numbers(io_mapper)
             for pin_number in column_pin_numbers:
                 max_column_pin = max(max_column_pin, pin_number)
             scan_plan.max_col_pin_num = max_column_pin
         elif self.mode in [PIN_GND, PIN_VCC]:
+
+            if use_basic_scan and self.mode == PIN_VCC:
+                raise KeyplusSettingsError(
+                    "The target device can't support the `pin_vcc` scan method. "
+                    "Using the BASIC_SCAN method it can only support: "
+                    "`pin_gnd`, `col_row` and `row_col`."
+                )
+
             scan_plan.cols = self.number_direct_wiring_pins
             scan_plan.rows = 1
 
@@ -293,16 +313,36 @@ class ScanMode(object):
 
         return scan_plan
 
-    def _generate_key_number_map(self, column_pins, pin_map=None):
+    def _generate_key_number_map(self, column_pins, use_pin_map=False,
+                                 invert_row_col=False):
+        """
+        Convert the matrix map from the format used in the layout files to
+        the one internally used by the controller.
+        """
         num_column_positions = max(column_pins) + 1
-        if pin_map != None:
+
+        if use_pin_map:
+            # For pin mode, make the matrix_map based on the order the pins
+            # were listed, treating each pin as its own column.
             matrix_map = {}
             for (pin_i, pin_name) in enumerate(self.direct_wiring_pins):
                 if is_blank_pin(pin_name):
                     continue
                 matrix_map[MatrixPosition(0, pin_i)] = pin_i
             num_rows = 1
+        elif invert_row_col:
+            # For BASIC_SCAN mode, we need to invert the rows and columns. So
+            # make a matrix map with the rows and columns swaped
+            matrix_map = {}
+            for old_pos in self.matrix_map:
+                new_pos = MatrixPosition(old_pos.col, old_pos.row)
+                print(old_pos, "->", new_pos, self.matrix_map[old_pos])
+                matrix_map[new_pos] = self.matrix_map[old_pos]
+
+            # columns are now rows
+            num_rows = self.number_columns
         else:
+            # Otherwise just use the matrix map
             matrix_map = self.matrix_map
             num_rows = self.number_rows
         result = [0xff] * num_rows * num_column_positions
@@ -330,6 +370,7 @@ class ScanMode(object):
 
         pin_mapping.mode = self.mode
         pin_mapping.internal_scan_method = fw_info.internal_scan_method
+        using_basic_scan = (fw_info.internal_scan_method == MATRIX_SCANNER_INTERNAL_BASIC_SCAN)
         pin_mapping.max_rows = fw_info.max_rows
 
         io_mapper = dev_target.get_io_mapper()
@@ -341,20 +382,41 @@ class ScanMode(object):
             row_pin_numbers = self.get_row_pin_numbers(io_mapper)
             column_pin_numbers = self.get_column_pin_numbers(io_mapper)
 
+            if (using_basic_scan and self.mode == ROW_COL):
+                # ROW_COL method can't use pull-down resistors, so it needs
+                # treat the columns as rows, and the rows as columns.
+                # So we swap them here.
+                (row_pin_numbers, column_pin_numbers) = (column_pin_numbers, row_pin_numbers)
+                invert_row_col = True
+
+                # Since the internal scan method used by the device is still
+                # COL_ROW since we are flipping ROWS and COLUMNS here.
+                pin_mapping.mode = COL_ROW
+            else:
+                invert_row_col = False
+
             pin_mapping.row_pins = row_pin_numbers
             pin_mapping.column_pins = column_pin_numbers
             pin_mapping.key_number_map = self._generate_key_number_map(
-                column_pin_numbers
+                column_pin_numbers,
+                invert_row_col = invert_row_col
             )
         elif self.mode in [PIN_VCC, PIN_GND]:
             # NOTE: The direct wiring pins are treated the same way as column
             # pins
+            if (using_basic_scan and self.mode == PIN_VCC):
+                raise KeyplusSettingsError(
+                    "The target device can't support the `pin_vcc` scan method. "
+                    "Using the BASIC_SCAN method it can only support: "
+                    "`pin_gnd`, `col_row` and `row_col`."
+                )
+
             direct_pins = io_mapper.get_pin_numbers(self.direct_wiring_pins)
             pin_mapping.column_pins = direct_pins
             pin_mapping.row_pins = [0] # dummy value
             pin_mapping.key_number_map = self._generate_key_number_map(
                 direct_pins,
-                pin_map = True
+                use_pin_map = True
             )
 
         return pin_mapping
@@ -426,6 +488,12 @@ class ScanMode(object):
             return result
 
     def set_debounce_profile(self, profile_name):
+        """
+        Set the debounce profile from given presets.
+
+        TODO: maybe consider making the presets scale parasitic discharge
+        delay according to the number of row/cols used.
+        """
         if profile_name not in DEBOUNCE_PROFILE_TABLE:
             raise KeyplusSettingsError("Unknown debounce profile: {}"
                                        .format(profile_name))
@@ -437,11 +505,14 @@ class ScanMode(object):
                 setattr(self, field, profile[field])
 
     def parse_matrix_map_refrence(self, reference):
+        """
+        Convert a matrix_map reference (i.e. rXcY) to a MatrixPosition object
+        """
         reference = reference.lower()
         if is_blank_pin(reference):
             return None
         results = re.match('^r(\d+)c(\d+)$', reference)
-        if results == None:
+        if results == None and results2 == None:
             raise KeyplusParseError(
                 "Expected string of the form rXcY, but got '{}'".format(reference)
             )

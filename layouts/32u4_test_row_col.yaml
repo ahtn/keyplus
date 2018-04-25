@@ -1,0 +1,44 @@
+# Written in 2017 by jem@seethis.link
+# This file is released into the public domain as per the CC0 Public Domain
+# Dedication (http://creativecommons.org/publicdomain/zero/1.0/)
+---
+
+devices:
+  32u4 row col test:
+    id: 0
+    scan_mode:
+      mode: row_col # row_col, means diodes pointing from columns to rows
+      cols: [D1, D0, D4, C6, D7, E6]
+      rows: [B4, B5, F4, F5]
+      matrix_map: [
+        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+        r3c0, r3c1, r3c2, r3c3, r3c4, r3c5,
+      ]
+
+      # For BASIC_SCAN, it can't remap this in hardware, so the above matrix_map
+      # should be equivalent to this (rows/cols swapped):
+      # mode: col_row
+      # rows: [D1, D0, D4, C6, D7, E6]
+      # cols: [B4, B5, F4, F5]
+      # matrix_map: [
+      #   r0c0, r1c0, r2c0, r3c0, r4c0, r5c0,
+      #   r0c1, r1c1, r2c1, r3c1, r4c1, r5c1,
+      #   r0c2, r1c2, r2c2, r3c2, r4c2, r5c2,
+      #   r0c3, r1c3, r2c3, r3c3, r4c3, r5c3,
+      # ]
+    layout: test layout
+
+layouts:
+  test layout:
+    layers: [
+      [ # layer 0 (base)
+        [
+          a, b, c, d, e, f,
+          g, h, i, j, k, l,
+          m, n, o, p, q, r,
+          s, t, u, v, w, x,
+        ]
+      ],
+    ]

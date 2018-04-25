@@ -377,11 +377,8 @@ void keyboard_layouts_init(void) {
         flash_addr_t key_num_map_size = g_scan_plan.rows * (g_scan_plan.max_col_pin_num+1);
         storage_pos += key_num_map_size;
 
-#elif INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_SLOW_ROW_COL
-        // skip the key num map section, since it is in a known location at compile
-        // time.
-        flash_addr_t key_num_map_size = g_scan_plan.rows * g_scan_plan.cols;
-        storage_pos += key_num_map_size;
+#elif INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_BASIC_SCAN
+#warning "can't build matrix map for BASIC_SCAN at compile time"
 #else
 #error "Unknown scan method" INTERNAL_SCAN_METHOD
 #endif
