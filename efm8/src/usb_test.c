@@ -953,106 +953,159 @@ void handleUsbOut3Int(void) {
 }
 #endif
 
+static void handleUsbResetInt(void) {
+  // Setup EP0 to receive SETUP packets
+  ep0.state = D_EP_IDLE;
+
+  // Halt all other endpoints
+#if SLAB_USB_EP1IN_USED
+  ep1in.state = D_EP_HALT;
+#endif
+#if SLAB_USB_EP2IN_USED
+  ep2in.state = D_EP_HALT;
+#endif
+#if SLAB_USB_EP3IN_USED
+  ep3in.state = D_EP_HALT;
+#endif
+#if SLAB_USB_EP1OUT_USED
+  ep1out.state = D_EP_HALT;
+#endif
+#if SLAB_USB_EP2OUT_USED
+  ep2out.state = D_EP_HALT;
+#endif
+#if SLAB_USB_EP3OUT_USED
+  ep3out.state = D_EP_HALT;
+#endif
+
+  // After a USB reset, some USB hardware configurations will be reset and must
+  // be reconfigured.
+
+  // Re-enable clock recovery
+#if SLAB_USB_CLOCK_RECOVERY_ENABLED
+  USB_EnableFullSpeedClockRecovery();
+#endif
+
+  // Re-enable USB interrupts
+  USB_EnableSuspendDetection();
+  USB_EnableDeviceInts();
+
+  // If the device is bus-powered, always put it in the Default state.
+  // If the device is self-powered and VBUS is present, put the device in the
+  // Default state. Otherwise, put it in the Attached state.
+#if (!SLAB_USB_BUS_POWERED) && \
+    (!(SLAB_USB_PWRSAVE_MODE & USB_PWRSAVE_MODE_ONVBUSOFF))
+  if (USB_IsVbusOn()) {
+    USBD_SetUsbState(USBD_STATE_DEFAULT);
+  } else {
+    USBD_SetUsbState(USBD_STATE_ATTACHED);
+  }
+#else
+  USBD_SetUsbState(USBD_STATE_DEFAULT);
+#endif  // (!(SLAB_USB_PWRSAVE_MODE & USB_PWRSAVE_MODE_ONVBUSOFF))
+
+#if SLAB_USB_RESET_CB
+  // Make the USB Reset Callback
+  USBD_ResetCb();
+#endif
+}
+
 #if (SLAB_USB_POLLED_MODE == 0)
 void usb_isr(void) __interrupt (USB0_IRQn) {
 #else
-    void usb_isr(void) {
+void usb_isr(void) {
 #endif
-        uint8_t statusCommon, statusIn, statusOut, indexSave;
+    uint8_t statusCommon, statusIn, statusOut, indexSave;
 
 #if SLAB_USB_HANDLER_CB
-        // Callback to user before processing
-        USBD_EnterHandler();
+    // Callback to user before processing
+    USBD_EnterHandler();
 #endif
 
-        // Get the interrupt sources
-        statusCommon = USB_GetCommonInts();
-        statusIn = USB_GetInInts();
-        statusOut = USB_GetOutInts();
+    // Get the interrupt sources
+    statusCommon = USB_GetCommonInts();
+    statusIn = USB_GetInInts();
+    statusOut = USB_GetOutInts();
 
 #if SLAB_USB_POLLED_MODE
-        if ((statusCommon == 0) && (statusIn == 0) && (statusOut == 0)) {
-            return;
-        }
+    if ((statusCommon == 0) && (statusIn == 0) && (statusOut == 0)) {
+        return;
+    }
 #endif
 
-        // Save the current index
-        indexSave = USB_GetIndex();
+    // Save the current index
+    indexSave = USB_GetIndex();
 
-        // Check Common USB Interrupts
-        if (USB_IsSofIntActive(statusCommon)) {
+    // Check Common USB Interrupts
+    if (USB_IsSofIntActive(statusCommon)) {
 #if SLAB_USB_SOF_CB
-            USBD_SofCb(USB_GetSofNumber());
+        USBD_SofCb(USB_GetSofNumber());
 #endif // SLAB_USB_SOF_CB
 
-            // Check for unhandled USB packets on EP0 and set the corresponding IN or
-            // OUT interrupt active flag if necessary.
-            if (
-                ((ep0.misc.bits.outPacketPending == true) && (ep0.state == D_EP_RECEIVING)) ||
-                ((ep0.misc.bits.inPacketPending == true) && (ep0.state == D_EP_TRANSMITTING))
-               ) {
-                USB_SetEp0IntActive(statusIn);
-            }
+        // Check for unhandled USB packets on EP0 and set the corresponding IN or
+        // OUT interrupt active flag if necessary.
+        if (
+            ((ep0.misc.bits.outPacketPending == true) && (ep0.state == D_EP_RECEIVING)) ||
+            ((ep0.misc.bits.inPacketPending == true) && (ep0.state == D_EP_TRANSMITTING))
+            ) {
+            USB_SetEp0IntActive(statusIn);
         }
+    }
 
 
-        // Check USB Endpoint 0 Interrupt
-        if (USB_IsEp0IntActive(statusIn)) {
-            handleUsbEp0Int();
-        }
+    // Check USB Endpoint 0 Interrupt
+    if (USB_IsEp0IntActive(statusIn)) {
+        handleUsbEp0Int();
+    }
 
 
-        // handle IN / OUT endpoint interrupts
+    // handle IN / OUT endpoint interrupts
 #if SLAB_USB_EP3IN_USED
-        if (USB_IsIn3IntActive(statusIn)) {
-            handleUsbIn3Int();
-        }
+    if (USB_IsIn3IntActive(statusIn)) {
+        handleUsbIn3Int();
+    }
 #endif  // EP3IN_USED
 
 #if SLAB_USB_EP3OUT_USED
-        if (USB_IsOut3IntActive(statusOut)) {
-            handleUsbOut3Int();
-        }
+    if (USB_IsOut3IntActive(statusOut)) {
+        handleUsbOut3Int();
+    }
 #endif  // EP3OUT_USED
 
 #if SLAB_USB_EP2IN_USED
-        if (USB_IsIn2IntActive(statusIn)) {
-            handleUsbIn2Int();
-        }
+    if (USB_IsIn2IntActive(statusIn)) {
+        handleUsbIn2Int();
+    }
 #endif  // EP2IN_USED
 
 #if SLAB_USB_EP1IN_USED
-        if (USB_IsIn1IntActive(statusIn)) {
-            handleUsbIn1Int();
-        }
+    if (USB_IsIn1IntActive(statusIn)) {
+        handleUsbIn1Int();
+    }
 #endif  // EP1IN_USED
 
 #if SLAB_USB_EP2OUT_USED
-        if (USB_IsOut2IntActive(statusOut)) {
-            handleUsbOut2Int();
-        }
+    if (USB_IsOut2IntActive(statusOut)) {
+        handleUsbOut2Int();
+    }
 #endif  // EP2OUT_USED
 
 #if SLAB_USB_EP1OUT_USED
-        if (USB_IsOut1IntActive(statusOut)) {
-            handleUsbOut1Int();
-        }
+    if (USB_IsOut1IntActive(statusOut)) {
+        handleUsbOut1Int();
+    }
 #endif  // EP1OUT_USED
 
-        // Restore index
-        USB_SetIndex(indexSave);
+    // Restore index
+    USB_SetIndex(indexSave);
 #if SLAB_USB_HANDLER_CB
-        // Callback to user before exiting
-        USBD_ExitHandler();
+    // Callback to user before exiting
+    USBD_ExitHandler();
 #endif
-        return;
-    }
 
 #if 0
 
     // Check Common USB Interrupts
-    if (USB_IsSofIntActive(statusCommon))
-    {
+    if (USB_IsSofIntActive(statusCommon)) {
 #if SLAB_USB_SOF_CB
         USBD_SofCb(USB_GetSofNumber());
 #endif // SLAB_USB_SOF_CB
@@ -1092,31 +1145,33 @@ void usb_isr(void) __interrupt (USB0_IRQn) {
 #endif
     }
 
-    if (USB_IsResetIntActive(statusCommon))
-    {
+#endif
+
+
+    if (USB_IsResetIntActive(statusCommon)) {
         handleUsbResetInt();
 
         // If VBUS is not present on detection of a USB reset, enter suspend mode.
 #if (SLAB_USB_PWRSAVE_MODE & USB_PWRSAVE_MODE_ONVBUSOFF)
-        if (USB_IsVbusOn() == false)
-        {
+        if (USB_IsVbusOn() == false) {
             USB_SetSuspendIntActive(statusCommon);
         }
 #endif
     }
 
-    if (USB_IsResumeIntActive(statusCommon))
-    {
+#if 0
+    if (USB_IsResumeIntActive(statusCommon)) {
         handleUsbResumeInt();
     }
 
-    if (USB_IsSuspendIntActive(statusCommon))
-    {
+    if (USB_IsSuspendIntActive(statusCommon)) {
         handleUsbSuspendInt();
     }
-
-}
 #endif
+
+    return;
+}
+
 
 void USBD_SetUsbState(USBD_State_TypeDef newState)
 {
