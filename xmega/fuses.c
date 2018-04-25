@@ -82,6 +82,12 @@
     NVM_LB_RWLOCK_gc \
 )
 
+#if defined(__AVR_ATxmega128A1U__) || defined(__AVR_ATxmega64A1U__)
+
+// #warning "Fuse bytes are missing from the 'iox128a1u.h' for some reason."
+
+#else
+
 const uint8_t fuses[] __attribute__ ((section (".fuse"))) = {
     [0] = FUSEBYTE0,
     [1] = FUSEBYTE1,
@@ -97,3 +103,5 @@ const uint8_t lockbits[] __attribute__ ((section (".lock"))) = {
 
 const uint8_t usersig[] __attribute__ ((section (".user_signatures"))) = {
 };
+
+#endif

@@ -89,7 +89,7 @@ XmegaPinsA1U = IoMapperPins(
         0xff,
         0xff,
         0xff,
-        0x03,
+        0x0f,
         0x03,
     ],
     gpio_count = 78 - 2,

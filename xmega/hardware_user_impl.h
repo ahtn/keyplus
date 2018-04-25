@@ -44,6 +44,8 @@ typedef PORT_t io_port_t;
 #include "io_map/xio44.h"
 #elif XMEGA_PIN_COUNT == 64
 #include "io_map/xio64.h"
+#elif XMEGA_PIN_COUNT == 100
+#include "io_map/xio100.h"
 #else
 #error "Message unsupported XMEGA_PIN_COUNT"
 #endif
