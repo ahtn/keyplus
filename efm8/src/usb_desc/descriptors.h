@@ -76,22 +76,30 @@ typedef struct usb_config_desc_keyboard_t {
 // string descriptors
 #define USB_STRING_DESC_COUNT 0
 
-#define REPORT_ID_SYSTEM    1
-#define REPORT_ID_CONSUMER  2
-#define REPORT_ID_NKRO      3
-#define REPORT_ID_MOUSE     4
-
 #if USB_STRING_DESC_COUNT == 0
-#  define STRING_DESC_NONE 0
-#  define STRING_DESC_MANUFACTURER 0
-#  define STRING_DESC_PRODUCT 0
-#  define STRING_DESC_SERIAL_NUMBER 0
+#  define STRING_DESC_NONE              0
+#  define STRING_DESC_MANUFACTURER      0
+#  define STRING_DESC_PRODUCT           0
+#  define STRING_DESC_SERIAL_NUMBER     0
 #else
-#  define STRING_DESC_NONE 0
-#  define STRING_DESC_MANUFACTURER 1
-#  define STRING_DESC_PRODUCT 2
-#  define STRING_DESC_SERIAL_NUMBER 3
+#  define STRING_DESC_NONE              0
+#  define STRING_DESC_MANUFACTURER      1
+#  define STRING_DESC_PRODUCT           2
+#  define STRING_DESC_SERIAL_NUMBER     3
 #endif
+
+#define SHARED_HID_SEPARATE_REPORTS     0
+#define SHARED_HID_ALL_IN_ONE           1
+
+#define SHARED_HID_TYPE SHARED_HID_ALL_IN_ONE
+
+#if SHARED_HID_TYPE == SHARED_HID_SEPARATE_REPORTS
+#  define REPORT_ID_SYSTEM    1
+#  define REPORT_ID_CONSUMER  2
+#  define REPORT_ID_NKRO      3
+#  define REPORT_ID_MOUSE     4
+#endif
+
 
 extern ROM const usb_config_desc_keyboard_t usb_config_desc;
 extern ROM const usb_device_desc_t usb_device_desc;

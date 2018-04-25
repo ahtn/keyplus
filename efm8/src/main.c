@@ -14,6 +14,7 @@
 #include "usb_test.h"
 #include "usb/util/hut_keyboard.h"
 #include "usb/util/hut_consumer.h"
+#include "usb/util/hut_desktop.h"
 
 #include "usb_desc/descriptors.h"
 
@@ -38,12 +39,14 @@ void usb_isr(void) __interrupt (USB0_IRQn);
 extern XRAM uint8_t keyboardReport[8];
 
 #define NKRO_REPORT_BYTES (0xe0/8)
+
+#if SHARED_HID_TYPE == SHARED_HID_SEPARATE_REPORTS
 typedef struct {
     uint8_t id;
 
     union {
         struct {
-            uint16_t value;
+            uint8_t value;
         } system;
 
         struct {
@@ -65,6 +68,36 @@ typedef struct {
         } mouse;
     } report;
 } shared_hid_report_t;
+
+#elif SHARED_HID_TYPE == SHARED_HID_ALL_IN_ONE
+
+typedef struct {
+    struct {
+        uint8_t modifiers;
+        uint8_t bitmask[NKRO_REPORT_BYTES];
+    } nkro;
+
+    struct {
+        uint8_t buttons_1;
+        uint8_t buttons_2;
+        int16_t x;
+        int16_t y;
+        int8_t wheel_y;
+        int8_t wheel_x;
+    } mouse;
+
+    struct {
+        uint16_t value;
+    } consumer;
+
+    struct {
+        uint8_t value;
+    } system;
+} shared_hid_report_t;
+
+#else
+#  error "SHARED_HID_TYPE not defined"
+#endif
 
 XRAM shared_hid_report_t g_shared_hid;
 
@@ -151,6 +184,7 @@ void main(void) {
 
         if (!BUTTON_PIN) {
             if (keyState == 0) {
+                bool needs_update = false;
                 // Send the USB HID keycodes from KC_A to KC_FORWARD_SLASH
                 // advancing to the next one each time the button is pressed.
                 keyboardReport[2] = currentKeycode++;
@@ -167,6 +201,7 @@ void main(void) {
 
                 // NOTE: On the Shared HID interface, we can only send one
                 // kind of report at a time.
+#if SHARED_HID_TYPE == SHARED_HID_SEPARATE_REPORTS
                 if (currentKeycode % 3 == 0) {
                     g_shared_hid.id = REPORT_ID_CONSUMER;
                     g_shared_hid.report.consumer.value = HID_CONSUMER_PLAY_PAUSE;
@@ -179,8 +214,34 @@ void main(void) {
                     g_shared_hid.id = REPORT_ID_NKRO;
                     g_shared_hid.report.nkro.modifiers  = (1 << (KC_LEFT_SHIFT-0xE0));
                     g_shared_hid.report.nkro.bitmask[0] = (1 << KC_A);
-                    USBD_Write(EP2IN, &g_shared_hid, NKRO_REPORT_BYTES+1, false);
-                } else if (currentKeycode % 5 == 0) {
+                    USBD_Write(EP2IN, &g_shared_hid, NKRO_REPORT_BYTES+1+8, false);
+                }
+#elif SHARED_HID_TYPE == SHARED_HID_ALL_IN_ONE
+                if (currentKeycode % 3 == 0) {
+                    g_shared_hid.consumer.value = HID_CONSUMER_PLAY_PAUSE;
+                    needs_update = true;
+                }
+                if (currentKeycode % 4 == 0) {
+                    g_shared_hid.mouse.x = 100;
+                    needs_update = true;
+                }
+                if (currentKeycode % 2 == 0) {
+                    g_shared_hid.nkro.modifiers  = (1 << (KC_LEFT_SHIFT-0xE0));
+                    g_shared_hid.nkro.bitmask[0] = (1 << KC_A);
+                    needs_update = true;
+                }
+
+                if (currentKeycode % 13 == 0) {
+                    g_shared_hid.system.value = HID_DESKTOP_System_Sleep;
+                    needs_update = true;
+                }
+
+                if (needs_update) {
+                    USBD_Write(EP2IN, &g_shared_hid, sizeof(g_shared_hid), false);
+                    // USBD_Write(EP2IN, &g_shared_hid, NKRO_REPORT_BYTES+1, false);
+                }
+#endif
+                if (currentKeycode % 5 == 0) {
                     USBD_Write(EP3IN, &g_shared_hid, VENDOR_REPORT_SIZE, false);
                 }
                 IE_EA = 1;
@@ -189,6 +250,7 @@ void main(void) {
             keyState = 1;
         } else {
             if (keyState == 1) {
+                bool needs_update = false;
                 // Send an empty (key released) report
                 keyboardReport[2] = 0;
                 IE_EA = 0;
@@ -196,11 +258,12 @@ void main(void) {
                     USBD_Write(EP1IN, keyboardReport, sizeof(KeyReport_TypeDef), false);
                 }
 
+#if SHARED_HID_TYPE == SHARED_HID_SEPARATE_REPORTS
                 if (currentKeycode % 3 == 0) {
                     g_shared_hid.id = REPORT_ID_CONSUMER;
                     g_shared_hid.report.consumer.value = 0;
                     USBD_Write(EP2IN, &g_shared_hid, 3, false);
-                } else if (currentKeycode % 4 == 0) {
+                } else if (currentKeycode % 14 == 0) {
                     g_shared_hid.id = REPORT_ID_MOUSE;
                     g_shared_hid.report.mouse.x = 0;
                     USBD_Write(EP2IN, &g_shared_hid, 8, false);
@@ -208,8 +271,37 @@ void main(void) {
                     g_shared_hid.id = REPORT_ID_NKRO;
                     g_shared_hid.report.nkro.modifiers  = 0;
                     g_shared_hid.report.nkro.bitmask[0] = 0;
-                    USBD_Write(EP2IN, &g_shared_hid, NKRO_REPORT_BYTES+1, false);
+                    USBD_Write(EP2IN, &g_shared_hid, NKRO_REPORT_BYTES+1+8, false);
                 }
+#elif SHARED_HID_TYPE == SHARED_HID_ALL_IN_ONE
+                // Need to clear mouse X and Y if we don't want to send them
+                // with every subsequent packet.
+                if (currentKeycode % 4 == 0) {
+                    g_shared_hid.mouse.x = 0;
+                    g_shared_hid.mouse.y = 0;
+                }
+
+                if (currentKeycode % 3 == 0) {
+                    g_shared_hid.consumer.value = 0;
+                    needs_update = true;
+                }
+
+                if (currentKeycode % 2 == 0) {
+                    g_shared_hid.nkro.modifiers  = 0;
+                    g_shared_hid.nkro.bitmask[0] = 0;
+                    needs_update = true;
+                }
+
+                if (currentKeycode % 13 == 0) {
+                    g_shared_hid.system.value = 0;
+                    needs_update = true;
+                }
+
+                if (needs_update) {
+                    USBD_Write(EP2IN, &g_shared_hid, sizeof(g_shared_hid), false);
+                    // USBD_Write(EP2IN, &g_shared_hid, NKRO_REPORT_BYTES+1, false);
+                }
+#endif
                 IE_EA = 1;
             }
             keyState = 0;
