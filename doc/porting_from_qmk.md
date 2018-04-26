@@ -5,7 +5,7 @@ While it is functional, keyplus for 32u4 may contain bugs and is not production 
 
 A major advantage of keyplus over QMK is its ability to update the keymap and almost every setting without compilation.
 After a generic hex (same for almost every keyboard) is flashed, the board can be configured through a user friendly 
-YAML file uploaded through keyplus flasher. This includes the matrix and pin information that defines your keyboard.
+layout.yaml file uploaded through keyplus flasher. This includes the matrix and pin information that defines your keyboard.
 The user should not need to build or flash a new hex unless there is a major firmware release with new features.
 
 ## Requirements
@@ -21,7 +21,7 @@ The user should not need to build or flash a new hex unless there is a major fir
 [Q2K](https://github.com/2Cas/Q2K) is a python-based utility that can automatically parse and 
 convert QMK keymaps into a keyplus YAML for most keyboards.
 
-## Building keyplus (Ubuntu)
+## Building keyplus
 The latest version of keyplus is released [here](https://github.com/ahtn/keyplus/releases) **(No 32u4 release yet)**.
 For most cases, you can just download the hex and flash. If you require more customisation (for instance, baking in a default layout)
 this section will detail how to create your own build.
