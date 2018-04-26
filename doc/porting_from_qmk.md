@@ -18,7 +18,7 @@ The user should not need to build or flash a new hex unless there is a major fir
 [See layout.yaml documentation.](https://github.com/ahtn/keyplus/blob/master/doc/layout_format.md)
 
 ### Convert layout file from QMK
-[Q2K](https://github.com/2Cas/Q2K) is a Python utility that can automatically parse and 
+[Q2K](https://github.com/2Cas/Q2K) is a python-based utility that can automatically parse and 
 convert QMK keymaps into a keyplus YAML for most keyboards.
 
 ## Building keyplus (Ubuntu)
