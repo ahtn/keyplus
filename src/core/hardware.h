@@ -45,7 +45,7 @@
 
 extern bit_t g_slow_clock_mode;
 
-#if USE_I2C && USE_USB
+#if (USE_I2C || USE_NRF24) && USE_USB
 extern bit_t g_has_usb_port;
 #endif
 

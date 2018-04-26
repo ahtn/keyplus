@@ -287,7 +287,7 @@ void usb_mode_setup(void) {
     }
 #endif
 
-#if USE_I2C || USE_NRF24
+#if (USE_I2C || USE_NRF24) && USE_USB
     g_has_usb_port = s_has_usb_port;
 #endif
 
