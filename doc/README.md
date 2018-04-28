@@ -5,4 +5,5 @@
 * [Keycode documentation](keycodes.md)
 * [Hardware notes](hardware_notes.md)
 * [Porting from QMK](porting_from_qmk.md)
+* [Building on Windows](building_on_windows.md)
 * [nRF24 modules](nrf24_modules.md)
