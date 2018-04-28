@@ -1,0 +1,50 @@
+# udev rules for keyplus to run with non-privileged users
+
+# WARNING: udev expects lower case hex strings for PID and VID
+# usb production dev
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="b007", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="1111", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="2222", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="3333", TAG+="uaccess", TAG+="udev-acl"
+TAG+="uaccess", TAG+="udev-acl"
+
+# keyplus usb ids
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="bb00", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="bb01", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="bb02", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="bb03", TAG+="uaccess", TAG+="udev-acl"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="bb05", TAG+="uaccess", TAG+="udev-acl"
+
+#
+# Bootloader, programmer and other useful USB IDs
+#
+
+### Nordic ###
+
+# nordic nrf24lu1p bootloader
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1915", ATTRS{idProduct}=="0101", TAG+="uaccess", TAG+="udev-acl"
+
+### Atmel ###
+
+# atmel dfu bootloader (ATmega32U2) 03eb:2ff0
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ff0", TAG+="uaccess", TAG+="udev-acl"
+
+# atmel dfu bootloader (ATmega32U4) 03eb:2ff4
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ff4", TAG+="uaccess", TAG+="udev-acl"
+
+# atmel dfu bootloader (AT90USB646, AT90USB647) 03eb:2ff9
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ff9", TAG+="uaccess", TAG+="udev-acl"
+
+# atmel dfu bootloader (AT90USB1287, AT90USB1286) 03eb:2ffb
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2ffb", TAG+="uaccess", TAG+="udev-acl"
+
+# avrispmkII
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2104", TAG+="uaccess", TAG+="udev-acl"
+
+# arduino pro micro
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b4f", ATTRS{idProduct}=="9206", TAG+="uaccess", TAG+="udev-acl"
+
+### Silicon Labs ###
+
+# silabs usb debug adapter
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="8044", TAG+="uaccess", TAG+="udev-acl"

@@ -45,13 +45,11 @@ sudo python3 keyplus_flasher.py
 #### Flashing without sudo on Linux
 
 To connect USB devices on Linux without using sudo, you need to add the
-appropriate udev rules to set their permissions.
-
-To do this add [these udev rules](host-software/etc/udev/rules.d/50-embedded_devices.rules) to
-the file `/etc/udev/rules.d/50-embedded_devices.rules` (create it if it doesn't
-exist). Then to active these rules run:
+appropriate udev rules to set their permissions. To do this run the following
+commands from the keyplus directory:
 
 ```
+sudo cp host-software/etc/udev/rules.d/50-keyplus.rules /etc/udev/rules.d/50-keyplus.rules
 sudo udevadm control --reload-rules
 sudo udevadm trigger
 ```

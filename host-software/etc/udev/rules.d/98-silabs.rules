@@ -1,0 +1,39 @@
+# This is a udev rules file for all USB devices with a Silicon Labs Vendor ID
+# except those Silabs JLink devices. 
+# The Vendor IDs supported are (add more as needed): 
+#    0x10c4    (for c8051 and USBXpress devices)
+#
+# This file is based on the sample udev file from HIDAPI (using libusb-1.0).
+#
+# NOTE: This udev file will grant read and write access to ALL users,
+# include non-privileged users, for ALL USB devices that have a matching
+# Vendor ID according to the rules below. If this is not desirable and you
+# would like to put more restrictions on access to these devices, then read
+# http://reactivated.net/writing_udev_rules.html for more information.
+
+# This is a sample udev file for HIDAPI devices which changes the permissions
+# to 0666 (world readable/writable) for a specified device on Linux systems.
+
+# If you are using the libusb implementation of hidapi (hid-libusb.c), then
+# use something like the following line, substituting the VID and PID with
+# those of your device. Note that for kernels before 2.6.24, you will need
+# to substitute "usb" with "usb_device". It shouldn't hurt to use two lines
+# (one each way) for compatibility with older systems.
+
+# HIDAPI/libusb
+SUBSYSTEM=="usb", ATTRS{idVendor}=="10c4", MODE="0666"
+SUBSYSTEM=="usb_device", ATTRS{idVendor}=="10c4", MODE="0666"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", MODE="0666"
+
+# Once done, optionally rename this file for your device, and drop it into
+# /etc/udev/rules.d and unplug and re-plug your device. This is all that is
+# necessary to see the new permissions. Udev does not have to be restarted.
+
+# If you think permissions of 0666 are too loose, then see:
+# http://reactivated.net/writing_udev_rules.html for more information on finer
+# grained permission setting. For example, it might be sufficient to just
+# set the group or user owner for specific devices (for example the plugdev
+# group on some systems).
+
+# BGTool uses QT's QSerialPort class to open connection to modules
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1366", MODE="0666"
