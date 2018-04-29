@@ -91,7 +91,7 @@ typedef struct usb_config_desc_keyboard_t {
 #define SHARED_HID_SEPARATE_REPORTS     0
 #define SHARED_HID_ALL_IN_ONE           1
 
-#define SHARED_HID_TYPE SHARED_HID_ALL_IN_ONE
+#define SHARED_HID_TYPE                 SHARED_HID_ALL_IN_ONE
 
 #if SHARED_HID_TYPE == SHARED_HID_SEPARATE_REPORTS
 #  define REPORT_ID_SYSTEM    1

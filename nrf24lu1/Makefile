@@ -115,18 +115,34 @@ CDEFS += -DFLASH_$(FLASH_SIZE)
 OPTIMIZATION = --opt-code-speed
 # OPTIMIZATION = --opt-code-size
 
-ifndef SDCC_PATH
-  # SDCC_PATH = /usr/bin
-  SDCC_PATH=/usr/local/bin
-endif
-AS = $(SDCC_PATH)/sdas8051
-CC = $(SDCC_PATH)/sdcc
-PP = $(SDCC_PATH)/sdcpp
+# Version of sdcc used:
+# /usr/local/bin/sdcc --version
+# SDCC : mcs51/z80/z180/r2k/r3ka/gbz80/tlcs90/ds390/pic16/pic14/TININative/ds400/hc08/s08/stm8 3.6.8 #9948 (Linux)
 
-CFLAGS   = \
+# SDCC_PATH = /usr/local/bin
+ifdef SDCC_PATH
+  # when this variable is set, we use a custom path to the SDCC
+  # internal libraries/header files.
+  CFLAGS += \
+	--nostdlib \
+	--nostdinc \
+	-I"$(SDCC_SHARE_PATH)/include" \
+	-I"$(SDCC_SHARE_PATH)/include/mcs51" \
+	-L"$(SDCC_SHARE_PATH)/lib/small"
+  AS = $(SDCC_PATH)/sdas8051
+  CC = $(SDCC_PATH)/sdcc
+  PP = $(SDCC_PATH)/sdcpp
+else
+  AS = sdas8051
+  CC = sdcc
+  PP = sdcpp
+endif
+
+CFLAGS += \
 	$(CDEFS) \
 	$(INC_PATHS) \
 	$(OPTIMIZATION) \
+	--print-search-dirs \
 	--fomit-frame-pointer \
 	--model-small \
 	--std-sdcc99 \

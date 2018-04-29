@@ -85,7 +85,9 @@ typedef enum {
   USB_STATUS_EP_RX_BUFFER_OVERRUN = -14,        ///< Not enough data in the Rx buffer to hold the
   USB_STATUS_DATA_ERROR = -15,                  ///< OUT packet had CRC or bit-stuffing error
                                                 ///< last received packet
-} USB_Status_TypeDef;
+} USB_Status_TypeDef_Values;
+
+typedef int_fast8_t USB_Status_TypeDef;
 
 /// @brief USB device state enumerator.
 typedef enum {

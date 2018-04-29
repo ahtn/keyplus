@@ -1,8 +1,9 @@
 #!/bin/bash
 
 avr8_gnu=avr8-gnu-toolchain-linux_x86_64
+sdcc_ver=sdcc-3.6.0
 
-deactivate () {
+deactivate_env () {
     if ! [ -z "${_OLD_ENV_PATH+_}" ]; then
         PATH="$_OLD_ENV_PATH"
         export PATH
@@ -16,10 +17,17 @@ deactivate () {
     fi
 
     unset VIRT_ENV
+    unset VIRT_ENV2
+    unset SDCC_PATH
 }
 
 VIRT_ENV="${PWD}/env/$avr8_gnu/bin"
+VIRT_ENV2="${PWD}/env/$sdcc_ver/bin"
+SDCC_PATH="${PWD}/env/sdcc-3.6.0/share/sdcc"
+
 export VIRT_ENV
+export VIRT_ENV2
+export SDCC_PATH
 
 _OLD_ENV_PS1="$PS1"
 if [ "x" != x ]; then
@@ -30,7 +38,7 @@ fi
 export PS1
 
 _OLD_ENV_PATH="$PATH"
-PATH="$VIRT_ENV:$PATH"
+PATH="$VIRT_ENV:$VIRT_ENV2:$PATH"
 export PATH
 
 echo "New path: $PATH"
