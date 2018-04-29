@@ -1,3 +1,4 @@
+#!/bin/bash
 
 # on error, cause the script to exit
 set -e
