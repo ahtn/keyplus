@@ -70,6 +70,8 @@ C_SRC += \
 	$(CORE_PATH)/settings.c \
 	$(CORE_PATH)/util.c \
 
+INC_PATHS += -I$(KEYPLUS_PATH)
+
 # NRF24 module, defaults to 0
 ifeq ($(USE_NRF24), 1)
     C_SRC += \

@@ -1,41 +1,31 @@
 # Copyright 2017 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-# TODO: build system needs cleanup for building for different hardware
-
 #######################################################################
 #                        global build defines                         #
 #######################################################################
 
 TARGET_BASE_NAME = xmega_keyplus
+ARCH             = XMEGA
+F_CPU            = 32000000
+F_USB            = 48000000
+FORMAT           = ihex
+SHELL            = /bin/bash
 
-ARCH = XMEGA
-
-F_CPU = 32000000
-F_USB = 48000000
+# USB IDs
+USB_VID = 1209
+USB_PID = BB00
 
 # The clock speed to use when we are running on battery power (12MHz).
 # We use 12MHz for battery mode because speeds >12MHz require voltage >1.8V
 CLOCK_SPEED_SLOW = 12000000
 
-# Output format. (can be srec, ihex, binary)
-FORMAT = ihex
-
-KEYPLUS_PATH=../src
-AVR_MKFILE_PATH := avr-makefile
-XMEGA_PATH=.
+KEYPLUS_PATH      = ../src
+AVR_MKFILE_PATH   = avr-makefile
+XMEGA_PATH        = .
 
 VPATH += $(KEYPLUS_PATH)
 VPATH += $(XMEGA_PATH)
-
-INC_PATHS += \
-	-I$(KEYPLUS_PATH)
-
-# USB_VID = 6666
-# USB_PID = 1111
-
-USB_VID = 1209
-USB_PID = BB00
 
 #######################################################################
 #                        board config options                         #

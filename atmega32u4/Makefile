@@ -5,34 +5,21 @@
 #                        global build options                         #
 #######################################################################
 
-# TODO: build system needs cleanup for building for different hardware
-MCU = atmega32u4
-ARCH = AVR
+TARGET_BASE_NAME = keyplus_32u4
+ARCH             = AVR
+MCU              = atmega32u4
+F_CPU            = 16000000
+FORMAT           = ihex
+SHELL            = /bin/bash
 
+# USB IDs
 USB_VID = 6666
 USB_PID = 2222
-F_CPU = 16000000
 
-USE_USB := 0
-USE_SCANNER := 1
-USE_NRF24 := 0
-USE_I2C := 1
-USE_HARDWARE_SPECIFIC_SCAN := 1
-
-# Target file name (without extension).
-TARGET_BASE_NAME = keyplus_32u4
-
-# Output format. (can be srec, ihex, binary)
-FORMAT = ihex
-
-# Object files directory
-OBJ_DIR = obj
-
-KEYPLUS_PATH := ../src
-AVR_MKFILE_PATH := avr-makefile
+KEYPLUS_PATH      = ../src
+AVR_MKFILE_PATH   = avr-makefile
 
 VPATH += $(KEYPLUS_PATH)
-INC_PATHS += -I$(KEYPLUS_PATH)
 
 #######################################################################
 #                        board config options                         #

@@ -6,10 +6,11 @@
 #######################################################################
 
 TARGET_BASE_NAME = keyplus_nrf24lu1
-OBJ_DIR	= obj
-MCU		= NRF24LU1
-F_CPU	= 16000000
-MCU_STRING = nRF24LU1P_F32
+OBJ_DIR          = obj
+MCU              = NRF24LU1
+F_CPU            = 16000000
+MCU_STRING       = nRF24LU1P_F32
+SHELL            = /bin/bash
 
 # valid 16 or 32
 FLASH_SIZE = 32
