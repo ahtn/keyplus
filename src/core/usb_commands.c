@@ -29,7 +29,6 @@ static bit_t passthrough_mode_on;
 #endif
 
 XRAM static uint8_t s_vendor_state = STATE_WAIT_CMD;
-XRAM static bool s_restore_rf_settings;
 
 XRAM static uint8_t s_usb_commands_in_progress;
 
@@ -98,8 +97,6 @@ void queue_vendor_in_packet(
 // TODO: probably move this elsewhere
 void reset_usb_reports(void) {
     s_vendor_state = STATE_WAIT_CMD;
-    s_restore_rf_settings = false;
-
 #ifndef NO_MATRIX
     passthrough_mode_on = false;
 #endif

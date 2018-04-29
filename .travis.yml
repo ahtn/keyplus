@@ -23,20 +23,7 @@ matrix:
       script:
         # Setup the AVR build environment
         - 'source env/enter_env.sh'
-
-        # Test building building xmega with various MCU and boards
-        - 'cd xmega'
-        - 'make MCU=atxmega32a4u ID=0 BOARD=keyplus_mini'
-        - 'make MCU=atxmega128a4u ID=14 BOARD=alpha_split'
-        - 'make MCU=atxmega64c3 LAYOUT_FILE=../layouts/spectre.yaml BOARD=plain'
-        - 'cd ..' # leave xmega folder
-
-        # Test ATmega32u4 variants
-        - 'cd atmega32u4'
-        - 'make MCU=atmega32u4 BOARD=default LAYOUT_FILE=../layouts/1key.yaml'
-        - 'make MCU=atmega32u4 BOARD=atmel-dfu LAYOUT_FILE=../layouts/32u4_test.yaml'
-        - 'cd ..'
-
+        - 'env/test_build.sh'
       # after_success:
       #   - echo "After_Success"
 

@@ -22,6 +22,7 @@ CLOCK_SPEED_SLOW = 12000000
 FORMAT = ihex
 
 KEYPLUS_PATH=../src
+AVR_MKFILE_PATH := avr-makefile
 XMEGA_PATH=.
 
 VPATH += $(KEYPLUS_PATH)
@@ -40,17 +41,19 @@ USB_PID = BB00
 #                        board config options                         #
 #######################################################################
 
-include avr-makefile/boards.mk
+include $(AVR_MKFILE_PATH)/boards.mk
 
 ifndef SCANNER_MAX_ROWS
    SCANNER_MAX_ROWS=18
 endif
 
+SCAN_METHOD=fast_row_col
+
 #######################################################################
 #                        common build settings                        #
 #######################################################################
 
-include avr-makefile/avr-xmega.mk
+include $(AVR_MKFILE_PATH)/avr-xmega.mk
 
 include $(KEYPLUS_PATH)/core/core.mk
 include $(KEYPLUS_PATH)/usb/usb.mk
@@ -204,25 +207,7 @@ CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
 #                              recipes                               #
 #######################################################################
 
-LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
-MERGED_HEX="$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex"
-
-all: fuse lock $(MERGED_HEX)
-
-$(LAYOUT_FILE):
-
-$(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
-	 $(KEYPLUS_CLI) program \
-		$(KEYPLUS_CLI_EXTRA) \
-		--new-id $(ID) \
-		--layout "$(LAYOUT_FILE)" \
-		--rf "$(RF_FILE)" \
-		--fw-hex "$(TARGET_HEX)" \
-		-M $(SETTING_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
-		-o "$(MERGED_HEX)" \
-		-F chip_name="$(MCU_STRING)" \
-		-F scan_method=fast_row_col \
-		-F max_rows=$(SCANNER_MAX_ROWS) \
+include $(KEYPLUS_PATH)/keyplus.mk
 
 .PHONY:
 program: program-boot
@@ -257,8 +242,8 @@ LOCKBITS_DEBUG := BF # RW enabled for external programmer
 LOCKBITS_RELEASE := BC # RW disabled for external programmer
 LOCKBITS = $(LOCKBITS_RELEASE)
 
-include avr-makefile/avr.mk
-include avr-makefile/avr-program.mk
+include $(AVR_MKFILE_PATH)/avr.mk
+include $(AVR_MKFILE_PATH)/avr-program.mk
 
 
 # Listing of phony targets.

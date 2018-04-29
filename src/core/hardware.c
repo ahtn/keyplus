@@ -10,6 +10,10 @@
 #include "core/usb_commands.h"
 #include "core/error.h"
 
+#if USE_I2C
+#include "wired.h"
+#endif
+
 bit_t g_slow_clock_mode = 1;
 
 #if (USE_I2C || USE_NRF24) && USE_USB

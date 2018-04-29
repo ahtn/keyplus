@@ -29,6 +29,8 @@ FORMAT = ihex
 OBJ_DIR = obj
 
 KEYPLUS_PATH := ../src
+AVR_MKFILE_PATH := avr-makefile
+
 VPATH += $(KEYPLUS_PATH)
 INC_PATHS += -I$(KEYPLUS_PATH)
 
@@ -36,7 +38,7 @@ INC_PATHS += -I$(KEYPLUS_PATH)
 #                        board config options                         #
 #######################################################################
 
-include avr-makefile/boards.mk
+include $(AVR_MKFILE_PATH)/boards.mk
 
 ifndef LAYOUT_FILE
   LAYOUT_FILE = ../layouts/1key.yaml
@@ -51,6 +53,8 @@ endif
 ifndef SCANNER_MAX_ROWS
    SCANNER_MAX_ROWS=18
 endif
+
+SCAN_METHOD=basic_scan
 
 #######################################################################
 #                        common build settings                        #
@@ -181,12 +185,9 @@ ADEFS += $(USB_OPTS)
 #                              recepies                               #
 #######################################################################
 
-LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
-MERGED_HEX="$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex"
-
-all: hex lock fuse $(MERGED_HEX)
-
 # program the device using the bootloader
+
+include $(KEYPLUS_PATH)/keyplus.mk
 
 program: hex program-boot
 
@@ -211,18 +212,6 @@ $(TARGET).fuse: $(TARGET).elf
 LFUSE = 5E
 HFUSE = D9
 EFUSE = C3 # --> EFUSE = F3
-
-$(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
-	 $(KEYPLUS_CLI) program \
-		--new-id $(ID) \
-		--layout "$(LAYOUT_FILE)" \
-		--rf "$(RF_FILE)" \
-		--fw-hex "$(TARGET_HEX)" \
-		-M $(SETTING_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
-		-o "$(MERGED_HEX)" \
-		-F chip_name="$(MCU_STRING)" \
-		-F scan_method=basic_scan \
-		-F max_rows=$(SCANNER_MAX_ROWS) \
 
 ATMEL_DFU = bootloaders/atmel_dfu/ATMega32U4-usbdevice_dfu-1_0_0.hex
 
@@ -254,9 +243,9 @@ LOCKBITS = NO_LOCK
 program-lock:
 	$(AVRDUDE_CMD) -U lock:w:$(LOCKBITS):m
 
-include avr-makefile/avr-mega.mk
-include avr-makefile/avr.mk
-include avr-makefile/avr-program.mk
+include $(AVR_MKFILE_PATH)/avr-mega.mk
+include $(AVR_MKFILE_PATH)/avr.mk
+include $(AVR_MKFILE_PATH)/avr-program.mk
 
 # Listing of phony targets.
 .PHONY : all program bootload_only bootload program-fuses program-boot \

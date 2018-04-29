@@ -19,7 +19,7 @@
 
 #define NUM_KEYBOARD_PIPES 4
 
-extern XRAM bool g_rf_enabled;
+extern XRAM uint8_t g_rf_enabled;
 
 void rf_init_send(void);
 void rf_init_receive(void);

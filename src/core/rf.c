@@ -23,7 +23,7 @@
 
 #define RF_CRC_MODE (EN_CRC_bm | CRCO_bm)
 
-XRAM bool g_rf_enabled;
+XRAM uint8_t g_rf_enabled;
 
 // #define NRF24_IRQ_MASKS (MASK_TX_DS_bm | MASK_MAX_RT_bm)
 // #define NRF24_IRQ_MASKS (0x70)
