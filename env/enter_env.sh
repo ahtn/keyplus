@@ -23,10 +23,12 @@ deactivate_env () {
 
 VIRT_ENV="${PWD}/env/$avr8_gnu/bin"
 VIRT_ENV2="${PWD}/env/$sdcc_ver/bin"
-SDCC_PATH="${PWD}/env/sdcc-3.6.0/share/sdcc"
+SDCC_PATH="${PWD}/env/sdcc-3.6.0"
 
 export VIRT_ENV
 export VIRT_ENV2
+
+
 export SDCC_PATH
 
 _OLD_ENV_PS1="$PS1"

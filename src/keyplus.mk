@@ -1,6 +1,8 @@
 LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
 MERGED_HEX="$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex"
 
+KEYPLUS_CLI = python3 ../host-software/keyplus-cli
+
 all: print_keyplus_info $(MERGED_HEX)
 
 $(LAYOUT_FILE):

@@ -76,9 +76,21 @@ INC_PATHS += -I$(EFM8_PATH)/lib/efm8_assert/
 OPTIMIZATION = --opt-code-size
 
 # Compiler, assembler and preprocessor to use
-AS = sdas8051
-CC = sdcc
-PP = sdcpp
+ifdef SDCC_PATH
+  # when this variable is set, we use a custom path to the SDCC
+  # internal libraries/header files.
+  CFLAGS += \
+	-I"$(SDCC_PATH)/share/sdcc/include" \
+	-I"$(SDCC_PATH)/share/sdcc/include/mcs51" \
+	-L"$(SDCC_PATH)/share/sdcc/lib/small"
+  AS = $(SDCC_PATH)/bin/sdas8051
+  CC = $(SDCC_PATH)/bin/sdcc
+  PP = $(SDCC_PATH)/bin/sdcpp
+else
+  AS = sdas8051
+  CC = sdcc
+  PP = sdcpp
+endif
 
 # Memory model: small recommended by sdcc, only use larger if necessary
 # Options: small, medium, large, huge

@@ -6,6 +6,7 @@
 #######################################################################
 
 TARGET_BASE_NAME = keyplus_nrf24lu1
+ARCH			 = 8051
 OBJ_DIR          = obj
 MCU              = NRF24LU1
 F_CPU            = 16000000
@@ -22,7 +23,8 @@ USE_NRF24 := 1
 USE_I2C := 0
 USE_SCANNER := 0
 
-KEYPLUS_CLI = ../host-software/keyplus-cli
+KEYPLUS_CLI = python3 ../host-software/keyplus-cli
+
 
 # Prototype IDs
 # USB_VID = 6666
@@ -119,19 +121,17 @@ OPTIMIZATION = --opt-code-speed
 # /usr/local/bin/sdcc --version
 # SDCC : mcs51/z80/z180/r2k/r3ka/gbz80/tlcs90/ds390/pic16/pic14/TININative/ds400/hc08/s08/stm8 3.6.8 #9948 (Linux)
 
-# SDCC_PATH = /usr/local/bin
+# SDCC_PATH = /usr/local
 ifdef SDCC_PATH
   # when this variable is set, we use a custom path to the SDCC
   # internal libraries/header files.
   CFLAGS += \
-	--nostdlib \
-	--nostdinc \
-	-I"$(SDCC_SHARE_PATH)/include" \
-	-I"$(SDCC_SHARE_PATH)/include/mcs51" \
-	-L"$(SDCC_SHARE_PATH)/lib/small"
-  AS = $(SDCC_PATH)/sdas8051
-  CC = $(SDCC_PATH)/sdcc
-  PP = $(SDCC_PATH)/sdcpp
+	-I"$(SDCC_PATH)/share/sdcc/include" \
+	-I"$(SDCC_PATH)/share/sdcc/include/mcs51" \
+	-L"$(SDCC_PATH)/share/sdcc/lib/small"
+  AS = $(SDCC_PATH)/bin/sdas8051
+  CC = $(SDCC_PATH)/bin/sdcc
+  PP = $(SDCC_PATH)/bin/sdcpp
 else
   AS = sdas8051
   CC = sdcc
@@ -142,7 +142,6 @@ CFLAGS += \
 	$(CDEFS) \
 	$(INC_PATHS) \
 	$(OPTIMIZATION) \
-	--print-search-dirs \
 	--fomit-frame-pointer \
 	--model-small \
 	--std-sdcc99 \
