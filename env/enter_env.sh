@@ -1,8 +1,20 @@
 #!/bin/bash
+# To enter the environment run this command in your shell:
+# source ./env/enter_env.sh
 
-avr8_gnu=avr8-gnu-toolchain-linux_x86_64
-sdcc_ver=sdcc-3.6.0
+if [[ -z $SDCC_VERSION ]]; then
+    SDCC_VERSION=3.7.0
+fi
 
+# Values used for the virtual environment
+avr8_tool_chain=avr8-gnu-toolchain-linux_x86_64
+sdcc_tool_chain=sdcc-${SDCC_VERSION}_mcs51
+
+AVR8_PATH="${PWD}/env/$avr8_tool_chain/bin"
+SDCC_BIN_PATH="${PWD}/env/$sdcc_tool_chain/bin"
+SDCC_PATH="${PWD}/env/$sdcc_tool_chain"
+
+# Command to leave the environment
 deactivate_env () {
     if ! [ -z "${_OLD_ENV_PATH+_}" ]; then
         PATH="$_OLD_ENV_PATH"
@@ -16,31 +28,28 @@ deactivate_env () {
         unset _OLD_ENV_PS1
     fi
 
-    unset VIRT_ENV
-    unset VIRT_ENV2
+    unset AVR8_PATH
+    unset SDCC_BIN_PATH
     unset SDCC_PATH
 }
 
-VIRT_ENV="${PWD}/env/$avr8_gnu/bin"
-VIRT_ENV2="${PWD}/env/$sdcc_ver/bin"
-SDCC_PATH="${PWD}/env/sdcc-3.6.0"
-
-export VIRT_ENV
-export VIRT_ENV2
-
-
-export SDCC_PATH
-
+# Change the shell command prompt so it is clear we are in the
+# alternative environment
 _OLD_ENV_PS1="$PS1"
 if [ "x" != x ]; then
     PS1="$PS1"
 else
-    PS1="(env) $PS1"
+    PS1="(keyplus env) $PS1"
 fi
-export PS1
 
+# Add the environment variables to the path
 _OLD_ENV_PATH="$PATH"
-PATH="$VIRT_ENV:$VIRT_ENV2:$PATH"
+PATH="$AVR8_PATH:$SDCC_BIN_PATH:$PATH"
+
 export PATH
+export PS1
+export AVR8_PATH
+export SDCC_BIN_PATH
+export SDCC_PATH
 
 echo "New path: $PATH"

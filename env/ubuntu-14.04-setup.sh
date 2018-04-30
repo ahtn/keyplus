@@ -1,18 +1,30 @@
 #!/bin/bash
 
+# Setup Ubuntu 14.04 dependencies
 if [[ -z $TRAVIS ]]; then
     sudo apt-get install make python3 python3-pip libpython-dev libffi-dev gawk hidapi python3-pyside
-    sudo pip install -U keyplus
 fi
 
+sudo pip3 install -U keyplus
+
+#
+# AVR8 tool chain
+#
 avr8_gnu=avr8-gnu-toolchain-3.5.4.1709-linux.any.x86_64.tar.gz
 avr8_link=http://ww1.microchip.com/downloads/en/DeviceDoc/$avr8_gnu
-
-sdcc_bz2=sdcc-3.6.0-i386-unknown-linux2.5.tar.bz2
-sdcc_dist=https://jaist.dl.sourceforge.net/project/sdcc/sdcc-linux-x86/3.6.0/sdcc-3.6.0-i386-unknown-linux2.5.tar.bz2
 
 wget $avr8_link
 tar xvf ${avr8_gnu}
 
+#
+# SDCC mcs51 tool chain
+#
+if [[ -z $SDCC_VERSION ]]; then
+    SDCC_VERSION=3.7.0
+fi
+
+sdcc_tar=sdcc-${SDCC_VERSION}-mcs51-x86_64-linux.tar.gz
+sdcc_dist=https://github.com/ahtn/efm8_sdcc/releases/download/sdcc/$sdcc_tar
+
 wget $sdcc_dist
-tar xvf $sdcc_bz2
+tar xvf $sdcc_tar

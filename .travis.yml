@@ -13,22 +13,16 @@ matrix:
             - libffi-dev
             - python3
             - python3-pip
-            # - gcc-4.8-multilib
-            # - g++-4.8-multilib
-            # - libgcc-4.8-dev
-            # - libstdc++6
-      before_install:
-        - "sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y"
-        - "sudo apt-get update -q"
-        - "sudo apt-get install gcc-4.9 g++-4.9 cpp-4.9 gcc-4.9-locales g++-4.9-multilib gcc-4.9-multilib lib32stdc++6-4.9-dbg libx32stdc++6-4.9-dbg -y"
+      # before_install:
+      #   -
       install:
         - 'cd env'
         - './ubuntu-14.04-setup.sh'
         - 'cd ..'
-        - sudo pip3 install -U keyplus
       script:
-        # Setup the AVR build environment
+        # Setup the build environment
         - 'source env/enter_env.sh'
+        # Run the test builds
         - 'env/test_build.sh'
       # after_success:
       #   - echo "After_Success"
