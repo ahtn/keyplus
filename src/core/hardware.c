@@ -10,9 +10,13 @@
 #include "core/usb_commands.h"
 #include "core/error.h"
 
+#if USE_I2C
+#include "wired.h"
+#endif
+
 bit_t g_slow_clock_mode = 1;
 
-#if USE_I2C && USE_USB
+#if (USE_I2C || USE_NRF24) && USE_USB
 bit_t g_has_usb_port;
 #endif
 
@@ -23,14 +27,14 @@ void software_reset(void) {
     io_map_init();
     matrix_scanner_init();
 #endif
-#if USE_RF
+#if USE_NRF24
     aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
 
     if (!g_runtime_settings.feature.ctrl.rf_disabled) {
         rf_init_receive();
     }
 #endif
-#if USE_WIRED
+#if USE_I2C
     if (g_has_usb_port && !g_runtime_settings.feature.ctrl.wired_disabled) {
         i2c_init();
     }

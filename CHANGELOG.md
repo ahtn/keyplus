@@ -12,6 +12,8 @@
   when other keys are pressed.
 
 * `firmware` atmega32u4 support
+* `firmware` fixed issue that caused updates to the encryption key to
+  require a reset
 * `firmware` made the maximum number of supported rows configurable at compile
   time, and increased the default value from 10 to 18.
 

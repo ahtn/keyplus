@@ -25,7 +25,7 @@
 
 XRAM hold_event_t hold_event_list[MAX_NUM_HOLD_KEYS];
 
-static XRAM bool s_buffer_other_keys;
+static XRAM uint8_t s_buffer_other_keys;
 
 uint8_t hold_event_list_len;
 

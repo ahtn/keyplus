@@ -6,10 +6,11 @@
 #######################################################################
 
 TARGET_BASE_NAME = keyplus_nrf24lu1
-OBJ_DIR	= obj
-MCU		= NRF24LU1
-F_CPU	= 16000000
-MCU_STRING = nRF24LU1P_F32
+OBJ_DIR          = obj
+MCU              = NRF24LU1
+F_CPU            = 16000000
+MCU_STRING       = nRF24LU1P_F32
+SHELL            = /bin/bash
 
 # valid 16 or 32
 FLASH_SIZE = 32
@@ -47,6 +48,10 @@ endif
 ifndef RF_FILE
   RF_FILE=../layouts/test_rf_config.yaml
 endif
+
+CHIP_NAME=nRF24LU1P-F32
+SCAN_METHOD=none
+SCANNER_MAX_ROWS=0
 
 #######################################################################
 #                            source files                             #
@@ -110,20 +115,13 @@ CDEFS += -DFLASH_$(FLASH_SIZE)
 OPTIMIZATION = --opt-code-speed
 # OPTIMIZATION = --opt-code-size
 
-
-# Version of sdcc used:
-# /usr/local/bin/sdcc --version
-# SDCC : mcs51/z80/z180/r2k/r3ka/gbz80/tlcs90/ds390/pic16/pic14/TININative/ds400/hc08/s08/stm8 3.6.8 #9948 (Linux)
-
-SDCC_PATH = /usr/local/bin
+ifndef SDCC_PATH
+  # SDCC_PATH = /usr/bin
+  SDCC_PATH=/usr/local/bin
+endif
 AS = $(SDCC_PATH)/sdas8051
 CC = $(SDCC_PATH)/sdcc
 PP = $(SDCC_PATH)/sdcpp
-
-# SDCC_PATH = /usr/bin
-# AS = $(SDCC_PATH)/sdas8051
-# CC = $(SDCC_PATH)/sdcc
-# PP = $(SDCC_PATH)/sdcpp
 
 CFLAGS   = \
 	$(CDEFS) \
@@ -131,6 +129,7 @@ CFLAGS   = \
 	$(OPTIMIZATION) \
 	--fomit-frame-pointer \
 	--model-small \
+	--std-sdcc99 \
 	# --stack-auto \
 	# --Werror \
 	# --model-small \
@@ -167,16 +166,11 @@ ASM_REL_FILES = $(patsubst %.S, $(OBJ_DIR)/%.rel, $(ASM_SRC))
 DEP_FILES = $(patsubst %.c, $(OBJ_DIR)/%.dep, $(C_SRC))
 REL_FILES = $(C_REL_FILES) $(ASM_REL_FILES)
 
+
 LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
 MERGED_HEX="$(BUILD_TARGET_DIR)/$(basename $(TARGET))-$(LAYOUT_NAME).hex"
 
 all: $(TARGET_HEX) $(MERGED_HEX) size
-
-$(TARGET_HEX): $(DEP_FILES) $(REL_FILES)
-	@echo "=== compiling target ==="
-	$(CC) --version
-	$(CC) $(CFLAGS) $(LFLAGS) $(REL_FILES) -o $@
-	# @mv *.lk *.map *.mem -t $(OBJ_DIR)
 
 $(MERGED_HEX): $(TARGET_HEX) $(BOOTLOADER)
 	@echo "=== appending bootloader ==="
@@ -193,9 +187,15 @@ $(MERGED_HEX): $(TARGET_HEX) $(BOOTLOADER)
 		--fw-hex $(TARGET_HEX)_with_bootloader.hex \
 		-M $(SETTINGS_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
 		-o $(BUILD_TARGET_DIR)/$(TARGET)-$(LAYOUT_NAME).hex \
-		-F scan_method=none \
-		-F chip_name=nRF24LU1P-F32 \
-		-F max_rows=0 \
+		-F scan_method=$(SCAN_METHOD) \
+		-F chip_name=$(CHIP_NAME) \
+		-F max_rows=$(SCANNER_MAX_ROWS) \
+
+$(TARGET_HEX): $(DEP_FILES) $(REL_FILES)
+	@echo "=== compiling target ==="
+	@$(CC) --version | grep SDCC
+	@$(CC) $(CFLAGS) $(LFLAGS) $(REL_FILES) -o $@
+# @mv *.lk *.map *.mem -t $(OBJ_DIR)
 
 size: $(TARGET_HEX)
 	@echo "=== Size Information ($(TARGET))==="
@@ -210,7 +210,7 @@ $(OBJ_DIR)/%.rel: %.c
 # rule for asm
 $(OBJ_DIR)/%.rel: %.S
 	@mkdir -p $(dir $@)
-	$(AS) $(ASFLAGS) $@ $<
+	@$(AS) $(ASFLAGS) $@ $<
 
 # rule for DEP_FILES
 # sdcc doesn't pass the -MT flag correctly to the preprocessor, so need to
