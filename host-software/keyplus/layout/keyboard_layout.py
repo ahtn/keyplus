@@ -120,6 +120,18 @@ class LayoutKeyboard(object):
 
         return result
 
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        if value != None:
+            self._name = value.lower()
+        else:
+            self._name = None
+
+
     def parse_json(self, name, parser_info=None):
         if parser_info == None:
             parser_info = KeyplusParserInfo(

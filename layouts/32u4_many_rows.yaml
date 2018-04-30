@@ -15,10 +15,10 @@ devices:
         r0c0, r1c0, r2c0, r3c0, r4c0, r5c0, r6c0, r7c0, r8c0, r9c0, r10c0,
         r11c0, r12c0, r13c0, r14c0, r15c0, r16c0, r17c0
       ]
-    layout: 1key
+    layout: test_layout
 
 layouts:
-  1key:
+  test_layout:
     layers: [
       [ # layer 0 (base)
         [
