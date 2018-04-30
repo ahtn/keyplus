@@ -192,3 +192,6 @@ For more information about the hardware [see this link](https://github.com/ahtn/
 ## License
 
 The keyplus source code is released under the MIT software.
+
+Although the code in this project can be used with Logitech products it is in
+no way endorsed by or affiliated with Logitech.
