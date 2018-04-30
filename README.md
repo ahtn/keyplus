@@ -5,6 +5,12 @@ and wired split keyboards.
 
 Currently in beta so lots of stuff still might change.
 
+# Download
+
+[Stable releases (recommended)](https://github.com/ahtn/keyplus/releases)
+
+[Latest builds on Keyplus CI](https://ci.keyplus.io/)
+
 # Keyplus Flasher GUI
 
 ## Setup instructions
