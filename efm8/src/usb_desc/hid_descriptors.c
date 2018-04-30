@@ -69,6 +69,14 @@ ROM const uint8_t hid_desc_shared_hid[] = {
 
 #if SHARED_HID_TYPE == SHARED_HID_ALL_IN_ONE
 
+// NOTE: this method only seems to work on Linux.
+// The way HID reports are parsed on windows is defined here:
+// https://docs.microsoft.com/en-us/windows-hardware/drivers/hid/top-level-collections
+// Seems that the usage of the Top Level collections are then mapped
+// to PDO (keyboard, mouse, system, consumer, joystick, etc), so
+// you cannot add usages from the other classes in the same report.
+// Need to use separate top level collections instead.
+
     // NKRO report
     HID_USAGE_PAGE(1)        , HID_USAGE_PAGE_GENERIC_DESKTOP,
     HID_USAGE(1)             , HID_USAGE_KEYBOARD,

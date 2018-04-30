@@ -165,13 +165,6 @@ LFLAGS   = \
 
 ASFLAGS  = -xglospff
 
-# see the boards directory for these definitions
-CDEFS += -DSETTINGS_ADDR=$(SETTINGS_ADDR)
-CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
-CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
-CDEFS += -DNONCE_ADDR=$(NONCE_ADDR)
-CDEFS += -DBOOTLOADER_ADDR=$(BOOTLOADER_ADDR)
-
 #######################################################################
 #                               recipes                               #
 #######################################################################

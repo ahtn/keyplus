@@ -72,13 +72,20 @@ C_SRC += \
 
 INC_PATHS += -I$(KEYPLUS_PATH)
 
+CDEFS += -DSETTINGS_ADDR=$(SETTINGS_ADDR)
+CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
+CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
+CDEFS += -DBOOTLOADER_ADDR=$(BOOTLOADER_ADDR)
+
 # NRF24 module, defaults to 0
 ifeq ($(USE_NRF24), 1)
     C_SRC += \
         $(CORE_PATH)/nrf24.c \
         $(CORE_PATH)/rf.c \
         $(CORE_PATH)/nonce.c
+
     CDEFS += -DUSE_NRF24=1
+    CDEFS += -DNONCE_ADDR=$(NONCE_ADDR)
 
     ifeq ($(USE_UNIFYING), 0)
         CDEFS += -DUSE_UNIFYING=0

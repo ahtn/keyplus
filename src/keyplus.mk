@@ -27,7 +27,7 @@ $(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
 		--layout "$(LAYOUT_FILE)" \
 		--rf "$(RF_FILE)" \
 		--fw-hex "$(TARGET_HEX)" \
-		-M $(SETTING_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
+		-M $(SETTINGS_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
 		-o "$(MERGED_HEX)" \
 		-F chip_name="$(MCU_STRING)" \
 		-F scan_method=$(SCAN_METHOD) \

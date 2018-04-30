@@ -215,7 +215,7 @@ void queue_keycode_event(keycode_t keycode, uint8_t event_type, uint8_t kb_id) {
     s_has_dirty_event_queue = 1;
 }
 
-static void apply_event_trigger_queue(uint8_t keyboard_id) {
+static void apply_event_trigger_queue(uint8_t keyboard_id) REENT {
     uint8_t i;
     key_event_queue_t XRAM* queue = &s_key_event_queues[READ_EVENT_QUEUE()];
 

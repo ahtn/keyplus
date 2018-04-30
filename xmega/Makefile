@@ -161,23 +161,23 @@ MAKEFILE_INC += Makefile
 LD_SCRIPT_DIR = ./ld-scripts
 
 ifeq ($(MCU_FLASH_SIZE), 32)
-  SETTING_ADDR := 0x7600
+  SETTINGS_ADDR := 0x7600
   LAYOUT_ADDR := 0x7800
   LAYOUT_SIZE := 0x0800
 else ifeq ($(MCU_FLASH_SIZE), 64)
-  SETTING_ADDR := 0x7E00
+  SETTINGS_ADDR := 0x7E00
   LAYOUT_ADDR := 0x8000
   LAYOUT_SIZE := 0x8000
 else ifeq ($(MCU_FLASH_SIZE), 128)
-  SETTING_ADDR := 0x7E00
+  SETTINGS_ADDR := 0x7E00
   LAYOUT_ADDR := 0x8000
   LAYOUT_SIZE := 0x18000
 else ifeq ($(MCU_FLASH_SIZE), 192)
-  SETTING_ADDR := 0x7E00
+  SETTINGS_ADDR := 0x7E00
   LAYOUT_ADDR := 0x8000
   LAYOUT_SIZE := 0x28000
 else ifeq ($(MCU_FLASH_SIZE), 256)
-  SETTING_ADDR := 0x7E00
+  SETTINGS_ADDR := 0x7E00
   LAYOUT_ADDR := 0x8000
   LAYOUT_SIZE := 0x38000
 else
@@ -185,12 +185,8 @@ else
 endif
 
 LDFLAGS += -T $(LD_SCRIPT_DIR)/$(LD_SCRIPT)
-LDFLAGS += -Wl,--section-start=.key_settings_block=$(SETTING_ADDR)
+LDFLAGS += -Wl,--section-start=.key_settings_block=$(SETTINGS_ADDR)
 LDFLAGS += -Wl,--section-start=.key_layout_block=$(LAYOUT_ADDR)
-
-CDEFS += -DSETTINGS_ADDR=$(SETTING_ADDR)
-CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
-CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
 
 #######################################################################
 #                              recipes                               #

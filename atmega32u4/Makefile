@@ -154,13 +154,9 @@ LD_SCRIPT_DIR = /usr/lib/ldscripts
 # LDFLAGS += -Wl,--section-start=.key_settings_block=$(SETTING_ADDR)
 # LDFLAGS += -Wl,--section-start=.key_layout_block=$(LAYOUT_ADDR)
 
-SETTING_ADDR := 0x5E00
+SETTINGS_ADDR := 0x5E00
 LAYOUT_ADDR := 0x6000
 LAYOUT_SIZE := 0x1000
-
-CDEFS += -DSETTINGS_ADDR=$(SETTING_ADDR)
-CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
-CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
 
 # workaround for bad code generation on avr-gcc on linux (as of version 6.2.0)
 CFLAGS += -fno-jump-tables
