@@ -10,11 +10,16 @@ sudo pip3 install -U keyplus
 #
 # AVR8 tool chain
 #
+avr8_folder=avr8-gnu-toolchain-linux_x86_64
 avr8_gnu=avr8-gnu-toolchain-3.5.4.1709-linux.any.x86_64.tar.gz
 avr8_link=http://ww1.microchip.com/downloads/en/DeviceDoc/$avr8_gnu
+avr8_headers=http://distribute.atmel.no/tools/opensource/Atmel-AVR-GNU-Toolchain/3.6.1/avr8-headers.zip
 
 wget $avr8_link
 tar xvf ${avr8_gnu}
+wget $avr8_headers
+unzip avr8-headers.zip
+cp avr/* -t $avr8_folder/avr/include/avr
 
 #
 # SDCC mcs51 tool chain
