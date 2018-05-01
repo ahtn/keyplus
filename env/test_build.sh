@@ -34,6 +34,7 @@ cd xmega
   make MCU=atxmega32a4u ID=0 BOARD=keyplus_mini
   make MCU=atxmega128a4u ID=14 BOARD=alpha_split
   make MCU=atxmega64c3 LAYOUT_FILE=../layouts/spectre.yaml BOARD=plain
+  make MCU=atxmega128a1u LAYOUT_FILE=blank BOARD=plain KEYPLUS_CLI_EXTRA=-e
 cd ..
 
 cd atmega32u4
