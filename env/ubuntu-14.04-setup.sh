@@ -2,7 +2,7 @@
 
 if [[ -z $TRAVIS ]]; then
     sudo apt-get install make python3 python3-pip libpython-dev libffi-dev gawk hidapi python3-pyside
-    sudo pip install -U keyplus
+    pip install --user -U keyplus
 fi
 
 avr8_gnu=avr8-gnu-toolchain-3.5.4.1709-linux.any.x86_64.tar.gz
