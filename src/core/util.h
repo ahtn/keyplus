@@ -200,7 +200,6 @@ void bitmap_clear_bit(uint8_t *array, uint8_t n);
 )
 #endif
 
-
 /// Read data from pointer as big endian uint16
 #define read_u16be(ptr) (\
       ((uint16_t)(ptr)[1] << 0) \
@@ -219,3 +218,43 @@ void bitmap_clear_bit(uint8_t *array, uint8_t n);
     | ((uint32_t)(ptr)[1] << 16) \
     | ((uint32_t)(ptr)[0] << 24) \
 )
+
+/// Write data pointer as little endian uint16
+#define write_u16le(ptr, data) do {\
+    (ptr)[0] = ((data) >> 0) & 0xff; \
+    (ptr)[1] = ((data) >> 8) & 0xff; \
+} while(0)
+/// Write data pointer as little endian uint24
+#define write_u24le(ptr) do {\
+    (ptr)[0] = ((data) >>  0) & 0xff; \
+    (ptr)[1] = ((data) >>  8) & 0xff; \
+    (ptr)[2] = ((data) >> 16) & 0xff; \
+} while(0)
+/// Write data pointer as little endian uint32
+#define write_u32le(ptr) do {\
+    (ptr)[0] = ((data) >>  0) & 0xff; \
+    (ptr)[1] = ((data) >>  8) & 0xff; \
+    (ptr)[2] = ((data) >> 16) & 0xff; \
+    (ptr)[3] = ((data) >> 24) & 0xff; \
+} while(0)
+
+/// Write data pointer as big endian uint16
+#define write_u16be(ptr, data) do {\
+    (ptr)[0] = ((data) >> 8) & 0xff; \
+    (ptr)[1] = ((data) >> 0) & 0xff; \
+} while(0)
+/// Write data pointer as big endian uint24
+#define write_u24be(ptr) do {\
+    (ptr)[0] = ((data) >> 16) & 0xff; \
+    (ptr)[1] = ((data) >>  8) & 0xff; \
+    (ptr)[2] = ((data) >>  0) & 0xff; \
+} while(0)
+/// Write data pointer as big endian uint32
+#define write_u32be(ptr) do {\
+    (ptr)[0] = ((data) >> 24) & 0xff; \
+    (ptr)[1] = ((data) >> 16) & 0xff; \
+    (ptr)[2] = ((data) >>  8) & 0xff; \
+    (ptr)[3] = ((data) >>  0) & 0xff; \
+} while(0)
+
+

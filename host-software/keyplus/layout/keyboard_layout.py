@@ -70,15 +70,20 @@ class LayoutLayer(object):
 
     @property
     def device_sizes(self):
+        """Get the sizes of each split component"""
         return [x.number_keys for x in self.device_list]
 
-    def get_device_offset(self, dev_id):
+    def get_layout_component_offset(self, split_dev_num):
+        """Get the offset into the layout of the given device"""
         result = 0
-        for i in range(dev_id):
-            result += int(math.ceil(self.device_sizes[dev_id]/8))
+        # Sum the device sizes of all devices less than this one to
+        # get the offset
+        for i in range(split_dev_num):
+            result += self.get_layout_component_size(i)
         return result
 
-    def get_device_size(self, dev_id):
+    def get_layout_component_size(self, dev_id):
+        """Get the size of a given split component in the layout"""
         return int(math.ceil(self.device_sizes[dev_id]/8))
 
 
