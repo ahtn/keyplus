@@ -12,7 +12,10 @@
 #include "usb_desc/hid_descriptors.c"
 
 // NOTE: since we're not using high speed, USB 1.1 works fine here
+
 #define USB_REVISION USB_REVISION_1_1
+// #define USB_REVISION USB_REVISION_2_0
+
 #define USB_HID_REVISION USB_HID_REVISION_1_11
 
 ROM const usb_device_desc_t usb_device_desc = {

@@ -149,29 +149,35 @@ ROM const uint8_t sizeof_hid_desc_mouse = sizeof(hid_desc_mouse);
 /// Report ID = 1 -> System (power, reset etc.)
 /// Report ID = 2 -> Consumer (media buttons)
 ROM const uint8_t hid_desc_media[] = {
-    HID_USAGE_PAGE(1), HID_USAGE_PAGE_GENERIC_DESKTOP, /* Generic Desktop */
-    HID_USAGE(1), HID_USAGE_SYSTEM_CONTROL, /* System Control */
-    HID_COLLECTION(1), HID_COLLECTION_APPLICATION,
-        HID_REPORT_ID(1), REPORT_ID_SYSTEM,
-        HID_LOGICAL_MINIMUM(1) , HID_DESKTOP_System_Control,
+    //
+    // System report
+    //
+    HID_USAGE_PAGE(1) , HID_USAGE_PAGE_GENERIC_DESKTOP, // Generic Desktop
+    HID_USAGE(1)      , HID_USAGE_SYSTEM_CONTROL,
+    HID_COLLECTION(1) , HID_COLLECTION_APPLICATION,
+        HID_REPORT_ID(1)       , REPORT_ID_SYSTEM,
+        HID_LOGICAL_MINIMUM(1) , DB8(0x01),
         HID_LOGICAL_MAXIMUM(2) , DB16(HID_DESKTOP_System_Display_LCD_Autoscale),
-        HID_USAGE_MINIMUM(1)   , HID_DESKTOP_System_Control,
-        HID_USAGE_MAXIMUM(1)   , HID_DESKTOP_System_Display_LCD_Autoscale,
-        HID_REPORT_SIZE(1)     , 8,
+        HID_USAGE_MINIMUM(1)   , DB8(0x01),
+        HID_USAGE_MAXIMUM(2)   , DB16(HID_DESKTOP_System_Display_LCD_Autoscale),
+        HID_REPORT_SIZE(1)     , 16,
         HID_REPORT_COUNT(1)    , 1,
         HID_INPUT(1)           , IOF_DATA | IOF_ARRAY | IOF_ABSOLUTE,
     HID_END_COLLECTION(0),
 
-    HID_USAGE_PAGE(1), HID_USAGE_PAGE_CONSUMER,
-    HID_USAGE(1), HID_CONSUMER_CONSUMER_CONTROL,
-    HID_COLLECTION(1), HID_COLLECTION_APPLICATION,
+    //
+    // Consumer report
+    //
+    HID_USAGE_PAGE(1) , HID_USAGE_PAGE_CONSUMER,
+    HID_USAGE(1)      , HID_CONSUMER_CONSUMER_CONTROL,
+    HID_COLLECTION(1) , HID_COLLECTION_APPLICATION,
         HID_REPORT_ID(1)       , REPORT_ID_CONSUMER,
-        HID_LOGICAL_MINIMUM(1) , DB8(HID_CONSUMER_PLUS_10),
+        HID_LOGICAL_MINIMUM(1) , DB8(0x01),
         HID_LOGICAL_MAXIMUM(2) , DB16(HID_CONSUMER_AC_DISTRIBUTE_VERTICALLY),
-        HID_USAGE_MINIMUM(1)   , DB8(HID_CONSUMER_PLUS_10),
+        HID_USAGE_MINIMUM(1)   , DB8(0x01),
         HID_USAGE_MAXIMUM(2)   , DB16(HID_CONSUMER_AC_DISTRIBUTE_VERTICALLY),
-        HID_REPORT_SIZE(1)     , 16,
-        // HID_REPORT_COUNT(1)    , 1, // Resuse global item
+        // HID_REPORT_SIZE(1)     , 16, // Reuse global item
+        // HID_REPORT_COUNT(1)    , 1, // Reuse global item
         HID_INPUT(1)           , IOF_DATA | IOF_ARRAY | IOF_ABSOLUTE,
     HID_END_COLLECTION(0),
 };

@@ -69,21 +69,21 @@
 /// @brief USB transfer status enumerator.
 typedef enum {
   USB_STATUS_OK = 0,                            ///< No errors detected.
-  USB_STATUS_REQ_ERR = -1,                      ///< Setup request error.
-  USB_STATUS_EP_BUSY = -2,                      ///< Endpoint is busy.
-  USB_STATUS_REQ_UNHANDLED = -3,                ///< Setup request not handled.
-  USB_STATUS_ILLEGAL = -4,                      ///< Illegal operation attempted.
-  USB_STATUS_EP_STALLED = -5,                   ///< Endpoint is stalled.
-  USB_STATUS_EP_ABORTED = -6,                   ///< Endpoint transfer was aborted.
-  USB_STATUS_EP_ERROR = -7,                     ///< Endpoint transfer error.
-  USB_STATUS_EP_NAK = -8,                       ///< Endpoint NAK'ed transfer request.
-  USB_STATUS_DEVICE_UNCONFIGURED = -9,          ///< Device is unconfigured.
-  USB_STATUS_DEVICE_SUSPENDED = -10,            ///< Device is suspended.
-  USB_STATUS_DEVICE_RESET = -11,                ///< Device is/was reset.
-  USB_STATUS_TIMEOUT = -12,                     ///< Transfer timeout.
-  USB_STATUS_DEVICE_REMOVED = -13,              ///< Device was removed.
-  USB_STATUS_EP_RX_BUFFER_OVERRUN = -14,        ///< Not enough data in the Rx buffer to hold the
-  USB_STATUS_DATA_ERROR = -15,                  ///< OUT packet had CRC or bit-stuffing error
+  USB_STATUS_REQ_ERR = 1,                      ///< Setup request error.
+  USB_STATUS_EP_BUSY = 2,                      ///< Endpoint is busy.
+  USB_STATUS_REQ_UNHANDLED = 3,                ///< Setup request not handled.
+  USB_STATUS_ILLEGAL = 4,                      ///< Illegal operation attempted.
+  USB_STATUS_EP_STALLED = 5,                   ///< Endpoint is stalled.
+  USB_STATUS_EP_ABORTED = 6,                   ///< Endpoint transfer was aborted.
+  USB_STATUS_EP_ERROR = 7,                     ///< Endpoint transfer error.
+  USB_STATUS_EP_NAK = 8,                       ///< Endpoint NAK'ed transfer request.
+  USB_STATUS_DEVICE_UNCONFIGURED = 9,          ///< Device is unconfigured.
+  USB_STATUS_DEVICE_SUSPENDED = 10,            ///< Device is suspended.
+  USB_STATUS_DEVICE_RESET = 11,                ///< Device is/was reset.
+  USB_STATUS_TIMEOUT = 12,                     ///< Transfer timeout.
+  USB_STATUS_DEVICE_REMOVED = 13,              ///< Device was removed.
+  USB_STATUS_EP_RX_BUFFER_OVERRUN = 14,        ///< Not enough data in the Rx buffer to hold the
+  USB_STATUS_DATA_ERROR = 15,                  ///< OUT packet had CRC or bit-stuffing error
                                                 ///< last received packet
 } USB_Status_TypeDef_Values;
 

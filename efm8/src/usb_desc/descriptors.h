@@ -50,7 +50,8 @@ typedef struct usb_config_desc_keyboard_t {
 #define EP_OUT_SIZE_BOOT_KEYBOARD   0
 
 // EP 2 -> shared hid (media, nkro, mouse)
-#define EP_IN_SIZE_SHARED_HID       0x20
+// #define EP_IN_SIZE_SHARED_HID       0x20
+#define EP_IN_SIZE_SHARED_HID       0x08
 #define EP_OUT_SIZE_SHARED_HID      0
 
 // EP 3 -> vendor in/out
@@ -88,17 +89,10 @@ typedef struct usb_config_desc_keyboard_t {
 #  define STRING_DESC_SERIAL_NUMBER     3
 #endif
 
-#define SHARED_HID_SEPARATE_REPORTS     0
-#define SHARED_HID_ALL_IN_ONE           1
-
-#define SHARED_HID_TYPE                 SHARED_HID_ALL_IN_ONE
-
-#if SHARED_HID_TYPE == SHARED_HID_SEPARATE_REPORTS
-#  define REPORT_ID_SYSTEM    1
-#  define REPORT_ID_CONSUMER  2
-#  define REPORT_ID_NKRO      3
-#  define REPORT_ID_MOUSE     4
-#endif
+#define REPORT_ID_SYSTEM    1
+#define REPORT_ID_CONSUMER  2
+#define REPORT_ID_NKRO      3
+#define REPORT_ID_MOUSE     4
 
 
 extern ROM const usb_config_desc_keyboard_t usb_config_desc;
