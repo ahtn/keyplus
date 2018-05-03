@@ -3,6 +3,20 @@
 # on error, cause the script to exit
 set -e
 
+# load version number into __version__ as a bash variable
+source ./host-software/keyplus/version.py
+
+# get the current git hash
+keyplus_git_hash=$(git rev-parse --short=7 HEAD)
+
+# print build and git hash of current
+echo
+echo -e "#########################################"
+echo -e "# Starting Test build ${__version__}-${keyplus_git_hash}\t#"
+echo -e "#########################################"
+echo
+
+
 cd xmega
 echo "###########"
 echo "#  xmega  #"
@@ -28,7 +42,7 @@ if [[ -z $TRAVIS ]]; then
     echo "##############"
     echo "NOTE: might need to set SDCC_PATH before running"
     echo
-    make BOARD=default ID=48 LAYOUT_FILE=../layouts/basic_split_test.yaml
+    make BOARD=512_bootloader ID=48 LAYOUT_FILE=../layouts/basic_split_test.yaml
     make BOARD=unirecv ID=48 LAYOUT_FILE=../layouts/basic_split_test.yaml
     cd ..
 fi

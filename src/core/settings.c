@@ -45,6 +45,11 @@ AT__SETTINGS_ADDR const settings_t g_settings_storage = {
     .crc = 0x1234,
 };
 
+STATIC_ASSERT(
+    sizeof(g_settings_storage) == SETTINGS_STORAGE_SIZE,
+    "Settings storage must be 512 bytes"
+);
+
 
 // TODO: correct the values used here
 const ROM firmware_build_settings_t g_firmware_build_settings = {
@@ -108,7 +113,14 @@ const ROM firmware_build_settings_t g_firmware_build_settings = {
     .page_size = PAGE_SIZE_TO_LOG2(PAGE_SIZE),
 
     .scanner_max_rows = MAX_NUM_ROWS,
+
+    .stable_build = KEYPLUS_VERSION_IS_STABLE,
 };
+
+STATIC_ASSERT(
+    sizeof(g_firmware_build_settings) == FIRMWARE_BUILD_SETTINGS_SIZE,
+    "Firmware settings block must be 62 bytes"
+);
 
 void settings_load_from_flash(void) {
     // load rf setings into ram

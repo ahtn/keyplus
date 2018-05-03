@@ -117,6 +117,13 @@
 #define bit_t bool
 #endif
 
+/// Compile time assert.
+///
+/// If available use C11 _Static_assert, if compile doesn't support it then,
+/// use workaround
+#define STATIC_ASSERT(x, y) _Static_assert(x, y)
+
+
 #define SIGN(x) ((x) == 0 ? 0 : ((x) < 0 ? -1 : +1))
 
 #define LSB_U16(x) ((x) & 0xff)
@@ -256,5 +263,3 @@ void bitmap_clear_bit(uint8_t *array, uint8_t n);
     (ptr)[2] = ((data) >>  8) & 0xff; \
     (ptr)[3] = ((data) >>  0) & 0xff; \
 } while(0)
-
-
