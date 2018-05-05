@@ -135,6 +135,7 @@ typedef enum {
 #if (SLAB_USB_EP3OUT_USED)
   EP3OUT,
 #endif
+  NUM_ENDPOINTS,
 } USB_EP_Index_TypeDef;
 
 typedef struct {

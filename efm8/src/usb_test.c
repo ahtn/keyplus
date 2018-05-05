@@ -16,44 +16,31 @@
 #include "efm8_util/delay.h"
 #include "efm8_sfr.h"
 
-#define GetEp(epAddr)  (\
-    epAddr == EP0    ? &ep0   : \
-    epAddr == EP1IN  ? &ep1in : \
-    epAddr == EP2IN  ? &ep2in : \
-    epAddr == EP3IN  ? &ep3in : \
-    epAddr == EP3OUT ? &ep3out : &ep0 \
-    )
+#define GET_EP(epAddr)  (&epX[epAddr])
 
 static XRAM uint8_t s_usb_state;
 static XRAM uint8_t s_usb_saved_state;
 static XRAM uint8_t s_configuration;
 static XRAM ep0String_type ep0String;
+static XRAM USBD_Ep_TypeDef epX[NUM_ENDPOINTS];
 
-#if 0
-static XRAM USBD_Ep_TypeDef ep0;
-static XRAM USBD_Ep_TypeDef ep1in;
-static XRAM USBD_Ep_TypeDef ep2in;
-static XRAM USBD_Ep_TypeDef ep3in;
-#else
-static XRAM USBD_Ep_TypeDef epXin[4];
-#define ep0     (epXin[0])
-#define ep1in   (epXin[1])
-#define ep2in   (epXin[2])
-#define ep3in   (epXin[3])
-
-#endif
-
-static XRAM USBD_Ep_TypeDef ep3out;
-// static XRAM USBD_Ep_TypeDef ep1out;
-
-static XRAM USB_Setup_TypeDef setup;
-
-static const ROM uint8_t txZero[2];
+#define ep0     (epX[EP0])
+#define ep1in   (epX[EP1IN])
+#define ep2in   (epX[EP2IN])
+#define ep3in   (epX[EP3IN])
+#define ep1out  (epX[EP1OUT])
+#define ep2out  (epX[EP2OUT])
+#define ep3out  (epX[EP3OUT])
 
 uint8_t XRAM keyboardReport[8] = {0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00};
 
+static const ROM uint8_t txZero[2];
+static XRAM USB_Setup_TypeDef setup;
+
 static USB_Status_TypeDef ClearFeature(void);
 static void handleUsbInXInt(uint8_t ep_num);
+static void handleUsbEp0Tx(void);
+static void handleUsbEp0Rx(void);
 
 void USBD_Connect(void) {
     USB_SaveSfrPage();
@@ -166,7 +153,7 @@ int8_t USBD_AbortTransfer(uint8_t epAddr)
     else
     {
         DISABLE_USB_INTS;
-        ep = GetEp(epAddr);
+        ep = GET_EP(epAddr);
 
         // If the state of the endpoint is already idle, there is not need to abort
         // a transfer
@@ -552,13 +539,15 @@ void USB_WriteFIFO(uint8_t fifoNum, uint8_t numBytes, uint8_t *dat, bool txPacke
 bool USBD_EpIsBusy(uint8_t epAddr) {
     XRAM USBD_Ep_TypeDef *ep;
 
+#ifndef NDEBUG
     // Verify this is a valid endpoint address
     if (epAddr >= SLAB_USB_NUM_EPS_USED) {
         SLAB_ASSERT(false);
         return true;
     }
+#endif
 
-    ep = GetEp(epAddr);
+    ep = GET_EP(epAddr);
 
     if (ep->state == D_EP_IDLE) {
         return false;
@@ -675,7 +664,7 @@ static void handleUsbEp0Tx(void) {
 /***************************************************************************//**
  * @brief       Handles receive data phase on Endpoint 0
  ******************************************************************************/
-void handleUsbEp0Rx(void) {
+static void handleUsbEp0Rx(void) {
     uint8_t count;
     USB_Status_TypeDef status;
     bool callback = ep0.misc.bits.callback;
@@ -790,19 +779,14 @@ static void handleUsbEp0Int(void) {
 
 static void handleUsbInXInt(uint8_t ep_num) {
     bool callback;
-    XRAM USBD_Ep_TypeDef *ep = &epXin[ep_num];
+    XRAM USBD_Ep_TypeDef *ep = GET_EP(ep_num);
 
     USB_SetIndex(ep_num);
 
     if (USB_EpnInGetSentStall()) {
         USB_EpnInClearSentStall();
     } else if (ep->state == D_EP_TRANSMITTING) {
-        uint8_t xferred;
-        if (ep->remaining > ep->maxPacketSize) {
-            xferred = ep->maxPacketSize;
-        } else {
-            xferred = ep->remaining;
-        }
+        uint8_t xferred = EFM8_MIN(ep->maxPacketSize, ep->remaining);
 
         ep->remaining -= xferred;
         ep->buf += xferred;
@@ -811,12 +795,7 @@ static void handleUsbInXInt(uint8_t ep_num) {
 
         // Load more data
         if (ep->remaining > 0) {
-            uint8_t num_bytes;
-            if (ep->remaining > ep->maxPacketSize) {
-                num_bytes = ep->maxPacketSize;
-            } else {
-                num_bytes = ep->remaining;
-            }
+            uint8_t num_bytes = EFM8_MIN(ep->maxPacketSize, ep->remaining);
             USB_WriteFIFO(ep_num, num_bytes, ep->buf, true);
         } else {
             ep->misc.bits.callback = false;
@@ -976,7 +955,7 @@ void usb_isr(void) {
         if (
             ((ep0.misc.bits.outPacketPending == true) && (ep0.state == D_EP_RECEIVING)) ||
             ((ep0.misc.bits.inPacketPending == true) && (ep0.state == D_EP_TRANSMITTING))
-            ) {
+        ) {
             USB_SetEp0IntActive(statusIn);
         }
     }
@@ -987,42 +966,24 @@ void usb_isr(void) {
         handleUsbEp0Int();
     }
 
-
     // handle IN / OUT endpoint interrupts
 #if SLAB_USB_EP3IN_USED
-    if (USB_IsIn3IntActive(statusIn)) {
-        handleUsbInXInt(3);
-    }
+    if (USB_IsIn3IntActive(statusIn)) { handleUsbInXInt(3); }
 #endif  // EP3IN_USED
-
 #if SLAB_USB_EP3OUT_USED
-    if (USB_IsOut3IntActive(statusOut)) {
-        handleUsbOut3Int();
-    }
+    if (USB_IsOut3IntActive(statusOut)) { handleUsbOut3Int(); }
 #endif  // EP3OUT_USED
-
 #if SLAB_USB_EP2IN_USED
-    if (USB_IsIn2IntActive(statusIn)) {
-        handleUsbInXInt(2);
-    }
+    if (USB_IsIn2IntActive(statusIn)) { handleUsbInXInt(2); }
 #endif  // EP2IN_USED
-
-#if SLAB_USB_EP1IN_USED
-    if (USB_IsIn1IntActive(statusIn)) {
-        handleUsbInXInt(1);
-    }
-#endif  // EP1IN_USED
-
 #if SLAB_USB_EP2OUT_USED
-    if (USB_IsOut2IntActive(statusOut)) {
-        handleUsbOut2Int();
-    }
+    if (USB_IsOut2IntActive(statusOut)) { handleUsbOut2Int(); }
 #endif  // EP2OUT_USED
-
+#if SLAB_USB_EP1IN_USED
+    if (USB_IsIn1IntActive(statusIn)) { handleUsbInXInt(1); }
+#endif  // EP1IN_USED
 #if SLAB_USB_EP1OUT_USED
-    if (USB_IsOut1IntActive(statusOut)) {
-        handleUsbOut1Int();
-    }
+    if (USB_IsOut1IntActive(statusOut)) { handleUsbOut1Int(); }
 #endif  // EP1OUT_USED
 
     // Restore index
@@ -1103,8 +1064,7 @@ void usb_isr(void) {
 }
 
 
-void USBD_SetUsbState(USBD_State_TypeDef newState)
-{
+void USBD_SetUsbState(USBD_State_TypeDef newState) {
 
 #if (SLAB_USB_SUPPORT_ALT_INTERFACES)
     uint8_t i;
@@ -1177,7 +1137,7 @@ int8_t USBD_Write(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback) 
         return USB_STATUS_DEVICE_UNCONFIGURED;
     }
 
-    ep = GetEp(epAddr);
+    ep = GET_EP(epAddr);
 
     // If the endpoint is not idle, we cannot start a new transfer.
     // Return the appropriate error code.
@@ -1199,40 +1159,46 @@ int8_t USBD_Write(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback) 
     switch (epAddr) {
         // For Endpoint 0, set the inPacketPending flag to true. The USB handler
         // will see this on the next SOF and begin the transfer.
-        case (EP0):
+        case (EP0): {
             ep0.misc.bits.inPacketPending = true;
-            break;
+        } break;
 
-            // For data endpoints, we will call USB_WriteFIFO here to reduce latency
-            // between the call to USBD_Write() and the first packet being sent.
+        // For data endpoints, we will call USB_WriteFIFO here to reduce latency
+        // between the call to USBD_Write() and the first packet being sent.
 #if SLAB_USB_EP1IN_USED
-        case (EP1IN):
-            USB_WriteFIFO(1,
-                (byteCount > SLAB_USB_EP1IN_MAX_PACKET_SIZE) ? SLAB_USB_EP1IN_MAX_PACKET_SIZE : byteCount,
+        case (EP1IN): {
+            USB_WriteFIFO(
+                1,
+                EFM8_MIN(byteCount, SLAB_USB_EP1IN_MAX_PACKET_SIZE),
                 ep1in.buf,
-                true);
-            break;
+                true
+            );
+        } break;
 #endif // SLAB_USB_EP1IN_USED
 #if SLAB_USB_EP2IN_USED
-        case (EP2IN):
-            USB_WriteFIFO(2,
-                (byteCount > SLAB_USB_EP2IN_MAX_PACKET_SIZE) ? SLAB_USB_EP2IN_MAX_PACKET_SIZE : byteCount,
+        case (EP2IN): {
+            USB_WriteFIFO(
+                2,
+                EFM8_MIN(byteCount, SLAB_USB_EP2IN_MAX_PACKET_SIZE),
                 ep2in.buf,
-                true);
-            break;
+                true
+            );
+        } break;
 #endif // SLAB_USB_EP2IN_USED
 #if SLAB_USB_EP3IN_USED
-        case (EP3IN):
+        case (EP3IN): {
 #if  ((SLAB_USB_EP3IN_TRANSFER_TYPE == USB_EPTYPE_BULK) || (SLAB_USB_EP3IN_TRANSFER_TYPE == USB_EPTYPE_INTR))
-            USB_WriteFIFO(3,
-                (byteCount > SLAB_USB_EP3IN_MAX_PACKET_SIZE) ? SLAB_USB_EP3IN_MAX_PACKET_SIZE : byteCount,
+            USB_WriteFIFO(
+                3,
+                EFM8_MIN(byteCount, SLAB_USB_EP3IN_MAX_PACKET_SIZE),
                 ep3in.buf,
-                true);
+                true
+            );
 #elif (SLAB_USB_EP3IN_TRANSFER_TYPE == USB_EPTYPE_ISOC)
             ep3in.misc.bits.inPacketPending = true;
             ep3inIsoIdx = 0;
 #endif
-            break;
+        } break;
 #endif // SLAB_USB_EP3IN_USED
     }
 
@@ -1291,23 +1257,32 @@ USB_Status_TypeDef USBD_SetupCmdCb(XRAM USB_Setup_TypeDef *setup) {
                 } else if ((setup->wValue >> 8) == USB_HID_DESCRIPTOR) {
                     switch (setup->wIndex) {
                         case INTERFACE_BOOT_KEYBOARD: {
-                            USBD_Write(EP0, &usb_config_desc.hid0,
+                            USBD_Write(
+                                EP0,
+                                &usb_config_desc.hid0,
                                 EFM8_MIN(sizeof(usb_hid_desc_t), setup->wLength),
-                                false);
+                                false
+                            );
                             retVal = USB_STATUS_OK;
                         } break;
 
                         case INTERFACE_SHARED_HID: {
-                            USBD_Write(EP0, &usb_config_desc.hid1,
+                            USBD_Write(
+                                EP0,
+                                &usb_config_desc.hid1,
                                 EFM8_MIN(sizeof(usb_hid_desc_t), setup->wLength),
-                                false);
+                                false
+                            );
                             retVal = USB_STATUS_OK;
                         } break;
 
                         case INTERFACE_VENDOR: {
-                            USBD_Write(EP0, &usb_config_desc.hid2,
+                            USBD_Write(
+                                EP0,
+                                &usb_config_desc.hid2,
                                 EFM8_MIN(sizeof(usb_hid_desc_t), setup->wLength),
-                                false);
+                                false
+                            );
                             retVal = USB_STATUS_OK;
                         } break;
 
@@ -1400,6 +1375,7 @@ int8_t USBD_Read(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback) {
 
     USB_SaveSfrPage();
 
+#ifndef NDEBUG
     // Verify the endpoint address is valid.
     switch (epAddr) {
         case EP0:
@@ -1426,13 +1402,14 @@ int8_t USBD_Read(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback) {
             SLAB_ASSERT(false);
             return USB_STATUS_ILLEGAL;
     }
+#endif
 
     // If the device has not been configured, we cannot start a transfer.
     if ((epAddr != EP0) && (s_usb_state != USBD_STATE_CONFIGURED)) {
         return USB_STATUS_DEVICE_UNCONFIGURED;
     }
 
-    ep = GetEp(epAddr);
+    ep = GET_EP(epAddr);
 
     // If the endpoint is not idle, we cannot start a new transfer.
     // Return the appropriate error code.
