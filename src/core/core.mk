@@ -4,6 +4,9 @@
 CORE_PATH = core
 USB_REPORTS_PATH = usb_reports
 
+# Add this to the makefile list so changes to this will result in a rebuild
+MAKEFILE_INC += $(KEYPLUS_PATH)/core/core.mk
+
 #######################################################################
 #                  firmware compile time information                  #
 #######################################################################

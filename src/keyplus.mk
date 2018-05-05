@@ -1,3 +1,8 @@
+# Copyright 2018 jem@seethis.link
+# Licensed under the MIT license (http://opensource.org/licenses/MIT)
+
+MAKEFILE_INC += $(KEYPLUS_PATH)/keyplus.mk
+
 LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
 MERGED_HEX="$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex"
 

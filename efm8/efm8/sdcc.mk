@@ -1,6 +1,9 @@
 # Copyright 2018 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
+MAKEFILE_INC += Makefile
+MAKEFILE_INC += $(EFM8_PATH)/efm8.mk
+
 CFLAGS += \
 	$(CDEFS) \
 	$(INC_PATHS) \
@@ -14,6 +17,8 @@ REL_FILES = $(C_REL_FILES) $(ASM_REL_FILES)
 
 all: $(TARGET_HEX) size
 
+$(REL_FILES): $(MAKEFILE_INC)
+
 $(TARGET_HEX): $(REL_FILES)
 	@echo "=== compiling target ==="
 	$(CC) $(CFLAGS) $(LFLAGS) $(REL_FILES) -o $@
@@ -25,13 +30,13 @@ size: $(TARGET_HEX)
 	@$(EFM8_PATH)/scripts/hex-size.sh $< "$(TARG_OBJ).mem" "$(CODE_SIZE)"
 
 # rule for c
-$(OBJ_DIR)/%.rel: %.c
+$(OBJ_DIR)/%.rel: %.c $(EXTRA_DEPENDENCIES)
 	@echo "compiling: $<"
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 # rule for asm
-$(OBJ_DIR)/%.rel: %.S
+$(OBJ_DIR)/%.rel: %.S $(EXTRA_DEPENDENCIES)
 	@mkdir -p $(dir $@)
 	$(AS) $(ASFLAGS) $@ $<
 

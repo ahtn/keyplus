@@ -539,7 +539,7 @@ void USB_WriteFIFO(uint8_t fifoNum, uint8_t numBytes, uint8_t *dat, bool txPacke
 bool USBD_EpIsBusy(uint8_t epAddr) {
     XRAM USBD_Ep_TypeDef *ep;
 
-#ifndef NDEBUG
+#if (NDEBUG==0) || !defined(NDEBUG)
     // Verify this is a valid endpoint address
     if (epAddr >= SLAB_USB_NUM_EPS_USED) {
         SLAB_ASSERT(false);
@@ -1375,7 +1375,7 @@ int8_t USBD_Read(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback) {
 
     USB_SaveSfrPage();
 
-#ifndef NDEBUG
+#if (NDEBUG==0) || !defined(NDEBUG)
     // Verify the endpoint address is valid.
     switch (epAddr) {
         case EP0:

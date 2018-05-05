@@ -100,7 +100,7 @@ endif
 MEMORY_MODEL = small
 
 # Extra compiler options
-CFLAGS += -DNDEBUG
+CFLAGS += -DNDEBUG=1
 CFLAGS += $(CDEFS)
 
 # Extra linking options
