@@ -17,10 +17,10 @@
 #include "efm8_sfr.h"
 
 #define GetEp(epAddr)  (\
-    epAddr == EP0    ? &ep0    : \
-    epAddr == EP1IN  ? &ep1in  : \
-    epAddr == EP2IN  ? &ep2in  : \
-    epAddr == EP3IN  ? &ep3in  : \
+    epAddr == EP0    ? &ep0   : \
+    epAddr == EP1IN  ? &ep1in : \
+    epAddr == EP2IN  ? &ep2in : \
+    epAddr == EP3IN  ? &ep3in : \
     epAddr == EP3OUT ? &ep3out : &ep0 \
     )
 
@@ -29,12 +29,23 @@ static XRAM uint8_t s_usb_saved_state;
 static XRAM uint8_t s_configuration;
 static XRAM ep0String_type ep0String;
 
+#if 0
 static XRAM USBD_Ep_TypeDef ep0;
 static XRAM USBD_Ep_TypeDef ep1in;
 static XRAM USBD_Ep_TypeDef ep2in;
 static XRAM USBD_Ep_TypeDef ep3in;
+#else
+static XRAM USBD_Ep_TypeDef epXin[4];
+#define ep0     (epXin[0])
+#define ep1in   (epXin[1])
+#define ep2in   (epXin[2])
+#define ep3in   (epXin[3])
+
+#endif
+
 static XRAM USBD_Ep_TypeDef ep3out;
 // static XRAM USBD_Ep_TypeDef ep1out;
+
 static XRAM USB_Setup_TypeDef setup;
 
 static const ROM uint8_t txZero[2];
@@ -42,16 +53,7 @@ static const ROM uint8_t txZero[2];
 uint8_t XRAM keyboardReport[8] = {0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 static USB_Status_TypeDef ClearFeature(void);
-
-#if (SLAB_USB_EP1IN_USED)
-void handleUsbIn1Int(void);
-#endif // SLAB_USB_EP1IN_USED
-#if (SLAB_USB_EP2IN_USED)
-void handleUsbIn2Int(void);
-#endif // SLAB_USB_EP2IN_USED
-#if (SLAB_USB_EP3IN_USED)
-void handleUsbIn3Int(void);
-#endif // SLAB_USB_EP3IN_USED
+static void handleUsbInXInt(uint8_t ep_num);
 
 void USBD_Connect(void) {
     USB_SaveSfrPage();
@@ -786,120 +788,42 @@ static void handleUsbEp0Int(void) {
     }
 }
 
-void handleUsbIn1Int(void) {
+static void handleUsbInXInt(uint8_t ep_num) {
     bool callback;
+    XRAM USBD_Ep_TypeDef *ep = &epXin[ep_num];
 
-    USB_SetIndex(1);
+    USB_SetIndex(ep_num);
 
     if (USB_EpnInGetSentStall()) {
         USB_EpnInClearSentStall();
-    } else if (ep1in.state == D_EP_TRANSMITTING) {
+    } else if (ep->state == D_EP_TRANSMITTING) {
         uint8_t xferred;
-        if (ep1in.remaining > SLAB_USB_EP1IN_MAX_PACKET_SIZE) {
-            xferred = SLAB_USB_EP1IN_MAX_PACKET_SIZE;
+        if (ep->remaining > ep->maxPacketSize) {
+            xferred = ep->maxPacketSize;
         } else {
-            xferred = ep1in.remaining;
+            xferred = ep->remaining;
         }
-        ep1in.remaining -= xferred;
-        ep1in.buf += xferred;
 
-        callback = ep1in.misc.bits.callback;
+        ep->remaining -= xferred;
+        ep->buf += xferred;
+
+        callback = ep->misc.bits.callback;
 
         // Load more data
-        if (ep1in.remaining > 0) {
+        if (ep->remaining > 0) {
             uint8_t num_bytes;
-            if (ep1in.remaining > SLAB_USB_EP1IN_MAX_PACKET_SIZE) {
-                num_bytes = SLAB_USB_EP1IN_MAX_PACKET_SIZE;
+            if (ep->remaining > ep->maxPacketSize) {
+                num_bytes = ep->maxPacketSize;
             } else {
-                num_bytes = ep1in.remaining;
+                num_bytes = ep->remaining;
             }
-            USB_WriteFIFO(1, num_bytes, ep1in.buf, true);
+            USB_WriteFIFO(ep_num, num_bytes, ep->buf, true);
         } else {
-            ep1in.misc.bits.callback = false;
-            ep1in.state = D_EP_IDLE;
+            ep->misc.bits.callback = false;
+            ep->state = D_EP_IDLE;
         }
     }
 }
-
-#if SLAB_USB_EP2IN_USED
-/***************************************************************************//**
- * @brief       Handle Endpoint 2 IN transfer interrupt
- * @note        This function takes no parameters, but it uses the EP2IN status
- *              variables stored in @ref myUsbDevice.ep2in.
- ******************************************************************************/
-void handleUsbIn2Int(void) {
-    bool callback;
-
-    USB_SetIndex(2);
-
-    if (USB_EpnInGetSentStall()) {
-        USB_EpnInClearSentStall();
-    } else if (ep2in.state == D_EP_TRANSMITTING) {
-        uint8_t xferred;
-        if (ep2in.remaining > SLAB_USB_EP2IN_MAX_PACKET_SIZE) {
-            xferred = SLAB_USB_EP2IN_MAX_PACKET_SIZE;
-        } else {
-            xferred = ep2in.remaining;
-        }
-        ep2in.remaining -= xferred;
-        ep2in.buf += xferred;
-
-        callback = ep2in.misc.bits.callback;
-
-        // Load more data
-        if (ep2in.remaining > 0) {
-            uint8_t num_bytes;
-            if (ep2in.remaining > SLAB_USB_EP2IN_MAX_PACKET_SIZE) {
-                num_bytes = SLAB_USB_EP2IN_MAX_PACKET_SIZE;
-            } else {
-                num_bytes = ep2in.remaining;
-            }
-            USB_WriteFIFO(2, num_bytes, ep2in.buf, true);
-        } else {
-            ep2in.misc.bits.callback = false;
-            ep2in.state = D_EP_IDLE;
-        }
-    }
-}
-#endif // SLAB_USB_EP2IN_USED
-
-#if SLAB_USB_EP3IN_USED
-void handleUsbIn3Int(void) {
-    bool callback;
-
-    USB_SetIndex(3);
-
-    if (USB_EpnInGetSentStall()) {
-        USB_EpnInClearSentStall();
-    } else if (ep3in.state == D_EP_TRANSMITTING) {
-        uint8_t xferred;
-
-        if (ep3in.remaining > SLAB_USB_EP3IN_MAX_PACKET_SIZE) {
-            xferred =SLAB_USB_EP3IN_MAX_PACKET_SIZE;
-        } else {
-            xferred = ep3in.remaining;
-        }
-
-        ep3in.remaining -= xferred;
-        ep3in.buf += xferred;
-
-        callback = ep3in.misc.bits.callback;
-        // Load more data
-        if (ep3in.remaining > 0) {
-            uint8_t num_bytes;
-            if (ep3in.remaining > SLAB_USB_EP3IN_MAX_PACKET_SIZE) {
-                num_bytes = SLAB_USB_EP3IN_MAX_PACKET_SIZE;
-            } else {
-                num_bytes = ep3in.remaining;
-            }
-            USB_WriteFIFO(3, num_bytes, ep3in.buf, true);
-        } else {
-            ep3in.misc.bits.callback = false;
-            ep3in.state = D_EP_IDLE;
-        }
-    }
-}
-#endif
 
 #if SLAB_USB_EP3OUT_USED
 void handleUsbOut3Int(void) {
@@ -960,21 +884,27 @@ static void handleUsbResetInt(void) {
   // Halt all other endpoints
 #if SLAB_USB_EP1IN_USED
   ep1in.state = D_EP_HALT;
+  ep1in.maxPacketSize = SLAB_USB_EP1IN_MAX_PACKET_SIZE;
 #endif
 #if SLAB_USB_EP2IN_USED
   ep2in.state = D_EP_HALT;
+  ep2in.maxPacketSize = SLAB_USB_EP2IN_MAX_PACKET_SIZE;
 #endif
 #if SLAB_USB_EP3IN_USED
   ep3in.state = D_EP_HALT;
+  ep3in.maxPacketSize = SLAB_USB_EP3IN_MAX_PACKET_SIZE;
 #endif
 #if SLAB_USB_EP1OUT_USED
   ep1out.state = D_EP_HALT;
+  ep1out.maxPacketSize = SLAB_USB_EP1OUT_MAX_PACKET_SIZE;
 #endif
 #if SLAB_USB_EP2OUT_USED
   ep2out.state = D_EP_HALT;
+  ep2out.maxPacketSize = SLAB_USB_EP2OUT_MAX_PACKET_SIZE;
 #endif
 #if SLAB_USB_EP3OUT_USED
   ep3out.state = D_EP_HALT;
+  ep3out.maxPacketSize = SLAB_USB_EP3OUT_MAX_PACKET_SIZE;
 #endif
 
   // After a USB reset, some USB hardware configurations will be reset and must
@@ -1061,7 +991,7 @@ void usb_isr(void) {
     // handle IN / OUT endpoint interrupts
 #if SLAB_USB_EP3IN_USED
     if (USB_IsIn3IntActive(statusIn)) {
-        handleUsbIn3Int();
+        handleUsbInXInt(3);
     }
 #endif  // EP3IN_USED
 
@@ -1073,13 +1003,13 @@ void usb_isr(void) {
 
 #if SLAB_USB_EP2IN_USED
     if (USB_IsIn2IntActive(statusIn)) {
-        handleUsbIn2Int();
+        handleUsbInXInt(2);
     }
 #endif  // EP2IN_USED
 
 #if SLAB_USB_EP1IN_USED
     if (USB_IsIn1IntActive(statusIn)) {
-        handleUsbIn1Int();
+        handleUsbInXInt(1);
     }
 #endif  // EP1IN_USED
 

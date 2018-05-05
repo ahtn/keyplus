@@ -150,6 +150,7 @@ typedef struct {
         } bits;
         uint8_t c;
     } misc;
+    uint8_t maxPacketSize;
 } USBD_Ep_TypeDef;
 
 /// @brief USB Setup type.
