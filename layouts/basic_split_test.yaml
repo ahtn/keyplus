@@ -244,6 +244,7 @@ devices:
 
   jade split - left:
     id: 16
+    mcu: atxmega32a4u
     wireless_split: true
     wireless_mouse: true
     wired_split: false
@@ -267,6 +268,10 @@ devices:
       #   trigger_time_release: 1
       #   parasitic_discharge_delay_idle: 10.0
       #   parasitic_discharge_delay_debouncing: 10.0
+    studio_kle: [
+      "something"
+    ]
+
 
   jade split - right:
     id: 17
