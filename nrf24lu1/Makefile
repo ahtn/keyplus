@@ -129,6 +129,9 @@ ifdef SDCC_PATH
 	-I"$(SDCC_PATH)/share/sdcc/include" \
 	-I"$(SDCC_PATH)/share/sdcc/include/mcs51" \
 	-L"$(SDCC_PATH)/share/sdcc/lib/small"
+  CFLAGS += --nostdlib
+  CFLAGS += --nostdinc
+  CFLAGS += -llibsdcc -lmcs51 -llibint
   AS = $(SDCC_PATH)/bin/sdas8051
   CC = $(SDCC_PATH)/bin/sdcc
   PP = $(SDCC_PATH)/bin/sdcpp

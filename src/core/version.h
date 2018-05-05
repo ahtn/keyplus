@@ -5,4 +5,7 @@
 
 #define KEYPLUS_VERSION_MAJOR 0
 #define KEYPLUS_VERSION_MINOR 3
-#define KEYPLUS_VERSION_PATCH 0
+#define KEYPLUS_VERSION_PATCH 1
+
+// Only set this to 1 for release builds
+#define KEYPLUS_VERSION_IS_STABLE 0

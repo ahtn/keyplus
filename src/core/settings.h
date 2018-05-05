@@ -145,6 +145,7 @@ typedef struct feature_ctrl_t {
     uint8_t reserved_2: 1;
 } feature_ctrl_t;
 
+#define SETTINGS_STORAGE_SIZE 512
 #define SETTINGS_MAIN_INFO_SIZE 96
 /// The settings stored in flash to control this device.
 typedef struct settings_t { // 512 bytes
@@ -193,6 +194,7 @@ typedef struct runtime_settings_t {
 /*********************************************************************
  *                      firmware build settings                      *
  *********************************************************************/
+#define FIRMWARE_BUILD_SETTINGS_SIZE 62
 /// Information and features of the firmware. This features are baked in at
 /// compile time and can be used by the host software to discover what
 /// capabilities the firmware supports.
@@ -297,7 +299,13 @@ typedef struct firmware_build_settings_t {
     /// this value lower to conserve RAM.
     uint8_t scanner_max_rows;
 
-    uint8_t reserved[21]; // pad to 62 bytes
+    // offset 41
+    // build info:
+    /// Indicates if this was a stable build or pre release build
+    uint8_t stable_build: 1;
+    uint8_t reserved5: 7;
+
+    uint8_t reserved[20]; // pad to 62 bytes
 } firmware_build_settings_t;
 
 /// Lookup a setting from the devices settings table in flash.

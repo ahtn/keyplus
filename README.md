@@ -5,6 +5,12 @@ and wired split keyboards.
 
 Currently in beta so lots of stuff still might change.
 
+# Download
+
+[Stable releases (recommended)](https://github.com/ahtn/keyplus/releases)
+
+[Latest builds on Keyplus CI](https://ci.keyplus.io/)
+
 # Keyplus Flasher GUI
 
 ## Setup instructions
@@ -25,7 +31,7 @@ Next, install the packages `avr-gcc`, `avr-libc`, `avr-binutils`, `python3`, `ma
 
 Then, install the python dependencies:
 ```bash
-sudo pip install -U keyplus
+pip install -U --user keyplus
 ```
 
 Also, you need to initialize the git submodules:
@@ -110,7 +116,7 @@ The build scripts need some python libraries installed. You should get
 all the necessary packages if you install the `keyplus` python library with:
 
 ```
-sudo pip install -U keyplus
+pip install --user -U keyplus
 ```
 
 Also, you need to initialize the git submodules:

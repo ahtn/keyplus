@@ -5,7 +5,7 @@ if [[ -z $TRAVIS ]]; then
     sudo apt-get install make python3 python3-pip libpython-dev libffi-dev gawk hidapi python3-pyside
 fi
 
-sudo pip3 install -U keyplus
+pip install --user -U keyplus
 
 #
 # AVR8 tool chain

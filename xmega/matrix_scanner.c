@@ -58,7 +58,7 @@ static void setup_columns(void) {
     // Note: If MPCMASK=0, then its function is disabled, so writing to PIN0CTRL
     // would actually affect update PIN0CTRL instead of updating no pins.
     const uint8_t max_col_pin_num = g_scan_plan.max_col_pin_num;
-    const uint8_t max_port_num = INT_DIV_ROUND_UP(max_col_pin_num, IO_PORT_SIZE);
+    const uint8_t max_port_num = INT_DIV_ROUND_UP(max_col_pin_num+1, IO_PORT_SIZE);
     uint8_t port_ii;
     for (port_ii = 0; port_ii < max_port_num; ++port_ii) {
         io_port_t *port = IO_MAP_GET_PORT(port_ii);
@@ -247,7 +247,7 @@ void matrix_scanner_init(void) {
     }
 
 
-    s_bytes_per_row = INT_DIV_ROUND_UP(g_scan_plan.max_col_pin_num, IO_PORT_SIZE);
+    s_bytes_per_row = INT_DIV_ROUND_UP(g_scan_plan.max_col_pin_num+1, IO_PORT_SIZE);
 
     if (
         g_scan_plan.mode == MATRIX_SCANNER_MODE_COL_ROW ||

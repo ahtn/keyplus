@@ -326,16 +326,26 @@ class KeyplusLayout(object):
 
         # struct keyboard_info_t layouts[MAX_NUM_KEYBOARDS];
 
+        # Build the layout table
+        # The layout table holds precomputed values for layout sizes
+        # and their number of layers
         for layout_id in self._layouts:
             layout = self._layouts[layout_id]
             layer = layout.layer_list[0]
 
             size = 0
             for (split_device_number, _) in enumerate(layer.device_list):
-                size += layer.get_device_size(split_device_number)
+                size += layer.get_layout_component_size(split_device_number)
             layout_info.layouts[layout_id].matrix_size = size
             layout_info.layouts[layout_id].layer_count = layout.number_layers
 
+        # Build the device map, need to store:
+        # * layout_id: the layout this device maps to
+        # * matrix_offset: the offset of this device into the layout with the
+        #   given id
+        # * matrix_size:
+        # NOTE: matrix_offset and matrix_size are given in bytes, i.e.
+        # ceil(num_keys/8)
         for device_id in range(MAX_NUMBER_DEVICES):
             dev = layout_info.devices[device_id]
             if device_id in self._devices:
@@ -347,9 +357,9 @@ class KeyplusLayout(object):
                         dev.layout_id = self._layout_id_map[this_dev.layout]
                         target_layout = self._layouts[dev.layout_id]
                         target_layer = target_layout.layer_list[0]
-                        dev.matrix_offset = target_layer.get_device_offset(this_dev.split_device_num)
+                        dev.matrix_offset = target_layer.get_layout_component_offset(this_dev.split_device_num)
                         # TODO: Change this to a key number
-                        dev.matrix_size = target_layer.get_device_size(this_dev.split_device_num)
+                        dev.matrix_size = target_layer.get_layout_component_size(this_dev.split_device_num)
                     else:
                         raise KeyplusSettingsError(
                             "Device '{}' is set to use layout '{}', but that "
