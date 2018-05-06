@@ -5,13 +5,12 @@ MAKEFILE_INC += $(KEYPLUS_PATH)/usb/usb.mk
 
 USB_HID_PATH = usb
 
-C_SRC += \
-	$(USB_HID_PATH)/device_descriptors.c \
-
-ifdef USB_VID
-  CDEFS += -DUSB_VID=0x$(USB_VID)
-endif
-
-ifdef USB_VID
-  CDEFS += -DUSB_PID=0x$(USB_PID)
+ifeq ($(USB_DESCRIPTOR_ARRANGEMENT), normal)
+  C_SRC += $(USB_HID_PATH)/desc/normal/descriptors.c
+  CDEFS += -DUSB_DESCRIPTOR_ARRANGEMENT=0
+else ifeq ($(USB_DESCRIPTOR_ARRANGEMENT), compact)
+  C_SRC += $(USB_HID_PATH)/desc/compact/descriptors.c
+  CDEFS += -DUSB_DESCRIPTOR_ARRANGEMENT=1
+else
+  $(error "USB_DESCRIPTOR_ARRANGEMENT not set")
 endif

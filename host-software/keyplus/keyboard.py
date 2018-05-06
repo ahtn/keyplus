@@ -116,7 +116,6 @@ def find_devices(name=None, serial_number=None, vid_pid=None, device_id=None,
         vid=target_vid,
         pid=target_pid,
         serial=serial_number,
-        interface=INTERFACE_VENDOR
     )
 
 
@@ -127,6 +126,19 @@ def find_devices(name=None, serial_number=None, vid_pid=None, device_id=None,
                 not is_keyplus_usb_id(hid_device.vendor_id, hid_device.product_id)
             ):
                 # Ignore devices that don't use the keyplus vendor IDs
+                continue
+
+            access_type = hid_device.release_number & USB_VERSION_ACCESS_TYPE_MASK
+            intf_num = hid_device.interface_number
+
+            # Some devices may not place the HID interface on the same
+            # endpoint/interface etc.
+            #
+            # The devices will use the upper 4 bits of the bcdDevice version
+            # to store there access version.
+            if access_type == USB_VERSION_HID_INTERFACE_3 and intf_num != TYPE0_INTERFACE_VENDOR:
+                continue
+            elif access_type == USB_VERSION_HID_INTERFACE_2 and intf_num != TYPE1_INTERFACE_VENDOR:
                 continue
 
             new_kb = KeyplusKeyboard(hid_device)

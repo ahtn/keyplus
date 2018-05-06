@@ -67,8 +67,15 @@ def msg_box(description="", title="Message"):
     msgBox.exec_()
 
 def is_keyplus_device(device):
-    if device.interface_number != protocol.DEFAULT_INTERFACE:
+    intf_num = device.interface_number
+    prot_ver = device.release_number & 0xf000
+
+    if (prot_ver, intf_num) not in [
+        (0x0000, TYPE0_INTERFACE_VENDOR),
+        (0x1000, TYPE1_INTERFACE_VENDOR),
+    ]:
         return False
+
     usb_id = (device.vendor_id, device.product_id)
     if (
         usb_id in keyplus.usb_ids.KEYPLUS_USB_IDS or

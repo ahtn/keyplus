@@ -51,12 +51,21 @@ ifndef BOARD
 endif
 
 ifndef LAYOUT_FILE
-  LAYOUT_FILE=../layouts/basic_split_test.yaml
+  LAYOUT_FILE=$(KEYPLUS_PATH)/../layouts/basic_split_test.yaml
 endif
 
 ifndef RF_FILE
-  RF_FILE=../layouts/test_rf_config.yaml
+  RF_FILE=$(KEYPLUS_PATH)/../layouts/test_rf_config.yaml
 endif
+
+ifndef SCANNER_MAX_ROWS
+   MAX_NUM_ROWS=18
+endif
+
+ifndef KEYPLUS_CLI
+    KEYPLUS_CLI   = python3 $(KEYPLUS_PATH)/../host-software/keyplus-cli
+endif
+
 
 #######################################################################
 #                            source files                             #
@@ -115,15 +124,13 @@ endif
 # Scanner module, defaults to 1
 ifeq ($(USE_SCANNER), 0)
     CDEFS += -DUSE_SCANNER=0
+    CDEFS += -DMAX_NUM_ROWS=0
 else
     C_SRC += \
         $(CORE_PATH)/io_map.c \
         $(CORE_PATH)/matrix_scanner.c
     CDEFS += -DUSE_SCANNER=1
-    ifndef SCANNER_MAX_ROWS
-        $(error "Need to define SCANNER_MAX_ROWS")
-    endif
-    CDEFS += -DMAX_NUM_ROWS=$(SCANNER_MAX_ROWS)
+    CDEFS += -DMAX_NUM_ROWS=$(MAX_NUM_ROWS)
 endif
 
 # Hardware specific scan, defaults to 0
@@ -138,11 +145,12 @@ ifeq ($(USE_USB), 0)
     CDEFS += -DUSE_USB=0
 else
     C_SRC += \
-        $(CORE_PATH)/matrix_interpret.c \
         $(CORE_PATH)/mods.c \
+        $(CORE_PATH)/matrix_interpret.c \
         $(CORE_PATH)/usb_commands.c \
         $(CORE_PATH)/macro.c \
-        $(CORE_PATH)/keycode.c
+        $(CORE_PATH)/keycode.c \
+
     CDEFS += -DUSE_USB=1
 endif
 

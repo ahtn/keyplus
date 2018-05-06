@@ -6,7 +6,6 @@ SUBSYSTEMS=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="b007", TAG+="uacc
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="1111", TAG+="uaccess", TAG+="udev-acl"
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="2222", TAG+="uaccess", TAG+="udev-acl"
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="3333", TAG+="uaccess", TAG+="udev-acl"
-TAG+="uaccess", TAG+="udev-acl"
 
 # keyplus usb ids
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="1209", ATTRS{idProduct}=="bb00", TAG+="uaccess", TAG+="udev-acl"

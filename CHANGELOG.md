@@ -11,7 +11,7 @@
   using a delay to activate the hold key, allow the hold key to be activated
   when other keys are pressed.
 
-* `firmware` atmega32u4 support
+* `firmware` basic atmega32u4 support
 * `firmware` fixed issue that caused updates to the encryption key to
   require a reset
 * `firmware` made the maximum number of supported rows configurable at compile
@@ -20,6 +20,7 @@
 * `keyplus-flasher` more error messages
 * `keyplus-flasher` fixed labels not updating properly
 
+* `internal` clean up source code tree
 
 0.3.0
 ==================

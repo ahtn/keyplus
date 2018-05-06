@@ -1,0 +1,1 @@
+# Makefile for AVR projects

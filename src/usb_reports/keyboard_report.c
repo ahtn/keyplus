@@ -17,6 +17,7 @@
 // TODO: put these into an init function
 XRAM hid_report_boot_keyboard_t g_boot_keyboard_report;
 XRAM hid_report_nkro_keyboard_t g_nkro_keyboard_report;
+
 static XRAM uint8_t key_age[KEY_AGE_LIST_LEN];
 static XRAM uint8_t s_keyboard_report_mode = KEYBOARD_REPORT_MODE_AUTO;
 static XRAM uint8_t keyboard_report_dirty;

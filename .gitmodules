@@ -5,10 +5,7 @@
 	path = nrf24lu1/nrf24lu1p-512-bootloader
 	url = https://github.com/ahtn/nrf24lu1p-512-bootloader
 [submodule "xmega/avr-makefile"]
-	path = xmega/avr-makefile
-	url = https://github.com/ahtn/avr-makefile
-[submodule "atmega32u4/avr-makefile"]
-	path = atmega32u4/avr-makefile
+	path = src/arch/avr/avr-makefile
 	url = https://github.com/ahtn/avr-makefile
 [submodule "atmega32u4/bootloaders/kp_boot_32u4"]
 	path = atmega32u4/bootloaders/kp_boot_32u4

@@ -11,12 +11,11 @@
 #include "core/layout.h"
 #include "core/util.h"
 
+XRAM port_mask_t s_available_pins[IO_PORT_COUNT];
 
 const ROM io_map_info_t g_io_map_info = {
     .usable_pins = IO_USABLE_PINS,
 };
-
-port_mask_t s_available_pins[IO_PORT_COUNT];
 
 void io_map_init(void) {
     flash_load_from_rom(
@@ -55,6 +54,7 @@ uint8_t io_map_claim_pins(uint8_t port_num, uint8_t pin_mask) {
 // }
 // #endif
 
+#if !defined(NO_MATRIX)
 uint8_t io_map_get_col_pin(uint8_t col) {
     return flash_read_byte(
         LAYOUT_PORT_COL_PINS_ADDR + col
@@ -67,4 +67,4 @@ port_mask_t io_map_get_row_pin(uint8_t row) {
         LAYOUT_PORT_ROW_PINS_ADDR + row
     );
 }
-
+#endif

@@ -7,8 +7,9 @@
 /// Upper 16 bits of the chip_id is used for vendor specific id. We use the
 /// USB Vendor ID of the chip manufacturer to differentiate them.
 enum chip_id_vendor_type {
-    CHIP_ID_ATMEL = 0x03eb0000,
+    CHIP_ID_ATMEL  = 0x03eb0000,
     CHIP_ID_NORDIC = 0x19150000,
+    CHIP_ID_SILABS = 0x10C40000,
 };
 
 enum chip_id_controller_type {
@@ -17,7 +18,6 @@ enum chip_id_controller_type {
  *********************************************************************/
 
     // xmega AVR
-
     CHIP_ID_ATxmega16A4 = CHIP_ID_ATMEL | 0x0001,
     CHIP_ID_ATxmega32A4 = CHIP_ID_ATMEL | 0x0002,
     CHIP_ID_ATxmega64A3 = CHIP_ID_ATMEL | 0x0003,
@@ -77,6 +77,28 @@ enum chip_id_controller_type {
     CHIP_ID_nRF24LU1P_F16 = CHIP_ID_NORDIC | 0x0002,
     CHIP_ID_nRF24LU1P_F32 = CHIP_ID_NORDIC | 0x0003,
     // CHIP_ID_nRF52840 = CHIP_ID_NORDIC | 0x5200,
+
+
+/*********************************************************************
+ *                           Silicon Labs                            *
+ *********************************************************************/
+
+    CHIP_ID_EFM8UB30F40G_QFN20  = CHIP_ID_SILABS | 0x00,
+    CHIP_ID_EFM8UB31F40G_QFN24  = CHIP_ID_SILABS | 0x01,
+    CHIP_ID_EFM8UB31F40G_QSOP24 = CHIP_ID_SILABS | 0x02,
+
+    CHIP_ID_EFM8UB20F64G_QFP48  = CHIP_ID_SILABS | 0x60,
+    CHIP_ID_EFM8UB20F64G_QFP32  = CHIP_ID_SILABS | 0x61,
+    CHIP_ID_EFM8UB20F64G_QFN32  = CHIP_ID_SILABS | 0x62,
+    CHIP_ID_EFM8UB20F32G_QFP48  = CHIP_ID_SILABS | 0x63,
+    CHIP_ID_EFM8UB20F32G_QFP32  = CHIP_ID_SILABS | 0x64,
+    CHIP_ID_EFM8UB20F32G_QFN32  = CHIP_ID_SILABS | 0x65,
+
+    CHIP_ID_EFM8UB10F16G_QFN28  = CHIP_ID_SILABS | 0x41,
+    CHIP_ID_EFM8UB10F16G_QFN20  = CHIP_ID_SILABS | 0x43,
+    CHIP_ID_EFM8UB11F16G_QSOP24 = CHIP_ID_SILABS | 0x45,
+    CHIP_ID_EFM8UB10F8G_QFN20   = CHIP_ID_SILABS | 0x49,
+    CHIP_ID_EFM8UB11F16G_QFN24  = CHIP_ID_SILABS | 0x4A,
 
 };
 

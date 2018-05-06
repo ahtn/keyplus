@@ -9,8 +9,11 @@ from collections import namedtuple
 
 from keyplus.exceptions import KeyplusSettingsError
 
+import re
+
 CHIP_ID_ATMEL = 0x03eb0000
 CHIP_ID_NORDIC = 0x19150000
+CHIP_ID_SILABS = 0x10C40000
 
 ChipInfo = namedtuple(
     'ChipInfo',
@@ -31,8 +34,8 @@ def _create_nrf24(flash_size, name):
         chip_id = None, # filled out automatically later
         architecture = "8051",
         series = 'nRF24',
-        flash_size = flash_size,
-        ram_size = 2,
+        flash_size = flash_size * 2**10,
+        ram_size = 2 * 2**10,
         usb = True,
     )
 
@@ -65,8 +68,8 @@ def _create_xmega(flash_size, series):
         chip_id = None, # filled out automatically later
         architecture = "AVR_XMEGA",
         series = series,
-        flash_size = flash_size,
-        ram_size = ram_size,
+        flash_size = flash_size * 2**10,
+        ram_size = ram_size * 2**10,
         usb = usb_support,
     )
 
@@ -87,10 +90,38 @@ def _create_mega(flash_size, series):
         chip_id = None, # filled out automatically later
         architecture = "AVR_MEGA",
         series = series,
-        flash_size = flash_size,
+        flash_size = flash_size * 2**10,
         ram_size = ram_size,
         usb = usb_support,
     )
+
+def _create_efm8(name):
+    # example string to match against:
+    #   EFM8UB11F16G_QFN24
+    m = re.match(r"EFM8(.B.)(.)F(\d+)(.)_(\D+)(\d+)", name)
+
+    family       = m.group(1)
+    feature_set  = m.group(2)
+    flash_size   = int(m.group(3))
+    temp_grade   = m.group(4)
+    package_type = m.group(5)
+    pin_count    = int(m.group(6))
+
+    if flash_size <= 16:
+        ram_size = 2 # 2kB XRAM
+    else:
+        ram_size = 4 # 4kB XRAM
+
+    return ChipInfo(
+        name = name,
+        chip_id = None, # filled out automatically later
+        architecture = "8051",
+        series = 'efm8' + family.lower(),
+        flash_size = flash_size * 2**10,
+        ram_size = ram_size * 2**10,
+        usb = True,
+    )
+
 
 def get_chip_name_from_id(chip_id):
     if chip_id in CHIP_ID_TABLE:
@@ -185,6 +216,30 @@ CHIP_ID_TABLE = {
     CHIP_ID_NORDIC | 0x0001 : _create_nrf24(16, 'nRF24LU1-F16'),
     CHIP_ID_NORDIC | 0x0002 : _create_nrf24(16, 'nRF24LU1P-F16'),
     CHIP_ID_NORDIC | 0x0003 : _create_nrf24(32, 'nRF24LU1P-F32'),
+
+###############################################################################
+#                                Silicon Labs                                 #
+###############################################################################
+
+    # efm8ub3
+    CHIP_ID_SILABS | 0x00 : _create_efm8('EFM8UB30F40G_QFN20'),
+    CHIP_ID_SILABS | 0x01 : _create_efm8('EFM8UB31F40G_QFN24'),
+    CHIP_ID_SILABS | 0x02 : _create_efm8('EFM8UB31F40G_QSOP24'),
+
+    # efm8ub2
+    CHIP_ID_SILABS | 0x60 : _create_efm8('EFM8UB20F64G_QFP48'),
+    CHIP_ID_SILABS | 0x61 : _create_efm8('EFM8UB20F64G_QFP32'),
+    CHIP_ID_SILABS | 0x62 : _create_efm8('EFM8UB20F64G_QFN32'),
+    CHIP_ID_SILABS | 0x63 : _create_efm8('EFM8UB20F32G_QFP48'),
+    CHIP_ID_SILABS | 0x64 : _create_efm8('EFM8UB20F32G_QFP32'),
+    CHIP_ID_SILABS | 0x65 : _create_efm8('EFM8UB20F32G_QFN32'),
+
+    # efm8ub1
+    CHIP_ID_SILABS | 0x41 : _create_efm8('EFM8UB10F16G_QFN28'),
+    CHIP_ID_SILABS | 0x43 : _create_efm8('EFM8UB10F16G_QFN20'),
+    CHIP_ID_SILABS | 0x45 : _create_efm8('EFM8UB11F16G_QSOP24'),
+    CHIP_ID_SILABS | 0x49 : _create_efm8('EFM8UB10F8G_QFN20'),
+    CHIP_ID_SILABS | 0x4A : _create_efm8('EFM8UB11F16G_QFN24'),
 
 }
 

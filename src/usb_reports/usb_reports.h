@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "core/util.h"
+
 /// These functions need to be implemented for each microcontroller port.
 
 bit_t is_in_endpoint_ready(uint8_t endpoint_num);

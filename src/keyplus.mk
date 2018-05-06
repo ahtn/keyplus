@@ -6,8 +6,6 @@ MAKEFILE_INC += $(KEYPLUS_PATH)/keyplus.mk
 LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
 MERGED_HEX="$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex"
 
-KEYPLUS_CLI = python3 ../host-software/keyplus-cli
-
 all: print_keyplus_info $(MERGED_HEX)
 
 $(LAYOUT_FILE):
@@ -36,4 +34,4 @@ $(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
 		-o "$(MERGED_HEX)" \
 		-F chip_name="$(MCU_STRING)" \
 		-F scan_method=$(SCAN_METHOD) \
-		-F max_rows=$(SCANNER_MAX_ROWS) \
+		-F max_rows=$(MAX_NUM_ROWS) \

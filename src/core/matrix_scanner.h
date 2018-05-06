@@ -9,15 +9,14 @@
 #include "core/util.h"
 
 #if USE_SCANNER
-#include "core/io_map.h"
+#  include "core/io_map.h"
+#else
+#  define MAX_NUM_ROWS 0
+#endif
 
 #if !defined(MAX_NUM_ROWS)
 /// Max number of rows allowed for the matrix scanner
 #error "MAX_NUM_ROWS needs to be defined"
-#endif
-
-#else
-#define MAX_NUM_ROWS 0
 #endif
 
 /// Max number of keys a split keyboard device can use (16 bytes)
