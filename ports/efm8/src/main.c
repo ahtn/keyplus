@@ -98,13 +98,13 @@ static void io_init() {
 // #elif DEVICE_PKG_QFN20
 #elif defined(EFM8UB1_DEVICE) || defined(EFM8UB3_DEVICE)
     // All PxMDIN, PxMDOUT, PxSKIP, XBRx are all on PG3 on these micros
-    SET_SFRPAGE(PG3_PAGE);
-    P0MDOUT   = PIN0_bm | PIN1_bm;
-    P1MDIN    = PIN2_bm;
-    P0SKIP    = 0xFF;
-    P1SKIP    = 0xFF;
-    XBR2      = XBR2_XBARE__ENABLED;
-    SET_SFRPAGE(0);
+    SFRPAGE = PG3_PAGE;
+    P0MDOUT = PIN0_bm | PIN1_bm;
+    P1MDIN  = PIN2_bm;
+    P0SKIP  = 0xFF;
+    P1SKIP  = 0xFF;
+    XBR2    = XBR2_XBARE__ENABLED;
+    SFRPAGE = 0;
 #else
 #  error "device family not defined"
 #endif
@@ -121,7 +121,7 @@ static void oscillator_init() {
     // Clock settings
     CLKSEL = CLKSEL_CLKSL__HFOSC;
 #elif defined(EFM8UB1_DEVICE) | defined(EFM8UB3_DEVICE)
-    SET_SFRPAGE(PG2_PAGE);
+    SFRPAGE = PG2_PAGE;
     // Enable the flash prefetch engine, required for clock >25MHz
     PFE0CN = (
         PFE0CN_FLRT__BMASK
@@ -129,7 +129,7 @@ static void oscillator_init() {
     );
     // Clock settings
     CLKSEL = CLKSEL_CLKSL__HFOSC1;
-    SET_SFRPAGE(0);
+    SFRPAGE = 0;
 #endif
 }
 
