@@ -148,17 +148,19 @@ class LayoutRFSettings(object):
         self.check_settings()
 
         return {
-            'pipe0': to_hex_string(self.pipe0),
-            'pipe1': to_hex_string(self.pipe1),
-            'pipe2': to_hex_string(self.pipe2),
-            'pipe3': to_hex_string(self.pipe3),
-            'pipe4': to_hex_string(self.pipe4),
-            'pipe5': to_hex_string(self.pipe5),
-            'aes_encryption_key': to_hex_string(self.encryption_key),
-            'rf_channel': self.channel,
-            'data_rate': data_rate_to_str(self.data_rate),
-            'transmit_power': power_to_str(self.power),
-            'auto_retransmit_count': self.auto_retransmit_count
+            'rf_settings' : {
+                'pipe0': to_hex_string(self.pipe0),
+                'pipe1': to_hex_string(self.pipe1),
+                'pipe2': to_hex_string(self.pipe2),
+                'pipe3': to_hex_string(self.pipe3),
+                'pipe4': to_hex_string(self.pipe4),
+                'pipe5': to_hex_string(self.pipe5),
+                'aes_encryption_key': to_hex_string(self.encryption_key),
+                'rf_channel': self.channel,
+                'data_rate': data_rate_to_str(self.data_rate),
+                'transmit_power': power_to_str(self.power),
+                'auto_retransmit_count': self.auto_retransmit_count
+            }
         }
 
     def load_raw_data(self, rf_settings):

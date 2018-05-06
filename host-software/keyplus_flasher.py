@@ -17,12 +17,13 @@ from PySide.QtCore import Qt, QBasicTimer, QSize , QFileInfo, QTimer
 from PySide.QtCore import Slot, Signal, QAbstractTableModel
 
 from keyplus.layout import KeyplusLayout
+from keyplus.layout.rf_settings import LayoutRFSettings
 from keyplus.device_info import KeyboardDeviceTarget, KeyboardFirmwareInfo
 from keyplus import chip_id
 from keyplus import KeyplusKeyboard
 from keyplus.exceptions import *
-import keyplus.usb_ids
 from keyplus.debug import DEBUG
+import keyplus.usb_ids
 
 # TODO: clean up directory structure
 import sys
@@ -35,7 +36,6 @@ import copy
 
 import easyhid
 import protocol
-import layout.parser
 # import io_map.chip_id as chip_id
 import xusbboot
 import kp_boot_32u4
@@ -664,12 +664,14 @@ class DeviceSettingsScope(QGroupBox):
                 pass
 
             try:
-                rf_settings = layout.parser.RFSettings.from_rand()
+                rf_settings = LayoutRFSettings()
+                rf_settings.load_random()
+                json_obj = rf_settings.to_json()
                 timeNow = datetime.datetime.now().strftime("%Y-%M-%d at %H:%M")
                 with open(fname, 'w') as outFile:
                     outFile.write(
-                        "# Generated on {}\n".format(timeNow) +
-                        rf_settings.to_yaml()
+                        "# Generated on {}\n\n".format(timeNow) +
+                        yaml.safe_dump(json_obj, default_flow_style=False)
                     )
                 self.rfSettingsFile.lineEdit.setText(fname)
             except IOError as e:
