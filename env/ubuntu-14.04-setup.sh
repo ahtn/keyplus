@@ -1,11 +1,21 @@
 #!/bin/bash
 
+git submodule update --init --recursive
+
 # Setup Ubuntu 14.04 dependencies
 if [[ -z $TRAVIS ]]; then
     sudo apt-get install make python3 python3-pip libpython-dev libffi-dev gawk hidapi python3-pyside
 fi
 
-pip install --user -U keyplus
+# load version number into __version__ as a bash variable
+source ../host-software/keyplus/version.py
+
+# Install the latest version. Use pre_release branch if checked out from master
+if [[ $(echo "$__version__" | grep pre) ]]; then
+    pip3 install --user -U --pre keyplus
+else
+    pip3 install --user -U "keyplus==${__version__}"
+fi
 
 #
 # AVR8 tool chain
