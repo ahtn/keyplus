@@ -5,8 +5,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from layout.common import *
-
 from keyplus.layout.ekc_data import *
 import keyplus.keycodes.mapped_keycodes as mapped_keycodes
 from keyplus.keycodes.keycodes import *

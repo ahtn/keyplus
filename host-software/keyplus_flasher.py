@@ -36,7 +36,6 @@ import copy
 
 import easyhid
 import protocol
-# import io_map.chip_id as chip_id
 import xusbboot
 import kp_boot_32u4
 
