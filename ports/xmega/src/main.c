@@ -40,7 +40,7 @@
 
 #include "xmega_hardware.h"
 
-#include "xusb-boot/spm_interface.h"
+#include "xusb-boot/src/spm_interface.h"
 
 #if DUAL_USB
 #include "dual_usb.h"

@@ -12,6 +12,8 @@
 #include "core/rf.h"
 #include "core/timer.h"
 
+#include "xusb-boot/src/spm_interface.h"
+
 void hardware_init(void) {
     NVM.CMD = NVM_CMD_NO_OPERATION_gc;
 }
@@ -68,31 +70,11 @@ void idle_sleep(void) {
  *********************************************************************/
 
 void reset_mcu(void) {
-    // use xmega software reset functionality
-    asm volatile("cli\n\t"          // disable interrupts
-                "ldi r24, 0xD8\n\t" // value to write to CCP
-                "ldi r25, 0x01\n\t" // value to write to SWRST
-                "ldi r30, 0x78\n\t"  // base address of RST peripheral
-                "ldi r31, 0\n\t"
-                "out __CCP__, r24\n\t"
-                "std Z+1, r25\n\t"  // +1 is the offset of RST.CTRL
-                ::); // no clobber list because we don't return
+    xusb_boot_reset();
 }
-
-#define BOOTLOADER_MAGIC 0x97e1e28e
-#define BOOTLOADER_FLAG_ADDRESS 0x802400
 
 void bootloader_jmp(void) {
-    // disconnect USB and wait for the disconnect to register
-    USB.CTRLB &= ~USB_PULLRST_bm;
-
-    dynamic_delay_ms(250);
-
-    *((uint32_t*)BOOTLOADER_FLAG_ADDRESS) = BOOTLOADER_MAGIC;
-    reset_mcu();
-}
-
-void bootloader_jmp_2(void) {
+    xusb_boot_jump();
 }
 
 /*********************************************************************

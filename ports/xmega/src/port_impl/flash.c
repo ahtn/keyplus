@@ -3,7 +3,7 @@
 
 #include "core/flash.h"
 
-#include "xusb-boot/spm_interface.h"
+#include "xusb-boot/src/spm_interface.h"
 
 uint8_t flash_read_byte(flash_addr_t addr) {
     NVM.CMD = NVM_CMD_NO_OPERATION_gc;
