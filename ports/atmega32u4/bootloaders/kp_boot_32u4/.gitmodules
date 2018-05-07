@@ -1,3 +1,0 @@
-[submodule "avr-makefile"]
-	path = avr-makefile
-	url = https://github.com/ahtn/avr-makefile
