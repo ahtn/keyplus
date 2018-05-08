@@ -8,6 +8,8 @@ import struct
 import hexdump
 import datetime
 
+from distutils.version import LooseVersion
+
 from uniflash.crc16 import crc16_bytes
 
 DEFAULT_PID = 0x1111
@@ -355,20 +357,13 @@ class KBInfoFirmware(KBInfoFirmwareNamedTuple):
         else:
             return "UnknownInternalScanMethod({})".format(method)
 
-
     def has_at_least_version(self, version_str):
-        (major, minor, patch) = [int(x) for x in version_str.split('.')]
-
-        return \
-            self.version_major > major or (
-                self.version_major == major and
-                self.version_minor >  minor
-            ) or (
-                self.version_major == major and
-                self.version_minor == minor and
-                self.version_patch >= patch
-            )
-
+        fw_ver = "{}.{}.{}".format(
+            self.version_major,
+            self.version_minor,
+            self.version_patch,
+        )
+        return LooseVersion(fw_ver) <= LooseVersion(version_str)
 
 def get_firmware_info(device):
     # uint8_t version_major;

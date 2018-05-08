@@ -271,3 +271,4 @@ SECTIONS
   .debug_macro    0 : { *(.debug_macro) }
   .debug_addr     0 : { *(.debug_addr) }
 }
+/* vim: set ft=ld: */

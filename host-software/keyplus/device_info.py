@@ -9,6 +9,8 @@ import struct
 import math
 import six
 
+from distutils.version import LooseVersion
+
 import keyplus.cdata_types
 from keyplus.utility import crc16_bytes
 from keyplus.constants import *
@@ -329,14 +331,9 @@ class KeyboardFirmwareInfo(keyplus.cdata_types.firmware_info_t):
         )
 
     def has_at_least_version(self, version_str):
-        (major, minor, patch) = [int(x) for x in version_str.split('.')]
-
-        return \
-            self.version_major > major or (
-                self.version_major == major and
-                self.version_minor >  minor
-            ) or (
-                self.version_major == major and
-                self.version_minor == minor and
-                self.version_patch >= patch
-            )
+        fw_ver = "{}.{}.{}".format(
+            self.version_major,
+            self.version_minor,
+            self.version_patch,
+        )
+        return LooseVersion(fw_ver) <= LooseVersion(version_str)
