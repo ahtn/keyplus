@@ -20,8 +20,8 @@
 #endif
 
 #if !defined(BOOTLOADER_VID) && !defined(BOOTLOADER_PID)
-#define BOOTLOADER_VID 0x6666
-#define BOOTLOADER_PID 0xB007
+#define BOOTLOADER_VID 0x1209
+#define BOOTLOADER_PID 0xBB01
 #endif
 
 // TODO: move to settings

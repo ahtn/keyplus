@@ -1,5 +1,7 @@
+0.3.2 (unreleased)
+==================
 
-0.3.1 (unreleased)
+0.3.1
 ==================
 
 * `layout` add support for `keycodes` section in the layout file for defining
@@ -11,14 +13,17 @@
   using a delay to activate the hold key, allow the hold key to be activated
   when other keys are pressed.
 
-* `firmware` atmega32u4 support
+* `firmware` basic atmega32u4 support
 * `firmware` fixed issue that caused updates to the encryption key to
   require a reset
 * `firmware` made the maximum number of supported rows configurable at compile
   time, and increased the default value from 10 to 18.
+* `firmware` added place holder mouse keys implementation (non-configurable)
 
 * `keyplus-flasher` more error messages
 * `keyplus-flasher` fixed labels not updating properly
+* `keyplus-flasher` fixed issue requiring user to manual press program button
+  when updating firmware
 
 
 0.3.0

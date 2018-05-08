@@ -114,7 +114,7 @@ const ROM firmware_build_settings_t g_firmware_build_settings = {
 
     .scanner_max_rows = MAX_NUM_ROWS,
 
-    .stable_build = KEYPLUS_VERSION_IS_STABLE,
+    .is_stable_build = KEYPLUS_VERSION_IS_STABLE,
 };
 
 STATIC_ASSERT(

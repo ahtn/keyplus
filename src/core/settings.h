@@ -302,7 +302,7 @@ typedef struct firmware_build_settings_t {
     // offset 41
     // build info:
     /// Indicates if this was a stable build or pre release build
-    uint8_t stable_build: 1;
+    uint8_t is_stable_build: 1;
     uint8_t reserved5: 7;
 
     uint8_t reserved[20]; // pad to 62 bytes
