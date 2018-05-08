@@ -315,6 +315,18 @@ class KeyboardFirmwareInfo(keyplus.cdata_types.firmware_info_t):
         else:
             return "UnknownInternalScanMethod({})".format(method)
 
+    def get_version_str(self):
+        if self.is_stable_build:
+            pre_release_str = "-pre"
+        else:
+            pre_release_str = ""
+
+        return "{}.{}.{}{}".format(
+            self.version_major,
+            self.version_minor,
+            self.version_patch,
+            pre_release_str
+        )
 
     def has_at_least_version(self, version_str):
         (major, minor, patch) = [int(x) for x in version_str.split('.')]

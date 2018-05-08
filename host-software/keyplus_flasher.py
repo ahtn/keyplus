@@ -99,6 +99,9 @@ def is_kp_boot_device(device):
 def is_nrf24lu1p_bootloader_device(device):
     return get_boot_loader_type(device) == keyplus.usb_ids.BootloaderType.NRF24LU1P_FACTORY
 
+def is_efm8_boot_device(device):
+    return False
+
 def is_unifying_bootloader_device(device):
     return False
 
@@ -872,6 +875,17 @@ class Loader(QMainWindow):
     def abort_update2(self):
         self.deviceListWidget.updateList()
 
+    def check_version(self, kb):
+        if not kb.firmware_info.has_at_least_version(keyplus.__version__):
+            version = kb.firmware_info.get_version_str()
+            error_msg_box("Need at least version {}, but this device has {}. Select "
+                          "'Firmware Update' from drop down box to update the firmware.\n\n"
+                          "You can download newer versions from here: https://github.com/ahtn/keyplus/releases"
+                          .format(keyplus.__version__, version))
+            return -1
+        else:
+            return 0
+
     @Slot(str)
     def programDeviceHandler(self, device_path):
         target_device = self.tryOpenDevicePath(device_path)
@@ -897,6 +911,8 @@ class Loader(QMainWindow):
             if kb == None:
                 return
 
+            if self.check_version(kb):
+                return
 
             self.statusBar().showMessage("Started updating layout", timeout=STATUS_BAR_TIMEOUT)
 
@@ -951,6 +967,9 @@ class Loader(QMainWindow):
             target_device.close()
             kb = self.tryOpenDevicePath2(device_path)
             if kb == None:
+                return
+
+            if self.check_version(kb):
                 return
 
             layout_file = self.fileSelectorWidget.getRFLayoutFile()
@@ -1054,30 +1073,44 @@ class Loader(QMainWindow):
     def programFirmwareHex(self, boot_vid, boot_pid, serial_num, file_name):
         device = None
 
-        for i in range(1):
-            en = easyhid.Enumeration(vid=boot_vid, pid=boot_pid).find()
+        matches = []
 
-            # Look for devices with matching serial_num number
-            for dev in en:
-                if dev.serial_number == serial_num:
-                    device = dev
-                    break
+        en = easyhid.Enumeration().find()
 
-            # if a device was found with matching vid:pid, but it doesn't have
-            # a matching serial_num number, then assume that the bootloader/firmware
-            # doesn't set the serial_num number to the same value, so just program
-            # the first matching device
-            if len(en) != 0:
-                device = en[0]
+        # Look for devices with matching serial_num number
+        for dev in en:
+            if serial_num and dev.serial_number == serial_num:
+                device = dev
+                break
+            elif (
+                not serial_num and
+                dev.vendor_id == boot_vid and
+                dev.product_id == boot_pid
+            ):
+                # if a device was found with matching vid:pid, but the
+                # original device didn't expose a serial number, then
+                # assume that the bootloader/firmware doesn't set the
+                # serial_num number, so just program the first matching
+                # device
+                device = dev
                 break
 
         if device == None:
             error_msg_box("Couldn't connect to the device's bootloader")
             return
         else:
-            if self.tryOpenDevice(device): return
+            if self.tryOpenDevice(device):
+                return
+            elif is_xusb_bootloader_device(device):
+                self.program_xusb_boot_firmware_hex(device, file_name)
+            elif is_kp_boot_device(device):
+                self.program_kp_boot_32u4_firmware_hex(device, file_name)
+            elif is_nrf24lu1p_bootloader_device:
+                error_msg_box("Programming nrf24 is currently unsupported")
+                return
+            elif is_efm8_boot_device(device):
+                self.program_efm8_boot_firmware_hex(device, file_name)
 
-            self.program_xusb_boot_firmware_hex(device, file_name)
         self.statusBar().showMessage("Finished updating firmware", timeout=STATUS_BAR_TIMEOUT)
 
     def program_xusb_boot_firmware_hex(self, device, file_name):

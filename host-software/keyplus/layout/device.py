@@ -13,6 +13,7 @@ from keyplus.device_info import KeyboardSettingsInfo
 
 from keyplus.constants import *
 
+import six
 import struct
 
 DEFAULT_FEATURE_MASK = FEATURE_CTRL_RF_DISABLE | FEATURE_CTRL_RF_MOUSE_DISABLE \
@@ -95,6 +96,13 @@ class LayoutDevice(object):
             field_range = [0, MAX_NUMBER_DEVICES-1]
         )
 
+        self.mcu = parser_info.try_get(
+            "mcu",
+            default = None,
+            field_type = six.string_types,
+            optional = True,
+        )
+
         self.scan_mode = ScanMode()
         self.scan_mode.parse_json(parser_info=parser_info)
 
@@ -128,6 +136,13 @@ class LayoutDevice(object):
             "wired_split",
             default = not self.feature_ctrl.i2c_disabled,
             field_type = bool,
+        )
+
+        self.studio_kle = parser_info.try_get(
+            "studio_kle",
+            default = None,
+            field_type = list,
+            optional = True,
         )
 
         # Finish parsing `device_name`

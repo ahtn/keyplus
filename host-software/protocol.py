@@ -553,7 +553,7 @@ def timestamp_to_str(timestamp_raw):
     else:
         try:
             return str(datetime.datetime.fromtimestamp(timestamp_raw))
-        except OSError:
+        except:
             return str(hex(timestamp_raw))
 
 if __name__ == "__main__":

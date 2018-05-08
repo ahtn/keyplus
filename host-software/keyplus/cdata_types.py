@@ -178,7 +178,8 @@ class firmware_info_t(CStructWithBytes):
     uint8_t internal_scan_method;
     uint8_t page_size;
     uint8_t max_rows;
-    uint8_t reserved[21];
+    uint8_t version_info;
+    uint8_t reserved[20];
     """
 
 make_bit_field_variables(firmware_info_t, [
@@ -208,6 +209,8 @@ make_bit_field_variables(firmware_info_t, [
     ("connectivity" , "has_unifying"  , SUPPORT_UNIFYING) ,
     ("connectivity" , "has_usb"       , SUPPORT_USB)      ,
     ("connectivity" , "has_bluetooth" , SUPPORT_BT)       ,
+
+    ("version_info" , "is_stable_build"  , VERSION_IS_STABLE)    ,
 ])
 
 class rf_settings_t(CStructWithBytes):
