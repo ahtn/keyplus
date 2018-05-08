@@ -119,14 +119,14 @@ class IoMapper(object):
         return self.pin_map.gpio_count
 
 class PinMap(object):
-    def __init__(self, ports, pins, gpio_count, port_size=8, default_cols=[],
-                 default_rows=[]):
+    def __init__(self, ports, pins, gpio_count, port_size=8, default_cols=None,
+                 default_rows=None):
         self.ports = ports
         self.pins = pins
         self.gpio_count = gpio_count
         self.port_size = port_size
-        self.default_rows = default_rows
-        self.default_cols = default_cols
+        self.default_rows = default_rows or []
+        self.default_cols = default_cols or []
 
         self.port_num_to_name = {}
         for port_name in self.ports:

@@ -123,7 +123,6 @@ class ScanMode(object):
 
     def add_direct_wiring_pin(self, pin_name):
         """ Add a pin to the list of column pins for direct wiring """
-        print(self.direct_wiring_pins, pin_name)
         self._check_pin_not_in_use(pin_name)
         self.direct_wiring_pins.append(pin_name)
 
@@ -244,6 +243,7 @@ class ScanMode(object):
 
         if self.mode != NO_MATRIX:
             io_mapper = device_target.get_io_mapper()
+
         if self.mode == NO_MATRIX:
             # If no matrix is set, then all values can be set to zero
             scan_plan.unpack(bytearray(keyplus.cdata_types.scan_plan_t.__size__))
@@ -336,7 +336,6 @@ class ScanMode(object):
             matrix_map = {}
             for old_pos in self.matrix_map:
                 new_pos = MatrixPosition(old_pos.col, old_pos.row)
-                print(old_pos, "->", new_pos, self.matrix_map[old_pos])
                 matrix_map[new_pos] = self.matrix_map[old_pos]
 
             # columns are now rows

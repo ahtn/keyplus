@@ -112,4 +112,4 @@ class IoMapperXmega(IoMapperAVR):
         assert(self.chip_info != None)
         assert(self.chip_info.architecture == 'AVR_XMEGA')
         assert(self.chip_info.series in self.XMEGA_SERIES_TABLE)
-        self.pin_mapper = IoMapperXmega.XMEGA_SERIES_TABLE[self.chip_info.series]
+        self.pin_map = IoMapperXmega.XMEGA_SERIES_TABLE[self.chip_info.series]
