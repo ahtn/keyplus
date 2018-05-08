@@ -7,7 +7,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from collections import namedtuple
 
-from keyplus.exceptions import KeyplusSettingsError
+from keyplus.exceptions import KeyplusSettingsError, KeyplusInternalError
 
 import re
 
@@ -21,6 +21,9 @@ ChipInfo = namedtuple(
         "name",
         "chip_id",
         "architecture",
+        "processor",
+        "package",
+        "pins",
         "series",
         "flash_size",
         "ram_size",
@@ -32,8 +35,11 @@ def _create_nrf24(flash_size, name):
     return ChipInfo(
         name = name,
         chip_id = None, # filled out automatically later
-        architecture = "8051",
-        series = 'nRF24',
+        architecture = "nRF24",
+        processor = "8051",
+        series = 'nRF24LU1',
+        pins = 32,
+        package = "qfn32",
         flash_size = flash_size * 2**10,
         ram_size = 2 * 2**10,
         usb = True,
@@ -67,7 +73,10 @@ def _create_xmega(flash_size, series):
         name = "ATxmega{flash}{series}".format(flash=flash_size, series=series),
         chip_id = None, # filled out automatically later
         architecture = "AVR_XMEGA",
+        processor = "AVR8",
         series = series,
+        pins = pins,
+        package = "",
         flash_size = flash_size * 2**10,
         ram_size = ram_size * 2**10,
         usb = usb_support,
@@ -89,7 +98,10 @@ def _create_mega(flash_size, series):
         name = "ATmega{flash}{series}".format(flash=flash_size, series=series),
         chip_id = None, # filled out automatically later
         architecture = "AVR_MEGA",
+        processor = "AVR8",
         series = series,
+        pins = pins,
+        package = "",
         flash_size = flash_size * 2**10,
         ram_size = ram_size,
         usb = usb_support,
@@ -115,8 +127,11 @@ def _create_efm8(name):
     return ChipInfo(
         name = name,
         chip_id = None, # filled out automatically later
-        architecture = "8051",
-        series = 'efm8' + family.lower(),
+        architecture = "EFM8",
+        processor = "8051",
+        series = 'EFM8' + family.upper(),
+        package = package_type + str(pin_count),
+        pins = pin_count,
         flash_size = flash_size * 2**10,
         ram_size = ram_size * 2**10,
         usb = True,

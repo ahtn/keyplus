@@ -363,7 +363,7 @@ class KBInfoFirmware(KBInfoFirmwareNamedTuple):
             self.version_minor,
             self.version_patch,
         )
-        return LooseVersion(fw_ver) <= LooseVersion(version_str)
+        return LooseVersion(fw_ver) >= LooseVersion(version_str)
 
 def get_firmware_info(device):
     # uint8_t version_major;

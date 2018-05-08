@@ -7,6 +7,14 @@
 
 #include "efm8_sfr.h"
 
+#define enable_interrupts() do { \
+    IE_EA = 1; \
+} while(0);
+
+#define disable_interrupts() do { \
+    IE_EA = 0; \
+} while(0);
+
 // NOTE: not the best solution, but it's good enough
 void dynamic_delay_us(uint16_t us);
 #define static_delay_us(x) dynamic_delay_us(x)

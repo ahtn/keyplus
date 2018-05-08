@@ -12,7 +12,7 @@ from keyplus.exceptions import KeyplusSettingsError
 
 class IoMapper(object):
     def __init__(self):
-        self.pin_mapper = None
+        self.pin_map = None
         self.chip_info = None
 
     def get_pin_number(self, pin_name):
@@ -28,16 +28,16 @@ class IoMapper(object):
         return [self.get_pin_name(pin) for pin in pin_numbers]
 
     def get_pin_port_and_bit(self, pin_number):
-        port_size = self.pin_mapper.port_size
+        port_size = self.pin_map.port_size
         return (pin_number // port_size, pin_number % port_size)
 
     @property
     def io_port_size(self):
-        return self.pin_mapper.port_size
+        return self.pin_map.port_size
 
     @property
     def io_port_count(self):
-        return len(self.pin_mapper.ports)
+        return len(self.pin_map.ports)
 
     def get_storage_size(self):
         io_port_byte_size = self.io_port_size // 8
@@ -45,7 +45,7 @@ class IoMapper(object):
         return io_port_total_size
 
     def get_usable_pins(self):
-        return copy.copy(self.pin_mapper.pins)
+        return copy.copy(self.pin_map.pins)
 
     def get_pin_masks(self, pin_list):
         result = [0] * self.io_port_count
@@ -82,43 +82,43 @@ class IoMapper(object):
     def get_default_cols(self, count):
         result = []
 
-        if count > len(self.pin_mapper.default_cols):
+        if count > len(self.pin_map.default_cols):
             raise KeyplusSettingsError(
                 "Couldn't find {} column pins for {}. Maximum is {}. You might"
                 " need to specify the pins manually."
                 .format(
                     count,
                     self.chip_info.name,
-                    len(self.pin_mapper.default_cols)
+                    len(self.pin_map.default_cols)
                 )
             )
 
         for i in range(count):
-            result.append(self.get_pin_number(self.pin_mapper.default_cols[i]))
+            result.append(self.get_pin_number(self.pin_map.default_cols[i]))
         return result
 
     def get_default_rows(self, count):
         result = []
 
-        if count > len(self.pin_mapper.default_rows):
+        if count > len(self.pin_map.default_rows):
             raise KeyplusSettingsError(
                 "Couldn't find {} row pins for {}. Maximum is {}. You might"
                 " need to specify the pins manually."
                 .format(
                     count,
                     self.chip_info.name,
-                    len(self.pin_mapper.default_rows)
+                    len(self.pin_map.default_rows)
                 )
             )
 
         for i in range(count):
-            result.append(self.get_pin_number(self.pin_mapper.default_rows[i]))
+            result.append(self.get_pin_number(self.pin_map.default_rows[i]))
         return result
 
     def get_gpio_count(self):
-        return self.pin_mapper.gpio_count
+        return self.pin_map.gpio_count
 
-class IoMapperPins(IoMapper):
+class PinMap(object):
     def __init__(self, ports, pins, gpio_count, port_size=8, default_cols=[],
                  default_rows=[]):
         self.ports = ports
@@ -163,4 +163,59 @@ class IoMapperPins(IoMapper):
         port_num = self.ports[port]
         absolute_pin_num = port_num * self.port_size + pin
         return absolute_pin_num
+
+class IoMapperAVR(IoMapper):
+    def get_pin_number(self, pin_name):
+        try:
+            pin_name = pin_name.upper()
+            port = pin_name[0]
+            pin = int(pin_name[1:])
+        except:
+            raise KeyplusSettingsError("Invalid pin name '{}', correct format "
+                                "is a letter followed by a number. E.g. C1, B0, etc"
+                                .format(pin_name))
+
+        if not self.pin_map.is_valid_pin(port, pin):
+            raise KeyplusSettingsError("The pin '{}' does not exist on the given microcontroller '{}'"
+                                .format(pin_name, self.chip_info.name))
+
+        return self.pin_map.get_pin_number(port, pin)
+
+    def get_pin_name(self, pin_number):
+        port_number, pin_bit = self.get_pin_port_and_bit(pin_number)
+        if pin_number > self.pin_map.get_highest_pin_number():
+            raise KeyplusSettingsError("Pin number '{}' doesn't exist on this mcu"
+                                .format(pin_number))
+        return "{port_name}{pin_bit}".format(
+            port_name = self.pin_map.port_num_to_name[port_number],
+            pin_bit = pin_bit,
+        )
+
+class IoMapperNumbered(IoMapper):
+    """ IoMapper for pins with format 'Px.x'. Used with 8051 and some ARM chips"""
+
+    def get_pin_number(self, pin_name):
+        try:
+            port, pin = pin_name.upper().split('.')
+            pin = int(pin)
+        except:
+            raise KeyplusSettingsError("Invalid pin name '{}', correct format for 8051 is"
+                                "a 'Px.x'. For example: P0.3, P1.7"
+                                .format(pin_name))
+
+        if not self.pin_map.is_valid_pin(port, pin):
+            raise KeyplusSettingsError("The pin '{}' does not exist on the given microcontroller '{}'"
+                                .format(pin_name, self.chip_info.name))
+
+        return self.pin_map.get_pin_number(port, pin)
+
+    def get_pin_name(self, pin_number):
+        port_number, pin_bit = self.get_pin_port_and_bit(pin_number)
+        if pin_number > self.pin_map.get_highest_pin_number():
+            raise KeyplusSettingsError("Pin number '{}' doesn't exist on this mcu."
+                                .format(pin_number))
+        return "{port_name}.{pin_bit}".format(
+            port_name = self.pin_map.port_num_to_name[port_number],
+            pin_bit = pin_bit,
+        )
 

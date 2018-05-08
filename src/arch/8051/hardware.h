@@ -7,14 +7,6 @@
 #define IO_PORT_SIZE 8
 typedef uint8_t io_port_t;
 
-#define enable_interrupts() do { \
-    EA = 1; \
-} while(0);
-
-#define disable_interrupts() do { \
-    EA = 0; \
-} while(0);
-
 // flash pointer defines
 typedef uint16_t flash_ptr_t;
 typedef uint16_t flash_addr_t;
