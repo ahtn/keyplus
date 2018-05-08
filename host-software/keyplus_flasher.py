@@ -43,7 +43,7 @@ STATUS_BAR_TIMEOUT=4500
 
 if DEBUG.gui:
     # debug settings
-    DEFAULT_LAYOUT_FILE = "../layouts/1key.yaml"
+    DEFAULT_LAYOUT_FILE = "../layouts/efm8_test.yaml"
     DEFAULT_RF_FILE = "../layouts/test_rf_config.yaml"
     DEFAULT_FIRMWARE_FILE = ""
     DEFAULT_DEVICE_ID = 0

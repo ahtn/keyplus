@@ -4,7 +4,7 @@
 ---
 
 devices:
-  32u4 test matrix:
+  efm8_4x4:
     id: 0
     scan_mode:
       mode: col_row # options: col_row, pins, none

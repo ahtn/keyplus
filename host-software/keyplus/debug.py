@@ -5,14 +5,18 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from keyplus.version import __version__
+
+IS_PRE_RELASE = ('pre' in __version__)
+
 class DEBUG(object):
     """
     The static variables in this class can be used to turn on and off debug
     messages.
     """
-    usb_cmd_timing = True
-    usb_cmd = True
-    parsing = False
-    parsing_extra = False
-    layout = False
-    gui = False
+    usb_cmd_timing = False and IS_PRE_RELASE
+    usb_cmd = True and IS_PRE_RELASE
+    parsing = False and IS_PRE_RELASE
+    parsing_extra = False and IS_PRE_RELASE
+    layout = False and IS_PRE_RELASE
+    gui = True and IS_PRE_RELASE

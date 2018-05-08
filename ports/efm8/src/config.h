@@ -9,8 +9,8 @@
 
 #define INTERNAL_SCAN_METHOD MATRIX_SCANNER_INTERNAL_NONE
 
-#define NO_MATRIX
-#define MAX_NUM_ROWS 0
+// #define NO_MATRIX
+// #define MAX_NUM_ROWS 0
 
 #define USB_BUFFERED 0
 

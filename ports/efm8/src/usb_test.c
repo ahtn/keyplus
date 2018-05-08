@@ -330,7 +330,7 @@ static void EP0_Write(uint8_t *dat, uint16_t numBytes) {
     }
 }
 
-static USB_Status_TypeDef GetDescriptor(void) {
+static USB_Status_TypeDef GetDescriptor(void) REENT {
 #if (SLAB_USB_NUM_LANGUAGES > 1)
     bool langSupported;
     uint8_t lang;
@@ -519,7 +519,7 @@ void USB_ReadFIFO(uint8_t fifoNum, uint8_t numBytes, uint8_t *dat) {
     }
 }
 
-void USB_WriteFIFO(uint8_t fifoNum, uint8_t numBytes, uint8_t *dat, bool txPacket) {
+void USB_WriteFIFO(uint8_t fifoNum, uint8_t numBytes, uint8_t *dat, bool txPacket) REENT {
     USB_EnableWriteFIFO(fifoNum);
 
     // Write the bytes of the FIFO int dat
@@ -777,7 +777,7 @@ static void handleUsbEp0Int(void) {
     }
 }
 
-static void handleUsbInXInt(uint8_t ep_num) {
+static void handleUsbInXInt(uint8_t ep_num) REENT {
     bool callback;
     XRAM USBD_Ep_TypeDef *ep = GET_EP(ep_num);
 
@@ -1105,7 +1105,7 @@ void USBD_SetUsbState(USBD_State_TypeDef newState) {
 #endif
 }
 
-int8_t USBD_Write(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback) {
+int8_t USBD_Write(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback) REENT {
     bool usbIntsEnabled;
     XRAM USBD_Ep_TypeDef *ep;
 

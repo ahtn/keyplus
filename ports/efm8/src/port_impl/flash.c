@@ -61,9 +61,9 @@ static void efm8_flash_common(uint16_t addr, uint8_t byte) {
 }
 
 /// Writes one byte to flash memory.
-static void efm8_write_byte(uint16_t addr, uint8_t byte) {
+static void efm8_write_byte(uint16_t addr, uint8_t byte) REENT {
     // Don't need to write 0xff, since that's the default value after an erase
-    if (byte != 0xFF) {
+    if (byte == 0xFF) {
         return;
     }
 
@@ -77,7 +77,7 @@ void flash_erase_page(uint16_t page_num) {
     efm8_flash_common(page_num * PAGE_SIZE, 0);
 }
 
-void flash_write(uint8_t* data, uint16_t addr, uint16_t len) {
+void flash_write(uint8_t* data, uint16_t addr, uint16_t len) REENT {
     while (len--) {
         efm8_write_byte(addr++, *(data++));
     }
@@ -92,15 +92,7 @@ uint16_t flash_read_word(flash_ptr_t addr) {
 }
 
 void flash_read(uint8_t* dest, flash_ptr_t addr, flash_size_t len) {
-    XRAM flash_size_t i;
-    for (i = 0; i < len; ++i) {
-        dest[i] = ((ROM uint8_t *)addr)[i];
+    while (len--) {
+        *dest++ = *((ROM uint8_t *)addr++);
     }
 }
-
-// void flash_read(uint8_t* dest, flash_ptr_t addr, flash_size_t len) {
-//     while(len--) {
-//         *(dest++) = *(ROM uint8_t *)(addr++);
-//     }
-// }
-

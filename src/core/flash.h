@@ -69,7 +69,7 @@ void flash_erase_page(flash_addr_t page_num);
 
 void flash_load_from_rom(XRAM uint8_t* dest, const ROM uint8_t* src, flash_addr_t len);
 
-void flash_write(uint8_t* data, flash_addr_t addr, flash_size_t len);
+void flash_write(uint8_t* data, flash_addr_t addr, flash_size_t len) REENT;
 void flash_read(uint8_t* dest, flash_addr_t addr, flash_size_t len);
 uint8_t flash_read_byte(flash_addr_t);
 uint16_t flash_read_word(flash_addr_t);

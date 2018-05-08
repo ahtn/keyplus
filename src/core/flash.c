@@ -7,9 +7,8 @@
 #include "core/util.h"
 
 void flash_load_from_rom(XRAM uint8_t* dest, const ROM uint8_t* src, flash_addr_t len) {
-    uint32_t i;
-    for (i = 0; i < len; ++i) {
-        dest[i] = src[i];
+    while (len--) {
+        *(dest++) = *(src++);
     }
 }
 

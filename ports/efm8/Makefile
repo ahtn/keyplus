@@ -16,7 +16,7 @@ VPATH += $(KEYPLUS_PATH)
 SIMPLICITY_STUDIO_PATH = $(HOME)/local/SimplicityStudio_v4
 
 USE_USB := 1
-USE_SCANNER := 0
+USE_SCANNER := 1
 USE_NRF24 := 0
 USE_CHECK_PIN := 0
 USE_I2C := 0
@@ -64,6 +64,7 @@ C_SRC += \
 	main.c \
 	usb_test.c \
 	$(EFM8_PATH)/lib/efm8_assert/assert.c \
+	matrix_scanner.c \
 	port_impl/flash.c \
 	port_impl/hardware.c \
 	port_impl/led.c \

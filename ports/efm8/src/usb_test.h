@@ -190,7 +190,7 @@ uint16_t USBD_XferCompleteCb(
 );
 
 USB_Status_TypeDef USBD_SetupCmdCb(XRAM USB_Setup_TypeDef *setup);
-int8_t USBD_Write(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback);
+int8_t USBD_Write(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback) REENT;
 int8_t USBD_Read(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback);
 uint8_t USBD_OutPending(uint8_t ep);
 bool USBD_EpIsBusy(uint8_t epAddr);

@@ -33,7 +33,7 @@ void flash_erase_page(uint16_t page_num) {
     while (RDYN);
 }
 
-void flash_write(uint8_t * data, uint16_t addr, uint16_t len) {
+void flash_write(uint8_t * data, uint16_t addr, uint16_t len) REENT {
     uint16_t i;
     uint8_t ckcon_val;
     // __xdata uint8_t*  === pointer into xram
