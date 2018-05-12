@@ -37,6 +37,7 @@ import copy
 import easyhid
 import protocol
 import xusbboot
+import efm8boot
 import kp_boot_32u4
 
 STATUS_BAR_TIMEOUT=4500
@@ -89,7 +90,6 @@ def get_boot_loader_type(device):
         return None
     return info.bootloader
 
-
 def is_xusb_bootloader_device(device):
     return get_boot_loader_type(device) == keyplus.usb_ids.BootloaderType.XUSB_BOOT
 
@@ -100,7 +100,7 @@ def is_nrf24lu1p_bootloader_device(device):
     return get_boot_loader_type(device) == keyplus.usb_ids.BootloaderType.NRF24LU1P_FACTORY
 
 def is_efm8_boot_device(device):
-    return False
+    return get_boot_loader_type(device) == keyplus.usb_ids.BootloaderType.EFM8_BOOT
 
 def is_unifying_bootloader_device(device):
     return False
@@ -109,10 +109,7 @@ def is_supported_device(device):
     return is_keyplus_device(device) or is_bootloader_device(device)
 
 def is_bootloader_device(device):
-    return is_xusb_bootloader_device(device) or \
-        is_kp_boot_device(device) or \
-        is_nrf24lu1p_bootloader_device(device) or \
-        is_unifying_bootloader_device(device)
+    return keyplus.usb_ids.is_bootloader_usb_id(device.vendor_id, device.product_id)
 
 class DeviceWidget(QGroupBox):
 
@@ -244,6 +241,34 @@ class DeviceWidget(QGroupBox):
             )
         )
 
+    def setup_efm8_boot_label(self):
+        try:
+            boot_dev = efm8boot.EFM8BootloaderHID(self.device)
+        except easyhid.HIDException as err:
+            # Incase opening the device fails
+            raise Exception ("Error Opening Device: {} | {}:{}"
+                    .format(
+                        self.device.path,
+                        self.device.vendor_id,
+                        self.device.product_id
+                    ),
+            )
+
+        with boot_dev:
+            version = boot_dev.get_version()
+
+        self.label.setText('EFM8 Factory Bootloader\n'
+                            'MCU: {}\n'
+                           'Bootloader version: 0x{:02X}\n'
+                            'Flash size: {}kB    Bootloader size: {}kB\n'
+            .format(
+                boot_dev.info.name,
+                version,
+                (boot_dev.info.flashSize)/2**10,
+                (boot_dev.info.flashSize - boot_dev.info.bootloaderStart)/2**10,
+            )
+        )
+
     # nrf24lu1p
     def setup_nrf24lu1p_label(self):
         # try:
@@ -278,6 +303,8 @@ class DeviceWidget(QGroupBox):
             self.setup_xusb_bootloader_label()
         elif is_kp_boot_device(self.device):
             self.setup_kp_boot_32u4_label()
+        elif is_efm8_boot_device(self.device):
+            self.setup_efm8_boot_label()
         elif is_nrf24lu1p_bootloader_device(self.device):
             self.setup_nrf24lu1p_label()
         else:
@@ -1046,6 +1073,8 @@ class Loader(QMainWindow):
                     self.program_xusb_boot_firmware_hex(target_device, fw_file)
                 elif is_kp_boot_device(target_device):
                     self.program_kp_boot_32u4_firmware_hex(target_device, fw_file)
+                elif is_efm8_boot_device(target_device):
+                    self.program_efm8_boot_firmware_hex(target_device, fw_file)
                 elif is_keyplus_device(target_device):
                     try:
                         serial_num = target_device.serial_number
@@ -1105,11 +1134,11 @@ class Loader(QMainWindow):
                 self.program_xusb_boot_firmware_hex(device, file_name)
             elif is_kp_boot_device(device):
                 self.program_kp_boot_32u4_firmware_hex(device, file_name)
+            elif is_efm8_boot_device(device):
+                self.program_efm8_boot_firmware_hex(device, file_name)
             elif is_nrf24lu1p_bootloader_device:
                 error_msg_box("Programming nrf24 is currently unsupported")
                 return
-            elif is_efm8_boot_device(device):
-                self.program_efm8_boot_firmware_hex(device, file_name)
 
         self.statusBar().showMessage("Finished updating firmware", timeout=STATUS_BAR_TIMEOUT)
 
@@ -1125,6 +1154,16 @@ class Loader(QMainWindow):
         try:
             device.close()
             boot_dev = kp_boot_32u4.BootloaderDevice(device)
+            with boot_dev:
+                boot_dev.write_flash_hex(file_name)
+                boot_dev.reset_mcu()
+        except Exception as err:
+            error_msg_box("Error programming the bootloader to hex file: " + str(err))
+
+    def program_efm8_boot_firmware_hex(self, device, file_name):
+        try:
+            device.close()
+            boot_dev = efm8boot.EFM8BootloaderHID(device)
             with boot_dev:
                 boot_dev.write_flash_hex(file_name)
                 boot_dev.reset_mcu()
@@ -1186,6 +1225,11 @@ class Loader(QMainWindow):
                 dev.reset_mcu()
         elif is_nrf24lu1p_bootloader_device(device):
             print("TODO: reset: ", device_path, file=sys.stderr)
+        elif is_efm8_boot_device(device):
+            device.close()
+            dev = efm8boot.EFM8BootloaderHID(device)
+            with dev:
+                dev.reset_mcu()
         else:
             print("Can't reset device: ", device_path, file=sys.stderr)
 

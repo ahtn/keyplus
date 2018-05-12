@@ -1,6 +1,14 @@
 0.3.2 (unreleased)
 ==================
 
+* `bug fix` fixed media keys
+
+* `firmware` basic efm8 support
+
+* `internal` clean up source code tree
+
+* `keyplus-flasher` efm8 factory bootloader support
+
 0.3.1
 ==================
 
@@ -24,8 +32,6 @@
 * `keyplus-flasher` fixed labels not updating properly
 * `keyplus-flasher` fixed issue requiring user to manual press program button
   when updating firmware
-
-* `internal` clean up source code tree
 
 0.3.0
 ==================

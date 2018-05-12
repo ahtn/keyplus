@@ -16,9 +16,11 @@
 } while(0);
 
 // NOTE: not the best solution, but it's good enough
-void dynamic_delay_us(uint16_t us);
-#define static_delay_us(x) dynamic_delay_us(x)
-#define static_delay_ms(x) dynamic_delay_ms(x)
+#define dynamic_delay_us(t) efm8_delay_us(t)
+#define dynamic_delay_ms(t) efm8_delay_ms(t)
+
+#define static_delay_us(t) dynamic_delay_us(t)
+#define static_delay_ms(t) efm8_delay_ms(t)
 
 #define PAGE_SIZE           0x0200
 

@@ -189,6 +189,8 @@ uint16_t USBD_XferCompleteCb(
     uint16_t remaining
 );
 
+void USBD_Disconnect(void);
+
 USB_Status_TypeDef USBD_SetupCmdCb(XRAM USB_Setup_TypeDef *setup);
 int8_t USBD_Write(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback) REENT;
 int8_t USBD_Read(uint8_t epAddr, void *dat, uint16_t byteCount, bool callback);

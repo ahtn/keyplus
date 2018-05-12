@@ -13,6 +13,6 @@ program-efm8: $(TARGET_HEX)
 program-c8051: $(TARGET_HEX)
 	$(FLASH_8051) -sn $(SERIAL_NUM) -upload $< -erasemode page
 
-.PHONY: program-c8051
+.PHONY: program-hex-file
 program-hex-file: $(HEX_FILE)
-	$(FLASH_8051) -sn $(SERIAL_NUM) -upload $< -erasemode page
+	$(FLASH_8051) -sn $(SERIAL_NUM) -upload $< -erasemode full
