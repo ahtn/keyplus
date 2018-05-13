@@ -25,6 +25,7 @@ USE_SCANNER = 0
 
 KEYPLUS_PATH  = ../../src
 NRF24LU1_PATH = ./src
+UNIFLASH_CLI = ../../host-software/uniflash/uniflash.py
 
 VPATH += $(KEYPLUS_PATH)
 VPATH += $(NRF24LU1_PATH)
@@ -228,7 +229,7 @@ program-boot: $(MERGED_HEX) size
 
 program-unirecv: $(MERGED_HEX)
 	$(KEYPLUS_CLI) bootloader -p $(MCU_STRING) | sleep 1.0
-	../host-software/uniflash/uniflash.py flash $<
+	$(UNIFLASH_CLI) flash $<
 
 program-hard:: $(MERGED_HEX) size
 	./scripts/strip_chip_id.sh $(MERGED_HEX) > $(MERGED_HEX)_no_chip_id.hex

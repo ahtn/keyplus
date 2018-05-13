@@ -399,14 +399,18 @@ void get_descriptor(
         case USB_DESC_STRING: {
             switch (req->get_desc.index) {
                 case STRING_DESC_PRODUCT: {
-                    ptr->type = PTR_DATA;
+                    uint8_t len;
+                    // First byte of the string desc which is its length
                     flash_read(
-                        (uint8_t*) string_copy_buf,
-                        (flash_ptr_t)&(GET_SETTING(device_name)),
-                        MAX_STRING_LEN
+                        &len,
+                        (flash_ptr_t)(GET_SETTING(device_name)),
+                        1
                     );
-                    make_string_desc(string_copy_buf);
-                    address = (raw_ptr_t)string_desc_buf;
+
+                    // Check length is not too big
+                    if (len <= SETTINGS_NAME_STORAGE_SIZE) {
+                        address = (flash_ptr_t)GET_SETTING(device_name);
+                    }
                 } break;
 
                 case STRING_DESC_SERIAL_NUMBER: {
@@ -477,10 +481,6 @@ uint8_t usb_handle_ep0(usb_request_std_t *req) {
             fat_ptr_t desc_ptr;
 
             get_descriptor((usb_request_t*)req, &desc_ptr);
-
-            // desc_ptr.type = PTR_FLASH;
-            // desc_ptr.len = sizeof(usb_device_desc);
-            // desc_ptr.ptr.raw = (raw_ptr_t)&usb_device_desc;
 
             if (desc_ptr.ptr.raw == 0) {
                 USB_EP0_STALL();

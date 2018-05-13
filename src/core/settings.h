@@ -145,6 +145,8 @@ typedef struct feature_ctrl_t {
     uint8_t reserved_2: 1;
 } feature_ctrl_t;
 
+#define SETTINGS_NAME_STORAGE_SIZE 50
+
 #define SETTINGS_STORAGE_SIZE 512
 #define SETTINGS_MAIN_INFO_SIZE 96
 /// The settings stored in flash to control this device.
@@ -160,7 +162,7 @@ typedef struct settings_t { // 512 bytes
     /// before it can be used. Since UFT-16LE encoding needs a minimum of
     /// 2 bytes per a code point, it will probably be good to enlarge this
     /// array slightly.
-    char device_name[32];
+    uint8_t device_name[SETTINGS_NAME_STORAGE_SIZE];
     /// UTC time stamp of when the settings where last updated.
     uint8_t timestamp[8];
     /// The default keyboard report mode.
@@ -173,7 +175,7 @@ typedef struct settings_t { // 512 bytes
     /// Used to enable/disable hardware features like nRF24 wireless/split I2C
     uint8_t feature_ctrl;
     /// These bytes are reserved for future use.
-    uint8_t _reserved1[32];
+    uint8_t _reserved1[14];
     /// The CRC over this the previous 94 bytes
     uint16_t crc; // size == 96
     /// The layout settings for the devices

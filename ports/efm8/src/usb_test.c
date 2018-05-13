@@ -16,6 +16,8 @@
 #include "usb_defs.h"
 #include "usb/descriptors.h"
 
+#include "core/settings.h"
+
 #define GET_EP(epAddr)  (&epX[epAddr])
 
 static XRAM uint8_t s_usb_state;
@@ -33,6 +35,10 @@ static XRAM USBD_Ep_TypeDef epX[NUM_ENDPOINTS];
 #define ep3out  (epX[EP3OUT])
 
 uint8_t XRAM keyboardReport[8] = {0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+// TODO: Should probably write this to the USB EP0 buffer memory directly
+#define MAX_STRING_LEN 32
+static XRAM uint16_t s_string_descriptor_buf[MAX_STRING_LEN];
 
 static const ROM uint8_t txZero[2];
 static XRAM USB_Setup_TypeDef setup;
@@ -337,8 +343,8 @@ static USB_Status_TypeDef GetDescriptor(void) REENT {
 #endif
 
     uint8_t index;
-    uint16_t length = 0;
-    uint8_t *dat;
+    uint16_t length;
+    uint8_t *dat = NULL;
     USB_Status_TypeDef retVal = USB_STATUS_REQ_ERR;
 
     if (*((uint8_t *)&setup.bmRequestType) ==
@@ -363,69 +369,35 @@ static USB_Status_TypeDef GetDescriptor(void) REENT {
                 length = sizeof(usb_config_desc);
             } break;
 
-#if 0
             case USB_STRING_DESCRIPTOR: {
-#if (SLAB_USB_NUM_LANGUAGES == 1)
+                switch (index) {
+                    case 0: {
+                        dat = usb_string_desc_0;
+                    } break;
 
-                dat = (SI_VARIABLE_SEGMENT_POINTER(, uint8_t, SI_SEG_GENERIC))stringDescriptors[index];
+                    case STRING_DESC_MANUFACTURER: {
+                        dat = usb_string_desc_1;
+                    } break;
 
-                // Index 0 is the language string. If SLAB_USB_NUM_LANGUAGES == 1, we
-                // know the length will be 4 and the format will be UTF16LE.
-                if (index == 0) {
-                    length = 4;
-                    ep0String.encoding.type = USB_STRING_DESCRIPTOR_UTF16LE;
-                }
-                // Otherwise, verify the language is correct (either the value set as
-                // SLAB_USB_LANGUAGE in usbconfig.h, or 0).
-                else if ((setup.wIndex == 0) || (setup.wIndex == SLAB_USB_LANGUAGE)) {
-                    // Verify the index is valid
-                    if (index < numberOfStrings) {
-                        length = *(dat + USB_STRING_DESCRIPTOR_LENGTH);
-                        ep0String.encoding.type = *(dat + USB_STRING_DESCRIPTOR_ENCODING);
-                        dat += USB_STRING_DESCRIPTOR_LENGTH;
-                        ep0String.encoding.init = true;
-                    }
-                }
-#elif (SLAB_USB_NUM_LANGUAGES > 1)
-
-                langSupported = false;
-
-                // Index 0 is the language.
-                if (index == 0) {
-                    dat = ((SI_VARIABLE_SEGMENT_POINTER(, uint8_t, SI_SEG_GENERIC))stringDescriptors->languageArray[0][index]);
-                    length = *((uint8_t *)dat);
-                    ep0String.encoding.type = USB_STRING_DESCRIPTOR_UTF16LE;
-                } else {
-                    // Otherwise, verify the language is one of the supported languages or 0.
-                    for (lang = 0; lang < SLAB_USB_NUM_LANGUAGES; lang++) {
-                        if ((stringDescriptors->languageIDs[lang] == setup.wIndex)
-                            || (stringDescriptors->languageIDs[lang] == 0)
-                        ) {
-                            langSupported = true;
-                            break;
+                    case STRING_DESC_PRODUCT: {
+                        dat = GET_SETTING(device_name);
+                        if (dat[0] > SETTINGS_NAME_STORAGE_SIZE) {
+                            dat = NULL;
                         }
-                    }
-                    if ((langSupported == true) && (index < numberOfStrings)) {
-                        dat = ((SI_VARIABLE_SEGMENT_POINTER(, uint8_t, SI_SEG_GENERIC))stringDescriptors->languageArray[lang][index]);
-                        length = *(dat + USB_STRING_DESCRIPTOR_LENGTH);
-                        ep0String.encoding.type = *(dat + USB_STRING_DESCRIPTOR_ENCODING);
-                        dat += USB_STRING_DESCRIPTOR_LENGTH;
+                    } break;
 
-                        if (ep0String.encoding.type == USB_STRING_DESCRIPTOR_UTF16LE_PACKED) {
-                            ep0String.encoding.init = true;
-                        } else {
-                            ep0String.encoding.init = false;
-                        }
-                    }
+                    case STRING_DESC_SERIAL_NUMBER: {
+                        dat = usb_string_desc_1;
+                    } break;
                 }
-#endif // ( SLAB_USB_NUM_LANGUAGES == 1 )
+                length = dat[0];
             } break;
-#endif
         }
 
         // If there is a descriptor to send, get the proper length, then call
         // EP0_Write() to send.
-        if (length) {
+        if (dat) {
+
             // If length != 0, then dat is defined
             if (length > setup.wLength) {
                 length = setup.wLength;

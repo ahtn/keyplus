@@ -221,7 +221,7 @@ class KeyplusKeyboard(object):
 
     @property
     def name(self):
-        return self.device_info.get_name_str()
+        return self.device_info.get_device_name()
 
     @property
     def serial_number(self):
@@ -666,6 +666,10 @@ class KeyplusKeyboard(object):
         assert(isinstance(keep_rf, bool))
         keep_rf = int(keep_rf)
 
+        if DEBUG.usb_cmd:
+            print("Setting: ")
+            hexdump.hexdump(settings_data)
+
         self._rf_info_dirty = True
         self._layout_info_dirty = True
 
@@ -675,9 +679,6 @@ class KeyplusKeyboard(object):
         chunk_list = self._get_chunks(settings_data[0:size], FLASH_WRITE_PACKET_LEN)
 
         self.simple_command(CMD_UPDATE_SETTINGS, [keep_rf])
-
-        if DEBUG.usb_cmd:
-            print("Setting chunks:", chunk_list)
 
         self._write_flash_chunks(chunk_list, size)
 

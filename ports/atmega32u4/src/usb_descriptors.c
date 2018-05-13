@@ -62,14 +62,15 @@ void usb_cb_get_descriptor(
                 } break;
 
                 case STRING_DESC_PRODUCT: {
-                    ptr->type = PTR_DATA;
+                    uint8_t len;
                     flash_read(
-                        (uint8_t*) string_copy_buf,
-                        (flash_ptr_t)&(GET_SETTING(device_name)),
-                        MAX_STRING_LEN
+                        &len,
+                        (flash_ptr_t)(GET_SETTING(device_name)),
+                        1
                     );
-                    make_string_desc(string_copy_buf);
-                    address = (raw_ptr_t)string_desc_buf;
+                    if (len <= SETTINGS_NAME_STORAGE_SIZE) {
+                        address = (flash_ptr_t)GET_SETTING(device_name);
+                    }
                 } break;
 
                 // case STRING_DESC_SERIAL_NUMBER: {

@@ -8,12 +8,11 @@
 #include "core/settings.h"
 
 static XRAM uint16_t packetizer_data_size = 0;
-static const XRAM uint8_t *XRAM packetizer_data_ptr;
+static const uint8_t *XRAM packetizer_data_ptr;
 
-#define MAX_STRING_LEN 32
-static XRAM uint16_t s_string_descriptor_buf[MAX_STRING_LEN];
-
-const ROM char manufacturer_string[] = "keyplus";
+// TODO: Should probably write this to the USB EP0 buffer memory directly
+#define SERIAL_STR_DESC_LEN (10+1)
+static XRAM uint16_t s_serial_str_desc_buf[SERIAL_STR_DESC_LEN];
 
 // This function is used for sending descriptor data to the host that might
 // not fit inside a single packet. It is called multiple times until all the
@@ -46,18 +45,6 @@ void usb_ep0_packetizer_data_send(void) {
     }
 }
 
-static void make_string_desc(char *str) {
-    char c;
-    uint8_t i = 1;
-    uint8_t len = 0;
-    while ( ((c = str[i-1]) != '\0') && len < MAX_STRING_LEN-2) {
-        s_string_descriptor_buf[i] = c; // char -> uint16_t
-        len += 1;
-        i++;
-    }
-    s_string_descriptor_buf[0] = USB_STRING_DESC_SIZE((len+1)*sizeof(uint16_t));
-}
-
 static uint8_t read_info_page_byte(uint16_t addr) {
     // __asm
     //     ; addr -> (DPL, DPH)
@@ -82,17 +69,20 @@ static char hexdigit_to_char(uint8_t d) {
     }
 }
 
-
-static void make_serial_string(void) {
+static void load_serial_number_str_desc(void) {
     uint8_t i;
-    uint8_t *str = (uint8_t*)s_string_descriptor_buf+32;
+    uint16_t *str = s_serial_str_desc_buf;
+
+    // First load length
+    *str++ = USB_STRING_DESC_SIZE(sizeof(s_serial_str_desc_buf));
+
+    // Then load the 5 byte chip ID as a 10 character hex string
+    // Note: UTF-16LE
     for (i = 0; i < 5; ++i) {
         char c = read_info_page_byte(CHIPID + i);
         *str++ = hexdigit_to_char(c >> 4);
         *str++ = hexdigit_to_char(c >> 0);
     }
-    *str++ = '\0';
-    make_string_desc((uint8_t*)s_string_descriptor_buf + 32); // NOTE: intentionally overlap memory
 }
 
 // When the USB host requests a descriptor (device, configuration, string, , this function is called and loads
@@ -106,7 +96,7 @@ void usb_get_descriptor(const XRAM usb_request_t *request) {
 
     switch (desc_type) {
         case USB_DESC_DEVICE: {
-            packetizer_data_ptr = (const XRAM uint8_t*) &usb_device_desc;
+            packetizer_data_ptr = (uint8_t*)&usb_device_desc;
             packetizer_data_size = sizeof(usb_device_desc);
         } break;
 
@@ -118,7 +108,7 @@ void usb_get_descriptor(const XRAM usb_request_t *request) {
         } break;
 
         case USB_DESC_CONFIGURATION: {
-            packetizer_data_ptr = (const XRAM uint8_t*) &usb_config_desc;
+            packetizer_data_ptr = (uint8_t*)&usb_config_desc;
             packetizer_data_size = sizeof(usb_config_desc);
         } break;
 
@@ -127,23 +117,23 @@ void usb_get_descriptor(const XRAM usb_request_t *request) {
             if (string_id < USB_STRING_DESC_COUNT) {
                 switch (string_id) {
                     case STRING_DESC_NONE: {
-                        packetizer_data_ptr = (const XRAM uint8_t*)usb_string_desc_0;
+                        packetizer_data_ptr = usb_string_desc_0;
                     }
                     case STRING_DESC_MANUFACTURER: {
-                        make_string_desc(manufacturer_string);
-                        packetizer_data_ptr = s_string_descriptor_buf;
+                        packetizer_data_ptr = usb_string_desc_1;
                     } break;
                     case STRING_DESC_PRODUCT: {
-                        make_string_desc(GET_SETTING(device_name));
-                        packetizer_data_ptr = s_string_descriptor_buf;
+                        packetizer_data_ptr = GET_SETTING(device_name);
+                        if (packetizer_data_ptr[0] > SETTINGS_NAME_STORAGE_SIZE) {
+                            packetizer_data_ptr = NULL;
+                        }
                     } break;
                     case STRING_DESC_SERIAL_NUMBER: {
-                        make_serial_string();
-                        packetizer_data_ptr = s_string_descriptor_buf;
+                        load_serial_number_str_desc();
+                        packetizer_data_ptr = s_serial_str_desc_buf;
                     } break;
                 }
 
-                // packetizer_data_size = flash_read_byte((uint16_t)packetizer_data_ptr);
                 packetizer_data_size = packetizer_data_ptr[0];
             } else {
                 USB_EP0_STALL();

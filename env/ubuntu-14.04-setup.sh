@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# on error, cause the script to exit
+set -e
+
 git submodule update --init --recursive
 
 # Setup Ubuntu 14.04 dependencies
@@ -14,6 +17,9 @@ source ../host-software/keyplus/version.py
 if [[ $(echo "$__version__" | grep pre) ]]; then
     pip3 install --user -U --pre keyplus
 else
+    if [[ $TRAVIS ]]; then
+        pip3 install --user -U setuptools
+    fi
     pip3 install --user -U "keyplus==${__version__}"
 fi
 

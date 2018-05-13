@@ -194,7 +194,7 @@ devices:
         r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
       ]
 
-  "orange gamma split - left":
+  "orange γ split 🔥 left":
     id: 14
     wireless_split: true
     wireless_mouse: true
@@ -222,7 +222,7 @@ devices:
 
 
 
-  "orange gamma split - right":
+  "orange γ split - right":
     id: 15
     wireless_split: true
     wireless_mouse: false
@@ -301,7 +301,7 @@ devices:
 
 
   # rf dongle
-  nrf_dongle:
+  nRF24 Dongle 📻:
     id: 48
     wireless_split: true
     wireless_mouse: true

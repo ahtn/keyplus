@@ -8,6 +8,8 @@
 
 .default_report_mode = KEYBOARD_REPORT_MODE_AUTO,
 
+#if 0
+
 #if DEVICE_ID == 0
 .device_name = "simple split 40\% - left",
 #elif DEVICE_ID == 1
@@ -29,6 +31,14 @@
 #elif DEVICE_ID == 0x30
 .device_name = "nRF24LU1+ dongle - 1",
 #endif
+
+#endif
+
+.device_name =  {
+    (11)*2 + 2, 0x03,
+    'd', 0x00, 'e', 0x00, 'v', 0x00, 'i', 0x00, 'c', 0x00, 'e', 0x00,
+    'n', 0x00, 'a', 0x00, 'm', 0x00, 'e', 0x00
+},
 
 #ifdef NO_MATRIX
 .scan_plan = {

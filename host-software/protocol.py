@@ -120,6 +120,9 @@ KBInfoMainNamedTuple = collections.namedtuple("KBInfoMain",
 )
 
 class KBInfoMain(KBInfoMainNamedTuple):
+    MAX_STR_DESC_LEN = 50
+    USB_DESC_STRING = 0x03
+
     @staticmethod
     def _make_with_crc(fields, crc, is_empty):
         result = KBInfoMain._make(fields)
@@ -128,14 +131,18 @@ class KBInfoMain(KBInfoMainNamedTuple):
         return result
 
     def device_name_str(self):
-        if self.is_empty:
-            return ""
-        else:
-            try:
-                result = self.name.decode('utf-8')
-            except UnicodeDecodeError:
-                result = str(self.name)
-            return result
+        try:
+        # if 1:
+            length = self.name[0]
+            desc_type = self.name[1]
+            if desc_type != self.USB_DESC_STRING or length > self.MAX_STR_DESC_LEN:
+                return "<N/A>"
+            raw_utf16_data = self.name[2: length]
+            hexdump.hexdump(raw_utf16_data)
+            result = raw_utf16_data.decode('utf-16le')
+        except UnicodeDecodeError:
+            result = str(self.name)
+        return result
 
     def timestamp_str(self):
         return timestamp_to_str(self.timestamp)
@@ -198,7 +205,7 @@ def get_device_info(device):
 
     crc = crc16_bytes(response[:DEVICE_INFO_SIZE-2])
 
-    x = struct.unpack("< B 32s q 12B 8s 1B 32s H", response)
+    x = struct.unpack("< B 50s q 12B 8s 1B 14s H", response)
     return KBInfoMain._make_with_crc(x, crc, is_empty)
 
 def get_layout_info(device):

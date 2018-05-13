@@ -29,7 +29,7 @@ import keyplus.usb_ids
 import sys
 import traceback
 import datetime, time, binascii
-import yaml
+import ruamel.yaml as yaml
 import colorama
 import hexdump
 import copy
@@ -161,10 +161,12 @@ class DeviceWidget(QGroupBox):
         else:
             # CRC doesn't match
             if settingsInfo.is_empty:
-                self.label.setText('??? | ??? | Firmware v{}.{}.{}\n'
+                self.label.setText('{} | {} | Firmware v{}.{}.{}\n'
                                     'Warning: Empty settings!\n'
                                     'Serial number: {}\n'
                     .format(
+                        self.device.manufacturer_string,
+                        self.device.product_string,
                         firmwareInfo.version_major,
                         firmwareInfo.version_minor,
                         firmwareInfo.version_patch,
@@ -174,10 +176,12 @@ class DeviceWidget(QGroupBox):
             else:
                 # corrupt settings in the flash
                 build_time_str = protocol.timestamp_to_str(settingsInfo.timestamp)
-                self.label.setText('??? | ??? | Firmware v{}.{}.{}\n'
+                self.label.setText('{} | {} | Firmware v{}.{}.{}\n'
                                     'WARNING: Settings are uninitialized\n'
                                     'Serial number: {}\n'
                     .format(
+                        self.device.manufacturer_string,
+                        self.device.product_string,
                         firmwareInfo.version_major,
                         firmwareInfo.version_minor,
                         firmwareInfo.version_patch,

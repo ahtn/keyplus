@@ -8,4 +8,4 @@
 #define KEYPLUS_VERSION_PATCH 2
 
 // Only set this to 1 for release builds
-#define KEYPLUS_VERSION_IS_STABLE 0
+#define KEYPLUS_VERSION_IS_STABLE 1
