@@ -1,5 +1,27 @@
-0.3.2 (unreleased)
+0.3.3 (unreleased)
 ==================
+
+
+0.3.2
+==================
+
+* `firmware` fixed media keys
+* `firmware` clean up source code tree. Standalone ports (e.g. `xmega`,
+  `nRF24LU1`, `atmega32u4`) are moved to the `ports` directory. And source
+  code inside these directories is cleaned up by moving all *.c, *.h files
+  to their own `src` directory.
+  now moved to the `ports` directory.
+* `firmware` the device name string is now stored as UTF16-LE
+* `firmware` some linker script fixes for some large flash xmega chips
+* `firmware` added alternative shared HID definition for microcontrollers that
+  only have a small number of endpoints. Will be useful for ATmega32u2 and EFM8,
+  since they only have ~4 endpoints.
+* `firmware` add nRF24LU1+ and EFM8 to travis build targets
+* `firmware` basis for efm8 support
+
+* `keyplus-flasher` efm8 factory bootloader support
+* `keyplus-flasher` add unicode support to yaml files
+
 
 0.3.1
 ==================
@@ -24,7 +46,6 @@
 * `keyplus-flasher` fixed labels not updating properly
 * `keyplus-flasher` fixed issue requiring user to manual press program button
   when updating firmware
-
 
 0.3.0
 ==================

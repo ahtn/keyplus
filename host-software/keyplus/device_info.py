@@ -9,6 +9,8 @@ import struct
 import math
 import six
 
+from distutils.version import LooseVersion
+
 import keyplus.cdata_types
 from keyplus.utility import crc16_bytes
 from keyplus.constants import *
@@ -131,6 +133,9 @@ class KeyboardDeviceTarget(object):
 
 
 class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
+    USB_DESC_STRING = 0x03
+    MAX_STR_DESC_LEN = 48
+
     def has_valid_crc(self):
         return self.crc == self.compute_crc()
 
@@ -154,15 +159,35 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
         elif six.PY3:
             self.timestamp = [int(c) for c in bytes_]
 
+    def set_device_name(self, new_name):
+        # Internally we convert the given name to a USB string descriptor
+        # encoded as:
+        #
+        # 1 byte : descriptor length (X bytes)
+        # 1 byte : descriptor type (0x03)
+        # X bytes: string encoded as UTF-16LE
 
-    def get_name_str(self):
+        # Convert giveng string to utf-16le and truncate if necessary
+        new_name = new_name.encode('utf-16le')[ : self.MAX_STR_DESC_LEN]
+
+        padding = [0] * (self.MAX_STR_DESC_LEN-len(new_name))
+        self._device_name = (
+            [len(new_name)+2, self.USB_DESC_STRING] + list(new_name) + padding
+        )
+
+    def get_device_name(self):
         if self.is_empty():
             return ""
         else:
             try:
-                result = self.device_name.strip(b'\x00').decode('utf-8')
+                length = self._device_name[0]
+                desc_type = self._device_name[1]
+                if desc_type != self.USB_DESC_STRING or length > self.MAX_STR_DESC_LEN:
+                    return "<N/A>"
+                raw_utf16_data = self._device_name[2: length]
+                result = raw_utf16_data.decode('utf-16le')
             except UnicodeDecodeError:
-                result = str(self.device_name)
+                result = str(self._device_name)
             return result
 
     def get_default_report_mode_str(self):
@@ -329,14 +354,9 @@ class KeyboardFirmwareInfo(keyplus.cdata_types.firmware_info_t):
         )
 
     def has_at_least_version(self, version_str):
-        (major, minor, patch) = [int(x) for x in version_str.split('.')]
-
-        return \
-            self.version_major > major or (
-                self.version_major == major and
-                self.version_minor >  minor
-            ) or (
-                self.version_major == major and
-                self.version_minor == minor and
-                self.version_patch >= patch
-            )
+        fw_ver = "{}.{}.{}".format(
+            self.version_major,
+            self.version_minor,
+            self.version_patch,
+        )
+        return LooseVersion(fw_ver) <= LooseVersion(version_str)

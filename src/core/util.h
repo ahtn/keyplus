@@ -123,6 +123,14 @@
 /// use workaround
 #define STATIC_ASSERT(x, y) _Static_assert(x, y)
 
+#ifndef UNREFERENCED_ARGUMENT
+#if defined __SDCC
+#define UNREFERENCED_ARGUMENT(arg) ((void)arg)
+#else
+#define UNREFERENCED_ARGUMENT(arg) ((void)arg)
+#endif
+#endif
+
 
 #define SIGN(x) ((x) == 0 ? 0 : ((x) < 0 ? -1 : +1))
 

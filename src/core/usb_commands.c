@@ -515,23 +515,25 @@ void parse_cmd(void) {
         } break;
 #endif
 
+        case CMD_ERROR_CODE: {
+            // ignore
+        } break;
+
         default: {
             cmd_error(CMD_ERROR_UNKNOWN_CMD);
         } break;
     }
 }
 
-// TODO: might change how flashing layouts works. Make it so we need to request
-// each block individually?
-
 void handle_vendor_out_reports(void) {
     if (!is_ready_vendor_out_report()) {
         return;
     }
 
+
     read_vendor_report();
 
-    if (g_vendor_report_out.len == 0) {
+    if (g_vendor_report_out.len != 64) {
         return;
     }
 

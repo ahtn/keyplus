@@ -4,6 +4,7 @@
 #pragma once
 
 #include "usb/descriptors.h"
+
 #include "core/util.h"
 
 #include "core/ring_buf.h"

@@ -4,6 +4,9 @@
 CORE_PATH = core
 USB_REPORTS_PATH = usb_reports
 
+# Add this to the makefile list so changes to this will result in a rebuild
+MAKEFILE_INC += $(KEYPLUS_PATH)/core/core.mk
+
 #######################################################################
 #                  firmware compile time information                  #
 #######################################################################
@@ -48,12 +51,21 @@ ifndef BOARD
 endif
 
 ifndef LAYOUT_FILE
-  LAYOUT_FILE=../layouts/basic_split_test.yaml
+  LAYOUT_FILE=$(KEYPLUS_PATH)/../layouts/basic_split_test.yaml
 endif
 
 ifndef RF_FILE
-  RF_FILE=../layouts/test_rf_config.yaml
+  RF_FILE=$(KEYPLUS_PATH)/../layouts/test_rf_config.yaml
 endif
+
+ifndef SCANNER_MAX_ROWS
+   MAX_NUM_ROWS=18
+endif
+
+ifndef KEYPLUS_CLI
+    KEYPLUS_CLI   = python3 $(KEYPLUS_PATH)/../host-software/keyplus-cli
+endif
+
 
 #######################################################################
 #                            source files                             #
@@ -72,13 +84,20 @@ C_SRC += \
 
 INC_PATHS += -I$(KEYPLUS_PATH)
 
+CDEFS += -DSETTINGS_ADDR=$(SETTINGS_ADDR)
+CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
+CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
+CDEFS += -DBOOTLOADER_ADDR=$(BOOTLOADER_ADDR)
+
 # NRF24 module, defaults to 0
 ifeq ($(USE_NRF24), 1)
     C_SRC += \
         $(CORE_PATH)/nrf24.c \
         $(CORE_PATH)/rf.c \
         $(CORE_PATH)/nonce.c
+
     CDEFS += -DUSE_NRF24=1
+    CDEFS += -DNONCE_ADDR=$(NONCE_ADDR)
 
     ifeq ($(USE_UNIFYING), 0)
         CDEFS += -DUSE_UNIFYING=0
@@ -105,15 +124,13 @@ endif
 # Scanner module, defaults to 1
 ifeq ($(USE_SCANNER), 0)
     CDEFS += -DUSE_SCANNER=0
+    CDEFS += -DMAX_NUM_ROWS=0
 else
     C_SRC += \
         $(CORE_PATH)/io_map.c \
         $(CORE_PATH)/matrix_scanner.c
     CDEFS += -DUSE_SCANNER=1
-    ifndef SCANNER_MAX_ROWS
-        $(error "Need to define SCANNER_MAX_ROWS")
-    endif
-    CDEFS += -DMAX_NUM_ROWS=$(SCANNER_MAX_ROWS)
+    CDEFS += -DMAX_NUM_ROWS=$(MAX_NUM_ROWS)
 endif
 
 # Hardware specific scan, defaults to 0
@@ -128,11 +145,12 @@ ifeq ($(USE_USB), 0)
     CDEFS += -DUSE_USB=0
 else
     C_SRC += \
-        $(CORE_PATH)/matrix_interpret.c \
         $(CORE_PATH)/mods.c \
+        $(CORE_PATH)/matrix_interpret.c \
         $(CORE_PATH)/usb_commands.c \
         $(CORE_PATH)/macro.c \
-        $(CORE_PATH)/keycode.c
+        $(CORE_PATH)/keycode.c \
+
     CDEFS += -DUSE_USB=1
 endif
 

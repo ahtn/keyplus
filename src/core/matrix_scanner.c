@@ -192,7 +192,7 @@ bool scanner_debounce_row(
     uint8_t row,
     const uint8_t *new_row,
     uint8_t bytes_per_row
-) {
+) REENT {
     const uint8_t cur_time = timer_read8_ms();
     // Will be set to tru by add_key/del_key
     s_has_updated = false;
@@ -200,14 +200,16 @@ bool scanner_debounce_row(
     for (uint8_t i = 0; i < bytes_per_row; ++i) {
         uint8_t old_row = g_matrix[row][i];
         uint8_t changed_pins = old_row ^ new_row[i];
+        uint8_t pin_mask;
+        uint8_t col;
 
         if (s_is_debouncing[row][i]==0 && !changed_pins) {
             // not debouncing and nothing changed, so nothing to do for this row
             continue;
         }
 
-        uint8_t pin_mask = 0x01;
-        uint8_t col = i*8;
+        pin_mask = 0x01;
+        col = i*8;
         for ( ; pin_mask != 0 ; col++, pin_mask<<=1 ) {
             if (s_is_debouncing[row][i] & pin_mask) {
                 const uint8_t key_num = get_key_number(row, col);
@@ -273,6 +275,8 @@ bool scanner_debounce_row(
                     }
                 }
             } else {
+                bool is_key_down;
+                uint8_t key_num;
                 // not debouncing, so a key was pressed/released.
 
                 if (!(changed_pins & pin_mask)) {
@@ -280,12 +284,12 @@ bool scanner_debounce_row(
                     continue;
                 }
 
-                const uint8_t key_num = get_key_number(row, col);
+                key_num = get_key_number(row, col);
 
                 // If the key press/release trigger time is 0, then that means
                 // we should trigger the key immediately after seeing that it
                 // has changed state.
-                bool is_key_down = new_row[i] & pin_mask;
+                is_key_down = new_row[i] & pin_mask;
                 if (g_scan_plan.trigger_time_press == 0 && is_key_down) {
                     // debounce press trigger time is 0, so register he key press
                     // immediately. The debouncing algorithm then waits until
@@ -331,14 +335,15 @@ uint8_t get_matrix_num_keys_debouncing(void) {
     return s_matrix_number_keys_debouncing;
 }
 
+#define PASSTHROUGH_BITMAP_SIZE (MAX_NUM_KEYS/8)
 
-void passthrough_keycodes_task(void) {
+void passthrough_keycodes_task(void) REENT {
     if (is_passthrough_enabled() && (s_has_raw_matrix_updated)) {
         // Use `passthrough` as a bitmap for matrix data
-        uint8_t passthrough_bitmap[63];
+        static XRAM uint8_t passthrough_bitmap[PASSTHROUGH_BITMAP_SIZE];
         const uint8_t row_size = INT_DIV_ROUND_UP(g_scan_plan.max_col_pin_num+1, 8);
         uint8_t row, col, logical_col;
-        memset(passthrough_bitmap, 0, 63);
+        memset(passthrough_bitmap, 0, PASSTHROUGH_BITMAP_SIZE);
         logical_col = 0;
 
         // walk through `g_matrix` and extract any bits that represent

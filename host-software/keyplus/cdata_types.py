@@ -97,13 +97,13 @@ class settings_header_t(CStructWithBytes):
     __byte_order__ = cstruct.LITTLE_ENDIAN
     __struct__ = """
     uint8_t device_id;
-    char device_name[32];
+    uint8_t _device_name[50];
     uint8_t timestamp[8];
     uint8_t default_report_mode;
     struct scan_plan_t scan_plan;
     uint8_t _reserved0[8];
     uint8_t feature_ctrl;
-    uint8_t _reserved1[32];
+    uint8_t _reserved1[14];
     uint16_t crc; /* total size == 96 */
     """
 

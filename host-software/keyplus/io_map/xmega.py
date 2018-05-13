@@ -5,9 +5,9 @@
 
 import keyplus.chip_id
 
-from keyplus.io_map.common import *
+from keyplus.io_map.common import IoMapperAVR, PinMap
 
-XmegaPinsA4U = IoMapperPins(
+XmegaPinsA4U = PinMap(
     ports = {
         'A': 0,
         'B': 1,
@@ -38,7 +38,7 @@ XmegaPinsA4U = IoMapperPins(
 )
 
 
-XmegaPinsA3U = IoMapperPins(
+XmegaPinsA3U = PinMap(
     ports = {
         'A': 0,
         'B': 1,
@@ -65,7 +65,7 @@ XmegaPinsA3U = IoMapperPins(
     ],
 )
 
-XmegaPinsA1U = IoMapperPins(
+XmegaPinsA1U = PinMap(
     ports = {
         'A':  0,
         'B':  1,
@@ -96,7 +96,7 @@ XmegaPinsA1U = IoMapperPins(
     port_size = 8
 )
 
-class IoMapperXmega(IoMapper):
+class IoMapperXmega(IoMapperAVR):
     XMEGA_SERIES_TABLE = {
         'A4U': XmegaPinsA4U,
         'A3U': XmegaPinsA3U,
@@ -112,30 +112,4 @@ class IoMapperXmega(IoMapper):
         assert(self.chip_info != None)
         assert(self.chip_info.architecture == 'AVR_XMEGA')
         assert(self.chip_info.series in self.XMEGA_SERIES_TABLE)
-        self.pin_mapper = IoMapperXmega.XMEGA_SERIES_TABLE[self.chip_info.series]
-
-    def get_pin_number(self, pin_name):
-        try:
-            pin_name = pin_name.upper()
-            port = pin_name[0]
-            pin = int(pin_name[1:])
-        except:
-            raise IoMapperError("Invalid pin name '{}', correct format "
-                                "is a letter followed by a number. E.g. C1, B0, etc"
-                                .format(pin_name))
-
-        if not self.pin_mapper.is_valid_pin(port, pin):
-            raise IoMapperError("The pin '{}' does not exist on the given microcontroller '{}'"
-                                .format(pin_name, self.chip_info.name))
-
-        return self.pin_mapper.get_pin_number(port, pin)
-
-    def get_pin_name(self, pin_number):
-        port_number, pin_bit = self.get_pin_port_and_bit(pin_number)
-        if pin_number > self.pin_mapper.get_highest_pin_number():
-            raise IoMapperError("Pin number '{}' doesn't exist on this mcu"
-                                .format(pin_number))
-        return "{port_name}{pin_bit}".format(
-            port_name = self.pin_mapper.port_num_to_name[port_number],
-            pin_bit = pin_bit,
-        )
+        self.pin_map = IoMapperXmega.XMEGA_SERIES_TABLE[self.chip_info.series]

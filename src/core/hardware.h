@@ -7,7 +7,7 @@
 
 // NOTE: must implement static_delay_us(t) and static_delay_ms(t)
 // Also, make sure that F_CPU and CLOCK_SPEED_SLOW are set
-#include "hardware_user_impl.h"
+#include "port_impl/hardware.h"
 
 #include <stdint.h>
 
@@ -16,12 +16,21 @@
 #endif
 
 #ifndef enable_interrupts
-#error "enale_interrupts needs to be defined in 'hardware_user_impl.h'"
+#error "enale_interrupts needs to be defined in 'hardware_port_impl.h'"
 #endif
 
 #ifndef disable_interrupts
-#error "disable_interrupts needs to be defined in 'hardware_user_impl.h'"
+#error "disable_interrupts needs to be defined in 'hardware_port_impl.h'"
 #endif
+
+#ifndef SETTINGS_ADDR
+#error "SETTINGS_ADDR not defined"
+#endif
+
+#ifndef LAYOUT_ADDR
+#error "LAYOUT_ADDR not defined"
+#endif
+
 
 #define CLOCK_SPEED_FAST F_CPU
 

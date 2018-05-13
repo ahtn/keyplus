@@ -19,10 +19,10 @@ matrix:
         - 'cd env'
         - './ubuntu-14.04-setup.sh'
         - 'cd ..'
-        - sudo pip3 install hexdump intelhex easyhid pyyaml pyusb cstruct kle six colorama xusbboot cffi future
       script:
-        # Setup the AVR build environment
+        # Setup the build environment
         - 'source env/enter_env.sh'
+        # Run the test builds
         - 'env/test_build.sh'
       # after_success:
       #   - echo "After_Success"

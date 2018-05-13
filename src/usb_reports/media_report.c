@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "usb_reports/usb_reports.h"
+
 #include "usb/descriptors.h"
 
 XRAM hid_report_media_t g_media_report;

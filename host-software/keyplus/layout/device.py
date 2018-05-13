@@ -50,10 +50,8 @@ class LayoutDevice(object):
         header = KeyboardSettingsInfo()
 
         header.device_id = self.device_id
-        # TODO: encode utf-16LE
-        # header.device_name = self.name.encode('utf-16le')
 
-        header.device_name = self.name.encode('utf-8')
+        header.set_device_name(self.name)
         header.scan_plan = self.scan_mode.generate_scan_plan(device_target)
         header.feature_ctrl = self.feature_ctrl.feature_ctrl
 

@@ -4,7 +4,7 @@
 ---
 
 devices:
-  pro micro 1 key:
+  pro micro 1 key ⌨️ :
     id: 0
     scan_mode:
       mode: pin_gnd # options: col_row, pins, none

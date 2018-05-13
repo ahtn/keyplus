@@ -44,9 +44,28 @@ class BootloaderType(Enum):
     NRF24LU1P_512 = 1
     NRF24LU1P_FACTORY = 2
     KP_BOOT_32U4 = 3
+    EFM8_BOOT = 4
 
 
 KEYPLUS_USB_IDS = {
+    #####################
+    #  Keyplus USB IDs  #
+    #####################
+    (0x1209, 0xBB00): USBKeyplusKeyboardInfo(
+        vid = 0x1209,
+        pid = 0xBB00,
+        description = "keyplus keyboard xmega",
+    ),
+
+    (0x1209, 0xBB02): USBKeyplusKeyboardInfo(
+        vid = 0x1209,
+        pid = 0xBB02,
+        description = "keyplus nRF24 wireless keyboard dongle",
+    ),
+
+    #######################################
+    #  Testing/Legacy Keyplus device IDs  #
+    #######################################
     (0x6666, 0x1111): USBKeyplusKeyboardInfo(
         vid = 0x6666,
         pid = 0x1111,
@@ -64,28 +83,12 @@ KEYPLUS_USB_IDS = {
         pid = 0x3333,
         description = "keyplus nRF24 wireless keyboard dongle (prototype)",
     ),
-
-    (0x1209, 0xBB00): USBKeyplusKeyboardInfo(
-        vid = 0x1209,
-        pid = 0xBB00,
-        description = "keyplus keyboard xmega",
-    ),
-
-    (0x1209, 0xBB02): USBKeyplusKeyboardInfo(
-        vid = 0x1209,
-        pid = 0xBB02,
-        description = "keyplus nRF24 wireless keyboard dongle",
-    ),
 }
 
 BOOTLOADER_USB_IDS = {
-    (0x6666, 0xB007): USBBootloaderInfo(
-        vid = 0x6666,
-        pid = 0xB007,
-        bootloader = BootloaderType.XUSB_BOOT,
-        description = "xusb boot (prototype id)",
-    ),
-
+    ###########################
+    #  AVR XMEGA bootloaders  #
+    ###########################
     (0x1209, 0xBB01): USBBootloaderInfo(
         vid = 0x1209,
         pid = 0xBB01,
@@ -93,20 +96,9 @@ BOOTLOADER_USB_IDS = {
         description = "keyplus xusb boot bootloader",
     ),
 
-    (0x1209, 0xBB03): USBBootloaderInfo(
-        vid = 0x1209,
-        pid = 0xBB03,
-        bootloader = BootloaderType.NRF24LU1P_512,
-        description = "keyplus nrf24lu1p-512 bootloader",
-    ),
-
-    (0x6666, 0x9999): USBBootloaderInfo(
-        vid = 0x6666,
-        pid = 0x9999,
-        bootloader = BootloaderType.KP_BOOT_32U4,
-        description = "kp_boot_32u4 bootloader (prototype id)",
-    ),
-
+    ##########################
+    #  AVR Mega Bootloaders  #
+    ##########################
     (0x1209, 0xBB05): USBBootloaderInfo(
         vid = 0x6666,
         pid = 0x9999,
@@ -114,11 +106,62 @@ BOOTLOADER_USB_IDS = {
         description = "kp_boot_32u4 bootloader",
     ),
 
+    ###########################
+    #  nRF24LU1+ bootloaders  #
+    ###########################
+    (0x1209, 0xBB03): USBBootloaderInfo(
+        vid = 0x1209,
+        pid = 0xBB03,
+        bootloader = BootloaderType.NRF24LU1P_512,
+        description = "keyplus nrf24lu1p-512 bootloader",
+    ),
+
     (0x1915, 0x0101): USBBootloaderInfo(
         vid = 0x1915,
         pid = 0x0101,
         bootloader = BootloaderType.NRF24LU1P_FACTORY,
         description = "Nordic nRF24LU1+ factory bootloader",
+    ),
+
+    ######################
+    #  efm8 bootloaders  #
+    ######################
+    (0x10C4, 0xEAC9): USBBootloaderInfo(
+        vid = 0x10C4,
+        pid = 0xEAC9,
+        bootloader = BootloaderType.EFM8_BOOT,
+        description = "EFM8UB1 HID Bootloader",
+    ),
+
+    (0x10C4, 0xEACA): USBBootloaderInfo(
+        vid = 0x10C4,
+        pid = 0xEACA,
+        bootloader = BootloaderType.EFM8_BOOT,
+        description = "EFM8UB2 HID Bootloader",
+    ),
+
+    (0x10C4, 0xEACB): USBBootloaderInfo(
+        vid = 0x10C4,
+        pid = 0xEACB,
+        bootloader = BootloaderType.EFM8_BOOT,
+        description = "EFM8UB3 HID Bootloader",
+    ),
+
+    ############################################
+    #  prototype bootloaders (legacy/testing)  #
+    ############################################
+    (0x6666, 0xB007): USBBootloaderInfo(
+        vid = 0x6666,
+        pid = 0xB007,
+        bootloader = BootloaderType.XUSB_BOOT,
+        description = "xusb boot (prototype id)",
+    ),
+
+    (0x6666, 0x9999): USBBootloaderInfo(
+        vid = 0x6666,
+        pid = 0x9999,
+        bootloader = BootloaderType.KP_BOOT_32U4,
+        description = "kp_boot_32u4 bootloader (prototype id)",
     ),
 }
 

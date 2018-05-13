@@ -145,10 +145,11 @@ void vendor_out_write_byte(uint8_t byte) {
 }
 #endif
 
-
 bit_t is_ready_vendor_in_report(void) {
     return is_in_endpoint_ready(EP_NUM_VENDOR_IN);
 }
+
+static XRAM uint8_t first_sent = false;
 
 bit_t send_vendor_report(void) {
 #if USB_BUFFERED
@@ -157,13 +158,20 @@ bit_t send_vendor_report(void) {
     }
 #endif
 
+    // if (is_ready_vendor_in_report() && g_vendor_report_in.len > 0
+    //     && !first_sent) {
+    //     first_sent = true;
+    //     g_vendor_report_in.len = 0;
+    //     return true;
+    // }
+
     if (is_ready_vendor_in_report() && g_vendor_report_in.len > 0) {
+        // Send the vendor report
         usb_write_in_endpoint(
             EP_NUM_VENDOR_IN,
             g_vendor_report_in.data,
             EP_SIZE_VENDOR
         );
-
         g_vendor_report_in.len = 0;
         return false;
     } else {

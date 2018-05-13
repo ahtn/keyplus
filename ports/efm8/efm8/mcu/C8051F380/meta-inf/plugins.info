@@ -1,0 +1,14 @@
+ This file can list directories where to load plugins from or
+# declare virtual plugins.
+# Any line that says: pluginDirectory=RELATIVE/PATH/
+# will cause appbuilder to read in that directory for plugin subdirectories.
+#
+# Virtual plugins are declared with sections:
+# plugin(xxx) {
+#   BLOCK IDENTICAL TO plugin.properties
+# }
+
+
+#pluginDirectory=../plugins/
+
+

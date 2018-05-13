@@ -9,15 +9,14 @@
 #include "core/util.h"
 
 #if USE_SCANNER
-#include "core/io_map.h"
+#  include "core/io_map.h"
+#else
+#  define MAX_NUM_ROWS 0
+#endif
 
 #if !defined(MAX_NUM_ROWS)
 /// Max number of rows allowed for the matrix scanner
 #error "MAX_NUM_ROWS needs to be defined"
-#endif
-
-#else
-#define MAX_NUM_ROWS 0
 #endif
 
 /// Max number of keys a split keyboard device can use (16 bytes)
@@ -179,8 +178,8 @@ bool scanner_debounce_row(
     uint8_t row,
     const uint8_t *new_row,
     uint8_t bytes_per_row
-);
+) REENT;
 
 /// If passthrough is enabled, this command will send the key matrix to the
 /// host when it changes.
-void passthrough_keycodes_task(void);
+void passthrough_keycodes_task(void) REENT;

@@ -30,6 +30,11 @@ class KeyplusParseError(KeyplusError):
 class KeyplusSettingsError(KeyplusError):
     pass
 
+# Error is a result of internal error in the library and should not be seen
+# normally
+class KeyplusInternalError(KeyplusError):
+    pass
+
 class KeyplusUSBCommandError(KeyplusError):
     def __init__(self, message="", code=None):
         if code:

@@ -139,6 +139,9 @@ typedef enum {
 // USB 2.0
  #define USB_REVISION_2_0 0x0200
 
+// HID 1.10
+#define USB_HID_REVISION_1_10 0x0110
+
 // HID 1.11
 #define USB_HID_REVISION_1_11 0x0111
 

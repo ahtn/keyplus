@@ -27,6 +27,19 @@ XRAM runtime_settings_t g_runtime_settings;
 XRAM matrix_scan_plan_t g_scan_plan;
 #endif
 
+#ifndef CONFIG_MATRIX_SCAN_MODE
+#define CONFIG_MATRIX_SCAN_MODE MATRIX_SCANNER_MODE_COL_ROW
+#endif
+
+#ifndef CONFIG_MATRIX_ROW_COUNT
+#define CONFIG_MATRIX_ROW_COUNT 4
+#endif
+
+#ifndef CONFIG_MATRIX_COL_COUNT
+#define CONFIG_MATRIX_COL_COUNT 6
+#endif
+
+
 AT__SETTINGS_ADDR const settings_t g_settings_storage = {
 
     .device_id = DEVICE_ID,

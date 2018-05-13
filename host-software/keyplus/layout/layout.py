@@ -7,7 +7,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from builtins import int
 
 import json
-import yaml
+import ruamel.yaml as yaml
 import os
 import six
 import time
@@ -49,10 +49,10 @@ class KeyplusLayout(object):
 
 
     def _from_file_common(self, layout_file=None, rf_file=None, print_warnings=False,
-                           load_method=yaml.load, warnings=None):
+                           load_method=yaml.safe_load, warnings=None):
         basename = os.path.basename(layout_file)
         if layout_file:
-            with open(layout_file) as f:
+            with open(layout_file, encoding='utf8') as f:
                 layout_json_obj = load_method(f.read())
             parser_info = KeyplusParserInfo(
                 "<{}>".format(basename),
@@ -64,7 +64,7 @@ class KeyplusLayout(object):
 
         if rf_file:
             rf_basename = os.path.basename(rf_file)
-            with open(rf_file) as f:
+            with open(rf_file, encoding='utf8') as f:
                 rf_json_obj = load_method(f.read())
             rf_parser_info = KeyplusParserInfo(
                 "<{}>".format(rf_basename),
@@ -104,7 +104,7 @@ class KeyplusLayout(object):
             layout_file,
             rf_file,
             print_warnings,
-            yaml.load,
+            yaml.safe_load,
             warnings,
         )
 
