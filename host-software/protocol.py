@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# Copyright 2017 jem@seethis.link
+# Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import collections
 import struct
@@ -9,12 +11,7 @@ import hexdump
 import datetime
 
 from distutils.version import LooseVersion
-
 from uniflash.crc16 import crc16_bytes
-
-DEFAULT_PID = 0x1111
-DEFAULT_VID = 0x6666
-DEFAULT_INTERFACE = 3
 
 from keyplus import *
 
@@ -26,6 +23,7 @@ class ProtocolError:
     ERROR_UNKNOWN_CMD = 4
     ERROR_UNSUPPORTED_COMMAND = 5
 
+    @staticmethod
     def get_string(code):
         for (key, value) in ProtocolError.__dict__.items():
             if code == value:
@@ -36,7 +34,7 @@ class KBProtocolException(Exception):
     def __init__(self, message="", code=None):
         if code:
             message = ProtocolError.get_string(code)
-        super(Exception, self).__init__(message)
+        super(KBProtocolException, self).__init__(message)
         self.error_code = code
 
 def raise_error_code(code):
@@ -73,6 +71,7 @@ def simple_command(device, cmd_id, data=None, receive=True):
 
         while packet_type != cmd_id and packet_type != CMD_ERROR_CODE: # ignore other packets
             response = device.read(timeout=2)
+
             if response == None:
                 device.write(cmd_packet)
             else:
@@ -132,14 +131,13 @@ class KBInfoMain(KBInfoMainNamedTuple):
 
     def device_name_str(self):
         try:
-        # if 1:
-            length = self.name[0]
-            desc_type = self.name[1]
+            name = bytearray(self.name)
+            length = name[0]
+            desc_type = name[1]
             if desc_type != self.USB_DESC_STRING or length > self.MAX_STR_DESC_LEN:
                 return "<N/A>"
-            raw_utf16_data = self.name[2: length]
-            hexdump.hexdump(raw_utf16_data)
-            result = raw_utf16_data.decode('utf-16le')
+            raw_utf16_data = name[2: length]
+            result = bytes(raw_utf16_data).decode('utf-16le')
         except UnicodeDecodeError:
             result = str(self.name)
         return result
@@ -563,10 +561,7 @@ if __name__ == "__main__":
     # hid_devs = easyhid.Enumeration(vid=0)
     hid_list = easyhid.Enumeration()
     sub_set = hid_list.find(vid=0x6666, pid=0x1111, interface=3)
-    print(sub_set)
     device = sub_set[0]
     device.open()
 
-    # print(get_firmware_info(device))
-    # print(get_device_info(device))
     update_settings_section(device, bytes([i%256 for i in range(512)]), keep_rf=1)

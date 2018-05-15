@@ -25,9 +25,14 @@ setup(
     license = 'MIT',
     packages = find_packages(include=['keyplus', 'keyplus.*']),
     install_requires = [
-        'hexdump', 'intelhex', 'easyhid', 'ruamel.yaml', 'pyusb',
-        'cstruct', 'kle', 'six', 'colorama',
-        'future', 'enum34', 'kp_boot_32u4', 'xusbboot', 'efm8boot',
+        'future', 'six', 'cstruct', 'enum34', 'hexdump', 'intelhex',
+        'ruamel.yaml', 'pyusb', 'colorama',
+        # Closely related
+        'easyhid>=0.0.9',
+        'xusbboot>=0.0.2',
+        'efm8boot>=0.0.7',
+        'kp_boot_32u4>=0.0.2',
+        'kle>=0.0.5',
     ],
     keywords = ['keyboard', 'usb', 'hid'],
     scripts = ['keyplus-cli'],

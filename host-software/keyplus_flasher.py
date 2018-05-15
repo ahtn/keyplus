@@ -1150,7 +1150,7 @@ class Loader(QMainWindow):
         try:
             xusbboot.write_hexfile(device, file_name)
         except xusbboot.BootloaderException as err:
-            error_msg_box("Error programming the bootloader to hex file: " + str(err))
+            error_msg_box("Error programming the hex file to the bootloader: " + str(err))
         finally:
             device.close()
 
@@ -1162,7 +1162,7 @@ class Loader(QMainWindow):
                 boot_dev.write_flash_hex(file_name)
                 boot_dev.reset_mcu()
         except Exception as err:
-            error_msg_box("Error programming the bootloader to hex file: " + str(err))
+            error_msg_box("Error programming the hex file to the bootloader: " + str(err))
 
     def program_efm8_boot_firmware_hex(self, device, file_name):
         try:
@@ -1172,7 +1172,7 @@ class Loader(QMainWindow):
                 boot_dev.write_flash_hex(file_name)
                 boot_dev.reset_mcu()
         except Exception as err:
-            error_msg_box("Error programming the bootloader to hex file: " + str(err))
+            error_msg_box("Error programming the hex file the bootloader: " + str(err))
 
     def tryOpenDevicePath2(self, device_path):
         try:

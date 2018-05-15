@@ -60,7 +60,7 @@ def timestamp_to_string(tstamp):
 
 def print_device_info(device_info, indent="  "):
     print(indent, "id: ", device_info.device_id)
-    print(indent, "name: '{}'".format(device_info.get_name_str()) )
+    print(indent, "name: '{}'".format(device_info.get_device_name()) )
     print(indent, "layout last updated: ", timestamp_to_string(device_info.timestamp_raw))
     print(indent, "default_report_mode: ", device_info.get_default_report_mode_str())
     print(indent, "scan_mode: ", device_info.scan_plan.mode)

@@ -185,7 +185,7 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
                 if desc_type != self.USB_DESC_STRING or length > self.MAX_STR_DESC_LEN:
                     return "<N/A>"
                 raw_utf16_data = self._device_name[2: length]
-                result = raw_utf16_data.decode('utf-16le')
+                result = bytes(raw_utf16_data).decode('utf-16le')
             except UnicodeDecodeError:
                 result = str(self._device_name)
             return result
