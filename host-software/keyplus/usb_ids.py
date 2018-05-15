@@ -28,11 +28,12 @@ class USBKeyplusKeyboardInfo(USBDeviceInfo):
         self.interface = interface
 
 class USBBootloaderInfo(USBDeviceInfo):
-    def __init__(self, vid, pid, bootloader, description):
+    def __init__(self, vid, pid, bootloader, description, uses_serial_num):
         super(USBBootloaderInfo, self).__init__(
             vid, pid, description
         )
         self.bootloader = bootloader
+        self.uses_serial_num = uses_serial_num
 
 
 ###############################################################################
@@ -94,6 +95,7 @@ BOOTLOADER_USB_IDS = {
         pid = 0xBB01,
         bootloader = BootloaderType.XUSB_BOOT,
         description = "keyplus xusb boot bootloader",
+        uses_serial_num = True,
     ),
 
     ##########################
@@ -104,6 +106,7 @@ BOOTLOADER_USB_IDS = {
         pid = 0x9999,
         bootloader = BootloaderType.KP_BOOT_32U4,
         description = "kp_boot_32u4 bootloader",
+        uses_serial_num = False,
     ),
 
     ###########################
@@ -114,6 +117,7 @@ BOOTLOADER_USB_IDS = {
         pid = 0xBB03,
         bootloader = BootloaderType.NRF24LU1P_512,
         description = "keyplus nrf24lu1p-512 bootloader",
+        uses_serial_num = False,
     ),
 
     (0x1915, 0x0101): USBBootloaderInfo(
@@ -121,6 +125,7 @@ BOOTLOADER_USB_IDS = {
         pid = 0x0101,
         bootloader = BootloaderType.NRF24LU1P_FACTORY,
         description = "Nordic nRF24LU1+ factory bootloader",
+        uses_serial_num = False,
     ),
 
     ######################
@@ -131,6 +136,7 @@ BOOTLOADER_USB_IDS = {
         pid = 0xEAC9,
         bootloader = BootloaderType.EFM8_BOOT,
         description = "EFM8UB1 HID Bootloader",
+        uses_serial_num = False,
     ),
 
     (0x10C4, 0xEACA): USBBootloaderInfo(
@@ -138,6 +144,7 @@ BOOTLOADER_USB_IDS = {
         pid = 0xEACA,
         bootloader = BootloaderType.EFM8_BOOT,
         description = "EFM8UB2 HID Bootloader",
+        uses_serial_num = False,
     ),
 
     (0x10C4, 0xEACB): USBBootloaderInfo(
@@ -145,6 +152,7 @@ BOOTLOADER_USB_IDS = {
         pid = 0xEACB,
         bootloader = BootloaderType.EFM8_BOOT,
         description = "EFM8UB3 HID Bootloader",
+        uses_serial_num = False,
     ),
 
     ############################################
@@ -155,6 +163,7 @@ BOOTLOADER_USB_IDS = {
         pid = 0xB007,
         bootloader = BootloaderType.XUSB_BOOT,
         description = "xusb boot (prototype id)",
+        uses_serial_num = True,
     ),
 
     (0x6666, 0x9999): USBBootloaderInfo(
@@ -162,6 +171,7 @@ BOOTLOADER_USB_IDS = {
         pid = 0x9999,
         bootloader = BootloaderType.KP_BOOT_32U4,
         description = "kp_boot_32u4 bootloader (prototype id)",
+        uses_serial_num = False,
     ),
 }
 
@@ -174,3 +184,7 @@ def is_keyplus_usb_id(vendor_id, product_id):
 
 def is_bootloader_usb_id(vendor_id, product_id):
     return (vendor_id, product_id) in BOOTLOADER_USB_IDS
+
+def get_bootloader_info(vendor_id, product_id):
+    return BOOTLOADER_USB_IDS[(vendor_id, product_id)]
+

@@ -1080,15 +1080,28 @@ class Loader(QMainWindow):
                 elif is_efm8_boot_device(target_device):
                     self.program_efm8_boot_firmware_hex(target_device, fw_file)
                 elif is_keyplus_device(target_device):
+                    fw_info = protocol.get_firmware_info(target_device)
+
                     try:
-                        serial_num = target_device.serial_number
                         boot_vid, boot_pid = protocol.enter_bootloader(target_device)
+
+                        bootloader_info = keyplus.usb_ids.get_bootloader_info(
+                            boot_vid,
+                            boot_pid,
+                        )
+
+                        if bootloader_info and bootloader_info.uses_serial_num:
+                            serial_num = target_device.serial_number
+                        else:
+                            serial_num = None
+
 
                         self.bootloaderProgramTimer = QTimer()
                         self.bootloaderProgramTimer.setInterval(3000)
                         self.bootloaderProgramTimer.setSingleShot(True)
                         self.bootloaderProgramTimer.timeout.connect( lambda:
-                            self.programFirmwareHex(boot_vid, boot_pid, serial_num, fw_file)
+                            self.programFirmwareHex(boot_vid, boot_pid,
+                                                    serial_num, fw_file)
                         )
                         self.bootloaderProgramTimer.start()
                     except (easyhid.HIDException, protocol.KBProtocolException):
