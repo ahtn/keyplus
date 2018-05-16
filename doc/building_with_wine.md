@@ -19,6 +19,7 @@ These are required to get Keyplus Flasher for Windows building under Linux with 
       docs if you prefer to install without a UI.
     - Python 3.5 is the only version of Python recent enough to be supported by PyQt5 
       and old enough to not be affected by [this Wine bug](https://bugs.winehq.org/show_bug.cgi?id=39437).
+    - The 64-bit version of Python is not supported at the moment and does not work.
 4. Install the Python dependencies.
     - ```
       wine C:\\Python35\\python.exe -m pip install -U pyinstaller pyqt5
