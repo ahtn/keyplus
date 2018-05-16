@@ -7,7 +7,7 @@ git submodule update --init --recursive
 
 # Setup Ubuntu 14.04 dependencies
 if [[ -z $TRAVIS ]]; then
-    sudo apt-get install make python3 python3-pip libpython-dev libffi-dev gawk hidapi python3-pyside
+    sudo apt-get install make python3 python3-pip libpython-dev libffi-dev gawk hidapi python3-pyqt5
 fi
 
 # load version number into __version__ as a bash variable

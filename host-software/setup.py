@@ -25,7 +25,7 @@ setup(
     license = 'MIT',
     packages = find_packages(include=['keyplus', 'keyplus.*']),
     install_requires = [
-        'future', 'six', 'cstruct', 'enum34', 'hexdump', 'intelhex',
+        'future', 'six', 'cstruct', 'enum-compat', 'hexdump', 'intelhex',
         'ruamel.yaml', 'pyusb', 'colorama',
         # Closely related
         'easyhid>=0.0.9',

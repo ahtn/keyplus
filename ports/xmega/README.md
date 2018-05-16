@@ -16,7 +16,7 @@ To compile the code on Linux, you will need the following programs installed:
 Linux:
 
 ```
-sudo pacman -S avr-gcc avr-libc avr-binutils python3 make hidapi python-pyside
+sudo pacman -S avr-gcc avr-libc avr-binutils python3 make hidapi
 ```
 
 Make sure that you have a relatively recent version of

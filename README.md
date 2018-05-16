@@ -29,7 +29,7 @@ git clone https://github.com/ahtn/keyplus
 git checkout v0.3.0
 ```
 
-Next, install the packages `avr-gcc`, `avr-libc`, `avr-binutils`, `python3`, `make`, `hidapi`, and `python3-pyside`.
+Next, install the packages `avr-gcc`, `avr-libc`, `avr-binutils`, `python3`, `make`, `hidapi`, and `python3-pyqt5`.
 
 Then, install the python dependencies:
 ```bash
