@@ -9,6 +9,7 @@ from builtins import int
 import json
 import ruamel.yaml as yaml
 import os
+import io
 import six
 import time
 import copy
@@ -52,7 +53,7 @@ class KeyplusLayout(object):
                            load_method=yaml.safe_load, warnings=None):
         basename = os.path.basename(layout_file)
         if layout_file:
-            with open(layout_file, encoding='utf8') as f:
+            with io.open(layout_file, encoding='utf8') as f:
                 layout_json_obj = load_method(f.read())
             parser_info = KeyplusParserInfo(
                 "<{}>".format(basename),
@@ -64,7 +65,7 @@ class KeyplusLayout(object):
 
         if rf_file:
             rf_basename = os.path.basename(rf_file)
-            with open(rf_file, encoding='utf8') as f:
+            with io.open(rf_file, encoding='utf8') as f:
                 rf_json_obj = load_method(f.read())
             rf_parser_info = KeyplusParserInfo(
                 "<{}>".format(rf_basename),
