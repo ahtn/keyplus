@@ -821,9 +821,9 @@ class Loader(QMainWindow):
         self.initUI()
 
     def updateDeviceList(self):
-        self.statusBar().showMessage("Device list updating...", timeout=STATUS_BAR_TIMEOUT)
+        self.statusBar().showMessage("Device list updating...", STATUS_BAR_TIMEOUT)
         self.deviceListWidget.updateList()
-        self.statusBar().showMessage("Device list updated finished!", timeout=STATUS_BAR_TIMEOUT)
+        self.statusBar().showMessage("Device list updated finished!", STATUS_BAR_TIMEOUT)
 
     def getFileName(self, ext):
         fname = QFileDialog.getOpenFileName(self, 'Open file', '/home')
@@ -970,7 +970,7 @@ class Loader(QMainWindow):
             if self.check_version(kb):
                 return
 
-            self.statusBar().showMessage("Started updating layout", timeout=STATUS_BAR_TIMEOUT)
+            self.statusBar().showMessage("Started updating layout", STATUS_BAR_TIMEOUT)
 
             layout_file = self.fileSelectorWidget.getLayoutFile()
 
@@ -1018,7 +1018,7 @@ class Loader(QMainWindow):
                     title = "Warnings",
                 )
 
-            self.statusBar().showMessage("Finished updating layout", timeout=STATUS_BAR_TIMEOUT)
+            self.statusBar().showMessage("Finished updating layout", STATUS_BAR_TIMEOUT)
         elif programmingMode == FileSelector.ScopeDevice:
             target_device.close()
             kb = self.tryOpenDevicePath2(device_path)
@@ -1032,7 +1032,7 @@ class Loader(QMainWindow):
             rf_file = self.fileSelectorWidget.getRFFile()
             target_id = self.fileSelectorWidget.getTargetID()
 
-            self.statusBar().showMessage("Started updating RF settings", timeout=STATUS_BAR_TIMEOUT)
+            self.statusBar().showMessage("Started updating RF settings", STATUS_BAR_TIMEOUT)
 
             if layout_file == '':
                 error_msg_box("No layout file given.")
@@ -1087,12 +1087,12 @@ class Loader(QMainWindow):
                     title = "Warnings",
                 )
 
-            self.statusBar().showMessage("Finished updating RF settings", timeout=STATUS_BAR_TIMEOUT)
+            self.statusBar().showMessage("Finished updating RF settings", STATUS_BAR_TIMEOUT)
 
         elif programmingMode == FileSelector.ScopeFirmware:
             fw_file = self.fileSelectorWidget.getFirmwareFile()
 
-            self.statusBar().showMessage("Starting update firmware", timeout=STATUS_BAR_TIMEOUT)
+            self.statusBar().showMessage("Starting update firmware", STATUS_BAR_TIMEOUT)
 
             if fw_file == '':
                 error_msg_box("No firmware file given.")
@@ -1182,7 +1182,7 @@ class Loader(QMainWindow):
                 error_msg_box("Programming nrf24 is currently unsupported")
                 return
 
-        self.statusBar().showMessage("Finished updating firmware", timeout=STATUS_BAR_TIMEOUT)
+        self.statusBar().showMessage("Finished updating firmware", STATUS_BAR_TIMEOUT)
 
     def program_xusb_boot_firmware_hex(self, device, file_name):
         try:
