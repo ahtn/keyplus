@@ -13,13 +13,14 @@ fi
 # load version number into __version__ as a bash variable
 source ../host-software/keyplus/version.py
 
+if [[ $TRAVIS ]]; then
+    pip3 install --user -U setuptools
+fi
+
 # Install the latest version. Use pre_release branch if checked out from master
 if [[ $(echo "$__version__" | grep pre) ]]; then
     pip3 install --user -U --pre keyplus
 else
-    if [[ $TRAVIS ]]; then
-        pip3 install --user -U setuptools
-    fi
     pip3 install --user -U "keyplus==${__version__}"
 fi
 
