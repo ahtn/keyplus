@@ -4,5 +4,5 @@
 *.fuse
 *.spec
 *.egg-info
-build
+build$
 dist

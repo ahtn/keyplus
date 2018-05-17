@@ -99,4 +99,3 @@ make MCU=atxmega64a4u BOARD=keyplus_mini
 ```
 
 You will also need to set the `MCU` variable when calling the programming commands.
-

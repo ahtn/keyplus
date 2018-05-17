@@ -56,12 +56,13 @@
 
 /// Indicates that a variable should be placed in external RAM on 8051 ports.
 ///
-/// The 8051 has two classes or RAM: SRAM and XRAM (external RAM). SRAM is used
-/// as the default storage classes for variables as it is faster and generates
-/// smaller code.  However, SRAM is very limited on the 8051 (only 256 bytes)
-/// and is mainly used for the stack space for function calls. For this reason
-/// global variables and large variables should be placed in XRAM with the
-/// `XRAM` specifier, otherwise the compiler will run out of SRAM space.
+/// The 8051 has two main classes of RAM: internal ram (IRAM) and external RAM (XRAM).
+/// IRAM is used as the default storage classes for variables as it is faster
+/// and generates smaller code.  However, IRAM is very limited on the 8051
+/// (only 256 bytes) and is mainly used for the stack space for function calls.
+/// For this reason global variables and large variables should be placed in
+/// XRAM with the `XRAM` specifier, otherwise the compiler will run out of SRAM
+/// space.
 ///
 /// Also, this specifier can be used with pointers to point to a variable or
 /// address in XRAM.
