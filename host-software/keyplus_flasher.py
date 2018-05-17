@@ -78,6 +78,9 @@ else:
     DEFAULT_FIRMWARE_FILE = ""
     DEFAULT_DEVICE_ID = ''
 
+class KeyplusFlasherError(Exception):
+    pass
+
 def error_msg_box(msg, title="Error"):
     errorBox = QMessageBox()
     errorBox.setWindowTitle(title)
@@ -220,7 +223,7 @@ class DeviceWidget(QGroupBox):
             bootloader_info = xusbboot.get_boot_info(self.device)
         except easyhid.HIDException as err:
             # Incase opening the device fails
-            raise Exception ("Error Opening Device: {} | {}:{}"
+            raise KeyplusFlasherError ("Error Opening Device: {} | {}:{}"
                     .format(
                         self.device.path,
                         self.device.vendor_id,
@@ -248,7 +251,7 @@ class DeviceWidget(QGroupBox):
             boot_dev = kp_boot_32u4.BootloaderDevice(self.device)
         except easyhid.HIDException as err:
             # Incase opening the device fails
-            raise Exception ("Error Opening Device: {} | {}:{}"
+            raise KeyplusFlasherError ("Error Opening Device: {} | {}:{}"
                     .format(
                         self.device.path,
                         self.device.vendor_id,
@@ -274,7 +277,7 @@ class DeviceWidget(QGroupBox):
             boot_dev = efm8boot.EFM8BootloaderHID(self.device)
         except easyhid.HIDException as err:
             # Incase opening the device fails
-            raise Exception ("Error Opening Device: {} | {}:{}"
+            raise KeyplusFlasherError ("Error Opening Device: {} | {}:{}"
                     .format(
                         self.device.path,
                         self.device.vendor_id,
@@ -337,7 +340,7 @@ class DeviceWidget(QGroupBox):
             self.setup_nrf24lu1p_label()
         else:
             self.device.close()
-            raise Exception("Unsupported USB device {}:{}".format(
+            raise KeyplusFlasherError("Unsupported USB device {}:{}".format(
                 self.device.vendor_id, self.device.product_id))
         self.device.close()
         self.updateStyle()
@@ -931,6 +934,17 @@ class Loader(QMainWindow):
     def abort_update2(self):
         self.deviceListWidget.updateList()
 
+    def update_device_list(self):
+        """
+        Update the device list.
+        """
+        for widget in self.deviceListWidget.deviceWidgets[:]: # Use [:] to copy list
+            try:
+                widget.updateLabel()
+            except (easyhid.HIDException, KeyplusFlasherError):
+                # If communication with a USB device fails, remove it from the list.
+                self.deviceListWidget.deviceWidgets.remove(widget)
+
     def check_version(self, kb):
         if not kb.firmware_info.has_at_least_version(keyplus.__version__):
             version = kb.firmware_info.get_version_str()
@@ -1001,14 +1015,13 @@ class Loader(QMainWindow):
             with kb:
                 kb.update_settings_section(settings_data, keep_rf=True)
                 kb.update_layout_section(layout_data)
-                kb.reset(reset_type=RESET_TYPE_SOFTWARE)
+                try:
+                    kb.reset(reset_type=RESET_TYPE_SOFTWARE)
+                except easyhid.HIDException:
+                    pass # may fail if HID device re-enumerates differently
                 kb.disconnect()
 
-            for widget in self.deviceListWidget.deviceWidgets:
-                try:
-                    widget.updateLabel()
-                except easyhid.HIDException:
-                    pass
+            self.update_device_list()
 
             if warnings != []:
                 error_msg_box(
@@ -1067,17 +1080,15 @@ class Loader(QMainWindow):
                 return
 
             with kb:
-                old_name = copy.copy(kb.name)
                 kb.update_settings_section(settings_data, keep_rf=False)
                 kb.update_layout_section(layout_data)
-                kb.reset(reset_type=RESET_TYPE_SOFTWARE)
+                try:
+                    kb.reset(reset_type=RESET_TYPE_SOFTWARE)
+                except easyhid.HIDException:
+                    pass # may fail if HID device re-enumerates differently
                 kb.disconnect()
 
-            for widget in self.deviceListWidget.deviceWidgets:
-                try:
-                    widget.updateLabel()
-                except easyhid.HIDException:
-                    pass
+            self.update_device_list()
 
             if warnings != []:
                 error_msg_box(
@@ -1394,10 +1405,11 @@ class Loader(QMainWindow):
         self.deviceListWidget.updateList()
 
     def showAboutDialog(self):
-        QMessageBox.about(self, "About keyplus Loader",
+        QMessageBox.about(self, "About keyplus Loader.",
 """
 The keyplus layout and firmware loader.
-""")
+keyplus version: """ + keyplus.__version__
+)
 
     def showHelpDialog(self):
         QMessageBox.about(self, "keyplus Loader Help",

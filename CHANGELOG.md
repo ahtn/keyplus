@@ -1,8 +1,13 @@
-0.3.3 (unreleased)
+0.3.4 (unreleased)
 ==================
 
-* `keyplus-flasher` switch from pyside to PyQt5 for GUI. This means Windows
-    flasher will work with Python3.
+0.3.3
+==================
+
+* `keyplus-flasher` switch from pyside to PyQt5 for GUI. This makes it possible
+    to run the Windows version with Python3 instead of Python2.7. It should
+    also make it easier to run on MacOS.
+* `keyplus-flasher` fix some crashes on Windows
 
 0.3.2
 ==================
