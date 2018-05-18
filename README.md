@@ -72,7 +72,7 @@ When starting with a new keyplus mini board, flash the latest firmware, configur
 
 Download the latest firmware from [the releases page](https://github.com/ahtn/keyplus/releases). In the drop down box at the top of the window, select "Firmware Update". Then, click the "Browse" button and select the firmware file you downloaded. Plug in your keyplus mini (or other compatible board), and you should see it appear in the bottom box.
 
-![The box](https://rawgit.com/merlin04/keyplus/master/doc/imgs/box.png)
+![The box](https://rawgit.com/ahtn/keyplus/master/doc/imgs/box.png)
 
 Click the "Program" button, and it should flash the firmware onto the board. If it gives an error, try again.
 

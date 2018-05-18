@@ -21,3 +21,6 @@
 * [Hardware notes](hardware_notes.md)
 * [Supported hardware](supported_hardware.md)
 * [nRF24 modules](nrf24_modules.md)
+
+### EFM8
+* [EFM8 IO configuration](efm8/efm_io.md)
