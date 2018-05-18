@@ -1,2 +1,5 @@
 *.h linguist-language=C
 *.c linguist-language=C
+ports/efm8/efm8/mcu/* linguist-vendored
+ports/efm8/efm8/lib/* linguist-vendored
+ports/efm8/efm8/si8051Base/* linguist-vendored

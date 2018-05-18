@@ -14,26 +14,34 @@
 #include "core/packet.h"
 #include "core/util.h"
 
+/// The number of NRF24 ESB pipes used for keyboard communication
 #define NUM_KEYBOARD_PIPES 4
 
-#define NRF_ADDR_LEN 5
+/// The length of the AES key used
 #define AES_KEY_LEN 16
 
-#define UNPROGRAMMED_DEVIE_ID 0xff
+/// The device ID used for unprogrammed devices.
+#define UNPROGRAMMED_DEVICE_ID 0xff
 
+// TODO: Change layout storage format so that the layout is stored in the
+// layout section.
 #define MAX_NUM_KEYBOARDS 64
-#define MAX_NUM_DEVICES 64
-
-/// Values used for setting the keyboard report mode.
-enum {
-    KEYBOARD_REPORT_MODE_AUTO = 0, /// 6KRO -> NKRO if more than 6 keys pressed
-    KEYBOARD_REPORT_MODE_NKRO = 1, /// NKRO
-    KEYBOARD_REPORT_MODE_6KRO = 2, /// 6KRO
-    KEYBOARD_REPORT_MODE_UPGRADE, /// transitioning 6KRO -> NKRO
-};
-
 #define LAYOUT_ID_NONE 0xfe
 #define LAYOUT_ID_INVALID 0xff
+
+/// The maximum number of keyboard devices supported.
+///
+/// TODO: Make this configurable at compile time, and expose it to the host
+/// interface.
+#define MAX_NUM_DEVICES 64
+
+/// Firmware metadata for feature_ctrl that are disabled at compile time
+#define FEATURE_CTRL_FEATURES_DISABLED_AT_BUILD_TIME \
+    (!USE_USB << FEATURE_CTRL_USB_DISABLE) | \
+    (!USE_I2C << FEATURE_CTRL_WIRED_DISABLE) | \
+    (!USE_NRF24 << FEATURE_CTRL_RF_DISABLE) | \
+    (!USE_UNIFYING << FEATURE_CTRL_RF_MOUSE_DISABLE) | \
+    (!USE_BLUETOOTH << FEATURE_CTRL_BT_DISABLE)
 
 /// Contains information on device mapping
 typedef struct device_info_t {
@@ -42,7 +50,7 @@ typedef struct device_info_t {
     /// the component byte offset into the given keyboard
     uint8_t matrix_offset;
     /// the size of this component == ceil(rows*cols/8)
-    /// TODO: Change this to a key number value
+    /// TODO: Change this to a key number value instead?
     uint8_t matrix_size;
 } device_info_t;
 
@@ -117,6 +125,7 @@ typedef struct rf_settings_t { // 64 bytes
     uint8_t dkey[AES_KEY_LEN];
 } rf_settings_t;
 
+// Bit mask values for the feature
 #define FEATURE_CTRL_USB_DISABLE      (1 << 0)
 #define FEATURE_CTRL_WIRED_DISABLE    (1 << 1)
 #define FEATURE_CTRL_RF_DISABLE       (1 << 2)
@@ -125,13 +134,6 @@ typedef struct rf_settings_t { // 64 bytes
 #define FEATURE_CTRL_RESERVED_0       (1 << 5)
 #define FEATURE_CTRL_RESERVED_1       (1 << 6)
 #define FEATURE_CTRL_RESERVED_2       (1 << 7)
-
-#define FEATURE_CTRL_FEATURES_DISABLED_AT_BUILD_TIME \
-    (!USE_USB << 0) | \
-    (!USE_I2C << 1) | \
-    (!USE_NRF24 << 2) | \
-    (!USE_UNIFYING << 3) | \
-    (!USE_BLUETOOTH << 4)
 
 /// Used to enable/disable hardware features
 typedef struct feature_ctrl_t {

@@ -13,6 +13,8 @@
 #include "core/util.h"
 #include "core/version.h"
 
+#include "usb_reports/keyboard_report.h"
+
 #ifndef NO_MATRIX
 #include "core/io_map.h"
 #include "core/matrix_scanner.h"

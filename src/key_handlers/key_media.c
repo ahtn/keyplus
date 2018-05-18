@@ -30,13 +30,13 @@ void handle_media_keycode(keycode_t keycode, key_event_t event) REENT {
             case KC_AUDIO_VOL_UP       : consumer_code = HID_CONSUMER_VOLUME_INCREMENT ; break ;
             case KC_AUDIO_VOL_DOWN     : consumer_code = HID_CONSUMER_VOLUME_DECREMENT ; break ;
         }
-        g_media_report.id = REPORT_ID_CONSUMER;
+        g_media_report.report_id = REPORT_ID_CONSUMER;
         g_media_report.code = consumer_code;
-        g_report_pending_media = true;
+        touch_media_report();
     } else if (event == EVENT_RELEASED) {
-        g_media_report.id = REPORT_ID_CONSUMER;
+        g_media_report.report_id = REPORT_ID_CONSUMER;
         g_media_report.code = 0;
-        g_report_pending_media = true;
+        touch_media_report();
     }
 }
 

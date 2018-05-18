@@ -10,7 +10,7 @@ USB functions
 | module | function |
 |--------|----------|
 | `usb_reports/usb_reports.h` | USB abstraction layer |
-| `usb_reports/keyboard_report.h` | Implements 6KRO and NKRO USB reports |
-| `usb_reports/media_report.h` | Implements HID media controls|
-| `usb_reports/mouse_report.h` | Implements HID mouse |
-| `usb_reports/vendor_report.h` | Implements a RAW HID report for sending arbitrary data to and from the host |
+| `usb_reports/keyboard_report.c` | Implements 6KRO and NKRO USB reports |
+| `usb_reports/media_report.c` | Implements HID media controls|
+| `usb_reports/mouse_report.c` | Implements HID mouse |
+| `usb_reports/vendor_report.c` | Implements a RAW HID report for sending arbitrary data to and from the host |

@@ -10,6 +10,7 @@
 #include "core/nrf24_registers.h"
 #include "core/util.h"
 
+#define NRF_ADDR_LEN 5
 #define NRF24_NUMBER_PIPES 6
 
 typedef uint8_t nrf24_status_t;

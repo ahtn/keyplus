@@ -8,7 +8,8 @@
 #include "usb/util/descriptor_defs.h"
 #include "usb/util/requests.h"
 
-#define USB_VERSION_ACCESS_TYPE         USB_VERSION_HID_INTERFACE_2
+#define USB_VERSION_ACCESS_TYPE USB_VERSION_HID_INTERFACE_2
+#define SHARED_HID_DESCRIPTOR 1
 
 typedef struct usb_config_desc_keyboard_t {
     usb_config_desc_t conf;
@@ -40,9 +41,9 @@ typedef struct usb_config_desc_keyboard_t {
 #define EP_NUM_VENDOR_IN        3
 #define EP_NUM_VENDOR_OUT       3
 
-#define EP_NUM_NKRO_KEYBOARD    2
-#define EP_NUM_MEDIA            2
-#define EP_NUM_MOUSE            2
+#define EP_NUM_NKRO_KEYBOARD    EP_NUM_SHARED_HID
+#define EP_NUM_MEDIA            EP_NUM_SHARED_HID
+#define EP_NUM_MOUSE            EP_NUM_SHARED_HID
 
 // endpoint sizes
 #define VENDOR_REPORT_SIZE  0x40
