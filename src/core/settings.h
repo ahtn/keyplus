@@ -37,11 +37,11 @@
 
 /// Firmware metadata for feature_ctrl that are disabled at compile time
 #define FEATURE_CTRL_FEATURES_DISABLED_AT_BUILD_TIME \
-    (!USE_USB << FEATURE_CTRL_USB_DISABLE) | \
-    (!USE_I2C << FEATURE_CTRL_WIRED_DISABLE) | \
-    (!USE_NRF24 << FEATURE_CTRL_RF_DISABLE) | \
-    (!USE_UNIFYING << FEATURE_CTRL_RF_MOUSE_DISABLE) | \
-    (!USE_BLUETOOTH << FEATURE_CTRL_BT_DISABLE)
+    (!USE_USB * FEATURE_CTRL_USB_DISABLE) | \
+    (!USE_I2C * FEATURE_CTRL_WIRED_DISABLE) | \
+    (!USE_NRF24 * FEATURE_CTRL_RF_DISABLE) | \
+    (!USE_UNIFYING * FEATURE_CTRL_RF_MOUSE_DISABLE) | \
+    (!USE_BLUETOOTH * FEATURE_CTRL_BT_DISABLE)
 
 /// Contains information on device mapping
 typedef struct device_info_t {

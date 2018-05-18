@@ -70,7 +70,7 @@ void del_keycode(uint8_t kc);
 
 void set_keyboard_protocol(uint8_t proto);
 uint8_t get_keyboard_protocol(void);
-void set_keyboard_report_mode(uint8_t mode);
+void set_keyboard_report_mode(keyboard_report_mode_t mode);
 uint8_t get_keyboard_report_mode(void);
 
 void retrigger_keycode(uint8_t kc);
