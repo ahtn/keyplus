@@ -54,6 +54,7 @@ void recovery_mode_main_loop(void) {
         // usb out reports
         send_vendor_report();
         handle_vendor_out_reports();
+        // TODO: sleep
         wdt_kick();
     }
 }
@@ -65,6 +66,7 @@ int main(void) {
     sei();
 
     while (1) {
+        // TODO: Remove this, use idle sleep instead
         _delay_ms(2);
 
         bool scan_changed = matrix_scan();

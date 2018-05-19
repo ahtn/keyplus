@@ -3,7 +3,7 @@
 
 #include "core/flash.h"
 
-#include "efm8_sfr.h"
+#include "efm8_util/io.h"
 
 /// Use to restore IRQ state for flash
 static XRAM uint8_t s_irq_state;

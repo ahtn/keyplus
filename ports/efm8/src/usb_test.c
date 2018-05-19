@@ -3,13 +3,15 @@
 // http://developer.silabs.com/legal/version/v11/Silicon_Labs_Software_License_Agreement.txt
 // With modifications by:
 // jem@seethis (c) 2018
+/// @file
 
 #include "usb_test.h"
 
 // #include "lib/efm8_usb/inc/efm8_usb.h"
 
 #include "efm8_util/delay.h"
-#include "efm8_sfr.h"
+#include "efm8_util/uid.h"
+#include "efm8_util/io.h"
 
 #include "peripheral_driver/inc/usb_0.h"
 
@@ -23,7 +25,6 @@
 static XRAM uint8_t s_usb_state;
 static XRAM uint8_t s_usb_saved_state;
 static XRAM uint8_t s_configuration;
-static XRAM ep0String_type ep0String;
 static XRAM USBD_Ep_TypeDef epX[NUM_ENDPOINTS];
 
 #define ep0     (epX[EP0])
@@ -34,12 +35,6 @@ static XRAM USBD_Ep_TypeDef epX[NUM_ENDPOINTS];
 #define ep2out  (epX[EP2OUT])
 #define ep3out  (epX[EP3OUT])
 
-uint8_t XRAM keyboardReport[8] = {0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-// TODO: Should probably write this to the USB EP0 buffer memory directly
-#define MAX_STRING_LEN 32
-static XRAM uint16_t s_string_descriptor_buf[MAX_STRING_LEN];
-
 static const ROM uint8_t txZero[2];
 static XRAM USB_Setup_TypeDef setup;
 
@@ -48,6 +43,14 @@ static void handleUsbInXInt(uint8_t ep_num);
 static void handleUsbEp0Tx(void);
 static void handleUsbEp0Rx(void);
 
+/***************************************************************************//**
+ * @brief
+ *   Start USB device operation.
+ *
+ * @details
+ *   Device operation is started by connecting a pull-up resistor on the
+ *   appropriate USB data line.
+ ******************************************************************************/
 void USBD_Connect(void) {
     USB_SaveSfrPage();
     ep0.state = D_EP_IDLE;
@@ -56,6 +59,14 @@ void USBD_Connect(void) {
     USB_RestoreSfrPage();
 }
 
+/***************************************************************************//**
+ * @brief
+ *   Stop USB device operation.
+ *
+ * @details
+ *   Device operation is stopped by disconnecting the pull-up resistor from the
+ *   appropriate USB data line. Often referred to as a "soft" disconnect.
+ ******************************************************************************/
 void USBD_Disconnect(void) {
     USB_SaveSfrPage();
     USB_DisablePullUpResistor();
@@ -336,6 +347,43 @@ static void EP0_Write(uint8_t *dat, uint16_t numBytes) {
     }
 }
 
+/// @brief The length of the USB serial number string descriptor
+#define SERIAL_STRING_LENGTH (2*EFM8_UID_SIZE + 1)
+
+/// @brief Variable used to hold the USB serial string descriptor.
+///
+// NOTE: This wastes XRAM, a bit hard to avoid with SDCC/8051 memory model
+static XRAM uint16_t s_serial_string_desc[SERIAL_STRING_LENGTH];
+
+/// @brief Convert a hexdigit to an ASCII character.
+///
+/// @parm   digit A integer in the range 0-15. If the value is >15, is given then
+///     only the lowest 4 bits of the value are used.
+///
+/// @return An ASCII hex value representing the lowest 4 bits of @p digit
+static char hexdigit_to_char(uint8_t digit) {
+    digit = digit & 0x0f;
+    if (digit < 0x0a) {
+        return '0' + digit;
+    } else {
+        return 'a' + (digit - 0x0a);
+    }
+}
+
+/// @brief Loads the EFM UID as a USB string descriptor into @ref s_serial_string_desc
+static void load_serial_string(void) {
+    uint8_t pos = 0;
+    uint8_t i;
+
+    s_serial_string_desc[pos++] = USB_STRING_DESC_SIZE(sizeof(s_serial_string_desc));
+
+    for (i = 0; i < EFM8_UID_SIZE; ++i) {
+        uint8_t uid_byte = EFM8_UID[i];
+        s_serial_string_desc[pos++] = hexdigit_to_char(uid_byte >> 4);
+        s_serial_string_desc[pos++] = hexdigit_to_char(uid_byte >> 0);
+    }
+}
+
 static USB_Status_TypeDef GetDescriptor(void) REENT {
 #if (SLAB_USB_NUM_LANGUAGES > 1)
     bool langSupported;
@@ -387,9 +435,11 @@ static USB_Status_TypeDef GetDescriptor(void) REENT {
                     } break;
 
                     case STRING_DESC_SERIAL_NUMBER: {
-                        dat = usb_string_desc_1;
+                        load_serial_string();
+                        dat = s_serial_string_desc;
                     } break;
                 }
+                // First byte in a USB string descriptor is its length
                 length = dat[0];
             } break;
         }
@@ -554,65 +604,10 @@ static void handleUsbEp0Tx(void) {
     // Save the packet size for future use.
     count_snapshot = count;
 
-    // Strings can use the USB_STRING_DESCRIPTOR_UTF16LE_PACKED type to pack
-    // UTF16LE data without the zero's between each character.
-    // If the current string is of type USB_STRING_DESCRIPTOR_UTF16LE_PACKED,
-    // unpack it by inserting a zero between each character in the string.
-    if ((ep0String.encoding.type == USB_STRING_DESCRIPTOR_UTF16LE_PACKED)
-#if SLAB_USB_UTF8_STRINGS == 1
-        || (ep0String.encoding.type == USB_STRING_DESCRIPTOR_UTF8)
-#endif
-       )
-    {
-        // If ep0String.encoding.init is true, this is the beginning of the string.
-        // The first two bytes of the string are the bLength and bDescriptorType
-        // fields. These are not packed like the reset of the string, so write them
-        // to the FIFO and set ep0String.encoding.init to false.
-        if (ep0String.encoding.init == true) {
-            USB_WriteFIFO(EP0, 2, ep0.buf, false);
-            ep0.buf += 2;
-            count -= 2;
-            ep0String.encoding.init = false;
-        }
-
-        // Insert a 0x00 between each character of the string.
-        for (i = 0; i < count / 2; i++) {
-#if SLAB_USB_UTF8_STRINGS == 1
-            if (ep0String.encoding.type == USB_STRING_DESCRIPTOR_UTF8) {
-                uint16_t ucs2;
-                uint8_t utf8count;
-
-                // decode the utf8 into ucs2 for usb string
-                utf8count = decodeUtf8toUcs2(ep0.buf, &ucs2);
-
-                // if consumed utf8 bytes is 0, it means either null byte was
-                // input or bad utf8 byte sequence.  Either way its an error and
-                // there's not much we can do.  So just advance the input string
-                // by one character and keep going until count is expired.
-                if (utf8count == 0)
-                {
-                    utf8count = 1;
-                }
-
-                // adjust to next char in utf8 byte sequence
-                ep0.buf += utf8count;
-                ucs2 = htole16(ucs2); // usb 16-bit chars are little endian
-                USB_WriteFIFO(EP0, 2, &ucs2, false);
-            }
-            else
-#endif
-            {
-                USB_WriteFIFO(EP0, 1, ep0.buf, false);
-                ep0.buf++;
-                USB_WriteFIFO(EP0, 1, txZero, false);
-            }
-        }
-    } else {
-        // For any data other than USB_STRING_DESCRIPTOR_UTF16LE_PACKED, just send the
-        // data normally.
-        USB_WriteFIFO(EP0, count, ep0.buf, false);
-        ep0.buf += count;
-    }
+    // For any data other than USB_STRING_DESCRIPTOR_UTF16LE_PACKED, just send the
+    // data normally.
+    USB_WriteFIFO(EP0, count, ep0.buf, false);
+    ep0.buf += count;
 
     ep0.misc.bits.inPacketPending = false;
     ep0.remaining -= count_snapshot;
@@ -624,7 +619,6 @@ static void handleUsbEp0Tx(void) {
     if ((ep0.remaining == 0) && (count_snapshot != USB_EP0_SIZE)) {
         USB_Ep0SetLastInPacketReady();
         ep0.state = D_EP_IDLE;
-        ep0String.c = USB_STRING_DESCRIPTOR_UTF16LE;
         ep0.misc.c = 0;
     } else {
         // Do not call USB_Ep0SetLastInPacketReady() because we still need to send
@@ -690,7 +684,6 @@ static void handleUsbEp0Int(void) {
         if (ep0.misc.bits.waitForRead == true) {
             ep0.misc.bits.outPacketPending = true;
         } else if (ep0.state == D_EP_IDLE) {
-            // ep0String.c = USB_STRING_DESCRIPTOR_UTF16LE;
             USB_ReadFIFOSetup();
 
             // Vendor unique, Class or Standard setup commands override?
@@ -1279,6 +1272,9 @@ USB_Status_TypeDef USBD_SetupCmdCb(XRAM USB_Setup_TypeDef *setup) {
     ) {
         // Implement the necessary HID class specific commands.
         switch (setup->bRequest) {
+
+// TODO: Technically these reports are required
+#if 0
             case USB_HID_SET_REPORT: {
                 if (((setup->wValue >> 8) == 2)               // Output report
                     && ((setup->wValue & 0xFF) == 0)          // Report ID
@@ -1305,6 +1301,7 @@ USB_Status_TypeDef USBD_SetupCmdCb(XRAM USB_Setup_TypeDef *setup) {
                     retVal = USB_STATUS_OK;
                 }
             } break;
+#endif
 
 #if 0
             // USB by some OS's to set BOOT protocol for keyboard reports

@@ -5,7 +5,7 @@
 
 #include "arch/8051/hardware.h"
 
-#include "efm8_sfr.h"
+#include "efm8_util/io.h"
 
 #define enable_interrupts() do { \
     IE_EA = 1; \

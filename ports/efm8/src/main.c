@@ -3,23 +3,28 @@
 /// @file main.c
 ///
 /// Keyplus EFM8 main loop
-#include "efm8_sfr.h"
-
 #include <string.h>
 
+#include "efm8_util/io.h"
 #include "efm8_util/delay.h"
+
 #include "peripheral_driver/inc/wdt_0.h"
 
 #include "usb_test.h"
 
+#include "core/error.h"
 #include "core/hardware.h"
-
+#include "core/keycode.h"
+#include "core/macro.h"
+#include "core/matrix_interpret.h"
 #include "core/usb_commands.h"
 
-#include "core/keycode.h"
+#include "key_handlers/key_mouse.h"
+#include "key_handlers/key_hold.h"
 
 #include "usb_reports/keyboard_report.h"
 #include "usb_reports/mouse_report.h"
+#include "usb_reports/media_report.h"
 #include "usb_reports/vendor_report.h"
 
 /// USB interrupt handler
@@ -100,6 +105,17 @@ void setup(void) {
     IE_EA = 1;
 }
 
+/// When we encounter a critical error, stop all other features and only
+/// enable those necessary to load a new valid layout.
+void recovery_mode_main_loop(void) {
+    while (1) {
+        // usb out reports
+        send_vendor_report();
+        handle_vendor_out_reports();
+        wdt_kick();
+    }
+}
+
 #define BUTTON0 P1_B6
 #define BUTTON1 P1_B7
 #define BUTTON2 P2_B0
@@ -143,11 +159,27 @@ void main(void) {
             static_delay_ms(10);
         }
 
-        send_keyboard_report();
-        send_mouse_report();
+        // passthrough_keycodes_task();
+        interpret_all_keyboard_matrices();
 
-        handle_vendor_out_reports();
+        mouse_key_task();
+        macro_task();
+
+        send_keyboard_report();
+        send_media_report();
+        send_mouse_report();
         send_vendor_report();
+
+        // usb out reports
+        handle_vendor_out_reports();
+
+        sticky_key_task();
+        hold_key_task(false);
+
+        if (has_critical_error()) {
+            recovery_mode_main_loop();
+        }
+
+        wdt_kick();
     }
 }
-

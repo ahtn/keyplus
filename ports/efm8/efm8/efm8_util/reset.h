@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "efm8_sfr.h"
+#include "efm8_util/io.h"
 
 /// @brief  Perform a software reset
 /// @note   This function is implemented as a macro.

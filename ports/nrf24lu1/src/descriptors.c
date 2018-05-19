@@ -60,6 +60,12 @@ static uint8_t read_info_page_byte(uint16_t addr) {
     return result;
 }
 
+/// @brief Convert a hexdigit to an ASCII character.
+///
+/// @parm   digit A integer in the range 0-15. If the value is >15, is given then
+///     only the lowest 4 bits of the value are used.
+///
+/// @return An ASCII hex value representing the lowest 4 bits of @p digit
 static char hexdigit_to_char(uint8_t d) {
     d = d & 0x0f;
     if (d < 0x0a) {
