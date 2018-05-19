@@ -134,12 +134,7 @@ void software_reset(void);
 /// @brief A delay in ms for a delay value that may not be known at compile time
 ///
 /// @param ms The delay in milliseconds
-void dynamic_delay_ms(ms);
-
-/// @brief A delay in us for a delay value that may not be known at compile time
-///
-/// @param ms The delay in milliseconds
-void dynamic_delay_us(ms);
+void dynamic_delay_ms(uint16_t t);
 
 /// @brief Initialize the hardware of the microcontroller
 void hardware_init(void);
