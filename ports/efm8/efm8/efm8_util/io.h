@@ -55,28 +55,54 @@
 // port 4 not bit addressable
 #endif
 
-#if defined(MCU_EFM8UB1)
-#  include "mcu/EFM8UB1/inc/SI_EFM8UB1_Defs.h"
-#  include "mcu/EFM8UB1/inc/SI_EFM8UB1_Devices.h"
-#  include "mcu/EFM8UB1/inc/SI_EFM8UB1_Register_Enums.h"
-#elif defined(MCU_EFM8UB2)
-#  include "mcu/EFM8UB2/inc/SI_EFM8UB2_Defs.h"
-#  include "mcu/EFM8UB2/inc/SI_EFM8UB2_Devices.h"
-#  include "mcu/EFM8UB2/inc/SI_EFM8UB2_Register_Enums.h"
-#elif defined(MCU_EFM8UB3)
-#  include "mcu/EFM8UB3/inc/SI_EFM8UB3_Defs.h"
-#  include "mcu/EFM8UB3/inc/SI_EFM8UB3_Devices.h"
-#  include "mcu/EFM8UB3/inc/SI_EFM8UB3_Register_Enums.h"
+// Universal Bee
+#if defined(EFM8UB1_DEVICE)
+    #include "mcu/EFM8UB1/inc/SI_EFM8UB1_Defs.h"
+    #include "mcu/EFM8UB1/inc/SI_EFM8UB1_Devices.h"
+    #include "mcu/EFM8UB1/inc/SI_EFM8UB1_Register_Enums.h"
+#elif defined(EFM8UB2_DEVICE)
+    #include "mcu/EFM8UB2/inc/SI_EFM8UB2_Defs.h"
+    #include "mcu/EFM8UB2/inc/SI_EFM8UB2_Devices.h"
+    #include "mcu/EFM8UB2/inc/SI_EFM8UB2_Register_Enums.h"
+#elif defined(EFM8UB3_DEVICE)
+    #include "mcu/EFM8UB3/inc/SI_EFM8UB3_Defs.h"
+    #include "mcu/EFM8UB3/inc/SI_EFM8UB3_Devices.h"
+    #include "mcu/EFM8UB3/inc/SI_EFM8UB3_Register_Enums.h"
+#elif defined(EFM8UB4_DEVICE)
+    #include "mcu/EFM8UB4/inc/SI_EFM8UB3_Defs.h"
+    #include "mcu/EFM8UB4/inc/SI_EFM8UB3_Devices.h"
+    #include "mcu/EFM8UB4/inc/SI_EFM8UB3_Register_Enums.h"
+#elif defined(EFM8LB1_DEVICE)
+    #include "mcu/EFM8LB1/inc/SI_EFM8UB3_Defs.h"
+    #include "mcu/EFM8LB1/inc/SI_EFM8UB3_Devices.h"
+    #include "mcu/EFM8LB1/inc/SI_EFM8UB3_Register_Enums.h"
+// Laser Bee
+#elif defined(EFM8LB1_DEVICE)
+    #include "mcu/EFM8LB1/inc/SI_EFM8LB1_Defs.h"
+    #include "mcu/EFM8LB1/inc/SI_EFM8LB1_Devices.h"
+    #include "mcu/EFM8LB1/inc/SI_EFM8LB1_Register_Enums.h"
+// Sleepy Bee
+#elif defined(EFM8SB1_DEVICE)
+    #include "mcu/EFM8SB1/inc/SI_EFM8SB1_Defs.h"
+    #include "mcu/EFM8SB1/inc/SI_EFM8SB1_Devices.h"
+    #include "mcu/EFM8SB1/inc/SI_EFM8SB1_Register_Enums.h"
+#elif defined(EFM8SB2_DEVICE)
+    #include "mcu/EFM8SB2/inc/SI_EFM8SB2_Defs.h"
+    #include "mcu/EFM8SB2/inc/SI_EFM8SB2_Devices.h"
+    #include "mcu/EFM8SB2/inc/SI_EFM8SB2_Register_Enums.h"
+// Busy Bee
+#elif defined(EFM8BB1_DEVICE)
+    #include "mcu/EFM8BB1/inc/SI_EFM8BB1_Defs.h"
+    #include "mcu/EFM8BB1/inc/SI_EFM8BB1_Devices.h"
+    #include "mcu/EFM8BB1/inc/SI_EFM8BB1_Register_Enums.h"
+#elif defined(EFM8BB2_DEVICE)
+    #include "mcu/EFM8BB2/inc/SI_EFM8BB2_Defs.h"
+    #include "mcu/EFM8BB2/inc/SI_EFM8BB2_Devices.h"
+    #include "mcu/EFM8BB2/inc/SI_EFM8BB2_Register_Enums.h"
+#elif defined(EFM8BB3_DEVICE)
+    #include "mcu/EFM8BB3/inc/SI_EFM8BB3_Defs.h"
+    #include "mcu/EFM8BB3/inc/SI_EFM8BB3_Devices.h"
+    #include "mcu/EFM8BB3/inc/SI_EFM8BB3_Register_Enums.h"
 #else
 #  error "Device family not defined"
-#endif
-
-// SDCC internal libraries define these because of keil, so get ride of them
-// so we can use them as identifiers
-#ifdef code
-#undef code
-#endif
-
-#ifdef bit
-#undef bit
 #endif

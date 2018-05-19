@@ -7,6 +7,16 @@
 
 #include "efm8_util/io.h"
 
+// Some internal libraries define these because of keil, so get ride of them
+// so we can use them as identifiers
+#ifdef code
+    #undef code
+#endif
+
+#ifdef bit
+    #undef bit
+#endif
+
 #define enable_interrupts() do { \
     IE_EA = 1; \
 } while(0);
@@ -27,13 +37,13 @@
 #define NO_IDLE_SLEEP
 
 #if (DEVICE_PKG_QFN20)
-  #include "io_map/efm8_20_pin.h"
+    #include "io_map/efm8_20_pin.h"
 #elif (DEVICE_PKG_QSOP24)
-  #include "io_map/efm8_24_pin.h"
+    #include "io_map/efm8_24_pin.h"
 #elif (DEVICE_PKG_QFN32) || (DEVICE_PKG_QFP32)
-  #include "io_map/efm8_32_pin.h"
+    #include "io_map/efm8_32_pin.h"
 #elif (DEVICE_PKG_QFP48)
-  #include "io_map/efm8_48_pin.h"
+    #include "io_map/efm8_48_pin.h"
 #else
-  #error "Unknown package type"
+    #error "Unknown package type"
 #endif
