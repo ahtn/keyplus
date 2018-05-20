@@ -1,0 +1,21 @@
+# Written in 2018 by jem@seethis.link
+# This file is released into the public domain as per the CC0 Public Domain
+# Dedication (http://creativecommons.org/publicdomain/zero/1.0/)
+---
+
+devices:
+  "EFM8 ‏لوحة المفاتيحキーボード":
+    scan_mode:
+      mode: pin_gnd
+      pins: [P2.0, P2.1, P1.7, P1.6]
+    layout: 4key
+
+layouts:
+  4key:
+    layers: [
+      [ # layer 0 (base)
+        [
+          1, 2, 3, 4
+        ]
+      ],
+    ]

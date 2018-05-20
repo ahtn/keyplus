@@ -70,7 +70,7 @@ if DEBUG.gui:
     # debug settings
     DEFAULT_LAYOUT_FILE = "../layouts/efm8_test.yaml"
     DEFAULT_RF_FILE = "../layouts/test_rf_config.yaml"
-    DEFAULT_FIRMWARE_FILE = ""
+    DEFAULT_FIRMWARE_FILE = "../ports/efm8/build/default/usb_keyboard-default.hex"
     DEFAULT_DEVICE_ID = 0
 else:
     DEFAULT_LAYOUT_FILE = ""
@@ -1006,17 +1006,21 @@ class Loader(QMainWindow):
                 error_msg_box("YAML syntax error: \n" + str(err))
                 self.abort_update(target_device)
 
-            if DEBUG.layout:
-                print("settings_data:", type(settings_data), settings_data)
-                hexdump.hexdump(bytes(settings_data))
-                print("layout_data:", type(layout_data), layout_data)
-                hexdump.hexdump(bytes(layout_data))
-
             with kb:
-                kb.update_settings_section(settings_data, keep_rf=True)
-                kb.update_layout_section(layout_data)
+                reset_type = RESET_TYPE_SOFTWARE
+
                 try:
-                    kb.reset(reset_type=RESET_TYPE_SOFTWARE)
+                    if kb.get_error_info().has_critical_error():
+                        reset_type = RESET_TYPE_HARDWARE
+                    kb.update_settings_section(settings_data, keep_rf=True)
+                    kb.update_layout_section(layout_data)
+                except easyhid.HIDException:
+                    error_msg_box("Error writing layout")
+                    self.abort_update(target_device)
+                    return
+
+                try:
+                    kb.reset(reset_type)
                 except easyhid.HIDException:
                     pass # may fail if HID device re-enumerates differently
                 kb.disconnect()
@@ -1229,8 +1233,9 @@ class Loader(QMainWindow):
             return KeyplusKeyboard(device)
         except Exception as err:
             msg_box(
-                    description="Failed to open device! Check it is still present "
-                    "and you have permission to write to it. ErrorMsg: {}"
+                    description="Failed to open device! Check that it is not in "
+                    "use by another program and you have permission to read/write "
+                    "to it. ErrorMsg: {}"
                     .format(err),
                     title="USB Device write error"
             )

@@ -74,7 +74,7 @@ def simple_command(device, cmd_id, data=None, receive=True):
 
             if response == None:
                 device.write(cmd_packet)
-            else:
+            elif len(response) > 0:
                 packet_type = response[0]
 
 

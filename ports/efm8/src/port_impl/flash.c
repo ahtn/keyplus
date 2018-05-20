@@ -16,18 +16,7 @@ static XRAM uint8_t s_flash_key2;
 
 void flash_modify_enable(void) {
     s_irq_state = IE_EA;
-    disable_interrupts();
-
-
-    // NOTE: Assumes SFRPAGE = 0x00
-    // TODO: probably just make this always enabled at setup after power on
-#if defined(DEVICE_EFM8UB1) || defined(DEVICE_EFM8UB2) || defined(DEVICE_EFM8UB3)
-    // Enable VDD monitor and set it as a reset source
-    // So if a VDD is not stable will result in reset protecting against flash
-    // corruption.
-    VDM0CN |= VDM0CN_VDMEN__ENABLED;
-    RSTSRC = RSTSRC_PORSF__SET;
-#endif
+    IE_EA = 0;
 
     // Load these values into variables makes it slightly harder for random
     // code execution to enable flash writes.

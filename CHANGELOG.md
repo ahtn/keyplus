@@ -1,6 +1,14 @@
 0.3.4 (unreleased)
 ==================
 
+* `layout` make id field optional for non-split boards
+
+* `firmware` matrix scanning for EFM8
+
+* `keyplus-flasher` when a device has a critical error, perform a full reset
+* `keyplus-flasher` throw error when trying to use matrix scanning when a
+    device does not support it.
+
 0.3.3
 ==================
 

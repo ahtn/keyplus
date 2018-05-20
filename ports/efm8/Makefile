@@ -65,6 +65,7 @@ C_SRC += \
 	usb_test.c \
 	$(EFM8_PATH)/lib/efm8_assert/assert.c \
 	matrix_scanner.c \
+	efm8_port_util.c \
 	port_impl/flash.c \
 	port_impl/hardware.c \
 	port_impl/led.c \

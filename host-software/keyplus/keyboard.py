@@ -231,7 +231,8 @@ class KeyplusKeyboard(object):
 #                                USB Commands                                 #
 ###############################################################################
 
-    def simple_command(self, cmd_id, cmd_data=None, receive=True, match_data=None):
+    def simple_command(self, cmd_id, cmd_data=None, receive=True,
+                       match_data=None, timeout=1000):
         """
         Returns:
             The bytes read from the command if `receive` is True
@@ -255,7 +256,7 @@ class KeyplusKeyboard(object):
         self.hid_write(cmd_packet)
 
         if receive:
-            response = self.hid_read(timeout=1000)
+            response = self.hid_read(timeout=timeout)
 
             packet_type = None
             if response != None:
@@ -270,7 +271,7 @@ class KeyplusKeyboard(object):
                     if error_code != CMD_ERROR_BUSY:
                         break
 
-                response = self.hid_read(timeout=1000)
+                response = self.hid_read(timeout=timeout)
                 if response == None and retries_left > 3:
                     # self.hid_write(nop_packet)
                     pass
@@ -357,7 +358,7 @@ class KeyplusKeyboard(object):
         )
         return response
 
-    def get_error_info(device):
+    def get_error_info(self):
         """ Read the error code table from the device. """
         response = self.simple_command(CMD_GET_INFO, [INFO_ERROR_SYSTEM])[1:]
         error_table_data = response[:KeyplusErrorTable.SIZE_ERROR_CODE_TABLE]
@@ -660,15 +661,17 @@ class KeyplusKeyboard(object):
         finish_packet = bytearray([0xff]*64)
         finish_packet[0] = CMD_WRITE_FLASH
         self.hid_write(finish_packet)
-        self._check_cmd_response( self.hid_read(timeout=30) ) # check response
+        self._check_cmd_response( self.hid_read(timeout=3000) ) # check response
 
     def update_settings_section(self, settings_data, keep_rf):
         assert(isinstance(keep_rf, bool))
-        keep_rf = int(keep_rf)
 
-        if DEBUG.usb_cmd:
-            print("Setting: ")
-            hexdump.hexdump(settings_data)
+        if DEBUG.layout:
+            print("settings_data:", len(settings_data))
+            hexdump.hexdump(bytes(settings_data))
+            print()
+
+        keep_rf = int(keep_rf)
 
         self._rf_info_dirty = True
         self._layout_info_dirty = True
@@ -678,7 +681,7 @@ class KeyplusKeyboard(object):
             size = SETTINGS_SIZE - SETTINGS_RF_INFO_SIZE
         chunk_list = self._get_chunks(settings_data[0:size], FLASH_WRITE_PACKET_LEN)
 
-        self.simple_command(CMD_UPDATE_SETTINGS, [keep_rf])
+        self.simple_command(CMD_UPDATE_SETTINGS, [keep_rf], timeout=5000)
 
         self._write_flash_chunks(chunk_list, size)
 
@@ -686,6 +689,11 @@ class KeyplusKeyboard(object):
 
     def update_layout_section(self, layout_data):
         self._layout_info_dirty = True
+
+        if DEBUG.layout:
+            print("layout_data:", len(layout_data))
+            hexdump.hexdump(bytes(layout_data))
+            print()
 
         # TODO: change this to a uint32_t
         start_address = 0
@@ -703,15 +711,11 @@ class KeyplusKeyboard(object):
             start_address,
             end_address,
         )
-        self.simple_command(CMD_UPDATE_LAYOUT, flash_write_info)
+        self.simple_command(CMD_UPDATE_LAYOUT, flash_write_info, timeout=5000)
 
         chunk_list = self._get_chunks(layout_data, FLASH_WRITE_PACKET_LEN)
 
         self._write_flash_chunks(chunk_list, end_address)
-
-    def _test_update_layout(self):
-        data = [i & 0xff for i in range(self.firmware_info.layout_flash_size)]
-        self.update_layout_section(data)
 
     def erase_settings_section(self):
         self.update_settings_section(bytearray(), keep_rf=False)
@@ -722,7 +726,7 @@ class KeyplusKeyboard(object):
             0,
             (self.firmware_info.layout_flash_size) - 1,
         )
-        self.simple_command(CMD_UPDATE_LAYOUT, flash_write_info)
+        self.simple_command(CMD_UPDATE_LAYOUT, flash_write_info, timeout=5000)
         self._write_flash_chunks([], 0)
 
 

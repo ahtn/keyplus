@@ -14,9 +14,10 @@ class DEBUG(object):
     The static variables in this class can be used to turn on and off debug
     messages.
     """
-    usb_cmd_timing = False and IS_PRE_RELASE
+    usb_cmd_timing = True and IS_PRE_RELASE
     usb_cmd = True and IS_PRE_RELASE
     parsing = False and IS_PRE_RELASE
     parsing_extra = False and IS_PRE_RELASE
-    layout = False and IS_PRE_RELASE
+    layout = True and IS_PRE_RELASE
     gui = True and IS_PRE_RELASE
+    misc = True and IS_PRE_RELASE
