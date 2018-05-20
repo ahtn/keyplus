@@ -88,12 +88,6 @@ class LayoutDevice(object):
         parser_info.enter(device_name)
         self.name = device_name
 
-        self.device_id = parser_info.try_get(
-            "id",
-            field_type = int,
-            field_range = [0, MAX_NUMBER_DEVICES-1]
-        )
-
         self.mcu = parser_info.try_get(
             "mcu",
             default = None,
@@ -135,6 +129,25 @@ class LayoutDevice(object):
             default = not self.feature_ctrl.i2c_disabled,
             field_type = bool,
         )
+
+        if (
+            self.feature_ctrl.unifying_disabled == True and
+            self.feature_ctrl.i2c_disabled == True and
+            self.feature_ctrl.nrf24_disabled == True
+        ):
+            # If all split settings are disabled, then ID is optional
+            id_optional = True
+        else:
+            id_optional = False
+
+        self.device_id = parser_info.try_get(
+            "id",
+            default = 0,
+            field_type = int,
+            field_range = [0, MAX_NUMBER_DEVICES-1],
+            optional = id_optional,
+        )
+
 
         self.studio_kle = parser_info.try_get(
             "studio_kle",

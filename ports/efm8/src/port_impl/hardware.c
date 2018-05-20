@@ -6,6 +6,12 @@
 #include "peripheral_driver/inc/usb_0.h"
 #include "efm8_util/reset.h"
 
+void hardware_init(void) {
+}
+
+void pin_init(void) {
+}
+
 void reset_mcu(void) {
     // Disable the USB pull-up resistor, and wait a bit so the host has
     // a chance to see the device disconnect.

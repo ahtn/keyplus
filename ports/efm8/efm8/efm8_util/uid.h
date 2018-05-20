@@ -5,6 +5,8 @@
 
 #include <stdint.h>
 
+#include "efm8_util/io.h"
+
 // Universal Bee
 #if defined(EFM8UB1_DEVICE)
     #define EFM8_UID_SIZE 16
@@ -55,7 +57,7 @@
 #endif
 
 // For variants that have 0 bytes of XRAM, use internal RAM instead
-#if DEVICE_XRAM_SIZE == 0
+#if defined(EFM8_UID_XRAM) && (DEVICE_XRAM_SIZE == 0)
     #undef  EFM8_UID_XRAM
     #define EFM8_UID_RAM
 #endif

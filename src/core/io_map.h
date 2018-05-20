@@ -19,6 +19,9 @@
 #define IO_PORT_SIZE MCU_BITNESS
 #endif
 
+/// The highest port number used.
+#define IO_PORT_MAX_PORT_NUM (IO_PORT_MAX_PIN_NUM / IO_PORT_SIZE)
+
 #if IO_PORT_SIZE == 8
 typedef uint8_t port_mask_t;
 #elif IO_PORT_SIZE == 16

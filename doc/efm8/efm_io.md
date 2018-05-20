@@ -8,7 +8,7 @@
 * WEAKPUD: Disable weak pull-up resistors on all IO pins
 * PxMDOUT.x: 1 for push-pull, 0 for open-drain (PxMDOUT=0 -> disable drive high)
 * PxMDIN.x: Analog/Digital (1 for digital, 0 for analog)
-* Px.x: Input/Output Logical value
+* Px.x: Input/Output Logical value (1 on reset)
 
 Note: All examples Below assumes weak pull ups are enabled (WEAKPUD=0)
 

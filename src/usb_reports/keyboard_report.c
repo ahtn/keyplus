@@ -239,7 +239,16 @@ static void clear_boot_keyboard_report(void) {
 
 /// Remove all keys from the NKRO keyboard report.
 static void clear_nkro_keyboard_report(void) {
+#if SHARED_HID_DESCRIPTOR
+    // Don't clear the report id
+    memset(
+        ((uint8_t*)&g_nkro_keyboard_report)+1,
+        0,
+        sizeof(hid_report_nkro_keyboard_t)-1
+    );
+#else
     memset(&g_nkro_keyboard_report, 0, sizeof(hid_report_nkro_keyboard_t));
+#endif
 }
 
 /// Remove all keys from the keyboard reports.

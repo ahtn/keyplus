@@ -1,0 +1,14 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+"e1839a8" = {path = ".", editable = true}
+"3076366" = {path = "./../../python-efm8boot", editable = true}
+"0c43736" = {path = "./../../python-easyhid", editable = true}
+
+[dev-packages]
+
+[requires]
+python_version = "3.6"

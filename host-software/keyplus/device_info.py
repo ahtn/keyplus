@@ -27,11 +27,6 @@ class KeyboardPinMapping(object):
         self.key_number_map = None
         self.io_mapper = None
 
-        assert( not (
-            (self.internal_scan_method == MATRIX_SCANNER_INTERNAL_BASIC_SCAN) \
-            and (self.mode == MATRIX_SCANNER_MODE_ROW_COL) \
-        ))
-
     def _pin_map_to_bytes(self):
         result = bytearray(0)
 
@@ -56,6 +51,22 @@ class KeyboardPinMapping(object):
 
     def to_bytes(self):
         result = bytearray(0)
+
+        if (self.internal_scan_method == MATRIX_SCANNER_INTERNAL_NONE and \
+                self.mode != MATRIX_SCANNER_INTERNAL_NONE):
+            raise KeyplusSettingsError(
+                "Device doesn't support matrix scanning, but scan mode was "
+                "set to '{}'".format(self.mode)
+            )
+
+        if (self.internal_scan_method == MATRIX_SCANNER_INTERNAL_BASIC_SCAN \
+                and self.mode == MATRIX_SCANNER_MODE_ROW_COL):
+            raise KeyplusSettingsError(
+                "Pin mapping uses an incompatible scan mode '{}'. "
+                "(internal error)".format(self.mode)
+            )
+
+
 
         if self.internal_scan_method == MATRIX_SCANNER_INTERNAL_NONE:
             pass

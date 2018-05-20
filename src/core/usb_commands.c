@@ -49,7 +49,6 @@ static void unlock_usb_commands(void) {
 }
 
 static void lock_usb_commands(void) {
-    // TODO:
 //     s_usb_commands_in_progress = true;
     s_usb_commands_in_progress = false;
 }

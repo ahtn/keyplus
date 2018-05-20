@@ -598,8 +598,7 @@ static void handleUsbEp0Tx(void) {
 
     // The number of bytes to send in the next packet must be less than or equal
     // to the maximum EP0 packet size.
-    count = (ep0.remaining >= USB_EP0_SIZE) ?
-        USB_EP0_SIZE : ep0.remaining;
+    count = MIN(ep0.remaining, USB_EP0_SIZE);
 
     // Save the packet size for future use.
     count_snapshot = count;

@@ -15,6 +15,7 @@ class KeyplusErrorTable(object):
 
     def __init__(self, error_table):
         self._error_table = error_table;
+        self._has_critical_error = False
 
         if len(error_table) != self.SIZE_ERROR_CODE_TABLE:
             raise KeyplusProtocolError(
