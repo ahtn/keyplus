@@ -92,6 +92,13 @@ In the drop down box at the top of the window, select "Layout". Click the "Brows
 
 TODO
 
+### Docker
+Clone this repository and run
+```
+docker build -t keyplus .
+docker run -it keyplus bash
+```
+
 ## Building
 
 Currently building of the firmware has been tested on Linux.
