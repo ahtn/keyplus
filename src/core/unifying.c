@@ -31,6 +31,7 @@
 
 #define UNIFYING_ADDR_WIDTH 5
 
+// TODO: should move this to an init function
 XRAM unifying_mouse_state_t g_unifying_mouse_state = {0};
 XRAM uint8_t g_unifying_mouse_state_changed = false;
 
@@ -45,6 +46,10 @@ static XRAM uint8_t tmp_buffer[32];
 static XRAM uint16_t pairing_timeout;
 static XRAM uint16_t packet_timeout;
 
+// TODO: move to init function
+static XRAM uint8_t s_extra_button_last_state = 0;
+
+
 uint8_t unifying_calc_checksum(const XRAM uint8_t *data, const uint8_t len) {
     uint8_t i;
     uint8_t result = 0;
@@ -58,32 +63,86 @@ uint8_t unifying_calc_checksum(const XRAM uint8_t *data, const uint8_t len) {
 
 void unifying_read_packet(XRAM uint8_t *nrf_packet) {
     const uint8_t nrf_packet_type = nrf_packet[1];
+
+    // usb_print(nrf_packet, 8);
+
     switch (nrf_packet_type) {
-        case 0xC2: {
+        case UNIFYING_FRAME_MOUSE: {
             uint16_t x = ((nrf_packet[5] & 0x0f) << 8) | nrf_packet[4];
             uint16_t y = (uint16_t)((nrf_packet[6]) << 4) | (uint16_t)((nrf_packet[5] & 0xf0) >> 4);
-            g_unifying_mouse_state.buttons_1 = nrf_packet[2];
+            g_unifying_mouse_state.buttons_1 = nrf_packet[2] | s_extra_button_last_state;
             g_unifying_mouse_state.buttons_2 = nrf_packet[3];
             g_unifying_mouse_state.x = sign_extend_12(x);
             g_unifying_mouse_state.y = sign_extend_12(y);
             g_unifying_mouse_state.wheel_y = nrf_packet[7];
-            g_unifying_mouse_state.wheel_x = nrf_packet[8];
+
+            // Pretty sure this is wrong
+            // g_unifying_mouse_state.wheel_x = nrf_packet[8];
             g_unifying_mouse_state_changed = true;
 
             hold_key_task(true);
         } break;
 
-        /* case 0x4f: { */
-        /*  /1* g_unifying_mouse_state_changed = true; *1/ */
-        /* } break; */
+        case UNIFYING_FRAME_EXTRA_BUTTON: { // 0xD1
+            // NOTE: All packets I've recored so far have the bytes
+            // 63 0A following D1.  This may be a constant or contain some
+            // other information.
+            // Example packet: 00 D1 63 0A ?? ?? XX ??
+            //
+            // The XX value is a constant that is different depending on
+            // which key is pressed. It's not a bitmask. If multiple buttons
+            // are pressed at once, it seems the mouse incorrectly reports
+            // which button was pressed in some cases.
+            //
+            // Zero or more packets with type 0xC1 seem to be sent after this
+            // which seem to contain some other information.
+            switch (nrf_packet[6]) {
+                case UNIFYING_EXTRA_MIDDLE: {    // AF: middle mouse button
+                    s_extra_button_last_state |= UNIFYING_MSB_MIDDLE;
+                } break;
+                case UNIFYING_EXTRA_SIDE_UP: {   // B0: side button 1
+                    s_extra_button_last_state |= UNIFYING_MSB_SIDE_1;
+                } break;
+                case UNIFYING_EXTRA_SIDE_DOWN: { // AE: side button 2
+                    s_extra_button_last_state |= UNIFYING_MSB_SIDE_2;
+                } break;
 
-        /* case 0x40: { */
-        /*  /1* mouse_active = false; *1/ */
-        /*  /1* if (mouse_active) { *1/ */
-        /*      g_unifying_mouse_state_changed = true; *1/ */
-        /*  /1* } *1/ */
-        /*  /1* memset(&g_unifying_mouse_state, 0, sizeof(g_unifying_mouse_state)); *1/ */
-        /* } */
+                // Clear extra button state
+                //
+                // When we receive this button, we don't know which button
+                // was released. Therefore we must release all buttons to be
+                // safe.
+                case 0x00: {
+                    g_unifying_mouse_state.buttons_1 &= ~s_extra_button_last_state;
+                    s_extra_button_last_state = 0;
+                } break;
+            }
+
+            g_unifying_mouse_state.buttons_1 |= s_extra_button_last_state;
+
+            g_unifying_mouse_state_changed = true;
+            hold_key_task(true);
+        }
+#if 0
+        // This packet type seems to be sent after 0xD1 packets.
+        //
+        //
+        case UNIFYING_FRAME_MOUSE_UNKNOWN: { // 0xC1
+            // Not sure what data this carries
+        }
+
+        case UNIFYING_FRAME_KEEP_ALIVE_2: { // 0x4F
+            // g_unifying_mouse_state_changed = true;
+        } break; */
+
+        case UNIFYING_FRAME_KEEP_ALIVE_1: { // 0x40 */
+            mouse_active = false;
+            if (mouse_active) {
+            g_unifying_mouse_state_changed = true;
+            }
+            memset(&g_unifying_mouse_state, 0, sizeof(g_unifying_mouse_state));
+        }
+#endif
     }
 }
 
@@ -197,8 +256,9 @@ bit_t handle_pairing(uint8_t pipe_num) {
         return false;
     }
 
-    if ( !(packet->header.type == FRAME_PAIRING || packet->header.type == 0x0f ||
-            last_pairing_step >= 3)) {
+    if ( !(packet->header.type == UNIFYING_FRAME_PAIRING ||
+           packet->header.type == 0x0f ||
+           last_pairing_step >= 3)) {
         return false;
     }
 

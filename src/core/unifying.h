@@ -15,8 +15,31 @@
 #define UNIFYING_PAIRING_PACKET_TIMEOUT 2000
 
 typedef enum {
-    FRAME_PAIRING = 0x5f,
-} frame_type_t;
+    UNIFYING_FRAME_PAIRING = 0x5f,
+
+    UNIFYING_FRAME_MOUSE = 0xC2,
+    UNIFYING_FRAME_MOUSE_UNKNOWN = 0xC1,
+    UNIFYING_FRAME_EXTRA_BUTTON = 0xD1,
+
+    UNIFYING_FRAME_KEEP_ALIVE_1 = 0x40,
+    UNIFYING_FRAME_KEEP_ALIVE_2 = 0x4F,
+} unifying_frame_type_t;
+
+typedef enum {
+    UNIFYING_EXTRA_MIDDLE    = 0xAF,
+    UNIFYING_EXTRA_SIDE_UP   = 0xB0,
+    UNIFYING_EXTRA_SIDE_DOWN = 0xAE,
+} unifying_extra_button;
+
+typedef enum {
+    UNIFYING_MSB_LEFT = 0x01,
+    UNIFYING_MSB_RIGHT = 0x02,
+    UNIFYING_MSB_MIDDLE = 0x04,
+    UNIFYING_MSB_FORWARD = 0x08,
+    UNIFYING_MSB_BACK = 0x10,
+    UNIFYING_MSB_SIDE_1 = 0x20,
+    UNIFYING_MSB_SIDE_2 = 0x40,
+} unifying_mouse_button_mask_t;
 
 typedef struct {
     uint8_t id;
