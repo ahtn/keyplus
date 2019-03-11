@@ -17,7 +17,12 @@
 typedef uint16_t layer_mask_t;
 
 // TODO: calcuate matrix sizes from settings
-#define MAX_NUM_KEYBOARD_SLOTS 4
+#ifdef NO_SPLIT
+    #define MAX_NUM_KEYBOARD_SLOTS 1
+#else
+    #define MAX_NUM_KEYBOARD_SLOTS 4
+#endif
+
 #define INVALID_DEVICE_ID 0xff
 
 // Stick keys will be held down for this amount of time before the RELEASE
@@ -65,6 +70,8 @@ extern XRAM keyboard_t g_keyboard_slots[MAX_NUM_KEYBOARD_SLOTS];
 
 void keyboards_init(void);
 void keyboard_update_device_matrix(uint8_t device_id, const XRAM uint8_t *matrix_packet) REENT;
+void update_mouse_matrix(uint8_t buttons);
+
 void keyboard_interpret_matrix(uint8_t keyboard_id) ;
 void keyboard_reset_matrix(uint8_t keyboard_id);
 layer_mask_t keyboard_get_layer_mask(uint8_t keyboard_id);
@@ -79,6 +86,7 @@ void interpret_all_keyboard_matrices(void);
 // NOTE: Most of these functions below rely on static state stored by the matrix
 // interpreter. These functions are used in the key handlers, and directly read
 // and write to the static state of the matrix configurator.
+uint8_t has_active_slot(void);
 uint8_t get_active_keyboard_id(void);
 uint8_t get_active_slot_id(void);
 bit_t is_keyboard_active(uint8_t kb_id);

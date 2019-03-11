@@ -3,10 +3,13 @@
 
 #include "core/layout.h"
 
+#include "config.h"
+
 #include "core/error.h"
 #include "core/keycode.h"
 #include "core/macro.h"
 #include "core/settings.h"
+#include "core/flash.h"
 
 XRAM flash_addr_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
 
@@ -371,17 +374,10 @@ void keyboard_layouts_init(void) {
 #ifndef NO_MATRIX
     // key num map section
     {
-#if INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_FAST_ROW_COL
         // skip the key num map section, since it is in a known location at compile
         // time.
         flash_addr_t key_num_map_size = g_scan_plan.rows * (g_scan_plan.max_col_pin_num+1);
         storage_pos += key_num_map_size;
-
-#elif INTERNAL_SCAN_METHOD == MATRIX_SCANNER_INTERNAL_BASIC_SCAN
-#warning "can't build matrix map for BASIC_SCAN at compile time"
-#else
-#error "Unknown scan method" INTERNAL_SCAN_METHOD
-#endif
     }
 #endif
 
@@ -404,6 +400,10 @@ void keyboard_layouts_init(void) {
 
     // layout section
     {
+       storage_pos += LAYOUT_HEADER_SIZE;
+#if NO_SPLIT
+        g_layout_storage_pos[0] = storage_pos;
+#else
         uint8_t num_layouts = GET_SETTING(layout.number_layouts);
         g_layout_storage_pos[0] = storage_pos;
 
@@ -417,6 +417,11 @@ void keyboard_layouts_init(void) {
                 const uint8_t layer_count = GET_SETTING(layout.layouts[i-1].layer_count);
                 const flash_addr_t this_layout_size = GET_SETTING(layout.layouts[i].matrix_size);
 
+                // skip the layout HEADER
+                storage_pos += LAYOUT_HEADER_SIZE;
+
+                // skip the layout body, pos should now be set to the start
+                // of the next layout
                 storage_pos += 8*sizeof(keycode_t) * matrix_size * layer_count;
 
                 if (is_valid_storage_pos(storage_pos + this_layout_size - 1)) {
@@ -425,8 +430,14 @@ void keyboard_layouts_init(void) {
                     register_error(ERROR_LAYOUT_STORAGE_OUT_OF_BOUNDS);
                     break;
                 }
-                g_layout_storage_pos[i] = storage_pos;
             }
         }
+#endif
     }
+}
+
+bool has_mouse_layers(uint8_t layout_id) {
+   return flash_read_byte(
+      g_layout_storage_pos[layout_id] - LAYOUT_HEADER_SIZE + 0
+   );
 }

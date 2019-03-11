@@ -162,7 +162,7 @@ devices:
     wireless_mouse: true
     wired_split: true
     layout: gamma_split
-    layout_offset: 0
+    layout_offset: 1
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -181,7 +181,7 @@ devices:
     wireless_mouse: true
     wired_split: true
     layout: gamma_split
-    layout_offset: 1
+    layout_offset: 2
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -200,7 +200,7 @@ devices:
     wireless_mouse: true
     wired_split: false
     layout: gamma_split
-    layout_offset: 0
+    layout_offset: 1
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: [D2, D3, D1, D0]
@@ -215,8 +215,8 @@ devices:
       debounce:
         debounce_time_press: 5
         debounce_time_release: 5
-        trigger_time_press: 1
-        trigger_time_release: 1
+        trigger_time_press: 3
+        trigger_time_release: 3
         parasitic_discharge_delay_idle: 10.0
         parasitic_discharge_delay_debouncing: 10.0
 
@@ -228,7 +228,7 @@ devices:
     wireless_mouse: false
     wired_split: false
     layout: gamma_split
-    layout_offset: 1
+    layout_offset: 2
     scan_mode: # wireless only
       mode: col_row # options: col_row, pins, none
       rows: 4
@@ -249,7 +249,7 @@ devices:
     wireless_mouse: true
     wired_split: false
     layout: gamma_split
-    layout_offset: 0
+    layout_offset: 1
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: [D2, D3, D1, D0]
@@ -279,7 +279,7 @@ devices:
     wireless_mouse: true
     wired_split: false
     layout: gamma_split
-    layout_offset: 1
+    layout_offset: 2
     scan_mode:
       mode: col_row # options: col_row, pins, none
       rows: [D2, D3, D1, D0]
@@ -453,13 +453,17 @@ layouts:
     ]
   gamma_split:
     default_layer: 0
+    has_mouse_layers: True
     layers: [
       [ # layer 0 (colemak)
+        [ # mouse
+          BTN1, BTN2, BTN3, CS-tab, C-tab, lsft, L4  , ____,
+        ],
         [ # left hand
           tab , q   , w   , f   , p   , g   ,
           SFTEnt , a   , r   , s   , t   , d   ,
           lalt, z   , x   , c   , v   , b   ,
-          esc , L4  , L4  , lctl  , L3  , spc ,
+          sticky_lshift , sticky_l4  , L5  , lctl  , L3  , spc ,
         ],
         [ # right hand
           j   , l   , u   , y   , ";" , "-" ,
@@ -469,6 +473,9 @@ layouts:
         ],
       ],
       [ # layer 1 (qwerty arrows)
+        [ # mouse
+          ____, ____, ____, ____, ____, ____, ____, ____,
+        ],
         [ # left hand
           ____, q   , w   , e   , r   , t   ,
           ____, a   , s   , d   , f   , g   ,
@@ -483,6 +490,9 @@ layouts:
         ],
       ],
       [ # layer 2 (symbol)
+        [ # mouse
+          ____, ____, ____, ____, ____, ____, ____, ____,
+        ],
         [ # left hand
           ____, "|" , "2" , "3" , "4" , "5" ,
           ____, "1" , "\\", "(" , "[" , "{" ,
@@ -497,6 +507,9 @@ layouts:
         ],
       ],
       [ # layer 3 (fn)
+        [ # mouse
+          ____, ____, ____, S-tab, tab , pgup, pgdn , ____,
+        ],
         [ # left hand
           ins , del , home, up  , end , pgup,
           ____, esc , left, down, rght, pgdn,
@@ -510,7 +523,27 @@ layouts:
           ____  , ____  , ____  , ____  , ____  , ____,
         ],
       ],
-      [ # layer 4 (media)
+      [ # layer 4 (reverse)
+        [ # mouse
+          ____, ____, ____, ____, ____, ____, ____, ____,
+        ],
+        [ # left hand
+          "-" , ";" , y   , u   , l   , j   ,
+          "'" , o   , i   , e   , n   , h   ,
+          "`" , "/" , "." , "," , m   , k   ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          g   , p   , f   , w   , q   , ____,
+          d   , t   , s   , r   , a   , ____,
+          b   , v   , c   , x   , z   , ____,
+          ____, ____, ____, ____, ____, ____,
+        ],
+      ],
+      [ # layer 5 (media)
+        [ # mouse
+          ____, ____, ____, MPRV, MNXT, VOLU, VOLD, ____,
+        ],
         [ # left hand
           slck, pscr, mply, volu, mstp, F11 ,
           bspc, mute, mprv, vold, mnxt, app ,
@@ -520,7 +553,7 @@ layouts:
         [ # right hand
           wh_u, btn1, ms_u, btn2, RS-c, dongle_0 ,
           wh_d, ms_l, ms_d, ms_r, btn3, dongle_1 ,
-          set_l3 , set_l0 , set_l1 , set_l2 , NONE, test_2 ,
+          set_l3 , set_l0 , set_l1 , set_l2 , set_l4, test_2 ,
           ____, ____, ____, ____, ____, ____,
         ],
       ],

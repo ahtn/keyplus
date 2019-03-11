@@ -165,6 +165,10 @@ bit_t sticky_relase_timer_done(void) {
     return (uint16_t)(timer_read16_ms() - s_sticky_clear_start_time) > STICKY_KEY_RELEASE_DELAY;
 }
 
+uint8_t has_active_slot(void) {
+    return s_active_slot != INVALID_DEVICE_ID;
+}
+
 uint8_t get_active_slot_id(void) {
     return s_active_slot;
 }
@@ -373,6 +377,8 @@ void keyboards_init(void) {
         }
     }
 
+    s_active_slot = INVALID_DEVICE_ID;
+
     s_slot_fifo_pos = 0;
     s_has_dirty_matrix = true;
 
@@ -461,6 +467,15 @@ void keyboard_update_device_matrix(uint8_t device_id, const XRAM uint8_t *matrix
     }
 
     g_keyboard_slots[kb_slot_id].is_dirty = 1;
+    s_has_dirty_matrix = true;
+}
+
+void update_mouse_matrix(uint8_t buttons) {
+#define MOUSE_OFFSET 0
+    // The first device in the layout is treated as a special mouse
+    // layer.
+    g_keyboard_slots[s_active_slot].matrix[MOUSE_OFFSET] = buttons;
+    g_keyboard_slots[s_active_slot].is_dirty = 1;
     s_has_dirty_matrix = true;
 }
 

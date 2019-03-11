@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "core/hardware.h"
+#include "core/layout.h"
 #include "core/led.h"
 #include "core/matrix_interpret.h"
 #include "core/nrf24.h"
@@ -152,8 +153,14 @@ void unifying_mouse_handle(void) {
     if (!g_unifying_mouse_state_changed) {
         return;
     }
-    g_mouse_report.buttons_1 = g_unifying_mouse_state.buttons_1;
-    g_mouse_report.buttons_2 = g_unifying_mouse_state.buttons_2;
+
+    if (has_active_slot() && has_mouse_layers(get_active_keyboard_id())) {
+        update_mouse_matrix(g_unifying_mouse_state.buttons_1);
+    } else {
+        g_mouse_report.buttons_1 = g_unifying_mouse_state.buttons_1;
+        g_mouse_report.buttons_2 = g_unifying_mouse_state.buttons_2;
+    }
+
     if (g_mouse_report.buttons_1 || g_mouse_report.buttons_2) {
         clear_sticky_mods();
     }
@@ -162,27 +169,29 @@ void unifying_mouse_handle(void) {
     g_mouse_report.y = g_unifying_mouse_state.y;
 
     g_report_pending_mouse = true;
-    g_unifying_mouse_state_changed = false;;
+    g_unifying_mouse_state_changed = false;
 
+#if 0
     /* TODO: test code only, remove later */
-    /* if (keyboard_get_layer_mask(0) & (1 << 6)) { */
-    /*  if (g_unifying_mouse_state.wheel_y > 0) { */
-    /*      g_media_report.id = REPORT_ID_CONSUMER; */
-    /*      g_media_report.code = HID_CONSUMER_VOLUME_INCREMENT; */
-    /*      g_report_pending_media = true; */
-    /*  } else if (g_unifying_mouse_state.wheel_y < 0) { */
-    /*      g_media_report.id = REPORT_ID_CONSUMER; */
-    /*      g_media_report.code = HID_CONSUMER_VOLUME_DECREMENT; */
-    /*      g_report_pending_media = true; */
-    /*  } else if (g_unifying_mouse_state.wheel_y == 0) { */
-    /*      g_media_report.id = REPORT_ID_CONSUMER; */
-    /*      g_media_report.code = 0; */
-    /*      g_report_pending_media = true; */
-    /*      g_mouse_report.wheel_x = g_unifying_mouse_state.wheel_x; */
-    /*      g_mouse_report.wheel_y = g_unifying_mouse_state.wheel_y; */
-    /*  } */
-    /*  return; */
-    /* } */
+    if (keyboard_get_layer_mask(0) & (1 << 6)) {
+     if (g_unifying_mouse_state.wheel_y > 0) {
+         g_media_report.id = REPORT_ID_CONSUMER;
+         g_media_report.code = HID_CONSUMER_VOLUME_INCREMENT;
+         g_report_pending_media = true;
+     } else if (g_unifying_mouse_state.wheel_y < 0) {
+         g_media_report.id = REPORT_ID_CONSUMER;
+         g_media_report.code = HID_CONSUMER_VOLUME_DECREMENT;
+         g_report_pending_media = true;
+     } else if (g_unifying_mouse_state.wheel_y == 0) {
+         g_media_report.id = REPORT_ID_CONSUMER;
+         g_media_report.code = 0;
+         g_report_pending_media = true;
+         g_mouse_report.wheel_x = g_unifying_mouse_state.wheel_x;
+         g_mouse_report.wheel_y = g_unifying_mouse_state.wheel_y;
+     }
+     return;
+    }
+#endif
 
 #if 1
     g_mouse_report.wheel_x = SIGN(g_unifying_mouse_state.wheel_x);

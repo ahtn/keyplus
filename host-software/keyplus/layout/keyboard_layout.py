@@ -97,6 +97,8 @@ class LayoutKeyboard(object):
         self.name = name
         self.default_layer = 0
         self.layer_list = []
+        self.has_mouse_layer = False
+
         if device_sizes != None:
             self.device_sizes = device_sizes
         else:
@@ -165,6 +167,12 @@ class LayoutKeyboard(object):
             field_type = list,
         )
 
+        self.has_mouse_layers = parser_info.try_get(
+            field = 'has_mouse_layers',
+            field_type = bool,
+            default = False,
+        )
+
         self.load_keycodes(keycode_table, keycode_type=str)
 
         parser_info.exit()
@@ -227,10 +235,15 @@ class LayoutKeyboard(object):
     def to_bytes(self):
         result = bytearray()
 
+
+        # Construct the layout header
+        result += struct.pack("<B", self.has_mouse_layers)
+
+
         keycodes = self.to_keycodes()
 
         # TODO: Remove requirement that keymaps mast be aligned to 8 byte
-        # boundaries
+        # boundaries ?
         for layer in keycodes:
             for device in layer:
                 for keycode in device:
