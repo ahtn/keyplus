@@ -409,27 +409,40 @@ class KeyplusKeyboard(object):
         )
         return response
 
-    def listen_raw(self, total=None, timeout=None, cmd_filter=None):
+    def listen_raw(self, total=None, timeout=None, cmd_filter=None, decode=None):
         """
         total: total number of packets to print, default is no limit
         timeout: timeout for reading packets, default is no timeout
         cmd_filter: only print packets with this cmd_id
         """
         count = 0
+        if isinstance(cmd_filter, int):
+            cmd_filter = [cmd_filter]
         while True:
             response = self.hid_device.read(timeout=timeout)
 
             if (len(response) == 0):
                 return count
 
+            cmd_id = response[0]
+
+            def print_resp(response):
+                length = response[1]
+                print_data = bytes(response[2:length+2])
+                if decode:
+                    print(print_data.decode('ascii'), end='', flush=True)
+                else:
+                    hexdump.hexdump(print_data)
+
             if cmd_filter != None:
-                if response[0] == cmd_filter or (response[0] in cmd_filter):
+                if cmd_id == CMD_PRINT and CMD_PRINT in cmd_filter:
+                    print_resp(response)
+                elif cmd_id in cmd_filter:
                     hexdump.hexdump(bytes(response))
                     count += 1
             else:
-                if (response[0] == CMD_PRINT):
-                    length = response[1]
-                    hexdump.hexdump(bytes(response[2:length+2]))
+                if cmd_id == CMD_PRINT:
+                    print_resp(response)
                 else:
                     hexdump.hexdump(bytes(response))
                 count += 1

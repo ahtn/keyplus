@@ -4,6 +4,7 @@
 #include "core/unifying.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 #include "core/hardware.h"
 #include "core/hidpp20.h"
@@ -36,6 +37,7 @@
 // TODO: should move this to an init function
 XRAM unifying_mouse_state_t g_unifying_mouse_state = {0};
 XRAM uint8_t g_unifying_mouse_activity = 0;
+XRAM gesture_state_t s_gesture = {0};
 
 /// Address for the initial unifying pairing request.
 ///
@@ -332,6 +334,74 @@ void unifying_mouse_handle(void) {
         // If a special button was pressed don't want to update the cursor position.
         g_mouse_report.x = 0;
         g_mouse_report.y = 0;
+    }
+
+    // Gesture handling
+    if (g_unifying_mouse_state.buttons_1 & 0x80) {
+        switch (s_gesture.state) {
+            case GESTURE_STATE_INACTIVE: {
+                s_gesture.state = GESTURE_STATE_SCANNING;
+                // USB_PRINT_TEXT("start gesture scanning: ");
+            } break;
+
+            case GESTURE_STATE_SCANNING: {
+                s_gesture.x += g_unifying_mouse_state.x;
+                s_gesture.y += g_unifying_mouse_state.y;
+
+                // trigger threshold
+                if (s_gesture.x > GESTURE_THRESHOLD) {
+                    USB_PRINT_TEXT("gesture right\n");
+                    s_gesture.state = GESTURE_STATE_ACTIVATED;
+                } else if (s_gesture.x < -GESTURE_THRESHOLD) {
+                    USB_PRINT_TEXT("gesture left\n");
+                    s_gesture.state = GESTURE_STATE_ACTIVATED;
+                } else if (s_gesture.y >  GESTURE_THRESHOLD) {
+                    USB_PRINT_TEXT("gesture down\n");
+                    s_gesture.state = GESTURE_STATE_ACTIVATED;
+                } else if (s_gesture.y < -GESTURE_THRESHOLD) {
+                    USB_PRINT_TEXT("gesture up\n");
+                    s_gesture.state = GESTURE_STATE_ACTIVATED;
+                }
+                {
+                    uint8_t has_pos_x = s_gesture.x >  GESTURE_THRESHOLD_DIAG;
+                    uint8_t has_neg_x = s_gesture.x < -GESTURE_THRESHOLD_DIAG;
+                    uint8_t has_pos_y = s_gesture.y >  GESTURE_THRESHOLD_DIAG;
+                    uint8_t has_neg_y = s_gesture.y < -GESTURE_THRESHOLD_DIAG;
+                    if (has_pos_x && has_neg_y) {
+                        USB_PRINT_TEXT("gesture right up\n");
+                        s_gesture.state = GESTURE_STATE_ACTIVATED;
+                    } else if (has_pos_x && has_pos_y) {
+                        USB_PRINT_TEXT("gesture right down\n");
+                        s_gesture.state = GESTURE_STATE_ACTIVATED;
+                    } else if (has_neg_x && has_neg_y) {
+                        USB_PRINT_TEXT("gesture left  up\n");
+                        s_gesture.state = GESTURE_STATE_ACTIVATED;
+                    } else if (has_neg_x && has_pos_y) {
+                        USB_PRINT_TEXT("gesture left  down\n");
+                        s_gesture.state = GESTURE_STATE_ACTIVATED;
+                    }
+                }
+            } break;
+        }
+    } else {
+        switch (s_gesture.state) {
+            case GESTURE_STATE_SCANNING: {
+                // pressed but not triggered
+                if (
+                    (abs(s_gesture.x) < GESTURE_THRESHOLD_TAP) &&
+                    (abs(s_gesture.y) < GESTURE_THRESHOLD_TAP)
+                ) {
+                    USB_PRINT_TEXT("gesture tap\n");
+                }
+            } break;
+            case GESTURE_STATE_ACTIVATED: {
+                // pressed but not triggered
+                // USB_PRINT_TEXT("gesture released\n");
+            } break;
+        }
+        s_gesture.state = GESTURE_STATE_INACTIVE;
+        s_gesture.x = 0;
+        s_gesture.y = 0;
     }
 
     g_unifying_mouse_activity = 0;

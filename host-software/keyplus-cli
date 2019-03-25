@@ -184,12 +184,27 @@ class DebugCommand(GenericDeviceCommand):
             'Shows raw debug output as a hexdump'
         )
 
+        self.arg_parser.add_argument(
+            '--print-only', '-P', dest='print_only', action='store_const',
+            const=True, default=False,
+            help='Only show output from usb_print() commands in code.'
+        )
+
+        self.arg_parser.add_argument(
+            '--human-readable', '-H', dest='human', action='store_const',
+            const=True, default=False,
+            help='Display text usb_print() as string instead of hexdump'
+        )
+
     def task(self, args):
         kb = self.find_matching_device(args)
         print_all_info(kb)
 
         with kb:
-            kb.listen_raw()
+            if args.print_only:
+                kb.listen_raw(cmd_filter=CMD_PRINT, decode=args.human)
+            else:
+                kb.listen_raw(decode=args.human)
 
 
 # Prints matrix (row,col) pairs of pressed keys to stdout of a connected USB device

@@ -292,6 +292,27 @@ typedef struct unifying_hidpp20_diverted_buttons_t {
     uint8_t checksum;
 } unifying_hidpp20_diverted_buttons_t;
 
+enum {
+    GESTURE_STATE_INACTIVE = 0,
+    GESTURE_STATE_SCANNING = 1,
+    GESTURE_STATE_ACTIVATED = 2,
+};
+
+/// Threshold for Horizontal and Vertical mouse gestures
+#define GESTURE_THRESHOLD 110
+
+/// Threshold for Diagonal mouse gestures
+#define GESTURE_THRESHOLD_DIAG 60
+
+/// Threshold for tap mouse gesture.  The mouse has to move less than this
+/// amount in both the X and Y axes to trigger a tap gesture.
+#define GESTURE_THRESHOLD_TAP 20
+
+typedef struct gesture_state_t {
+    uint8_t state;
+    int16_t x;
+    int16_t y;
+} gesture_state_t;
 
 extern XRAM unifying_mouse_state_t g_unifying_mouse_state;
 extern XRAM uint8_t g_unifying_mouse_state_changed;
