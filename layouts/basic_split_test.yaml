@@ -215,8 +215,8 @@ devices:
       debounce:
         debounce_time_press: 5
         debounce_time_release: 5
-        trigger_time_press: 3
-        trigger_time_release: 3
+        trigger_time_press: 5
+        trigger_time_release: 5
         parasitic_discharge_delay_idle: 10.0
         parasitic_discharge_delay_debouncing: 10.0
 
@@ -457,13 +457,13 @@ layouts:
     layers: [
       [ # layer 0 (colemak)
         [ # mouse
-          BTN1, BTN2, BTN3, CS-tab, C-tab, lsft, L4  , ____,
+          BTN1, BTN2, BTN3, BSPC, L5  , s_lsft, s_L4  , spc,
         ],
         [ # left hand
           tab , q   , w   , f   , p   , g   ,
           SFTEnt , a   , r   , s   , t   , d   ,
           lalt, z   , x   , c   , v   , b   ,
-          sticky_lshift , sticky_l4  , L5  , lctl  , L3  , spc ,
+          sticky_lshift , sticky_l4  , L6  , lctl  , L3  , spc ,
         ],
         [ # right hand
           j   , l   , u   , y   , ";" , "-" ,
@@ -540,7 +540,24 @@ layouts:
           ____, ____, ____, ____, ____, ____,
         ],
       ],
-      [ # layer 5 (media)
+      [ # layer 5 (number)
+        [ # mouse
+          ____, ____, ____, ____, ____, ____, ____, ____,
+        ],
+        [ # left hand
+          "-" , "+" , 7   , 8   , 9   , j   ,
+          "." , 0   , 4   , 5   , 6   , h   ,
+          ____, "/" , 1   , 2   , 3   , k   ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          g   , p   , f   , w   , q   , ____,
+          d   , t   , s   , r   , a   , ____,
+          b   , v   , c   , x   , z   , ____,
+          ____, ____, ____, ____, ____, ____,
+        ],
+      ],
+      [ # layer 6 (media)
         [ # mouse
           ____, ____, ____, MPRV, MNXT, VOLU, VOLD, ____,
         ],

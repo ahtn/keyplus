@@ -27,6 +27,10 @@ enum usb_vendor_cmd_t {
     CMD_WRITE_FLASH = 0x0D, // write data to flash
 
     CMD_UNIFYING_PAIR = 0x10, // enter pairing mode
+    CMD_UNIFYING_SEND = 0x11, //< send data as a unifying packet
+
+    CMD_UNIFYING_RECV_SHORT = 0x50, //< received HID++ packet
+    CMD_UNIFYING_RECV_LONG  = 0x51, //< received HID++ packet
 
     CMD_NOP = 0xff, // do nothing, can be used to get an acknowledgement from slave
 };

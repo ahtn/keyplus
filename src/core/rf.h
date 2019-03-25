@@ -18,6 +18,8 @@
 #define RF_ADDR_WIDTH 5
 
 #define NUM_KEYBOARD_PIPES 4
+#define UNIFYING_RF_PIPE_MOUSE 4
+#define UNIFYING_RF_PIPE_DONGLE 5
 
 extern XRAM uint8_t g_rf_enabled;
 

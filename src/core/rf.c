@@ -417,9 +417,7 @@ bit_t read_packet(void) REENT {
     ring_buf128_take(&s_rx_buffer, packet_payload, width);
 
     // NOTE: currently mouse pipes are disabled in passive listening mode
-    if (pipe_num == 5 || pipe_num == 4) {
-        uint8_t csum = 0;
-
+    if (pipe_num == UNIFYING_RF_PIPE_MOUSE || pipe_num == UNIFYING_RF_PIPE_DONGLE) {
         if (g_runtime_settings.feature.ctrl.rf_mouse_disabled) {
             return false;
         }
@@ -433,7 +431,7 @@ bit_t read_packet(void) REENT {
 #endif
 
         // checksum passed, so assume we got a valid unifying packet
-        unifying_read_packet(packet_payload);
+        unifying_read_packet(packet_payload, width);
         return true;
     }
 

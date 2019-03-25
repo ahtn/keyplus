@@ -270,3 +270,13 @@
     (ptr)[2] = ((data) >>  8) & 0xff; \
     (ptr)[3] = ((data) >>  0) & 0xff; \
 } while(0)
+
+/// Convert an u16 to network byte order
+#ifndef htons
+#define htons(x) ( (x&0xff00)>>8 | (x&0x00ff)<<8 )
+#endif
+
+/// Convert an u16 to host byte order
+#ifndef ntohs
+#define ntohs(x) ( (x&0xff00)>>8 | (x&0x00ff)<<8 )
+#endif

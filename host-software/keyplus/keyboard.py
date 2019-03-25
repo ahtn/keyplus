@@ -349,6 +349,38 @@ class KeyplusKeyboard(object):
         )
         return response
 
+    def send_raw_unifying_packet(self, data):
+        """ Send a unifying packet """
+        assert(len(data) <= 32)
+        data = bytearray([len(data)]) + data
+        response = self.simple_command(
+            CMD_UNIFYING_SEND,
+            data,
+            receive=False
+        )
+        return response
+
+    def send_hidpp_packet(self, data):
+        assert(len(data) in [7, 20])
+
+        packet = bytearray()
+        packet += struct.pack(">B", 0) # unifying device id
+        packet += data                 # hidpp packet
+
+        if (len(data) == 7):
+            packet += struct.pack(">B", 0) # one byte padding
+
+        # Unifying receiver packets have twos complement checksum
+        checksum = (sum(packet) & 0xff)
+        checksum = -checksum & 0xff
+        packet += struct.pack(">B", checksum)
+
+        # valid lengths for unifying hid++ packets
+        assert(len(packet) in [10, 22])
+
+        self.send_raw_unifying_packet(packet)
+
+
     def set_indicator_led(self, led_num, state):
         """ Set an indicator LED """
         response = self.simple_command(
@@ -377,15 +409,33 @@ class KeyplusKeyboard(object):
         )
         return response
 
-    def listen_raw(self):
-        # TODO: better way to interface with this
+    def listen_raw(self, total=None, timeout=None, cmd_filter=None):
+        """
+        total: total number of packets to print, default is no limit
+        timeout: timeout for reading packets, default is no timeout
+        cmd_filter: only print packets with this cmd_id
+        """
+        count = 0
         while True:
-            response = self.hid_device.read()
-            if (response[0] == CMD_PRINT):
-                length = response[1]
-                hexdump.hexdump(bytes(response[2:length+2]))
+            response = self.hid_device.read(timeout=timeout)
+
+            if (len(response) == 0):
+                return count
+
+            if cmd_filter != None:
+                if response[0] == cmd_filter or (response[0] in cmd_filter):
+                    hexdump.hexdump(bytes(response))
+                    count += 1
             else:
-                hexdump.hexdump(bytes(response))
+                if (response[0] == CMD_PRINT):
+                    length = response[1]
+                    hexdump.hexdump(bytes(response[2:length+2]))
+                else:
+                    hexdump.hexdump(bytes(response))
+                count += 1
+
+            if total and (count >= total):
+                return count
 
     def get_info_cmd(self, info_page_number):
         retries = 2

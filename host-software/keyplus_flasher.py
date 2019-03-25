@@ -68,9 +68,16 @@ STATUS_BAR_TIMEOUT=4500
 
 if DEBUG.gui:
     # debug settings
-    DEFAULT_LAYOUT_FILE = "../layouts/efm8_test.yaml"
-    DEFAULT_RF_FILE = "../layouts/test_rf_config.yaml"
-    DEFAULT_FIRMWARE_FILE = "../ports/efm8/build/default/usb_keyboard-default.hex"
+
+    DEFAULT_LAYOUT_FILE = "../layouts/basic_split_test.yaml"
+    DEFAULT_RF_FILE = ""
+    DEFAULT_FIRMWARE_FILE = ""
+
+    # EFM8 testing
+    # DEFAULT_LAYOUT_FILE = "../layouts/efm8_1key.yaml"
+    # DEFAULT_RF_FILE = "../layouts/test_rf_config.yaml"
+    # DEFAULT_FIRMWARE_FILE = "../ports/efm8/build/default/usb_keyboard-default.hex"
+
     DEFAULT_DEVICE_ID = 0
 else:
     DEFAULT_LAYOUT_FILE = ""

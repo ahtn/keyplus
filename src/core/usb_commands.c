@@ -297,7 +297,7 @@ static void cmd_get_info(void) {
     send_vendor_report();
 }
 
-void parse_cmd(void) {
+static void parse_cmd(void) {
     const uint8_t cmd = g_vendor_report_out.data[0];
     const uint8_t data1 = g_vendor_report_out.data[1];
     const uint8_t data2 = g_vendor_report_out.data[2];
@@ -506,6 +506,20 @@ void parse_cmd(void) {
 
         case CMD_READ_LAYOUT: {
             cmd_read_layout();
+        } break;
+
+        /// CMD_UNIFYING_SEND format:
+        /// byte0:              this command name
+        /// byte1:              n: length of unifying packet to send
+        /// byte2..byte2+n:     data to be sent in the uniyfing packet
+        case CMD_UNIFYING_SEND: {
+            const uint8_t size = data1;
+            if (size > 32) {
+                cmd_error(CMD_ERROR_CODE_TOO_MUCH_DATA);
+                break;
+            }
+
+            unifying_send_packet(g_vendor_report_out.data + 2, size);
         } break;
 
 #if USE_NRF24

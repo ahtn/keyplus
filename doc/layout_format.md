@@ -342,3 +342,50 @@ layout:
       ],
       # etc. for up to 16 layers
 ```
+
+#### Remapping mouse buttons
+
+Layouts can also remap mouse buttons. To remap mouse buttons set
+`has_mouse_layers: True` in the layout properties. This maps all the mouse
+buttons to the first device in the layout. For example
+
+```yaml
+  numpad_layout:
+    has_mouse_layers: true
+
+    layers: [
+      [ # layer 0
+        [ # mouse
+          BTN1, BTN2, BTN3, BTN4, BTN5, bspc, lsft, L1,
+        ],
+        [ # numpad
+          nlck, kp_/, kp_*, kp_-  ,
+          kp_7, kp_8, kp_9, kp_+  , # note, since this is a numpad, we use the
+          kp_4, kp_5, kp_6,         #`kp_` (keypad) version of the keycodes
+          kp_1, kp_2, kp_3, kp_ent,
+          kp_0,       kp_.
+        ]
+      ],
+      [ # layer 1 (accessed by pressing button8 on the mouse)
+        [ # mouse
+          a   , b   , c   , d   , e   , f   , ____, ____,
+        ],
+        [ # numpad
+          F10 , F11 , F12 , ____  ,
+          F7  , F8  , F9  , ____  ,
+          F4  , F5  , F6  ,
+          F1  , F2  , F3  , ____  ,
+          ____,       ____
+        ]
+      ]
+    ]
+```
+
+The mouse buttons are treat the same as keyboard keys so they can be used as
+layers, modifiers, keystrokes, etc.
+
+Each layout can remap the mouse buttons differently, changing the mouse
+functionality depending on which keyboard is used with the mouse. If no keyboard
+is active, then the mouse will revert to the default mouse buttons.
+
+(TODO: allow the mouse to pick a default layout for when no keyboard is active.)

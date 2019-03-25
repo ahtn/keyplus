@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "core/hardware.h"
+#include "core/hidpp20.h"
 #include "core/layout.h"
 #include "core/led.h"
 #include "core/matrix_interpret.h"
@@ -34,12 +35,13 @@
 
 // TODO: should move this to an init function
 XRAM unifying_mouse_state_t g_unifying_mouse_state = {0};
-XRAM uint8_t g_unifying_mouse_state_changed = false;
+XRAM uint8_t g_unifying_mouse_activity = 0;
 
-// Address for the initial unifying pairing request.
-// Note: Addresses are stored in little endian format, because writes to
-// the address registers are written LSB bit first
-// BB:0A:DC:A5:75
+/// Address for the initial unifying pairing request.
+///
+/// Note: Addresses are stored in little endian format, because writes to
+/// the address registers are written LSB bit first.
+/// BB:0A:DC:A5:75
 static XRAM uint8_t unifying_pairing_addr[5] = {0x75, 0xA5, 0xDC, 0x0A, 0xBB};
 static XRAM uint8_t last_pairing_step = UNIFYING_PAIR_DISABLED;
 static XRAM uint8_t pairing_target_addr[UNIFYING_ADDR_WIDTH];
@@ -50,7 +52,17 @@ static XRAM uint16_t packet_timeout;
 // TODO: move to init function
 static XRAM uint8_t s_extra_button_last_state = 0;
 
+// HID++ communication state
+static uint8_t s_index = 0;
 
+// Seems to be a bug in the mouse firmware. It seems to send an extra report
+// after some requests (that seems to correspond to a left click, might
+// be specific to m560???).
+static XRAM uint8_t s_ignore_buggy_report = 0;
+
+void unifying_set_pairing_address(const XRAM uint8_t *target_addr, uint8_t addr_lsb);
+
+/// Two's complement checksum used by unifying packets
 uint8_t unifying_calc_checksum(const XRAM uint8_t *data, const uint8_t len) {
     uint8_t i;
     uint8_t result = 0;
@@ -62,24 +74,123 @@ uint8_t unifying_calc_checksum(const XRAM uint8_t *data, const uint8_t len) {
     return -result;
 }
 
-void unifying_read_packet(XRAM uint8_t *nrf_packet) {
+/// Send a packet to the device using ACK payloads.
+void unifying_send_packet(const XRAM uint8_t *data, uint8_t size) {
+    memcpy(tmp_buffer, data, size);
+
+    if (nrf24_read_status() & STATUS_TX_FULL_bm) {
+        nrf24_flush_tx();
+    }
+
+    rf_disable_receive_irq();
+    nrf24_write_ack_payload(
+        tmp_buffer,
+        size,
+        UNIFYING_RF_PIPE_MOUSE // nrf24 pipe of device
+    );
+    rf_enable_receive_irq();
+}
+
+void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
     const uint8_t nrf_packet_type = nrf_packet[1];
 
-    // usb_print(nrf_packet, 8);
+#if 0
+    // For debugging print unifying packets
+    if (nrf_packet_type == 0x40 || nrf_packet_type == 0x4F) {
+    // } else if (nrf_packet_type == 0xC2) {
+    } else {
+        usb_print(nrf_packet, width);
+    }
+#endif
 
     switch (nrf_packet_type) {
         case UNIFYING_FRAME_MOUSE: {
             uint16_t x = ((nrf_packet[5] & 0x0f) << 8) | nrf_packet[4];
             uint16_t y = (uint16_t)((nrf_packet[6]) << 4) | (uint16_t)((nrf_packet[5] & 0xf0) >> 4);
+
+            if (s_ignore_buggy_report) {
+                s_ignore_buggy_report = 0;
+                break;
+            }
+
+
+            // On left mouse click, send a HID++ packet.
+            if ((g_unifying_mouse_state.buttons_1 & 0x01) == 0 && (nrf_packet[2] & 0x01)) {
+                // TODO: integrate this functionality so it happens automatically
+                // on device power on and receiving packets from the mouse
+                unifying_hidpp20_t *report = (unifying_hidpp20_t*)tmp_buffer;
+                uint8_t size = sizeof(unifying_hidpp20_t);
+                memset(report, 0, size);
+                report->id = 0x00;
+                report->frame_type = UNIFYING_FRAME_HIDPP_SHORT;
+                report->device_index = 0x01;
+
+#if 0
+                // Discover a feature index using IRoot_GetFeature()
+                {
+                    uint16_t feature = HIDPP20_REPROG_CONTROLS_V4;
+
+                    report->feature_index = HIDPP20_ROOT_INDEX;
+                    report->function_id = HIDPP20_IRoot_GetFeature;
+                    report->software_id = 1;
+                    report->parameters[0] = (feature >> 8) & 0xff; // big endian
+                    report->parameters[1] = (feature >> 0) & 0xff;
+                }
+#endif
+
+#if 1
+                // HIDPP20 HIDPP20_REPROG_CONTROLS_V4
+                {
+                    uint8_t cid_tab[3] = {
+                        HIDPP20_CID_SCROLL_LEFT,
+                        HIDPP20_CID_SCROLL_RIGHT,
+                        HIDPP20_CID_GESTURE,
+                    };
+                    uint8_t cid = cid_tab[s_index%3];
+
+                    uint8_t flags = (
+                        ((1<<0) * 1) | // divert
+                        ((1<<1) * 1) | // dvalid
+                        ((1<<2) * 1) | // persist
+                        ((1<<3) * 1) | // pvalid
+                        ((1<<4) * 0) | // rawXY
+                        ((1<<5) * 0)   // rvalid
+                    );
+                    uint8_t remap = 0; // 0-> don't change
+
+                    report->feature_index = 0x0b;
+
+                    // report->function_id = HIDPP20_SpecialKeysMSEButtons_GetCount;
+                    // report->function_id = HIDPP20_SpecialKeysMSEButtons_GetCidInfo;
+                    // report->function_id = HIDPP20_SpecialKeysMSEButtons_GetCidReporting;
+                    report->function_id = HIDPP20_SpecialKeysMSEButtons_SetCidReporting;
+                    report->software_id = 0x0E;
+
+                    report->parameters[0] = (cid>>8) & 0xff  ;
+                    report->parameters[1] = (cid>>0) & 0xff;
+
+                    report->parameters[2] = flags;
+
+                    report->parameters[3] = (remap>>8) & 0xff;
+                    report->parameters[4] = (remap>>0) & 0xff;
+                }
+#endif
+
+                report->checksum = unifying_calc_checksum((uint8_t*)report, size);
+
+                s_index++;
+                unifying_send_packet((uint8_t*)report, size);
+            }
+
+
             g_unifying_mouse_state.buttons_1 = nrf_packet[2] | s_extra_button_last_state;
             g_unifying_mouse_state.buttons_2 = nrf_packet[3];
             g_unifying_mouse_state.x = sign_extend_12(x);
             g_unifying_mouse_state.y = sign_extend_12(y);
             g_unifying_mouse_state.wheel_y = nrf_packet[7];
+            g_unifying_mouse_state.wheel_x = nrf_packet[8];
 
-            // Pretty sure this is wrong
-            // g_unifying_mouse_state.wheel_x = nrf_packet[8];
-            g_unifying_mouse_state_changed = true;
+            g_unifying_mouse_activity = UNIFYING_MOUSE_ACTIVE;
 
             hold_key_task(true);
         } break;
@@ -100,12 +211,13 @@ void unifying_read_packet(XRAM uint8_t *nrf_packet) {
             switch (nrf_packet[6]) {
                 case UNIFYING_EXTRA_MIDDLE: {    // AF: middle mouse button
                     s_extra_button_last_state |= UNIFYING_MSB_MIDDLE;
+                    s_ignore_buggy_report = 1;
                 } break;
                 case UNIFYING_EXTRA_SIDE_UP: {   // B0: side button 1
-                    s_extra_button_last_state |= UNIFYING_MSB_SIDE_1;
+                    s_extra_button_last_state |= UNIFYING_MSB_EXTRA_1;
                 } break;
                 case UNIFYING_EXTRA_SIDE_DOWN: { // AE: side button 2
-                    s_extra_button_last_state |= UNIFYING_MSB_SIDE_2;
+                    s_extra_button_last_state |= UNIFYING_MSB_EXTRA_2;
                 } break;
 
                 // Clear extra button state
@@ -121,25 +233,71 @@ void unifying_read_packet(XRAM uint8_t *nrf_packet) {
 
             g_unifying_mouse_state.buttons_1 |= s_extra_button_last_state;
 
-            g_unifying_mouse_state_changed = true;
+            g_unifying_mouse_activity = UNIFYING_MOUSE_EXTRA_BUTTON;
             hold_key_task(true);
-        }
+        } break;
+
+        case UNIFYING_FRAME_HIDPP_LONG_RESP: {
+            uint8_t i;
+            unifying_hidpp20_diverted_buttons_t *report = (void*)nrf_packet;
+
+            // Forward the packet to the USB data stream
+            queue_vendor_in_packet(
+                CMD_UNIFYING_RECV_LONG,
+                nrf_packet + 2,
+                20 - 1,
+                STATIC_LENGTH_CMD
+            );
+
+            // TODO: make this generic, currently only works for m720
+            if (report->feature_index != 0x0b && report->function_id != 0) {
+                break;
+            }
+
+            s_extra_button_last_state = 0;
+
+            // Read the list of buttons that are currently down.
+            for (i = 0; i < 4; ++i) {
+                const uint8_t cid = ntohs(report->control_id_list[i]);
+                switch (cid) {
+                    case HIDPP20_CID_SCROLL_LEFT: {
+                        s_extra_button_last_state |= UNIFYING_MSB_EXTRA_1;
+                    } break;
+
+                    case HIDPP20_CID_SCROLL_RIGHT: {
+                        s_extra_button_last_state |= UNIFYING_MSB_EXTRA_2;
+                    } break;
+
+                    case HIDPP20_CID_GESTURE: {
+                        s_extra_button_last_state |= UNIFYING_MSB_EXTRA_3;
+                    } break;
+
+                    case HIDPP20_CID_NONE: {
+                    } break;
+                }
+            }
+
+            // When reporting in this mode, we control these bits directly
+            g_unifying_mouse_state.buttons_1 &= ~(0xE0);
+            g_unifying_mouse_state.buttons_1 |= s_extra_button_last_state;
+
+            g_unifying_mouse_activity = UNIFYING_MOUSE_EXTRA_BUTTON;
+            hold_key_task(true);
+        } break;
 #if 0
-        // This packet type seems to be sent after 0xD1 packets.
-        //
-        //
-        case UNIFYING_FRAME_MOUSE_UNKNOWN: { // 0xC1
+        // Unecrypted HID packet
+        case UNIFYING_FRAME_UNENCRYPTED_HID: { // 0xC1
             // Not sure what data this carries
         }
 
         case UNIFYING_FRAME_KEEP_ALIVE_2: { // 0x4F
-            // g_unifying_mouse_state_changed = true;
+            // g_unifying_mouse_activity = true;
         } break; */
 
         case UNIFYING_FRAME_KEEP_ALIVE_1: { // 0x40 */
             mouse_active = false;
             if (mouse_active) {
-            g_unifying_mouse_state_changed = true;
+            g_unifying_mouse_activity = true;
             }
             memset(&g_unifying_mouse_state, 0, sizeof(g_unifying_mouse_state));
         }
@@ -148,60 +306,42 @@ void unifying_read_packet(XRAM uint8_t *nrf_packet) {
 }
 
 void unifying_mouse_handle(void) {
-    // TODO: clean this up
-    // make it so that unifying mouse overides keyboard mouse
-    if (!g_unifying_mouse_state_changed) {
+    if (!g_unifying_mouse_activity) {
         return;
     }
 
     if (has_active_slot() && has_mouse_layers(get_active_keyboard_id())) {
         update_mouse_matrix(g_unifying_mouse_state.buttons_1);
     } else {
+        // If no keyboard layout is active, use default button mapping
         g_mouse_report.buttons_1 = g_unifying_mouse_state.buttons_1;
         g_mouse_report.buttons_2 = g_unifying_mouse_state.buttons_2;
+        g_report_pending_mouse = true;
     }
 
     if (g_mouse_report.buttons_1 || g_mouse_report.buttons_2) {
+        // Allow mouse button presses to clear sticky mods
         clear_sticky_mods();
     }
 
-    g_mouse_report.x = g_unifying_mouse_state.x;
-    g_mouse_report.y = g_unifying_mouse_state.y;
-
-    g_report_pending_mouse = true;
-    g_unifying_mouse_state_changed = false;
-
-#if 0
-    /* TODO: test code only, remove later */
-    if (keyboard_get_layer_mask(0) & (1 << 6)) {
-     if (g_unifying_mouse_state.wheel_y > 0) {
-         g_media_report.id = REPORT_ID_CONSUMER;
-         g_media_report.code = HID_CONSUMER_VOLUME_INCREMENT;
-         g_report_pending_media = true;
-     } else if (g_unifying_mouse_state.wheel_y < 0) {
-         g_media_report.id = REPORT_ID_CONSUMER;
-         g_media_report.code = HID_CONSUMER_VOLUME_DECREMENT;
-         g_report_pending_media = true;
-     } else if (g_unifying_mouse_state.wheel_y == 0) {
-         g_media_report.id = REPORT_ID_CONSUMER;
-         g_media_report.code = 0;
-         g_report_pending_media = true;
-         g_mouse_report.wheel_x = g_unifying_mouse_state.wheel_x;
-         g_mouse_report.wheel_y = g_unifying_mouse_state.wheel_y;
-     }
-     return;
+    if (g_unifying_mouse_activity == UNIFYING_MOUSE_ACTIVE) {
+        g_mouse_report.x = g_unifying_mouse_state.x;
+        g_mouse_report.y = g_unifying_mouse_state.y;
+        g_report_pending_mouse = true;
+    } else if (g_unifying_mouse_activity == UNIFYING_MOUSE_EXTRA_BUTTON) {
+        // If a special button was pressed don't want to update the cursor position.
+        g_mouse_report.x = 0;
+        g_mouse_report.y = 0;
     }
-#endif
 
-#if 1
+    g_unifying_mouse_activity = 0;
+
     g_mouse_report.wheel_x = SIGN(g_unifying_mouse_state.wheel_x);
     g_mouse_report.wheel_y = SIGN(g_unifying_mouse_state.wheel_y);
-#else
-    g_mouse_report.wheel_x = g_unifying_mouse_state.wheel_x;
-    g_mouse_report.wheel_y = g_unifying_mouse_state.wheel_y;
-#endif
 }
 
+
+/// Set appropriate nrf24 radio settings and address for unifying pairing
 void unifying_begin_pairing(void) {
     uint8_t config;
 
@@ -279,10 +419,8 @@ bit_t handle_pairing(uint8_t pipe_num) {
     packet_timeout = timer_read16_ms() + UNIFYING_PAIRING_PACKET_TIMEOUT;
 
     if (packet->header.step == 1 && last_pairing_step == 1) {
-
-
-        packet->req_1.frame_type = 0x1f;
         //req_1->step = 1;
+        packet->req_1.frame_type = 0x1f;
 
         packet->req_1.addr[0] = pairing_target_addr[4];
         packet->req_1.addr[1] = pairing_target_addr[3];
@@ -290,43 +428,19 @@ bit_t handle_pairing(uint8_t pipe_num) {
         packet->req_1.addr[3] = pairing_target_addr[1];
         packet->req_1.addr[4] = pairing_target_addr[0];
 
-        packet->req_1.csum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_req_1_t)-1);
-
+        packet->req_1.checksum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_req_1_t)-1);
         nrf24_write_ack_payload(tmp_buffer, sizeof(unifying_req_1_t), pipe_num);
-        //nrf24_write_ack_payload(2, tmp_buffer, sizeof(req_1_t));
-        //uint8_t fifo = read_reg(FIFO_STATUS);
-
-        /* p("\na%d w%d: ", pipe_num, sizeof(req_1_t)); */
-        /* print_buf(tmp_buffer, sizeof(req_1_t)); */
-        /* p("\n"); */
     } else if (packet->header.step == 2 && last_pairing_step == 2) {
-        packet->req_2.frame_type = 0x1f;
         //req_2->step = 2;
-
-        // TODO: something with data received here
-
-        packet->req_2.csum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_req_2_t)-1);
-
-        /* nrf24_write_ack_payload(pipe_num, (uint8_t*)packet->req_2, sizeof(unifying_req_2_t)); */
+        packet->req_2.frame_type = 0x1f;
+        packet->req_2.checksum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_req_2_t)-1);
         nrf24_write_ack_payload(tmp_buffer, sizeof(unifying_req_2_t), pipe_num);
-
-        /* p("\na%d w%d: ", pipe_num, sizeof(packet->req_1_t)); */
-        /* print_buf(tmp_buffer, sizeof(packet->req_1_t)); */
-        /* p("\n"); */
     } else if (packet->header.step == 3 && last_pairing_step == 3) {
+        //resp_3->step = 3;
         packet->resp_3.frame_type = 0x0f;
-        //resp_3->step = 6;
-
-        // TODO: do something with data received here
-        //memset(resp_3->crypto, 0, 6);
-
-        packet->resp_3.csum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_resp_3_t)-1);
-
+        packet->resp_3.checksum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_resp_3_t)-1);
         nrf24_write_ack_payload(tmp_buffer, sizeof(unifying_resp_3_t), pipe_num);
-
-        /* p("\na%d w%d: ", pipe_num, sizeof(packet->resp_3_t)); */
-        /* print_buf(tmp_buffer, sizeof(packet->resp_3_t)); */
-    } else if (last_pairing_step >= 10) {
+    } else if (last_pairing_step >= 4) {
         // Successfully paired with the device, and received a packet from it
         // after it has paired
         return true;

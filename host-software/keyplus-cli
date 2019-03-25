@@ -31,10 +31,16 @@ EXIT_MATCH_DEVICE = 2
 EXIT_UNSUPPORTED_FEATURE = 3
 EXIT_BAD_FILE = 4
 EXIT_INSUFFICIENT_SPACE = 5
+EXIT_COMMUNICATION_ERROR = 6
 
 def print_error(*args):
     print(Fore.RED + "Error: " + Style.RESET_ALL, file=sys.stderr, end='')
     print(*args, file=sys.stderr)
+
+def command_error(*args):
+    print(Fore.RED + "Error: " + Style.RESET_ALL, file=sys.stderr, end='')
+    print(*args, file=sys.stderr)
+    exit(EXIT_COMMAND_ERROR)
 
 
 def print_hid_info(hid_device):
@@ -164,7 +170,7 @@ class GenericDeviceCommand(GenericCommand):
             # Show an error message since the command is expecting only one
             # device
             print_error("Error: found {} matching devices, select a specifc device or "
-                  "disconnect the other devices".format(num_matches))
+                        "disconnect the other devices".format(num_matches))
             exit(EXIT_MATCH_DEVICE)
 
     def task(self, args):
@@ -560,20 +566,17 @@ class ProgramCommand(GenericDeviceCommand):
             args.hex_file == None
         ):
             self.arg_parser.print_help()
-            print_error(
+            command_error(
                 "To generate a merged hex file, need the following options: "
                 "layout file (-l), rf file (-r), hex file (-x), and a device id (-I)"
             )
-            exit(EXIT_COMMAND_ERROR)
 
         if len(args.merge_hex) != 3:
-            print_error("To generate a merged hex file, need to provide "
+            command_error("To generate a merged hex file, need to provide "
                     "[settings_addr, layout_addr, layout_size] as arguments")
-            exit(EXIT_COMMAND_ERROR)
 
         if args.firmware_settings == None:
-            print_error("Must provide firmware settings with -F flag.")
-            exit(EXIT_COMMAND_ERROR)
+            command_error("Must provide firmware settings with -F flag.")
 
         known_settings = [
             'chip_name', 'scan_method', 'max_rows'
@@ -585,20 +588,18 @@ class ProgramCommand(GenericDeviceCommand):
                 key = expression[0].lower()
                 value = expression[1].lower()
                 if key not in known_settings:
-                    print_error(
+                    command_error(
                         "Unknown firmware option '{}', expected one of: {}".format(
                             key, known_settings
                         )
                     )
-                    exit(EXIT_COMMAND_ERROR)
                 firmware_settings[key] = value
                 known_settings.remove(key)
             except KeyError:
-                print_error(
+                command_error(
                     "Bad format for firmware setting. Expected format is "
                     "'fw_opt=value'."
                 )
-                exit(EXIT_COMMAND_ERROR)
 
         # TODO: build device target from command line parameters
         firmware_info = KeyboardFirmwareInfo()
@@ -607,11 +608,9 @@ class ProgramCommand(GenericDeviceCommand):
             firmware_info.set_internal_scan_method(firmware_settings['scan_method'])
             firmware_info.set_max_rows(firmware_settings['max_rows'])
         except KeyplusSettingsError as err:
-            print_error(str(err))
-            exit(EXIT_COMMAND_ERROR)
+            command_error(str(err))
         except KeyError as err:
-            print_error("firmware setting '{}' must be set".format(err.args[0]))
-            exit(EXIT_COMMAND_ERROR)
+            command_error("firmware setting '{}' must be set".format(err.args[0]))
 
 
         # don't want to program the device, instead we want to build a
@@ -749,6 +748,171 @@ class PairCommand(GenericDeviceCommand):
         with kb:
             kb.enter_pairing_mode()
 
+class UnifyingHIDPPCommand(GenericDeviceCommand):
+    OperationList = (
+        'list-features',
+    )
+    def __init__(self):
+        super(UnifyingHIDPPCommand, self).__init__(
+            'Sends HID++ commands to a connected unifying device. May choose '
+            'from one of the following operations: '
+            + ','.join(self.OperationList)
+        )
+
+        self.arg_parser.add_argument(
+            'operation', type=str,
+            help='The operation to perform.'
+        )
+
+    def task(self, args):
+        import keyplus.hidpp as hidpp
+        from keyplus.hidpp import HIDPP20
+
+        kb = self.find_matching_device(args)
+
+        if args.operation not in self.OperationList:
+            command_error("Unknown operation {}".format(args.operation))
+
+        if args.operation == 'list-features':
+            reporter = hidpp.HIDPP(5, kb)
+
+            with kb:
+                ver = reporter.GetProtocolVersion()
+
+                if ver.major == 1:
+                    print_error("Unsupported HID++ version: ", ver)
+                    exit(EXIT_UNSUPPORTED_FEATURE)
+
+                feature_count = reporter.FeatureSet_GetCount()
+                print("Features:")
+
+                for i in range(1, feature_count):
+                    feature = reporter.FeatureSet_GetFeatureID(i)
+                    feature_name = HIDPP20.get_feature_name(feature.featureID)
+                    flags = []
+                    if feature.featureType & 0x20:
+                        flags.append("internal")
+                    if feature.featureType & 0x40:
+                        flags.append("hidden")
+                    if feature.featureType & 0x80:
+                        flags.append("obsolete")
+                    if len(flags) != 0:
+                        flags = "({})".format(",".join(flags))
+                    else:
+                        flags = ""
+                    print("{:02}: feature={:04X}, type={:02x}, {}\t{}".format(
+                        i, feature.featureID, feature.featureType, feature_name, flags))
+
+                reporter.build_feature_table()
+
+                print()
+                print("Protocol: HID++ {}.{}".format(ver.major, ver.minor))
+                print("DeviceName:", reporter.get_device_name().decode('ascii'))
+                print("DeviceType:", reporter.DeviceName_GetDeviceType())
+
+                fw_entities = reporter.FirmwareInfo_GetEntityCount()
+                # print()
+                # print("FirmwareInfo_EntityCount:", fw_entities)
+                for i in range(fw_entities):
+                    fwInfo = reporter.FirmwareInfo_GetFwInfo(i)
+
+                    fwType = fwInfo.fwType
+                    prefix = fwInfo.fwPrefix.decode('ascii')
+                    prefix = prefix.replace('\x00', ' ')
+
+                    major = (fwInfo.fwVersion & 0xff00) >> 8
+                    minor = (fwInfo.fwVersion & 0x00ff) >> 0
+                    build = fwInfo.fwBuild
+                    transport = hexdump.dump(fwInfo.transportLayer, size=4)
+                    print("FwInfo({}): {} {:02X}.{:02X}.{}\t {}".format(
+                          fwType, prefix, major, minor, build, transport)
+                    )
+
+                print(reporter.BatteryLevelStatus_GetBatteryLevelStatus())
+                num_special_keys = reporter.SpecialKeysMSEButtons_GetCount()
+                print("Special keys:", num_special_keys)
+                for i in range(num_special_keys):
+                    cidInfo = reporter.SpecialKeysMSEButtons_GetCtrlIdInfo(i)
+                    print("  {}: {}".format(i, cidInfo))
+
+                if 0:
+                    # divert gesture button
+                    print(reporter.SpecialKeysMSEButtons_SetCtrlIdReporting(
+                        hidpp.ControlID.GESTURE,
+                        0, # remap
+                        1, # divert
+                        1, # dvalid
+                        1, # persist
+                        1, # pvalid
+                        0, # rawXY
+                        0, # rvalid
+                    ))
+
+                if reporter.has_feature(HIDPP20.CHANGE_HOST):
+                    num_hosts = reporter.ChangeHost_GetCount()
+                    print("Number of hosts:", num_hosts)
+                    # print(reporter.ChangeHost_SetHost(1))
+
+                    if reporter.has_feature(HIDPP20.HOST_CAPABILITIES):
+                        hexdump.hexdump(reporter.HostCapabilites_GetDevicePairingAbilities())
+                        for i in range(num_hosts):
+                            hexdump.hexdump(reporter.HostCapabilites_GetHostInfo(i))
+
+                # if reporter.has_feature(0x1810):
+                #     print(reporter.test_feature(0x1810, 0))
+
+                if reporter.has_feature(0x1E22):
+                    print("Unknown feature 0x1E22:")
+                    print("  ", reporter.test_feature(0x1E22, 0))
+                    print("  ", reporter.test_feature(0x1E22, 1))
+                    print("  ", reporter.test_feature(0x1E22, 2))
+
+                if reporter.has_feature(0x1C00):
+                    print("Unknown feature 0x1C00:")
+                    print("  ", reporter.test_feature(0x1C00, 0))
+                    print("  ", reporter.test_feature(0x1C00, 1))
+                    print("  ", reporter.test_feature(0x1C00, 2))
+
+                # if reporter.has_feature(HIDPP20.CRYPTO_ID):
+                #     print("Undocumented feature CRYPTO_ID:")
+                #     print("  ", reporter.test_feature(HIDPP20.CRYPTO_ID, 0))
+                #     print("  ", reporter.test_feature(HIDPP20.CRYPTO_ID, 1))
+                #     print("  ", reporter.test_feature(HIDPP20.CRYPTO_ID, 2))
+
+
+class UnifyingHIDPPRawCommand(GenericDeviceCommand):
+    def __init__(self):
+        super(UnifyingHIDPPRawCommand, self).__init__(
+            'Send a HID++ command to a unifying device'
+        )
+
+        self.arg_parser.add_argument(
+            'data',
+            nargs='+',
+            type=lambda x: int(x, 16),
+            help='The raw HID++ data to be sent in hexidecimal format. (7 or 20 bytes)'
+        )
+
+        self.arg_parser.add_argument(
+            '-L', '--listen',
+            action='store_const', const=True, default=False,
+            help='After sending the hid++ command, listen for a response'
+        )
+
+    def task(self, args):
+        kb = self.find_matching_device(args)
+        data = bytearray(args.data)
+
+        if (len(data) not in [7, 20]):
+            command_error("Command requires 7 or 20 bytes of data");
+
+        with kb:
+            kb.send_hidpp_packet(data)
+
+            # TODO: change this to only listen for a HID++ response
+            if args.listen:
+                kb.listen_raw(total=1, timeout=2000)
+
 class KeyplusCLI(object):
     COMMAND_NAME_MAP = {
         "bootloader": BootloaderCommand,
@@ -760,6 +924,8 @@ class KeyplusCLI(object):
         "reset": ResetCommand,
         "program": ProgramCommand,
         "pair": PairCommand,
+        "hidpp": UnifyingHIDPPCommand,
+        "hidpp-raw": UnifyingHIDPPRawCommand,
         # "layers": LayerCommand,
         "help": HelpCommand,
     }

@@ -68,7 +68,9 @@ void hold_key_task(uint8_t other_key_pressed) REENT {
         }
 
         if (hold->activate_on_other_key && other_key_pressed && !hold->has_been_held) {
+#if DEBUG_LEVEL >= 3
             USB_PRINT_TEXT("hold->pressed, other key");
+#endif
 
             // this code is used to press held keys
             get_ekc_data(
@@ -83,7 +85,9 @@ void hold_key_task(uint8_t other_key_pressed) REENT {
         }
 
         if (other_key_pressed) {
+#if DEBUG_LEVEL >= 3
             USB_PRINT_TEXT("other key done");
+#endif
             continue;
         }
 
@@ -108,7 +112,9 @@ void hold_key_task(uint8_t other_key_pressed) REENT {
         }
 
         if (hold->has_been_tapped && timer_passed) {
+#if DEBUG_LEVEL >= 3
             USB_PRINT_TEXT("tapped task...");
+#endif
             // this code is used to release tapped keys
             get_ekc_data(
                 &keycode,
@@ -174,11 +180,16 @@ void handle_hold_keycode(keycode_t keycode, key_event_t event) REENT {
             hold_key->activate_on_other_key = (bool)(settings & HOLD_KEY_ACTIVATE_OTHER_KEY);
 
             if (hold_key->activate_on_other_key) {
+#if DEBUG_LEVEL >= 3
                 USB_PRINT_TEXT("on_other_key");
+#endif
                 s_buffer_other_keys = true;
             }
+
             if (hold_key->activate_on_delay) {
+#if DEBUG_LEVEL >= 3
                 USB_PRINT_TEXT("on_delay");
+#endif
             }
 
             hold_key->has_been_held = false;
@@ -201,7 +212,9 @@ void handle_hold_keycode(keycode_t keycode, key_event_t event) REENT {
                     hold_key->activate_on_other_key
                 ) {
                     if (hold_key->has_been_held) {
+#if DEBUG_LEVEL >= 3
                         USB_PRINT_TEXT("hold->held_release");
+#endif
                         get_ekc_data(
                             &keycode,
                             this_ekc_addr + EKC_OFFSET_HELD_KEYCODE,
@@ -213,7 +226,9 @@ void handle_hold_keycode(keycode_t keycode, key_event_t event) REENT {
                         i--; // account for deleted element from this list
                     } else {
                         // tapped key
+#if DEBUG_LEVEL >= 3
                         USB_PRINT_TEXT("hold->tap_release");
+#endif
                         hold_key->has_been_tapped = true;
                         hold_key->end_time = timer_read16_ms() + HOLD_KEY_TAP_AUTO_RELEASE_TIME;
                         get_ekc_data(
