@@ -6,6 +6,8 @@
 * `mouse` added `keyplus-cli hidpp list-features` for printing mouse capabilites
 * `mouse` added HID++ 2.0 allowing software to control/read from a connected mouse
 
+* `mouse-keys` improve keyboard mouse control
+
 * `layout` make id field optional for non-split boards
 * `layout` added `has_mouse_layers` for enabling mouse layers
 

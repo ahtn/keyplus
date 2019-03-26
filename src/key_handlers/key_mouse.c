@@ -14,83 +14,122 @@ bit_t is_mouse_keycode(keycode_t keycode) {
     return IS_MOUSEKEY(keycode);
 }
 
-#define MOUSE_SPEED 8
+#define MOUSE_SPEED 10
 #define MOUSE_WHEEL_SPEED 1
-#define MOUSE_REPORT_RATE 8
+#define MOUSE_REPORT_RATE 10
 
-static XRAM hid_report_mouse_t s_mouse_state;
-static XRAM uint8_t s_mouse_keys_down;
-static XRAM uint8_t s_force_update;
+#define MOUSE_KEY_LEFT  0x01
+#define MOUSE_KEY_RIGHT 0x02
+#define MOUSE_KEY_UP    0x04
+#define MOUSE_KEY_DOWN  0x08
+
+#define MOUSE_KEY_WHEEL_LEFT  0x10
+#define MOUSE_KEY_WHEEL_RIGHT 0x20
+#define MOUSE_KEY_WHEEL_UP    0x40
+#define MOUSE_KEY_WHEEL_DOWN  0x80
+
+/// The number of mouse keys currently in the pressed state
+static XRAM uint8_t s_num_mouse_keys_down;
+/// Keeps track of the number mouse keys that need
 static XRAM uint8_t s_report_time;
+
+static XRAM uint8_t s_mouse_keys;
+
+/// The mouse buttons to be released on the next mouse key report
+static XRAM uint8_t s_relased_buttons;
+/// The number of mouse buttons to be released on the next mouse key report
+static XRAM uint8_t s_num_mouse_keys_to_release;
 
 /* TODO: proper mouse handling */
 void handle_mouse_keycode(keycode_t kc, key_event_t event) REENT {
     if (event == EVENT_RESET) {
-        s_mouse_keys_down = 0;
-        s_force_update = 0;
+        s_mouse_keys = 0;
+        s_relased_buttons = 0;
+        s_num_mouse_keys_down = 0;
+        s_num_mouse_keys_to_release = 0;
         return;
     }
 
-    if (s_mouse_keys_down == 0) {
-        memset((uint8_t*)&s_mouse_state, 0, sizeof(s_mouse_state));
+    if (s_num_mouse_keys_down == 0) {
         s_report_time = timer_read8_ms();
     }
 
     if (IS_MOUSEKEY_BUTTON(kc)) {
         if (event == EVENT_PRESSED) {
-            s_mouse_state.buttons_1 |= (1 << MOUSEKEY_BUTTON_NUM(kc));
-            s_mouse_keys_down += 1;
+            g_mouse_report.buttons_1 |= (1 << MOUSEKEY_BUTTON_NUM(kc));
+            s_num_mouse_keys_down += 1;
         } else {
-            s_mouse_state.buttons_1 &= ~(1 << (MOUSEKEY_BUTTON_NUM(kc)));
-            if (s_mouse_keys_down != 0) {
-                s_mouse_keys_down -= 1;
-            }
-            s_force_update = 1;
+            s_relased_buttons |= (1 << (MOUSEKEY_BUTTON_NUM(kc)));
+            // NOTE: Don't remove the number s_num_mouse_keys_down until after the
+            // mouse report has been sent.
+            s_num_mouse_keys_to_release += 1;
         }
     } else if (kc >= KC_MOUSE_UP && kc <= KC_MOUSE_WH_RIGHT) {
         if (event == EVENT_PRESSED) {
             switch (kc) {
-                case KC_MOUSE_UP:    { s_mouse_state.y = -MOUSE_SPEED; } break;
-                case KC_MOUSE_DOWN:  { s_mouse_state.y = +MOUSE_SPEED; } break;
-                case KC_MOUSE_LEFT:  { s_mouse_state.x = -MOUSE_SPEED; } break;
-                case KC_MOUSE_RIGHT: { s_mouse_state.x = +MOUSE_SPEED; } break;
+                case KC_MOUSE_UP:    { s_mouse_keys |= MOUSE_KEY_UP; } break;
+                case KC_MOUSE_DOWN:  { s_mouse_keys |= MOUSE_KEY_DOWN; } break;
+                case KC_MOUSE_LEFT:  { s_mouse_keys |= MOUSE_KEY_LEFT; } break;
+                case KC_MOUSE_RIGHT: { s_mouse_keys |= MOUSE_KEY_RIGHT; } break;
 
-                case KC_MOUSE_WH_UP:    { s_mouse_state.wheel_y = +MOUSE_WHEEL_SPEED; } break;
-                case KC_MOUSE_WH_DOWN:  { s_mouse_state.wheel_y = -MOUSE_WHEEL_SPEED; } break;
-                case KC_MOUSE_WH_LEFT:  { s_mouse_state.wheel_x = +MOUSE_WHEEL_SPEED; } break;
-                case KC_MOUSE_WH_RIGHT: { s_mouse_state.wheel_x = -MOUSE_WHEEL_SPEED; } break;
+                case KC_MOUSE_WH_UP:    { s_mouse_keys |= MOUSE_KEY_WHEEL_UP; } break;
+                case KC_MOUSE_WH_DOWN:  { s_mouse_keys |= MOUSE_KEY_WHEEL_DOWN; } break;
+                case KC_MOUSE_WH_LEFT:  { s_mouse_keys |= MOUSE_KEY_WHEEL_LEFT; } break;
+                case KC_MOUSE_WH_RIGHT: { s_mouse_keys |= MOUSE_KEY_WHEEL_RIGHT; } break;
             }
-            s_mouse_keys_down += 1;
+            s_num_mouse_keys_down += 1;
         } else {
             switch (kc) {
-                case KC_MOUSE_UP:    { s_mouse_state.y = 0; } break;
-                case KC_MOUSE_DOWN:  { s_mouse_state.y = 0; } break;
-                case KC_MOUSE_LEFT:  { s_mouse_state.x = 0; } break;
-                case KC_MOUSE_RIGHT: { s_mouse_state.x = 0; } break;
+                case KC_MOUSE_UP:    { s_mouse_keys &= ~MOUSE_KEY_UP; } break;
+                case KC_MOUSE_DOWN:  { s_mouse_keys &= ~MOUSE_KEY_DOWN; } break;
+                case KC_MOUSE_LEFT:  { s_mouse_keys &= ~MOUSE_KEY_LEFT; } break;
+                case KC_MOUSE_RIGHT: { s_mouse_keys &= ~MOUSE_KEY_RIGHT; } break;
 
-                case KC_MOUSE_WH_UP:    { s_mouse_state.wheel_y = 0; } break;
-                case KC_MOUSE_WH_DOWN:  { s_mouse_state.wheel_y = 0; } break;
-                case KC_MOUSE_WH_LEFT:  { s_mouse_state.wheel_x = 0; } break;
-                case KC_MOUSE_WH_RIGHT: { s_mouse_state.wheel_x = 0; } break;
+                case KC_MOUSE_WH_UP:    { s_mouse_keys &= ~MOUSE_KEY_WHEEL_UP; } break;
+                case KC_MOUSE_WH_DOWN:  { s_mouse_keys &= ~MOUSE_KEY_WHEEL_DOWN; } break;
+                case KC_MOUSE_WH_LEFT:  { s_mouse_keys &= ~MOUSE_KEY_WHEEL_LEFT; } break;
+                case KC_MOUSE_WH_RIGHT: { s_mouse_keys &= ~MOUSE_KEY_WHEEL_RIGHT; } break;
             }
-            if (s_mouse_keys_down != 0) {
-                s_mouse_keys_down -= 1;
-            }
+            s_num_mouse_keys_to_release += 1;
         }
     }
-    s_mouse_keys_down += s_force_update;
 }
 
 void mouse_key_task(void) {
     if (
-        s_mouse_keys_down &&
+        s_num_mouse_keys_down &&
         ((uint8_t)(timer_read8_ms() - s_report_time) > MOUSE_REPORT_RATE)
     ) {
-        memcpy(&g_mouse_report, &s_mouse_state, sizeof(hid_report_mouse_t));
+
+        // Release any buttons if necessary
+        g_mouse_report.buttons_1 &= ~s_relased_buttons;
+        s_relased_buttons = 0;
+
+        // Calulate mouse speed based of current mouse key button state
+        g_mouse_report.x = 0;
+        g_mouse_report.y = 0;
+        g_mouse_report.wheel_x = 0;
+        g_mouse_report.wheel_y = 0;
+        if (s_mouse_keys & MOUSE_KEY_LEFT)  { g_mouse_report.x += -MOUSE_SPEED; }
+        if (s_mouse_keys & MOUSE_KEY_RIGHT) { g_mouse_report.x += +MOUSE_SPEED; }
+        if (s_mouse_keys & MOUSE_KEY_UP)    { g_mouse_report.y += -MOUSE_SPEED; }
+        if (s_mouse_keys & MOUSE_KEY_DOWN)  { g_mouse_report.y += +MOUSE_SPEED; }
+
+        if (s_mouse_keys & MOUSE_KEY_WHEEL_LEFT)  { g_mouse_report.wheel_x += -MOUSE_WHEEL_SPEED; }
+        if (s_mouse_keys & MOUSE_KEY_WHEEL_RIGHT) { g_mouse_report.wheel_x += +MOUSE_WHEEL_SPEED; }
+        if (s_mouse_keys & MOUSE_KEY_WHEEL_UP)    { g_mouse_report.wheel_y += +MOUSE_WHEEL_SPEED; }
+        if (s_mouse_keys & MOUSE_KEY_WHEEL_DOWN)  { g_mouse_report.wheel_y += -MOUSE_WHEEL_SPEED; }
+
+        // Now that we have updated, we can remove the button release keys.
+        if (s_num_mouse_keys_to_release >= s_num_mouse_keys_down) {
+            s_num_mouse_keys_down = 0;
+        } else {
+            s_num_mouse_keys_down -= s_num_mouse_keys_to_release;
+        }
+        s_num_mouse_keys_to_release = 0;
+
         g_report_pending_mouse = true;
         s_report_time = timer_read8_ms();
-        s_mouse_keys_down -= s_force_update;
-        s_force_update = 0;
     }
 }
 
