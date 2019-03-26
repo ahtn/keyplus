@@ -321,6 +321,24 @@ keycodes:
     # activate_type: delay # activate hold_key after delay
     # delay: 200 # delay in milliseconds
 
+  gesture:
+    keycode: mouse_gesture
+    left: pgup
+    right: pgdn
+    up: ca-up
+    down: ca-down
+    up_left: s-L
+    up_right: s-r
+    down_left: l
+    down_right: r
+
+    # tap: TODO
+    #
+    threshold: 100
+    threshold_diag: 70
+    # threshold_tap: 30
+    threshold_tap: 0
+
   # space_fn:
   #   keycode: hold
   #   delay: 200
@@ -457,7 +475,7 @@ layouts:
     layers: [
       [ # layer 0 (colemak)
         [ # mouse
-          BTN1, BTN2, BTN3, BSPC, L5  , s_lsft, s_L4  , spc,
+          BTN1, BTN2, BTN3, BSPC, L5  , s_lsft, s_L4  , gesture
         ],
         [ # left hand
           tab , q   , w   , f   , p   , g   ,

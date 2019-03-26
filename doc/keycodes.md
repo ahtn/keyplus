@@ -423,9 +423,75 @@ modkey that presses multiple modifiers at once like `ca-none` (`ctrl+alt+none`)
 that gets applied to other key presses.
 
 
-## Tap/Hold keycodes
+## Advanced keycodes
+
+Some advanced keycodes needed to be defined external before they can be used
+in your layout. To do this you need to defined in the `keycodes` section of
+the layout file. The `keycodes` is a top level section of the yaml file, with
+each of it's members defining a new keycode for use in layout.
+
+Here's a small example that defines a new keycode `SFTEnt`:
+
+```yaml
+keycodes:
+  SFTEnt: # our name for the new keycode
+    keycode: hold   # what type of keycode to define
+    # The rest of the fields are options for controlling the beahviour of the keycode
+    tap_key: enter
+    hold_key: sticky_lshift
+```
+
+After defining a keycode, it can be used freely in any layout.
+
+### Tap/Hold keycodes
 
 TODO
+
+```yaml
+keycodes:
+  space_fn:
+    keycode: hold
+    tap_key: space
+    hold_key: sticky_l2
+
+    # activate_type: other_key # activate hold_key when other key is pressed
+    # delay: 200
+```
+
+### Mouse Gesture keycodes
+
+NOTE: A Logitech Unifying mouse must be paired with the keyplus
+keyboard/receiver for mouse gestures to work.
+
+Mouse gestures allow you to activate one of several keys depending on how
+you move the mouse. Below is an example showing all the features of mouse
+gestures.
+
+```yaml
+keycodes:
+  gesture:
+    keycode: mouse_gesture
+
+    left: media_prev_track   # press gesture key and move mouse left
+    right: media_next_track  # press gesture key and move mouse right
+    up: audio_vol_up         # press gesture key and move mouse up
+    down: audio_vol_down     # press gesture key and move mouse down
+
+    up_left: page_up         # press gesture key and move mouse up and left
+    up_right: a-tab          # press gesture key and move mouse up and right
+    down_left: page_down     # press gesture key and move mouse down and left
+    down_right: as-tab       # press gesture key and move mouse down and right
+
+    tap: t # TODO, functionallity not fully implemented yet
+
+    # These 3 values control the how far the mouse must move to activate a gesture
+    # Setting a threshold value to 0 will disable gestures in that direction.
+    threshold: 120     # horizontal/vertical gestures
+    threshold_diag: 70 # diagonal gestures
+    threshold_tap: 30  # tap gestures
+```
+
+See also: [Remmaping mouse buttons.](../doc/layout_format.md#remapping-mouse-buttons)
 
 ## Macro keycodes
 

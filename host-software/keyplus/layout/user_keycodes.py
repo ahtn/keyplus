@@ -11,7 +11,7 @@ from keyplus.keycodes.keycodes import *
 from keyplus.keycodes.keycode_mapper import KeycodeMapper
 from keyplus.layout.parser_info import KeyplusParserInfo
 from keyplus.exceptions import *
-from keyplus.layout.ekc_data import EKCDataTable
+from keyplus.layout.ekc_data import (EKCDataTable, EKCKeycodeTable)
 
 class UserKeycode(object):
     def __init__(self, name, ekc):
@@ -74,14 +74,14 @@ class UserKeycodes(object):
         kc_type = keycode_data['keycode']
         kc_type = kc_type.lower()
 
-        if kc_type == "hold":
-            hold_key = EKCHoldKey()
-            hold_key.parse_json(kc_name, parser_info=parser_info)
-            hold_key.set_keycode_map_function(self.kc_mapper.from_string)
+        if kc_type in EKCKeycodeTable:
+            ekc_key = EKCKeycodeTable[kc_type]()
+            ekc_key.parse_json(kc_name, parser_info=parser_info)
+            ekc_key.set_keycode_map_function(self.kc_mapper.from_string)
 
             self.user_keycode_table[kc_name.lower()] = UserKeycode(
                 kc_name.lower(),
-                ekc = hold_key,
+                ekc = ekc_key,
             )
         else:
             raise ParseLayoutError(

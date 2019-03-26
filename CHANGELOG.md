@@ -1,6 +1,8 @@
 0.3.4 (unreleased)
 ==================
 
+* `mouse` added mouse gestures keycode. Move the mouse and press the gesture button to activate
+    keycodes depending on which direction the mouse moved.
 * `mouse` mouse buttons are now remappable by layouts
 * `mouse` better support for extra mouse buttons
 * `mouse` added `keyplus-cli hidpp list-features` for printing mouse capabilites

@@ -4,6 +4,7 @@
 #pragma once
 
 #include "core/util.h"
+#include "core/keycode.h"
 
 #define UNIFYING_PAIR_FAILED 0
 #define UNIFYING_PAIR_IN_PROGRESS 1
@@ -13,6 +14,8 @@
 // If pairing is not complete in this time, fail
 #define UNIFYING_PAIRING_TIMEOUT 20000
 #define UNIFYING_PAIRING_PACKET_TIMEOUT 2000
+
+#define KEYPLUS_HIDPP_SOFTWARE_ID 0x0D
 
 typedef enum {
     UNIFYING_FRAME_HIDPP_SHORT = 0x10,
@@ -298,25 +301,33 @@ enum {
     GESTURE_STATE_ACTIVATED = 2,
 };
 
-/// Threshold for Horizontal and Vertical mouse gestures
-#define GESTURE_THRESHOLD 110
+enum {
+    GESTURE_LEFT = 0,
+    GESTURE_RIGHT = 1,
+    GESTURE_UP = 2,
+    GESTURE_DOWN = 3,
+    GESTURE_UP_LEFT = 4,
+    GESTURE_UP_RIGHT = 5,
+    GESTURE_DOWN_LEFT = 6,
+    GESTURE_DOWN_RIGHT = 7,
+    GESTURE_TAP = 8,
+};
 
-/// Threshold for Diagonal mouse gestures
-#define GESTURE_THRESHOLD_DIAG 60
-
-/// Threshold for tap mouse gesture.  The mouse has to move less than this
-/// amount in both the X and Y axes to trigger a tap gesture.
-#define GESTURE_THRESHOLD_TAP 20
-
+#define EKC_GESTURE_LEFT_ADDR 0x06
 typedef struct gesture_state_t {
     uint8_t state;
     int16_t x;
     int16_t y;
+    uint8_t kb_id;
+    uint16_t ekc_addr;
+    keycode_t triggered_kc;
+    int16_t threshold;
+    int16_t threshold_diag;
+    int16_t threshold_tap;
 } gesture_state_t;
 
 extern XRAM unifying_mouse_state_t g_unifying_mouse_state;
 extern XRAM uint8_t g_unifying_mouse_state_changed;
-
 
 uint8_t unifying_calc_checksum(const XRAM uint8_t *data, const uint8_t len);
 
@@ -325,4 +336,9 @@ void unifying_read_packet(const uint8_t XRAM *nrf_packet, uint8_t width);
 void unifying_mouse_handle(void);
 void unifying_begin_pairing(void);
 void unifying_pairing_poll(void);
+
+void gesture_init(void);
+void gesture_press(uint16_t ekc_addr, uint8_t kd_id);
+void gesture_release(uint16_t ekc_addr, uint8_t kd_id);
+
 bit_t unifying_is_pairing_active(void);

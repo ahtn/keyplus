@@ -518,7 +518,7 @@ static void keyboard_reset_event_handlers(void) {
 static void keyboard_trigger_event(keycode_t keycode, key_event_t event) REENT {
     uint8_t callback_num = 0;
     const keycode_callbacks_t * callback;
-    uint16_t keycode_class = get_ekc_class(keycode);
+    uint16_t keycode_class = get_ekc_type(keycode);
 
     while ( (callback = g_keyhandler_list[callback_num++]) ) {
         if (!dongle_active && !callback->active_when_disabled) {

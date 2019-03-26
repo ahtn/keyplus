@@ -307,6 +307,9 @@ typedef enum special_keycode_t {
     // tap and hold
     KC_MACRO                   = KC_SPECIAL_START | 0x1002,
     KC_MACRO_UP_AND_DOWN       = KC_SPECIAL_START | 0x1003,
+
+    // mouse gestures
+    KC_MOUSE_GESTURE           = KC_SPECIAL_START | 0x1004,
 } special_keycode_t;
 
 // enum values for mods
@@ -403,4 +406,4 @@ extern XRAM flash_ptr_t g_ekc_storage_ptr;
 extern XRAM uint32_t g_ekc_storage_size;
 
 uint8_t get_ekc_data(void *dest, uint16_t offset, uint16_t size) REENT;
-keycode_t get_ekc_class(keycode_t kc);
+keycode_t get_ekc_type(keycode_t kc);

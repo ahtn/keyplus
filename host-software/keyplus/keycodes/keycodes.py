@@ -425,6 +425,9 @@ KC_HOLD_KEY                = KC_SPECIAL_START | 0x1001
 KC_MACRO                   = KC_SPECIAL_START | 0x1002
 KC_MACRO_UP_AND_DOWN       = KC_SPECIAL_START | 0x1003
 
+# mouse gesture
+KC_MOUSE_GESTURE           = KC_SPECIAL_START | 0x1004
+
 def generate_modkey(kc, ctrl=False, shift=False, alt=False, gui=False, right=False, force=False):
     mod_mask = 0
 

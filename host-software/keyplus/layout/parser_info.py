@@ -152,12 +152,13 @@ class KeyplusParserInfo(object):
 
             if not has_matching_type:
                 raise KeyplusParseError(
-                    "Expected an '{}' for '{}' but got '{}' which is a '{}'"
-                    .format(
-                        field_type,
+                    "In {}, for the field '{}' got value '{}' of type '{}'. But "
+                    "expected type(s): {}".format(
+                        self.get_current_path(),
                         field,
                         value,
-                        type(value)
+                        type(value),
+                        field_type,
                     )
                 )
 

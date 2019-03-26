@@ -23,6 +23,7 @@
 
 /* #include "core/.h" */
 
+
 // NOTE: For uniyfing devices to work, we need to dedicated at least 2 pipes
 // for the device. These two pipes have the form:
 // X0 = XX:XX:XX:XX:00
@@ -33,6 +34,7 @@
 // disconnects, it will go back to pinging X0.
 
 #define UNIFYING_ADDR_WIDTH 5
+
 
 // TODO: should move this to an init function
 XRAM unifying_mouse_state_t g_unifying_mouse_state = {0};
@@ -166,7 +168,7 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
                     // report->function_id = HIDPP20_SpecialKeysMSEButtons_GetCidInfo;
                     // report->function_id = HIDPP20_SpecialKeysMSEButtons_GetCidReporting;
                     report->function_id = HIDPP20_SpecialKeysMSEButtons_SetCidReporting;
-                    report->software_id = 0x0E;
+                    report->software_id = KEYPLUS_HIDPP_SOFTWARE_ID;
 
                     report->parameters[0] = (cid>>8) & 0xff  ;
                     report->parameters[1] = (cid>>0) & 0xff;
@@ -244,12 +246,14 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
             unifying_hidpp20_diverted_buttons_t *report = (void*)nrf_packet;
 
             // Forward the packet to the USB data stream
-            queue_vendor_in_packet(
-                CMD_UNIFYING_RECV_LONG,
-                nrf_packet + 2,
-                20 - 1,
-                STATIC_LENGTH_CMD
-            );
+            if (report->software_id != KEYPLUS_HIDPP_SOFTWARE_ID) {
+                queue_vendor_in_packet(
+                    CMD_UNIFYING_RECV_LONG,
+                    nrf_packet + 2,
+                    20 - 1,
+                    STATIC_LENGTH_CMD
+                );
+            }
 
             // TODO: make this generic, currently only works for m720
             if (report->feature_index != 0x0b && report->function_id != 0) {
@@ -307,6 +311,69 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
     }
 }
 
+void gesture_init(void) {
+
+}
+
+void gesture_press(uint16_t ekc_addr, uint8_t kb_id) {
+    if (s_gesture.state == GESTURE_STATE_INACTIVE) {
+        s_gesture.x = 0;
+        s_gesture.y = 0;
+        s_gesture.state = GESTURE_STATE_SCANNING;
+        s_gesture.ekc_addr = ekc_addr;
+        s_gesture.kb_id = kb_id;
+        get_ekc_data(&s_gesture.threshold, s_gesture.ekc_addr, sizeof(uint16_t)*3);
+    }
+}
+
+void gesture_release(uint16_t ekc_addr, uint8_t kb_id) {
+    switch (s_gesture.state) {
+        case GESTURE_STATE_SCANNING: {
+            if (
+                (abs(s_gesture.x) < s_gesture.threshold_tap) &&
+                (abs(s_gesture.y) < s_gesture.threshold_tap)
+            ) {
+                USB_PRINT_TEXT("gesture tap\n");
+            }
+            s_gesture.state = GESTURE_STATE_INACTIVE;
+        } break;
+        case GESTURE_STATE_ACTIVATED: {
+            queue_keycode_event(s_gesture.triggered_kc, EVENT_RELEASED, s_gesture.kb_id);
+            s_gesture.state = GESTURE_STATE_INACTIVE;
+        } break;
+    }
+}
+
+void trigger_gesture(uint8_t gesture_type) {
+    // Gesture EKC data layout:
+    //
+    // typedef struct ekc_gesture_t {
+    // 00:  uint16_t threshold;
+    // 02:  uint16_t threshold_diag;
+    // 04:  uint16_t threshold_tap;
+    // 06:  keycode_t left;
+    // 08:  keycode_t right;
+    // 0A:  keycode_t up;
+    // 0C:  keycode_t down;
+    // 1E:  keycode_t up_left;
+    // 10:  keycode_t up_right;
+    // 12:  keycode_t down_left;
+    // 14:  keycode_t down_right;
+    // 16:  keycode_t tap;
+    // } ekc_gesture_t;
+    keycode_t gesture_kc;
+    get_ekc_data(
+        &gesture_kc,
+        s_gesture.ekc_addr + EKC_GESTURE_LEFT_ADDR + gesture_type*2,
+        sizeof(keycode_t)
+    );
+
+    queue_keycode_event(gesture_kc, EVENT_PRESSED, s_gesture.kb_id);
+
+    s_gesture.state = GESTURE_STATE_ACTIVATED;
+    s_gesture.triggered_kc = gesture_kc;
+}
+
 void unifying_mouse_handle(void) {
     if (!g_unifying_mouse_activity) {
         return;
@@ -337,71 +404,37 @@ void unifying_mouse_handle(void) {
     }
 
     // Gesture handling
-    if (g_unifying_mouse_state.buttons_1 & 0x80) {
-        switch (s_gesture.state) {
-            case GESTURE_STATE_INACTIVE: {
-                s_gesture.state = GESTURE_STATE_SCANNING;
-                // USB_PRINT_TEXT("start gesture scanning: ");
-            } break;
+    // if (g_unifying_mouse_state.buttons_1 & 0x80) {
+    switch (s_gesture.state) {
+        case GESTURE_STATE_SCANNING: {
+            s_gesture.x += g_unifying_mouse_state.x;
+            s_gesture.y += g_unifying_mouse_state.y;
 
-            case GESTURE_STATE_SCANNING: {
-                s_gesture.x += g_unifying_mouse_state.x;
-                s_gesture.y += g_unifying_mouse_state.y;
-
-                // trigger threshold
-                if (s_gesture.x > GESTURE_THRESHOLD) {
-                    USB_PRINT_TEXT("gesture right\n");
-                    s_gesture.state = GESTURE_STATE_ACTIVATED;
-                } else if (s_gesture.x < -GESTURE_THRESHOLD) {
-                    USB_PRINT_TEXT("gesture left\n");
-                    s_gesture.state = GESTURE_STATE_ACTIVATED;
-                } else if (s_gesture.y >  GESTURE_THRESHOLD) {
-                    USB_PRINT_TEXT("gesture down\n");
-                    s_gesture.state = GESTURE_STATE_ACTIVATED;
-                } else if (s_gesture.y < -GESTURE_THRESHOLD) {
-                    USB_PRINT_TEXT("gesture up\n");
-                    s_gesture.state = GESTURE_STATE_ACTIVATED;
+            // trigger threshold
+            if (s_gesture.x < -s_gesture.threshold) {
+                trigger_gesture(GESTURE_LEFT);
+            } else if (s_gesture.x > s_gesture.threshold) {
+                trigger_gesture(GESTURE_RIGHT);
+            } else if (s_gesture.y < -s_gesture.threshold) {
+                trigger_gesture(GESTURE_UP);
+            } else if (s_gesture.y >  s_gesture.threshold) {
+                trigger_gesture(GESTURE_DOWN);
+            } else {
+                uint8_t has_pos_x = s_gesture.x >  s_gesture.threshold_diag;
+                uint8_t has_neg_x = s_gesture.x < -s_gesture.threshold_diag;
+                uint8_t has_pos_y = s_gesture.y >  s_gesture.threshold_diag;
+                uint8_t has_neg_y = s_gesture.y < -s_gesture.threshold_diag;
+                if (has_neg_x && has_neg_y) {
+                    trigger_gesture(GESTURE_UP_LEFT);
+                } else if (has_pos_x && has_neg_y) {
+                    trigger_gesture(GESTURE_UP_RIGHT);
+                } else if (has_neg_x && has_pos_y) {
+                    trigger_gesture(GESTURE_DOWN_LEFT);
+                } else if (has_pos_x && has_pos_y) {
+                    trigger_gesture(GESTURE_DOWN_RIGHT);
                 }
-                {
-                    uint8_t has_pos_x = s_gesture.x >  GESTURE_THRESHOLD_DIAG;
-                    uint8_t has_neg_x = s_gesture.x < -GESTURE_THRESHOLD_DIAG;
-                    uint8_t has_pos_y = s_gesture.y >  GESTURE_THRESHOLD_DIAG;
-                    uint8_t has_neg_y = s_gesture.y < -GESTURE_THRESHOLD_DIAG;
-                    if (has_pos_x && has_neg_y) {
-                        USB_PRINT_TEXT("gesture right up\n");
-                        s_gesture.state = GESTURE_STATE_ACTIVATED;
-                    } else if (has_pos_x && has_pos_y) {
-                        USB_PRINT_TEXT("gesture right down\n");
-                        s_gesture.state = GESTURE_STATE_ACTIVATED;
-                    } else if (has_neg_x && has_neg_y) {
-                        USB_PRINT_TEXT("gesture left  up\n");
-                        s_gesture.state = GESTURE_STATE_ACTIVATED;
-                    } else if (has_neg_x && has_pos_y) {
-                        USB_PRINT_TEXT("gesture left  down\n");
-                        s_gesture.state = GESTURE_STATE_ACTIVATED;
-                    }
-                }
-            } break;
-        }
-    } else {
-        switch (s_gesture.state) {
-            case GESTURE_STATE_SCANNING: {
-                // pressed but not triggered
-                if (
-                    (abs(s_gesture.x) < GESTURE_THRESHOLD_TAP) &&
-                    (abs(s_gesture.y) < GESTURE_THRESHOLD_TAP)
-                ) {
-                    USB_PRINT_TEXT("gesture tap\n");
-                }
-            } break;
-            case GESTURE_STATE_ACTIVATED: {
-                // pressed but not triggered
-                // USB_PRINT_TEXT("gesture released\n");
-            } break;
-        }
-        s_gesture.state = GESTURE_STATE_INACTIVE;
-        s_gesture.x = 0;
-        s_gesture.y = 0;
+            }
+        } break;
     }
 
     g_unifying_mouse_activity = 0;

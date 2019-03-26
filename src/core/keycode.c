@@ -10,7 +10,7 @@
 XRAM flash_ptr_t g_ekc_storage_ptr;
 XRAM uint32_t g_ekc_storage_size;
 
-keycode_t get_ekc_class(keycode_t kc) {
+keycode_t get_ekc_type(keycode_t kc) {
     if (kc & KC_EXTERNAL_FLAG) {
         keycode_t result;
         uint16_t addr = EKC_ADDR(kc);

@@ -14,14 +14,14 @@ bit_t is_macro_keycode(keycode_t keycode) {
 }
 
 void handle_macro_keycodes(keycode_t keycode, key_event_t event) REENT {
-    uint16_t kc_class = get_ekc_class(keycode);
+    uint16_t kc = get_ekc_type(keycode);
     uint16_t ekc_addr = EKC_DATA_ADDR(keycode);
 
-    if (kc_class == KC_MACRO) {
+    if (kc == KC_MACRO) {
         if (event == EVENT_PRESSED) {
             call_macro(ekc_addr);
         }
-    } else if (kc_class == KC_MACRO_UP_AND_DOWN) {
+    } else if (kc == KC_MACRO_UP_AND_DOWN) {
         // External data for `KC_MACRO_UP_AND_DOWN` looks like this:
         // uint16_t up_macro_address;
         // uint8_t press_macro_data[]

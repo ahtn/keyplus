@@ -5,13 +5,15 @@
 
 #include <string.h>
 
+#include "core/matrix_interpret.h"
 #include "core/timer.h"
+#include "core/unifying.h"
 
 #include "usb_reports/mouse_report.h"
 
 // /* TODO: mouse keycode */
 bit_t is_mouse_keycode(keycode_t keycode) {
-    return IS_MOUSEKEY(keycode);
+    return IS_MOUSEKEY(keycode) || keycode == KC_MOUSE_GESTURE;
 }
 
 #define MOUSE_SPEED 10
@@ -41,12 +43,15 @@ static XRAM uint8_t s_relased_buttons;
 static XRAM uint8_t s_num_mouse_keys_to_release;
 
 /* TODO: proper mouse handling */
-void handle_mouse_keycode(keycode_t kc, key_event_t event) REENT {
+void handle_mouse_keycode(keycode_t ekc, key_event_t event) REENT {
+    keycode_t kc = get_ekc_type(ekc);
+
     if (event == EVENT_RESET) {
         s_mouse_keys = 0;
         s_relased_buttons = 0;
         s_num_mouse_keys_down = 0;
         s_num_mouse_keys_to_release = 0;
+        gesture_init();
         return;
     }
 
@@ -91,6 +96,14 @@ void handle_mouse_keycode(keycode_t kc, key_event_t event) REENT {
                 case KC_MOUSE_WH_RIGHT: { s_mouse_keys &= ~MOUSE_KEY_WHEEL_RIGHT; } break;
             }
             s_num_mouse_keys_to_release += 1;
+        }
+    } else if (kc == KC_MOUSE_GESTURE) {
+        // Mouse gesture
+        uint8_t kb_id = get_active_keyboard_id();
+        if (event == EVENT_PRESSED) {
+            gesture_press(EKC_DATA_ADDR(ekc), kb_id);
+        } else {
+            gesture_release(EKC_DATA_ADDR(ekc), kb_id);
         }
     }
 }
