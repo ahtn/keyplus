@@ -9,17 +9,43 @@
 
 typedef uint16_t keycode_t;
 
+// 0000_0000_xxxx_xxxx -> Normal USB HID keycodes
+// 0000_mmmm_xxxx_xxxx -> HID keycode + left modifier
+// 0001_mmmm_xxxx_xxxx -> HID keycode + right modifier
+// 0010_mmmm_xxxx_xxxx -> HID keycode + left modifier (forced)
+// 0010_mmmm_xxxx_xxxx -> HID keycode + right modifier (forced)
+// 0100_xxxx_xxxx_xxxx -> Special keycode
+//
+// TODO:
+// 0101_xxxx_xxxx_xxxx -> Macro command
+//
+// ... reserved
+//
+// 1AAA_AAAA_AAAA_AAAA -> External keycode address
+
+#define KC_TYPE_BIT_POS 12
+
 typedef enum keycode_type_t {
-    KC_TYPE_L_MODKEY = 0b00,
-    KC_TYPE_R_MODKEY = 0b01,
+    KC_TYPE_L_MODKEY = 0b0000,
+    KC_TYPE_R_MODKEY = 0b0001,
     // TODO: should probably remove force and just make it the default
     // behaviour for modkeys since it seems like the more logical behaviour
-    KC_TYPE_L_MODKEY_FORCE = 0b10,
-    KC_TYPE_R_MODKEY_FORCE = 0b11,
-    KC_TYPE_SPECIAL = 0b100,
+    KC_TYPE_L_MODKEY_FORCE = 0b0010,
+    KC_TYPE_R_MODKEY_FORCE = 0b0011,
 
-    KC_TYPE_EXTERNAL = 0b1000,
+    KC_TYPE_SPECIAL = 0b0100,
+    KC_TYPE_SPECIAL2 = 0b0101,
+
+    KC_TYPE_MACRO_COMMAND = 0b0110,
 } keycode_type_t;
+
+#define KC_TYPE_L_MODKEY_MASK       (KC_TYPE_L_MODKEY << KC_TYPE_BIT_POS)
+#define KC_TYPE_R_MODKEY_MASK       (KC_TYPE_R_MODKEY << KC_TYPE_BIT_POS)
+#define KC_TYPE_L_MODKEY_FORCE_MASK (KC_TYPE_L_MODKEY_FORCE << KC_TYPE_BIT_POS)
+#define KC_TYPE_R_MODKEY_FORCE_MASK (KC_TYPE_R_MODKEY_FORCE << KC_TYPE_BIT_POS)
+#define KC_TYPE_SPECIAL_MASK        (KC_TYPE_SPECIAL << KC_TYPE_BIT_POS)
+#define KC_TYPE_MACRO_COMMAND_MASK  (KC_TYPE_MACRO_COMMAND << KC_TYPE_BIT_POS)
+#define KC_TYPE_EXTERNAL_MASK       (0KC_TYPE_EXTERNAL << KC_TYPE_BIT_POS)
 
 /*********************************************************************
  *                         external keycodes                         *
@@ -36,7 +62,7 @@ typedef enum keycode_type_t {
 #define KC_EXTERNAL_FLAG (1<<15)
 #define KC_EXTERNAL_ADDR_MASK (~(1<<15))
 
-#define KC_SPECIAL_START (KC_TYPE_SPECIAL<<12)
+#define KC_SPECIAL_START (KC_TYPE_SPECIAL<<KC_TYPE_BIT_POS)
 
 #define KC_EXTERNAL(addr) ((KC_EXTERNAL_FLAG | (addr & KC_EXTERNAL_ADDR_MASK)))
 

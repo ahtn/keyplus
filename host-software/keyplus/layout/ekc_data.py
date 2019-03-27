@@ -10,6 +10,7 @@ from hexdump import hexdump
 from keyplus.layout.parser_info import KeyplusParserInfo
 from keyplus.exceptions import *
 
+import re
 import keyplus.keycodes as keycodes
 
 class EKCData(object):
@@ -277,11 +278,85 @@ class EKCHoldKey(EKCData):
             for warn in parser_info.warnings:
                 print(warn, file=sys.stderr)
 
+class EKCMacroKey(EKCData):
+    # Data: {
+    #    0x00:    KC_MACRO
+    #    0x02..:  macro data (varing size)
+    # }
+    KEYCODE_TYPE = 'macro'
 
-class EKCMacroRepeatKey(EKCData):
-    pass
+    def __init__(self):
+        self._commands = []
 
-# class EKCMacro(EKCData):
+        self._macro_regexes = [
+            (re.compile("macro_finish"), keycodes.MACRO_CMD_FINISH),
+            (re.compile("set_rate\((\d+)\)"), keycodes.MACRO_CMD_SET_RATE),
+        ]
+
+    def size(self):
+        # KC_MACRO + FINISH
+        # return len(self._commands)*2 + 2 + 2
+        return len(self.to_bytes())
+
+    def parse_macro_command(self, command):
+        for cmd_info in self._macro_regexes:
+            match = cmd_info[0].match(command)
+            if match:
+                return (cmd_info[1], match.groups())
+        return None
+
+    def to_bytes(self):
+        result = bytearray()
+
+        result += struct.pack("< H", keycodes.KC_MACRO)
+
+        for cmd in self._commands:
+
+            cmd_info = self.parse_macro_command(cmd)
+            if cmd_info:
+                result += struct.pack("< H", cmd_info[0])
+                if cmd_info:
+                    for cmd_data in cmd_info[1]:
+                        result += struct.pack("< H", int(cmd_data))
+            else:
+                result += struct.pack("< H", self.kc_map_function(cmd))
+
+        result += struct.pack("< H", 0x6003)
+
+        return result
+
+    def parse_json(self, kc_name, json_obj=None, parser_info=None):
+
+        print_warnings = False
+
+        if parser_info == None:
+            assert(json_obj != None)
+            print_warnings = True
+            parser_info = KeyplusParserInfo(
+                "<EKCMacroKey Dict>",
+                {kc_name : json_obj}
+            )
+
+        parser_info.enter(kc_name)
+
+        # Get the tap key field
+        self.keycode = parser_info.try_get('keycode', field_type=str)
+        assert_equal(self.keycode, self.KEYCODE_TYPE)
+
+        # Get movement thresholds for gestures
+        self._commands = parser_info.try_get(
+            'commands',
+            field_type=list,
+            default=EKCMouseGestureKey.GESTURE_THRESHOLD
+        )
+
+        # Finish parsing `device_name`
+        parser_info.exit()
+
+        # If this is debug code, print the warnings
+        if print_warnings:
+            for warn in parser_info.warnings:
+                print(warn, file=sys.stderr)
 
 #     def __init__(self, macro_data):
 #         ekc_format = bytearray()
@@ -290,6 +365,9 @@ class EKCMacroRepeatKey(EKCData):
 #             if type(item) == dict:
 #                 event_type = item[event]
 #             elif type(item) == str:
+
+class EKCMacroRepeatKey(EKCData):
+    pass
 
 
 class EKCDataTable(EKCData):
@@ -330,6 +408,7 @@ class EKCDataTable(EKCData):
 EKCKeycodeTable = {
     'hold': EKCHoldKey,
     'mouse_gesture': EKCMouseGestureKey,
+    'macro': EKCMacroKey,
 }
 
 if __name__ == '__main__':

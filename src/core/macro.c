@@ -5,8 +5,9 @@
 
 #include <string.h>
 
-#include "core/layout.h"
 #include "core/hardware.h"
+#include "core/layout.h"
+#include "core/matrix_interpret.h"
 #include "core/timer.h"
 
 #include "key_handlers/key_normal.h"
@@ -15,6 +16,7 @@
 #include "usb_reports/mouse_report.h"
 
 
+#if 0
 static void blocking_send_boot_report(void) {
     // wait for boot report to be ready for next keycode
     while (!is_ready_boot_keyboard_report()) {
@@ -33,6 +35,7 @@ static void blocking_send_mouse_report(void) {
     g_report_pending_mouse = true;
     send_mouse_report();
 }
+#endif
 
 /*********************************************************************
  *                        macro repeat stack                         *
@@ -41,6 +44,7 @@ static void blocking_send_mouse_report(void) {
 static XRAM uint16_t repeat_stack[REPEAT_STACK_SIZE];
 static XRAM uint8_t repeat_stack_ptr;
 
+#if 0
 static uint8_t macro_stack_push(uint16_t x) {
     if (repeat_stack_ptr < (REPEAT_STACK_SIZE-1)) {
         repeat_stack[++repeat_stack_ptr] = x;
@@ -60,28 +64,33 @@ static void macro_stack_pop(void) {
         repeat_stack_ptr--;
     }
 }
+#endif
 
 /*********************************************************************
  *                       macro state variables                       *
  *********************************************************************/
 
 static XRAM uint16_t macro_rate;
+static XRAM uint16_t macro_clear_rate;
 static XRAM uint16_t data_offset;
 static XRAM uint8_t saved_report_mode;
 static XRAM uint8_t is_macro_running;
 static XRAM uint32_t macro_delay_start;
 static XRAM uint8_t macro_delay;
-static XRAM uint8_t macro_clear;
+static XRAM keycode_t macro_clear_kc;
+static XRAM uint8_t macro_kb_id;
 
 // TODO: should probably use the default report mode
-void call_macro(uint16_t ekc_addr) {
+void call_macro(uint16_t ekc_addr, uint8_t kb_id) {
     if (!is_macro_running) {
         is_macro_running = true;
         data_offset = ekc_addr;
-        macro_rate = 0;
+        macro_rate = 2;
+        macro_clear_rate = 2;
         repeat_stack_ptr = 0;
         macro_delay = 0;
-        macro_clear = 0;
+        macro_clear_kc = KC_NONE;
+        macro_kb_id = kb_id;
         macro_delay_start = timer_read_ms();
         saved_report_mode = get_keyboard_report_mode();
 
@@ -111,38 +120,21 @@ static uint8_t macro_step(void) REENT {
     if (err) return 0;
 
     tag = GET_MACRO_TAG(keycode);
-    keycode &= ~MACRO_TAG_MASK;
+    // keycode &= ~MACRO_TAG_MASK;
 
     if (modkey_keycodes.checker(keycode)) {
-        uint8_t hid_kc = MODKEY_KEYCODE(keycode);
-        uint8_t mods = MODKEY_MODS(keycode);
-
-        while (!is_ready_boot_keyboard_report()) {
-            idle_sleep();
-        }
-
-        if (tag == MACRO_TAG_KEY_SEND) {
-            reset_keyboard_reports();
-
-            if (hid_kc == g_boot_keyboard_report.keys[0]) {
-                g_boot_keyboard_report.keys[0] = 0;
-                blocking_send_boot_report();
-            }
-
-            g_boot_keyboard_report.keys[0] = hid_kc;
-            g_boot_keyboard_report.modifiers = mods;
-            blocking_send_boot_report();
-            macro_clear = true;
-        } else if (tag == MACRO_TAG_KEY_PRESS) {
-            boot_add_keycode(hid_kc);
-            g_boot_keyboard_report.modifiers |= mods;
-            blocking_send_boot_report();
-        } else if (tag == MACRO_TAG_KEY_RELEASE) {
-            boot_del_keycode(hid_kc);
-            g_boot_keyboard_report.modifiers &= ~mods;
-            blocking_send_boot_report();
-        }
+        queue_keycode_event(keycode, EVENT_PRESSED, macro_kb_id);
+        macro_clear_kc = keycode;
         return 0;
+    } else if (keycode == MACRO_CMD_FINISH) {
+        macro_abort();
+        return 0;
+    } else if (keycode == MACRO_CMD_SET_RATE) {
+        err = macro_get_data((uint8_t*)&macro_rate, sizeof(macro_rate));
+        if (err) return 0;
+        return 1;
+    }
+#if 0
     } else if (keycode == MACRO_CMD_REPEAT_BLOCK) {
         uint16_t repeat_count;
         err = macro_get_data((uint8_t*)&repeat_count, sizeof(uint16_t));
@@ -165,14 +157,8 @@ static uint8_t macro_step(void) REENT {
             macro_stack_pop();
         }
         return 1;
-    } else if (keycode == MACRO_CMD_SET_RATE) {
-        err = macro_get_data((uint8_t*)&macro_rate, sizeof(macro_rate));
-        if (err) return 0;
-        return 1;
     } else if (keycode == MACRO_CMD_WAIT) {
         return 1;
-    } else if (keycode == MACRO_CMD_FINISH) {
-        macro_abort();
     } else if (keycode == MACRO_CMD_MOUSE_SET_POS) {
         uint16_t pos_xy;
         err = macro_get_data((uint8_t*)&pos_xy, sizeof(pos_xy));
@@ -195,6 +181,7 @@ static uint8_t macro_step(void) REENT {
     } else {
         // skip other keycodes
     }
+#endif
     return 0;
 }
 
@@ -203,15 +190,19 @@ void macro_task(void) {
         return;
     }
 
-    if (macro_clear) {
-        reset_keyboard_reports();
-        blocking_send_boot_report();
-        macro_clear = false;
+    {
+        uint32_t elapsed_time = (uint32_t)(timer_read_ms() - macro_delay_start);
+        if (macro_clear_kc != KC_NONE && elapsed_time >= macro_clear_rate) {
+            queue_keycode_event(macro_clear_kc, EVENT_RELEASED, macro_kb_id);
+            macro_clear_kc = KC_NONE;
+        }
+
+        if (elapsed_time >= macro_rate) {
+            while ( macro_step() );
+        }
     }
 
-    if ((uint32_t)(timer_read_ms() - macro_delay_start) >= macro_rate) {
-        while ( macro_step() );
-    }
+    interpret_all_keyboard_matrices();
 }
 
 void macro_abort(void) {
@@ -219,13 +210,13 @@ void macro_abort(void) {
         return;
     }
 
-    reset_keyboard_reports();
-    reset_mouse_report();
+    // reset_keyboard_reports();
+    // reset_mouse_report();
 
-    send_boot_keyboard_report();
+    // send_boot_keyboard_report();
 
-    // restore the keyboard report mode
-    set_keyboard_report_mode(saved_report_mode);
+    // // restore the keyboard report mode
+    // set_keyboard_report_mode(saved_report_mode);
 
     is_macro_running = false;
 }

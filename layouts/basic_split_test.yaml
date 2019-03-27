@@ -339,6 +339,25 @@ keycodes:
     # threshold_tap: 30
     threshold_tap: 0
 
+  macro1:
+    keycode: macro
+    commands:
+      - a
+      - b
+      - c
+      - set_rate(1000)
+      - none
+      - d
+      - e
+      - f
+      # - d
+      # - c-u
+      # - e
+      # - f
+      # - g
+      # - h
+
+
   # space_fn:
   #   keycode: hold
   #   delay: 200
@@ -475,7 +494,7 @@ layouts:
     layers: [
       [ # layer 0 (colemak)
         [ # mouse
-          BTN1, BTN2, BTN3, BSPC, L5  , s_lsft, s_L4  , gesture
+          BTN1, BTN2, BTN3, macro1, L5  , s_lsft, s_L4  , gesture
         ],
         [ # left hand
           tab , q   , w   , f   , p   , g   ,

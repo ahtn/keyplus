@@ -428,6 +428,22 @@ KC_MACRO_UP_AND_DOWN       = KC_SPECIAL_START | 0x1003
 # mouse gesture
 KC_MOUSE_GESTURE           = KC_SPECIAL_START | 0x1004
 
+
+# Special macro keycodes
+KC_MACRO_CMD_START_ADDR     = 0x6000
+
+MACRO_CMD_REPEAT_BLOCK      = KC_MACRO_CMD_START_ADDR | 0x00
+MACRO_CMD_REPEAT_JMP        = KC_MACRO_CMD_START_ADDR | 0x01
+MACRO_CMD_SET_RATE          = KC_MACRO_CMD_START_ADDR | 0x02
+MACRO_CMD_FINISH            = KC_MACRO_CMD_START_ADDR | 0x03
+MACRO_CMD_WAIT              = KC_MACRO_CMD_START_ADDR | 0x04
+
+# macro mouse control commands
+MACRO_CMD_MOUSE_SET_POS     = KC_MACRO_CMD_START_ADDR | 0x10
+MACRO_CMD_MOUSE_SET_WHEEL   = KC_MACRO_CMD_START_ADDR | 0x11
+MACRO_CMD_MOUSE_SET_BUTTONS = KC_MACRO_CMD_START_ADDR | 0x12
+MACRO_CMD_MOUSE_CLEAR       = KC_MACRO_CMD_START_ADDR | 0x13
+
 def generate_modkey(kc, ctrl=False, shift=False, alt=False, gui=False, right=False, force=False):
     mod_mask = 0
 

@@ -5,6 +5,8 @@
 
 #include "core/flash.h"
 
+#include "core/keycode.h"
+
 #define MACRO_TAG_BIT_POS (13)
 #define MACRO_TAG_MASK (0b11 << MACRO_TAG_BIT_POS)
 #define GET_MACRO_TAG(x) (((x) >> MACRO_TAG_BIT_POS) & 0b11)
@@ -22,7 +24,8 @@ enum {
 
 // we don't allow extended keycodes in macros, so we use the region that they
 // occupy for macro controls
-#define KC_MACRO_CMD_START_ADDR 0x8000
+// TODO: probably should allow extended keycodes in macros
+#define KC_MACRO_CMD_START_ADDR (KC_TYPE_MACRO_COMMAND_MASK)
 
 enum {
     MACRO_CMD_REPEAT_BLOCK      = KC_MACRO_CMD_START_ADDR | 0x00,
@@ -39,5 +42,5 @@ enum {
 };
 
 void macro_task(void);
-void call_macro(uint16_t ekc_addr);
+void call_macro(uint16_t ekc_addr, uint8_t kb_id);
 void macro_abort(void);
