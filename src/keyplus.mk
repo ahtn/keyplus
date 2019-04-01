@@ -4,7 +4,7 @@
 MAKEFILE_INC += $(KEYPLUS_PATH)/keyplus.mk
 
 LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
-MERGED_HEX="$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex"
+MERGED_HEX=$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex
 
 all: print_keyplus_info $(MERGED_HEX)
 

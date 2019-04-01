@@ -49,8 +49,8 @@ static void unlock_usb_commands(void) {
 }
 
 static void lock_usb_commands(void) {
-//     s_usb_commands_in_progress = true;
-    s_usb_commands_in_progress = false;
+    s_usb_commands_in_progress = true;
+    // s_usb_commands_in_progress = false;
 }
 
 #ifndef NO_MATRIX
@@ -297,7 +297,7 @@ static void cmd_get_info(void) {
     send_vendor_report();
 }
 
-static void parse_cmd(void) {
+static void parse_cmd(void) REENT {
     const uint8_t cmd = g_vendor_report_out.data[0];
     const uint8_t data1 = g_vendor_report_out.data[1];
     const uint8_t data2 = g_vendor_report_out.data[2];
@@ -405,8 +405,8 @@ static void parse_cmd(void) {
         /// byte5-8: end address for flash erase
         case CMD_UPDATE_LAYOUT: {
 #if __SDCC_mcs51
-            XRAM flash_addr_t start = read_u16le(g_vendor_report_out.data+1);
-            XRAM flash_addr_t end = read_u16le(g_vendor_report_out.data+5);
+            static XRAM flash_addr_t start = read_u16le(g_vendor_report_out.data+1);
+            static XRAM flash_addr_t end = read_u16le(g_vendor_report_out.data+5);
 #else
             XRAM flash_addr_t start = read_u32le(g_vendor_report_out.data+1);
             XRAM flash_addr_t end = read_u32le(g_vendor_report_out.data+5);

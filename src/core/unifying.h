@@ -142,7 +142,7 @@ typedef union unifying_packet_t {
 
 typedef struct unifying_mouse_state_t {
     uint8_t buttons_1;
-    uint8_t buttons_2;
+    uint8_t buttons_2; // probably don't need this
     int16_t x;
     int16_t y;
     int8_t wheel_x;
@@ -333,7 +333,7 @@ uint8_t unifying_calc_checksum(const XRAM uint8_t *data, const uint8_t len);
 
 void unifying_send_packet(const XRAM uint8_t *data, uint8_t size);
 void unifying_read_packet(const uint8_t XRAM *nrf_packet, uint8_t width);
-void unifying_mouse_handle(void);
+void unifying_mouse_handle(void) REENT;
 void unifying_begin_pairing(void);
 void unifying_pairing_poll(void);
 

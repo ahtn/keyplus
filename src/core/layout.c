@@ -54,6 +54,9 @@ XRAM flash_addr_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
 #define KC_HOLD_1  KC_EXTERNAL(48)
 #define KC_ENT_SFT KC_EXTERNAL(58)
 
+#define EXTENDED_KEYCODES0() \
+    _16(00ULL), \
+
 #define EXTENDED_KEYCODES() \
     _16(68ULL), \
     _16(KC_MACRO), \
@@ -63,7 +66,7 @@ XRAM flash_addr_t g_layout_storage_pos[MAX_NUM_KEYBOARDS];
     _16(KC_MACRO), \
     _16(KC_B), _16(KC_Y), _16(KC_E), \
     _16(MACRO_CMD_FINISH), \
-    _16(KC_MACRO_UP_AND_DOWN), \
+    _16(KC_MACRO), \
     _16(42), \
     _16(KC_B), \
     _16(MACRO_CMD_FINISH), \
@@ -219,7 +222,7 @@ AT__LAYOUT_ADDR const uint8_t g_layout_storage[] = {
 // key number map section
     KEY_NUMBER_MAP()
 // extended keycode section
-    EXTENDED_KEYCODES()
+    EXTENDED_KEYCODES0()
 // layout section
 #ifndef NO_USB
     /* colemak L0 */
@@ -400,11 +403,13 @@ void keyboard_layouts_init(void) {
 
     // layout section
     {
+       uint8_t num_layouts;
+
        storage_pos += LAYOUT_HEADER_SIZE;
 #if NO_SPLIT
         g_layout_storage_pos[0] = storage_pos;
 #else
-        uint8_t num_layouts = GET_SETTING(layout.number_layouts);
+        num_layouts = GET_SETTING(layout.number_layouts);
         g_layout_storage_pos[0] = storage_pos;
 
         if (num_layouts > MAX_NUM_KEYBOARDS) {

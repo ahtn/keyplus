@@ -12,10 +12,10 @@ from keyplus.exceptions import *
 from keyplus.debug import DEBUG
 from colorama import Style
 
-class Warning(object):
+class KeyplusWarning(object):
     pass
 
-class UnusedValueWarning(Warning):
+class KeyplusUnusedValueWarning(KeyplusWarning):
     def __init__(self, path_name, values):
         self.path_name = path_name
         self.values = values
@@ -26,18 +26,43 @@ class UnusedValueWarning(Warning):
             )
         )
 
+class KeyplusKeycodeWarning(KeyplusWarning):
+    def __init__(self, path_name, keycode_name):
+        self.path_name = path_name
+        self.keycode_name = keycode_name
+
+    def __str__(self):
+        return ("in {}, ignoring keycode '{}'".format(
+                self.path_name, self.keycode_name)
+        )
+
+class IgnoredValueWarning(KeyplusWarning):
+    def __init__(self, path_name, value):
+        self.path_name = path_name
+        self.value = value
+
+    def __str__(self):
+        return ("in {}, ignoring '{}'".format(
+                self.path_name, ', '.join(self.values)
+            )
+        )
+
 class KeyplusParserInfo(object):
-    def __init__(self, dict_name, dictionary, print_warnings=False):
+    def __init__(self, dict_name=None, dictionary=None, print_warnings=False):
         self.property_stack = []
 
         self.current_field = dict_name
-        self.current_obj = dictionary
+        self.current_obj = dictionary or {}
         self.untouched_fields = list(self.current_obj.keys())
 
         self.last_field = None
 
         self.warnings = []
         self.print_warnings = print_warnings
+
+    def set_parse_object(self, name, obj):
+        self.current_field = name
+        self.current_obj = obj
 
     def touch_field(self, field):
         if DEBUG.parsing:
@@ -86,7 +111,7 @@ class KeyplusParserInfo(object):
 
         if len(self.untouched_fields) != 0:
             self.warnings.append(
-                UnusedValueWarning(
+                KeyplusUnusedValueWarning(
                     self.get_current_path(),
                     self.untouched_fields
                 )
@@ -107,6 +132,30 @@ class KeyplusParserInfo(object):
 
         if DEBUG.parsing:
             self._debug_message("Exit field({})".format(old_field))
+
+    def add_warning(self, kind, *args):
+        if not issubclass(kind, KeyplusWarning):
+            raise KeyplusInternalError("Unexpected warning type")
+
+        warning = kind(self.get_current_path(), *args)
+
+        if self.print_warnings:
+            print(
+                WARN_COLOR + "Warning: " + Style.RESET_ALL + str(warning),
+                file=sys.stderr
+            )
+            return
+
+        self.warnings.append(kind(self.get_current_path(), *args))
+
+    def raise_exception(self, message):
+        raise KeyplusParseError(
+            "{}: {}".format(
+                self.get_current_path(),
+                message
+            )
+        )
+
 
     def try_get(self, field, default=None, ignore_case=True,
                 field_type=None, field_range=None, field_valid_values=None,

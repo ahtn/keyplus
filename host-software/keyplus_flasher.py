@@ -41,6 +41,7 @@ if 0:
     from PySide.QtCore import Slot, Signal, QAbstractTableModel
 
 from keyplus.layout import KeyplusLayout
+from keyplus.layout.parser_info import KeyplusParserInfo
 from keyplus.layout.rf_settings import LayoutRFSettings
 from keyplus.device_info import KeyboardDeviceTarget, KeyboardFirmwareInfo
 from keyplus import chip_id
@@ -999,10 +1000,10 @@ class Loader(QMainWindow):
                 error_msg_box("No layout file given.")
                 return
 
+            parser_info = KeyplusParserInfo()
             try:
                 kp_layout = KeyplusLayout()
-                warnings = []
-                kp_layout.from_yaml_file(layout_file, warnings=warnings)
+                kp_layout.from_yaml_file(layout_file, parser_info=parser_info)
                 device_target = kb.get_device_target()
                 settings_data = kp_layout.build_settings_section(device_target)
                 layout_data = kp_layout.build_layout_section(device_target)
@@ -1034,11 +1035,11 @@ class Loader(QMainWindow):
 
             self.update_device_list()
 
-            if warnings != []:
+            if len(parser_info.warnings) > 0:
                 error_msg_box(
                     "The device was programmed successfully, but some "
                     "non-critical errors were encountered:\n" +
-                    "\n".join([str(warn) for warn in warnings]),
+                    "\n".join([str(warn) for warn in parser_info.warnings]),
                     title = "Warnings",
                 )
 

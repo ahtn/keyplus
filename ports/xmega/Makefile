@@ -26,6 +26,10 @@ XMEGA_PATH        = ./src
 VPATH += $(KEYPLUS_PATH)
 VPATH += $(XMEGA_PATH)
 
+BOOTLOADER_PATH := ./xusb-boot/
+BOOTLOADER_HEX := $(BOOTLOADER_PATH)/build/$(BOARD)-$(MCU)/xusb-boot-$(BOARD)-$(MCU).hex
+MERGED_HEX_WITH_BOOT := $(basename $(MERGED_HEX))_with_bootloader.hex
+
 #######################################################################
 #                        board config options                         #
 #######################################################################
@@ -155,29 +159,33 @@ MAKEFILE_INC += Makefile
 # LD_SCRIPT_DIR = /usr/lib/ldscripts
 LD_SCRIPT_DIR = ./ld-scripts
 
+SETTINGS_SIZE = 0x200
 ifeq ($(MCU_FLASH_SIZE), 32)
-  SETTINGS_ADDR := 0x7600
-  LAYOUT_ADDR := 0x7800
-  LAYOUT_SIZE := 0x0800
+  SETTINGS_ADDR := 0x7A00
+  LAYOUT_ADDR := 0x7C00
+  LAYOUT_SIZE := 0x0400
 else ifeq ($(MCU_FLASH_SIZE), 64)
-  SETTINGS_ADDR := 0x7E00
-  LAYOUT_ADDR := 0x8000
-  LAYOUT_SIZE := 0x8000
+  SETTINGS_ADDR := 0xC000
+  LAYOUT_ADDR := 0xC200
+  LAYOUT_SIZE := 0x3E00
 else ifeq ($(MCU_FLASH_SIZE), 128)
-  SETTINGS_ADDR := 0x7E00
-  LAYOUT_ADDR := 0x8000
-  LAYOUT_SIZE := 0x18000
+  SETTINGS_ADDR := 0xC000
+  LAYOUT_ADDR := 0xC200
+  LAYOUT_SIZE := 0x13E00
 else ifeq ($(MCU_FLASH_SIZE), 192)
-  SETTINGS_ADDR := 0x7E00
-  LAYOUT_ADDR := 0x8000
-  LAYOUT_SIZE := 0x28000
+  SETTINGS_ADDR := 0xC000
+  LAYOUT_ADDR := 0xC200
+  LAYOUT_SIZE := 0x23E00
 else ifeq ($(MCU_FLASH_SIZE), 256)
-  SETTINGS_ADDR := 0x7E00
-  LAYOUT_ADDR := 0x8000
-  LAYOUT_SIZE := 0x38000
+  SETTINGS_ADDR := 0xC000
+  LAYOUT_ADDR := 0xC200
+  LAYOUT_SIZE := 0x33E00
 else
   $(error Error unsupported flash size='$(FLASH_SIZE)')
 endif
+
+# The amount  of space left for program code
+MAX_FLASH_SIZE = $(shell echo "$$(( $(MCU_FLASH_SIZE)*2**10 - $(LAYOUT_SIZE) - $(SETTINGS_SIZE) ))")
 
 LDFLAGS += -T $(LD_SCRIPT_DIR)/$(LD_SCRIPT)
 LDFLAGS += -Wl,--section-start=.key_settings_block=$(SETTINGS_ADDR)
@@ -192,6 +200,8 @@ include $(KEYPLUS_PATH)/keyplus.mk
 .PHONY:
 program: program-boot
 
+$(MERGED_HEX): pretty_size
+
 # reset a board into bootloader via usb, then program it via the bootloader
 program-boot: $(MERGED_HEX)
 	# ./scripts/flash_hex.sh $< $(MCU)
@@ -201,6 +211,21 @@ program-boot: $(MERGED_HEX)
 # program a board that is already in in bootloader mode
 program-boot-2: $(MERGED_HEX)
 	$(XUSBBOOT_CLI) -f $< -mcu $(MCU)
+
+program-hard-with-boot: $(MERGED_HEX_WITH_BOOT)
+	$(AVRDUDE_CMD) $(AVRDUDE_EXTRA) -U flash:w:$<:i
+
+merge-bootloader: $(MERGED_HEX_WITH_BOOT)
+
+# Make the bootloader
+$(BOOTLOADER_HEX):
+	cd $(BOOTLOADER_PATH)
+	make BOARD=$(BOARD) MCU=$(MCU)
+
+# Merge the bootloader with the program hex file
+$(MERGED_HEX_WITH_BOOT): $(MERGED_HEX) $(BOOTLOADER_HEX)
+	head -n -1 "$(MERGED_HEX)" > "$(MERGED_HEX_WITH_BOOT)"
+	cat "$(BOOTLOADER_HEX)" >> "$(MERGED_HEX_WITH_BOOT)"
 
 #######################################################################
 #                     fuse and lock bit settings                      #

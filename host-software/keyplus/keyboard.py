@@ -283,6 +283,9 @@ class KeyplusKeyboard(object):
                 else:
                     packet_type = response[0]
 
+                if self._is_broadcast_packet(packet_type):
+                    continue
+
                 retries_left -= 1
                 if retries_left == 0:
                     raise KeyplusProtocolError(
@@ -299,6 +302,17 @@ class KeyplusKeyboard(object):
             return response[1:]
         else:
             return None
+
+    def _is_broadcast_packet(self, packet_type):
+        """
+        Packet types which the device may send without a host request
+        """
+        return packet_type in (
+            CMD_PRINT,
+            CMD_UNIFYING_RECV_SHORT,
+            CMD_UNIFYING_RECV_LONG,
+            CMD_PASSTHROUGH_MATRIX,
+        )
 
     def hid_write(self, data):
         if len(data) != EP_VENDOR_SIZE:
@@ -409,12 +423,14 @@ class KeyplusKeyboard(object):
         )
         return response
 
-    def listen_raw(self, total=None, timeout=None, cmd_filter=None, decode=None):
+    def listen_raw(self, total=None, timeout=None, cmd_filter=None, decode=None,
+                   timestamp=True):
         """
         total: total number of packets to print, default is no limit
         timeout: timeout for reading packets, default is no timeout
         cmd_filter: only print packets with this cmd_id
         """
+        start_time = time.time()
         count = 0
         if isinstance(cmd_filter, int):
             cmd_filter = [cmd_filter]
@@ -426,9 +442,25 @@ class KeyplusKeyboard(object):
 
             cmd_id = response[0]
 
+            def print_timestamp():
+                if not timestamp:
+                    return
+
+                current_time = time.time() - start_time
+                print("<{:09.4f}> ".format(current_time), end='')
+
+
+            def dump_resp(response):
+                current_time = time.time() - start_time
+
+                print_timestamp()
+                hexdump.hexdump(bytes(response))
+
             def print_resp(response):
                 length = response[1]
                 print_data = bytes(response[2:length+2])
+
+                print_timestamp()
                 if decode:
                     print(print_data.decode('ascii'), end='', flush=True)
                 else:
@@ -438,13 +470,13 @@ class KeyplusKeyboard(object):
                 if cmd_id == CMD_PRINT and CMD_PRINT in cmd_filter:
                     print_resp(response)
                 elif cmd_id in cmd_filter:
-                    hexdump.hexdump(bytes(response))
+                    dump_resp(response)
                     count += 1
             else:
                 if cmd_id == CMD_PRINT:
                     print_resp(response)
                 else:
-                    hexdump.hexdump(bytes(response))
+                    dump_resp(response)
                 count += 1
 
             if total and (count >= total):

@@ -5,7 +5,7 @@
 # test keyboard layout
 
 name: "test-layout"
-version: 0.3.0
+version: 0.3.4
 report_mode: auto_nkro # options: auto_nkro, 6kro, nkro
 
 # NOTE: rf settings and encryption key are stored in a separate file
@@ -193,6 +193,13 @@ devices:
         r1c2, r1c1, r1c0, r1c3, r1c4, r1c5,
         r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
       ]
+      debounce:
+        debounce_time_press: 5
+        debounce_time_release: 5
+        trigger_time_press: 5
+        trigger_time_release: 5
+        parasitic_discharge_delay_idle: 10.0
+        parasitic_discharge_delay_debouncing: 10.0
 
   "orange γ split 🔥 left":
     id: 14
@@ -321,51 +328,130 @@ keycodes:
     # activate_type: delay # activate hold_key after delay
     # delay: 200 # delay in milliseconds
 
+  # Default key repeat rate is too fast for changing tabs,
+  # so this macro lets the keyboard control it
+  slow_tab_change_left:
+    keycode: macro
+    commands:
+      - set_clear_rate(10)
+      - set_rate(200)
+      - repeat(0)
+      -   c-pgup
+      -   none
+      - end_repeat()
+    commands_release:
+      - release(c-pgup)
+
+  slow_tab_change_right:
+    keycode: macro
+    commands:
+      - set_clear_rate(10)
+      - set_rate(200)
+      - repeat(0)
+      -   c-pgdn
+      -   none
+      - end_repeat()
+    commands_release:
+      - release(c-pgdn)
+
+  # Close tab, no repeat
+  close_tab:
+    keycode: macro
+    commands:
+      - c-w
+
   gesture:
     keycode: mouse_gesture
-    left: pgup
-    right: pgdn
+    left: slow_tab_change_left
+    right: slow_tab_change_right
     up: ca-up
     down: ca-down
-    up_left: s-L
-    up_right: s-r
-    down_left: l
-    down_right: r
+    up_right: home
+    down_right: end
+    up_left: rapid_click
+    down_left: close_tab
 
     # tap: TODO
     #
-    threshold: 100
-    threshold_diag: 70
+    threshold: 110
+    threshold_diag: 65
     # threshold_tap: 30
     threshold_tap: 0
 
+  rapid_click:
+    keycode: macro
+    commands:
+      - set_rate(8)
+      - repeat(0) # repeat forever
+      -   press(lmsb)
+      -   release(lmsb)
+      - end_repeat()
+    commands_release:
+      - release(lmsb)
+
   macro1:
+    keycode: macro
+    commands: # run when key is pressed
+      - set_rate(500)
+      - move_mouse(-300, -300)
+      - move_mouse( 300,    0)
+      - move_mouse(   0,  300)
+
+  macro3:
     keycode: macro
     commands:
       - a
       - b
       - c
-      - set_rate(1000)
+      - set_rate(200)
+      - move_mouse( -100, -100)
+      - move_mouse(    0, +100)
+      - move_mouse(  100,    0)
+      - scroll_mouse(0, 50)
+      - scroll_mouse(50,  0)
+      - scroll_mouse(-50, -50)
+      - set_rate(500)
+      - macro_repeat(10)
       - none
+      - spc
+      - '0'
+      - '1'
+      - '2'
+      - macro_jmp(-10)
+      - press(a)
+      - set_rate(0)
+      - release(a)
+      - set_rate(1000)
+      - press(b)
+      - release(b)
+      - lmsb
+      - '0'
+      - lmsb
+      - '1'
+      - lmsb
+      - '2'
+      - press(csag-none)
+      - release(csag-none)
+    commands_release:
+      - clear_keyboard()
+      - clear_mouse()
+      - spc
       - d
+      - o
+      - n
       - e
-      - f
-      # - d
-      # - c-u
-      # - e
-      # - f
-      # - g
-      # - h
 
 
-  # space_fn:
-  #   keycode: hold
-  #   delay: 200
-  #   tap_key: space
-  #   hold_key: sticky_l2
-  #   # options:
+  space_fn:
+    keycode: hold
+    delay: 200
+    tap_key: space
+    hold_key: sticky_l2
+    # options:
 
 layouts:
+  default: gamma_split
+
   split_layout:
     default_layer: 0
     layers: [
@@ -488,13 +574,15 @@ layouts:
         ]
       ]
     ]
+
   gamma_split:
     default_layer: 0
     has_mouse_layers: True
     layers: [
       [ # layer 0 (colemak)
         [ # mouse
-          BTN1, BTN2, BTN3, macro1, L5  , s_lsft, s_L4  , gesture
+          BTN1, BTN2, BTN3, s_L4, s_lsft ,  s_L5, bspc , gesture
+          # BTN1, BTN2, BTN3, macro1, rapid_click  , s_lsft, s_L4  , gesture
         ],
         [ # left hand
           tab , q   , w   , f   , p   , g   ,

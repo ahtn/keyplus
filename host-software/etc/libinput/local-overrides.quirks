@@ -1,0 +1,17 @@
+# Run this command to update
+# sudo udevadm hwdb --update
+# reboot
+
+[keyplus mouse]
+MatchUdevType=mouse
+MatchBus=usb
+MatchVendor=0x1209
+MatchProduct=0xBB00
+ModelBouncingKeys=1
+
+[keyplus keyboard]
+MatchUdevType=keyboard
+MatchBus=usb
+MatchVendor=0x1209
+MatchProduct=0xBB00
+ModelBouncingKeys=1

@@ -12,6 +12,7 @@ from keyplus.exceptions import *
 
 import re
 import keyplus.keycodes as keycodes
+from keyplus.keycodes import *
 
 class EKCData(object):
     def __init__(self, data=None, addr=None):
@@ -278,50 +279,231 @@ class EKCHoldKey(EKCData):
             for warn in parser_info.warnings:
                 print(warn, file=sys.stderr)
 
+
+UINT = 0
+INT = 1
+STR = 2
+INT8 = 3
+
+INT8_MAX = 0x7F
+INT8_MIN = -(0x7F+1)
+
+INT16_MAX = 0x7FFF
+INT16_MIN = -(0x7FFF+1)
+
+SPECIAL_CMD_REPEAT = 100
+SPECIAL_CMD_REPEAT_END = 101
+
 class EKCMacroKey(EKCData):
     # Data: {
-    #    0x00:    KC_MACRO
-    #    0x02..:  macro data (varing size)
+    #    0x00:            KC_MACRO
+    #    0x02:            n:offset to release program address
+    #    0x02..0x02+n-1:  macro press program
+    #    0x02+n..:        macro release program
     # }
     KEYCODE_TYPE = 'macro'
 
     def __init__(self):
-        self._commands = []
+        self._commands_press = []
+        self._commands_release = []
+
+        self._repeat_addresses = []
 
         self._macro_regexes = [
-            (re.compile("macro_finish"), keycodes.MACRO_CMD_FINISH),
-            (re.compile("set_rate\((\d+)\)"), keycodes.MACRO_CMD_SET_RATE),
+            (re.compile("macro_finish\(\)")        , MACRO_CMD_FINISH         , ()                     ),
+            (re.compile("set_rate\((\d+)\)")       , MACRO_CMD_SET_RATE       , (UINT,)             ),
+            (re.compile("set_clear_rate\((\d+)\)") , MACRO_CMD_SET_CLEAR_RATE , (UINT,)             ),
+            (re.compile("press\(([^)]+)\)")        , MACRO_CMD_PRESS          , (STR,)                 ),
+            (re.compile("release\(([^)]+)\)")      , MACRO_CMD_RELEASE        , (STR,)                 ),
+            (re.compile("clear_keyboard\(\)")      , MACRO_CMD_CLEAR_KEYBOARD , ()                     ),
+            (re.compile("clear_mouse\(\)")         , MACRO_CMD_CLEAR_MOUSE    , ()                     ),
+            (re.compile("macro_repeat\((\d+)\)")   , MACRO_CMD_REPEAT_BLOCK   , (UINT,)             ),
+            (re.compile("macro_jmp\((-?\d+)\)")    , MACRO_CMD_REPEAT_JMP     , (INT,)                 ),
+            (re.compile("repeat\((\d+)\)")         , MACRO_CMD_REPEAT_BLOCK   , SPECIAL_CMD_REPEAT     ),
+            (re.compile("end_repeat\(\)")          , MACRO_CMD_REPEAT_JMP     , SPECIAL_CMD_REPEAT_END ),
+            (re.compile("move_mouse\(([^)]*)\)")   , MACRO_CMD_MOUSE_MOVE     , (INT, INT)             ),
+            (re.compile("scroll_mouse\(([^)]*)\)") , MACRO_CMD_MOUSE_WHEEL    , (INT8, INT8)           ),
         ]
 
+        self._binary_form = bytearray()
+        self._dirty = False
+
+    def _push_repeat_address(self):
+        self._repeat_addresses.append(self._current_addr)
+
+    def _pop_repeat_address(self):
+        return self._repeat_addresses.pop()
+
     def size(self):
-        # KC_MACRO + FINISH
-        # return len(self._commands)*2 + 2 + 2
-        return len(self.to_bytes())
+        if self._dirty:
+            return len(self.to_bytes())
+        else:
+            return len(self._binary_form)
 
     def parse_macro_command(self, command):
+        if not isinstance(command, str):
+            return None
         for cmd_info in self._macro_regexes:
-            match = cmd_info[0].match(command)
+            regex = cmd_info[0]
+            match = regex.match(command)
+            command_name = regex.pattern[:regex.pattern.find('\\')] + '()'
             if match:
-                return (cmd_info[1], match.groups())
+                return (cmd_info[1], match.groups(), cmd_info[2], command_name)
         return None
 
+    def compile_instruction(self, command, parser_info=None):
+
+        if isinstance(command, list):
+            return compile_command_list(command, parser_info)
+
+        cmd_info = self.parse_macro_command(command)
+
+        if not cmd_info:
+            return None
+        cmd = cmd_info[0]
+        cmd_args = cmd_info[1]
+        arg_type = cmd_info[2]
+        command_name = cmd_info[3]
+
+        result = bytearray()
+        result += struct.pack("< H", cmd)
+
+        def parse_int_arg(args, limit_lo=0, limit_hi=0xFFFF):
+            result = []
+            for (i, int_str) in enumerate(args):
+                try:
+                    arg = int(int_str)
+                except:
+                    raise KeyplusParseError(
+                        "Expected integer at arg{} for macro command '{}', got: {}"
+                        .format(
+                            i,
+                            command_name,
+                            int_str,
+                        )
+                    )
+
+                if not limit_lo <= arg <= limit_hi:
+                    raise KeyplusParseError(
+                        "For '{}' expected integer in range ({},{}), but got: {}".format(
+                            command_name,
+                            limit_lo,
+                            limit_hi,
+                            arg
+                        )
+                    )
+                result.append(arg)
+            return result
+
+        def split_args(cmd_args, length):
+            try:
+                args = cmd_args[0].split(',')
+                assert(len(args) == length)
+                return args
+            except:
+                raise KeyplusParseError(
+                    "For '{}' expected two arguments, but got: {}".format(
+                        command_name,
+                        args
+                    )
+                )
+
+        if arg_type == (UINT,):
+            # Macro command takes a single positive integer argument
+            arg = parse_int_arg(cmd_args)[0]
+            result += struct.pack("< H", arg)
+        elif arg_type == (INT,):
+            arg = parse_int_arg(cmd_args, INT16_MIN, INT16_MAX)[0]
+            result += struct.pack("< h", arg)
+        elif arg_type == (INT, INT):
+            args = split_args(cmd_args, 2)
+            args = parse_int_arg(args, INT16_MIN, INT16_MAX)
+            result += struct.pack("< 2h", *args)
+        elif arg_type == (INT8, INT8):
+            args = split_args(cmd_args, 2)
+            args = parse_int_arg(args, INT8_MIN, INT8_MAX)
+            result += struct.pack("< 2b", *args)
+        elif arg_type == ():
+            # Macro command takes no arguments
+            pass
+        elif arg_type == (STR,):
+            # Macro command a single keycode argument
+            result += struct.pack("< H", self.kc_map_function(cmd_args[0]))
+        elif arg_type == SPECIAL_CMD_REPEAT:
+            int_arg = parse_int_arg(cmd_args)[0]
+            result += struct.pack("< H", int_arg)
+            self._push_repeat_address()
+        elif arg_type == SPECIAL_CMD_REPEAT_END:
+            last_repeat_addr = self._pop_repeat_address()
+            jmp_offset = -(self._current_addr - last_repeat_addr)
+            try:
+                result += struct.pack("< h", jmp_offset)
+            except:
+                raise KeyplusParseError(
+                    "Macro repeat block too big. "
+                    "Max repeat block size is {} bytes, got {}.".format(
+                        0x7FFF,
+                        -jmp_offset
+                    )
+                )
+        else:
+            if parser_info:
+                pass
+            else:
+                raise Exception("Unknown command" + str(cmd_info))
+
+        return result
+
+    def compile_command_list(self, command_list, parser_info=None):
+        result = bytearray()
+
+        for cmd in command_list:
+            cmd_data = self.compile_instruction(cmd, parser_info)
+
+            if not cmd_data:
+                cmd_data = struct.pack("< H", self.kc_map_function(cmd))
+
+            self._size_last_command = len(cmd_data)
+            self._current_addr += len(cmd_data)
+            result += cmd_data
+
+        return result
+
+    def compile_program(self, command_list, parser_info=None):
+        self._current_addr = 0
+        return self.compile_command_list(command_list, parser_info)
+
     def to_bytes(self):
+        if not self._dirty:
+            return self._binary_form
+
         result = bytearray()
 
         result += struct.pack("< H", keycodes.KC_MACRO)
 
-        for cmd in self._commands:
+        press_program = self.compile_program(self._commands_press)
+        press_program += struct.pack("< H", keycodes.MACRO_CMD_FINISH)
 
-            cmd_info = self.parse_macro_command(cmd)
-            if cmd_info:
-                result += struct.pack("< H", cmd_info[0])
-                if cmd_info:
-                    for cmd_data in cmd_info[1]:
-                        result += struct.pack("< H", int(cmd_data))
-            else:
-                result += struct.pack("< H", self.kc_map_function(cmd))
+        release_program = self.compile_program(self._commands_release)
+        release_program += struct.pack("< H", keycodes.MACRO_CMD_FINISH)
 
-        result += struct.pack("< H", 0x6003)
+        # Add release program offset
+        if len(self._commands_release) == 0:
+            # 0 indicates no program to be run on key release
+            result += struct.pack("< H", 0)
+        else:
+            offset = len(press_program) + 2
+            result += struct.pack("< H", offset)
+
+        # Add the press program
+        result += press_program
+
+        # Add the release program if necessary
+        if len(self._commands_release) > 0:
+            result += release_program
+
+        self._binary_form = result
+        self._dirty = False
 
         return result
 
@@ -337,6 +519,9 @@ class EKCMacroKey(EKCData):
                 {kc_name : json_obj}
             )
 
+        self._dirty = True
+        self._kc_name = kc_name
+
         parser_info.enter(kc_name)
 
         # Get the tap key field
@@ -344,11 +529,22 @@ class EKCMacroKey(EKCData):
         assert_equal(self.keycode, self.KEYCODE_TYPE)
 
         # Get movement thresholds for gestures
-        self._commands = parser_info.try_get(
+        self._commands_press = parser_info.try_get(
             'commands',
             field_type=list,
-            default=EKCMouseGestureKey.GESTURE_THRESHOLD
+            default=[]
         )
+        if self._commands_press == None:
+            self._commands_press = []
+
+        # Get movement thresholds for gestures
+        self._commands_release = parser_info.try_get(
+            'commands_release',
+            field_type=list,
+            default=[]
+        )
+        if self._commands_release == None:
+            self._commands_release = []
 
         # Finish parsing `device_name`
         parser_info.exit()

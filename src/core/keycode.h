@@ -332,7 +332,10 @@ typedef enum special_keycode_t {
 
     // tap and hold
     KC_MACRO                   = KC_SPECIAL_START | 0x1002,
-    KC_MACRO_UP_AND_DOWN       = KC_SPECIAL_START | 0x1003,
+
+    // Unneeded now, since this is the default for macros
+    // free for use as something else
+    // KC_MACRO_UP_AND_DOWN       = KC_SPECIAL_START | 0x1003,
 
     // mouse gestures
     KC_MOUSE_GESTURE           = KC_SPECIAL_START | 0x1004,

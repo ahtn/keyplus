@@ -63,11 +63,14 @@ void handle_mouse_keycode(keycode_t ekc, key_event_t event) REENT {
         if (event == EVENT_PRESSED) {
             g_mouse_report.buttons_1 |= (1 << MOUSEKEY_BUTTON_NUM(kc));
             s_num_mouse_keys_down += 1;
+            g_report_pending_mouse = true;
         } else {
-            s_relased_buttons |= (1 << (MOUSEKEY_BUTTON_NUM(kc)));
+            // Release any buttons if necessary
+            g_mouse_report.buttons_1 &= ~(1 << MOUSEKEY_BUTTON_NUM(kc));
             // NOTE: Don't remove the number s_num_mouse_keys_down until after the
             // mouse report has been sent.
             s_num_mouse_keys_to_release += 1;
+            g_report_pending_mouse = true;
         }
     } else if (kc >= KC_MOUSE_UP && kc <= KC_MOUSE_WH_RIGHT) {
         if (event == EVENT_PRESSED) {
@@ -113,16 +116,7 @@ void mouse_key_task(void) {
         s_num_mouse_keys_down &&
         ((uint8_t)(timer_read8_ms() - s_report_time) > MOUSE_REPORT_RATE)
     ) {
-
-        // Release any buttons if necessary
-        g_mouse_report.buttons_1 &= ~s_relased_buttons;
-        s_relased_buttons = 0;
-
         // Calulate mouse speed based of current mouse key button state
-        g_mouse_report.x = 0;
-        g_mouse_report.y = 0;
-        g_mouse_report.wheel_x = 0;
-        g_mouse_report.wheel_y = 0;
         if (s_mouse_keys & MOUSE_KEY_LEFT)  { g_mouse_report.x += -MOUSE_SPEED; }
         if (s_mouse_keys & MOUSE_KEY_RIGHT) { g_mouse_report.x += +MOUSE_SPEED; }
         if (s_mouse_keys & MOUSE_KEY_UP)    { g_mouse_report.y += -MOUSE_SPEED; }

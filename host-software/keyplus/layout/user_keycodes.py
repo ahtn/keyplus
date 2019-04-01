@@ -53,7 +53,7 @@ class UserKeycodes(object):
         for kc_name in self.user_keycode_table:
             kc = self.user_keycode_table[kc_name]
             if kc.has_been_parsed_before:
-                raise ParseLayoutError("Keycode {} evetually calls itself in "
+                raise KeyplusLayoutError("Keycode {} evetually calls itself in "
                                        "a recursive loop.".format(kc_name))
             else:
                 self.has_been_parsed_before = True
@@ -62,11 +62,9 @@ class UserKeycodes(object):
             ekc_pos += kc.ekc.size()
 
     def add_keycode(self, kc_name, json_obj=None, parser_info=None):
-        print_warnings = False
-
         keycode_data = parser_info.peek_field(kc_name)
         if 'keycode' not in keycode_data:
-            raise ParseLayoutError(
+            raise KeyplusLayoutError(
                 "User keycode '{}' must include the 'keycode' field."
                 .format(kc_name)
             )
@@ -77,6 +75,7 @@ class UserKeycodes(object):
         if kc_type in EKCKeycodeTable:
             ekc_key = EKCKeycodeTable[kc_type]()
             ekc_key.parse_json(kc_name, parser_info=parser_info)
+            self.kc_mapper.attach_parser(parser_info)
             ekc_key.set_keycode_map_function(self.kc_mapper.from_string)
 
             self.user_keycode_table[kc_name.lower()] = UserKeycode(
@@ -84,17 +83,14 @@ class UserKeycodes(object):
                 ekc = ekc_key,
             )
         else:
-            raise ParseLayoutError(
+            raise KeyplusLayoutError(
                 "Unknown keycode type: '{}'".format(kc_type)
             )
 
     def parse_json(self, json_obj=None, parser_info=None):
 
-        print_warnings = False
-
         if parser_info == None:
             assert(json_obj != None)
-            print_warnings = True
             parser_info = KeyplusParserInfo(
                 "<keycodes Dict>",
                 {'keycodes' : json_obj}

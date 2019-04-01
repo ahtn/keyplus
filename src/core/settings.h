@@ -74,7 +74,8 @@ typedef struct layout_info_t {
 typedef struct {
     uint8_t number_layouts;
     uint8_t number_devices;
-    uint8_t _reserved[30]; // 32
+    uint8_t default_layout_id;
+    uint8_t _reserved[29]; // 32
     keyboard_info_t layouts[MAX_NUM_KEYBOARDS];
     device_info_t devices[MAX_NUM_DEVICES];
 } layout_settings_t;

@@ -122,7 +122,7 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
             if ((g_unifying_mouse_state.buttons_1 & 0x01) == 0 && (nrf_packet[2] & 0x01)) {
                 // TODO: integrate this functionality so it happens automatically
                 // on device power on and receiving packets from the mouse
-                unifying_hidpp20_t *report = (unifying_hidpp20_t*)tmp_buffer;
+                unifying_hidpp20_t XRAM* report = (unifying_hidpp20_t*)tmp_buffer;
                 uint8_t size = sizeof(unifying_hidpp20_t);
                 memset(report, 0, size);
                 report->id = 0x00;
@@ -180,10 +180,10 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
                 }
 #endif
 
-                report->checksum = unifying_calc_checksum((uint8_t*)report, size);
+                report->checksum = unifying_calc_checksum((uint8_t *XRAM)report, size);
 
                 s_index++;
-                unifying_send_packet((uint8_t*)report, size);
+                unifying_send_packet((uint8_t *XRAM)report, size);
             }
 
 
@@ -195,8 +195,6 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
             g_unifying_mouse_state.wheel_x = nrf_packet[8];
 
             g_unifying_mouse_activity = UNIFYING_MOUSE_ACTIVE;
-
-            hold_key_task(true);
         } break;
 
         case UNIFYING_FRAME_EXTRA_BUTTON: { // 0xD1
@@ -238,7 +236,6 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
             g_unifying_mouse_state.buttons_1 |= s_extra_button_last_state;
 
             g_unifying_mouse_activity = UNIFYING_MOUSE_EXTRA_BUTTON;
-            hold_key_task(true);
         } break;
 
         case UNIFYING_FRAME_HIDPP_LONG_RESP: {
@@ -288,7 +285,6 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
             g_unifying_mouse_state.buttons_1 |= s_extra_button_last_state;
 
             g_unifying_mouse_activity = UNIFYING_MOUSE_EXTRA_BUTTON;
-            hold_key_task(true);
         } break;
 #if 0
         // Unecrypted HID packet
@@ -374,7 +370,7 @@ void trigger_gesture(uint8_t gesture_type) {
     s_gesture.triggered_kc = gesture_kc;
 }
 
-void unifying_mouse_handle(void) {
+void unifying_mouse_handle(void) REENT {
     if (!g_unifying_mouse_activity) {
         return;
     }
@@ -386,6 +382,10 @@ void unifying_mouse_handle(void) {
         g_mouse_report.buttons_1 = g_unifying_mouse_state.buttons_1;
         g_mouse_report.buttons_2 = g_unifying_mouse_state.buttons_2;
         g_report_pending_mouse = true;
+
+        if (g_mouse_report.buttons_1) {
+            hold_key_task(true);
+        }
     }
 
     if (g_mouse_report.buttons_1 || g_mouse_report.buttons_2) {
@@ -396,11 +396,14 @@ void unifying_mouse_handle(void) {
     if (g_unifying_mouse_activity == UNIFYING_MOUSE_ACTIVE) {
         g_mouse_report.x = g_unifying_mouse_state.x;
         g_mouse_report.y = g_unifying_mouse_state.y;
+        g_mouse_report.wheel_x = SIGN(g_unifying_mouse_state.wheel_x);
+        g_mouse_report.wheel_y = SIGN(g_unifying_mouse_state.wheel_y);
         g_report_pending_mouse = true;
     } else if (g_unifying_mouse_activity == UNIFYING_MOUSE_EXTRA_BUTTON) {
         // If a special button was pressed don't want to update the cursor position.
-        g_mouse_report.x = 0;
-        g_mouse_report.y = 0;
+        //
+        // NOTE: x and y cleared automatically whenever a mouse report is sent
+        // so no need to do it here
     }
 
     // Gesture handling
@@ -411,7 +414,19 @@ void unifying_mouse_handle(void) {
             s_gesture.y += g_unifying_mouse_state.y;
 
             // trigger threshold
-            if (s_gesture.x < -s_gesture.threshold) {
+            uint8_t has_pos_x = s_gesture.x >  s_gesture.threshold_diag;
+            uint8_t has_neg_x = s_gesture.x < -s_gesture.threshold_diag;
+            uint8_t has_pos_y = s_gesture.y >  s_gesture.threshold_diag;
+            uint8_t has_neg_y = s_gesture.y < -s_gesture.threshold_diag;
+            if (has_neg_x && has_neg_y) {
+                trigger_gesture(GESTURE_UP_LEFT);
+            } else if (has_pos_x && has_neg_y) {
+                trigger_gesture(GESTURE_UP_RIGHT);
+            } else if (has_neg_x && has_pos_y) {
+                trigger_gesture(GESTURE_DOWN_LEFT);
+            } else if (has_pos_x && has_pos_y) {
+                trigger_gesture(GESTURE_DOWN_RIGHT);
+            } else if (s_gesture.x < -s_gesture.threshold) {
                 trigger_gesture(GESTURE_LEFT);
             } else if (s_gesture.x > s_gesture.threshold) {
                 trigger_gesture(GESTURE_RIGHT);
@@ -419,28 +434,11 @@ void unifying_mouse_handle(void) {
                 trigger_gesture(GESTURE_UP);
             } else if (s_gesture.y >  s_gesture.threshold) {
                 trigger_gesture(GESTURE_DOWN);
-            } else {
-                uint8_t has_pos_x = s_gesture.x >  s_gesture.threshold_diag;
-                uint8_t has_neg_x = s_gesture.x < -s_gesture.threshold_diag;
-                uint8_t has_pos_y = s_gesture.y >  s_gesture.threshold_diag;
-                uint8_t has_neg_y = s_gesture.y < -s_gesture.threshold_diag;
-                if (has_neg_x && has_neg_y) {
-                    trigger_gesture(GESTURE_UP_LEFT);
-                } else if (has_pos_x && has_neg_y) {
-                    trigger_gesture(GESTURE_UP_RIGHT);
-                } else if (has_neg_x && has_pos_y) {
-                    trigger_gesture(GESTURE_DOWN_LEFT);
-                } else if (has_pos_x && has_pos_y) {
-                    trigger_gesture(GESTURE_DOWN_RIGHT);
-                }
             }
         } break;
     }
-
     g_unifying_mouse_activity = 0;
 
-    g_mouse_report.wheel_x = SIGN(g_unifying_mouse_state.wheel_x);
-    g_mouse_report.wheel_y = SIGN(g_unifying_mouse_state.wheel_y);
 }
 
 

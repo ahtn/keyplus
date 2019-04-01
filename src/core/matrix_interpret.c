@@ -377,7 +377,8 @@ void keyboards_init(void) {
         }
     }
 
-    s_active_slot = INVALID_DEVICE_ID;
+    // Load the default layout into the first slot
+    s_active_slot = acquire_slot(GET_SETTING(layout.default_layout_id));
 
     s_slot_fifo_pos = 0;
     s_has_dirty_matrix = true;

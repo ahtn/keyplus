@@ -6,11 +6,11 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from copy import copy
-from colorama import Fore, Style
 
 import six
 
 from keyplus.keycodes import *
+from keyplus.layout.parser_info import KeyplusKeycodeWarning
 from keyplus.exceptions import KeyplusParseError
 
 class KeycodeMapper(object):
@@ -18,6 +18,10 @@ class KeycodeMapper(object):
         self.symbol_to_keycode_map = copy(SYMBOL_TO_KEYCODE_MAP)
         self.keycode_to_symbol_map = self.build_inverse_keycode_map(SYMBOL_TO_KEYCODE_MAP)
         self.user_keycodes = None
+        self.parser_info = None
+
+    def attach_parser(self, parser_info):
+        self.parser_info = parser_info
 
     def set_user_keycodes(self, user_keycodes):
         self.user_keycodes = user_keycodes
@@ -145,12 +149,13 @@ class KeycodeMapper(object):
             kc = self.from_string(kc)
             return generate_modkey(kc, ctrl=ctrl, shift=shift, alt=alt, gui=gui, right=right, force=force)
         else:
-            # TODO: need to add back support for external keycodes, but
-            # for now use KC_NONE as a placeholder
-            print(
-                Fore.RED + "Warning: " + Style.RESET_ALL +
-                " ignoring keycode: " + kc_str
+            # if self.parser_info:
+            #     # self.parser_info.add_warning(
+            #     #     KeyplusKeycodeWarning,
+            #     #     kc_str,
+            #     # )
+            raise KeyplusParseError(
+                "Unknown keycode: {}".format(kc_str)
             )
+
             return KC_NONE
-            # TODO:  add this exception back in
-            # raise KeyplusParseError("Unexpected keycode: '{}'".format(kc_in))

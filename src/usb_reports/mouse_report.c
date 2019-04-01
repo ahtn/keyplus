@@ -47,6 +47,8 @@ bit_t is_ready_mouse_report(void) {
     return is_in_endpoint_ready(EP_NUM_MOUSE);
 }
 
+#include "core/usb_commands.h"
+
 /// @brief Send any pending mouse report.
 ///
 /// @retval true A mouse report is ready but could not be sent and was left pending.
@@ -60,6 +62,13 @@ bit_t send_mouse_report(void) {
             (uint8_t*)&g_mouse_report,
             report_size
         );
+
+        { // Zero the mouse movement component now that the packet is sent
+            g_mouse_report.x = 0;
+            g_mouse_report.y = 0;
+            g_mouse_report.wheel_x = 0;
+            g_mouse_report.wheel_y = 0;
+        }
 
         g_report_pending_mouse = false;
 

@@ -144,7 +144,8 @@ class layout_settings_header_t(CStructWithBytes):
     __struct__ = """
         uint8_t number_layouts;
         uint8_t number_devices;
-        uint8_t _reserved[30]; /* 32 */
+        uint8_t default_layout_id;
+        uint8_t _reserved[29]; /* 32 */
     """
 
 class layout_settings_t(CStructWithBytes):
@@ -152,7 +153,8 @@ class layout_settings_t(CStructWithBytes):
     __struct__ = """
         uint8_t number_layouts;
         uint8_t number_devices;
-        uint8_t _reserved[30]; /* 32 */
+        uint8_t default_layout_id;
+        uint8_t _reserved[29]; /* 32 */
         struct keyboard_info_t layouts[MAX_NUM_KEYBOARDS];
         struct device_info_t devices[MAX_NUM_DEVICES]; /* 353 bytes */
     """

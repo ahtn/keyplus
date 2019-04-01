@@ -7,11 +7,11 @@
 #include "core/macro.h"
 #include "core/matrix_interpret.h"
 
-#define MACRO_UP_AND_DOWN_RELEASE_POINTER_ADDR 0
-#define MACRO_UP_AND_DOWN_PRESS_MARCO_ADDR 2
+#define RELEASE_POINTER_ADDR 0
+#define PRESS_MARCO_ADDR 2
 
 bit_t is_macro_keycode(keycode_t keycode) {
-    return keycode == KC_MACRO || keycode == KC_MACRO_UP_AND_DOWN;
+    return keycode == KC_MACRO;
 }
 
 void handle_macro_keycodes(keycode_t keycode, key_event_t event) REENT {
@@ -20,25 +20,30 @@ void handle_macro_keycodes(keycode_t keycode, key_event_t event) REENT {
     const uint8_t kb_id = get_active_keyboard_id();
 
     if (kc == KC_MACRO) {
-        if (event == EVENT_PRESSED) {
-            call_macro(ekc_addr, kb_id);
-        }
-    } else if (kc == KC_MACRO_UP_AND_DOWN) {
         // External data for `KC_MACRO_UP_AND_DOWN` looks like this:
-        // uint16_t up_macro_address;
+        // uint16_t release_macro_offset;
         // uint8_t press_macro_data[]
         if (event == EVENT_PRESSED) {
-            call_macro(ekc_addr + MACRO_UP_AND_DOWN_PRESS_MARCO_ADDR, kb_id);
+            call_macro(ekc_addr + PRESS_MARCO_ADDR, kb_id);
         } else if (event == EVENT_RELEASED) {
-            uint16_t release_macro_addr;
+            uint16_t release_macro_offset;
             uint8_t err;
             err = get_ekc_data(
-                (uint8_t*)&release_macro_addr,
-                ekc_addr + MACRO_UP_AND_DOWN_RELEASE_POINTER_ADDR,
+                (uint8_t*)&release_macro_offset,
+                ekc_addr + RELEASE_POINTER_ADDR,
                 sizeof(uint16_t)
             );
-            if (!err) {
-                call_macro(release_macro_addr, kb_id);
+
+            if (release_macro_offset == 0) {
+                // Do nothing since there's no macro program for key release
+                return;
+            } else {
+                // Stop the press macro if it is still running.
+                macro_abort();
+
+                if (!err) {
+                    call_macro(ekc_addr + release_macro_offset, kb_id);
+                }
             }
         }
     }

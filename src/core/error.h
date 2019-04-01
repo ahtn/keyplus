@@ -32,6 +32,7 @@ typedef enum error_code_type {
     ERROR_KEY_EVENT_QUEUE_UNLOADED_DEVICE = 5,
     ERROR_VENDOR_IN_REPORT_CANT_KEEP_UP = 6,
     ERROR_INVALID_KB_ID_USED = 7,
+    ERROR_MACRO_CMD_ERROR = 8,
 
     // critical errors
     CRITICAL_ERROR_START = 64,

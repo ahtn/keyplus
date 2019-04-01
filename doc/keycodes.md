@@ -2,7 +2,7 @@
 # Keyplus keycode documentation
 
 
-## Simple keycodes
+## Simple HID keycodes
 
 Note: keycode names are case insensitive. So `A` and `a` will both output lower
 case `a`. To make upper case letters, you will need to use modkeys to type
@@ -493,6 +493,179 @@ keycodes:
 
 See also: [Remmaping mouse buttons.](../doc/layout_format.md#remapping-mouse-buttons)
 
-## Macro keycodes
+### Macro keycodes
 
-TODO
+Macros provide the ability to execute a series of keycodes and macro commands
+with a single key press. Several examples are provided below demonstrating the
+various features of macros.
+
+#### Basic macro
+
+This simple macro presses a sequence of keycodes in order. The
+`commands` field is run when the macro key is pressed and the
+`commands_release` field is run when the macro key is released.
+Both the `commands` and `commands_release` field are optional, so it is
+possible to omit one of them to have  macros that only execute on press or
+release of the macro key.
+
+```yaml
+keycodes:
+  macro1:
+    keycode: macro
+    commands: # run when key is pressed (optional)
+      - a
+      - b
+      - c
+    commands_release: # run when key is released (optional)
+      - d
+      - e
+      - f
+```
+
+All keyplus keycodes should work as normal when used inside macros except for
+other macro keycodes.
+
+
+#### Macro press rate
+
+The rate at which macro keys are pressed can be configured with the
+`set_rate(r)` macro command where `r` is the number of milliseconds between
+key presses. The rate will stay the same until the next `set_rate` instruction.
+For example to press a key every 100ms, use:
+
+```yaml
+keycodes:
+  macro1:
+    keycode: macro
+    commands:
+      - set_rate(1000)
+      - a
+      - b
+      - c
+```
+
+By default macro key presses will be released shortly after they are pressed,
+however, it is possible to configure how long they are held for with
+`set_clear_rate(r)`. For example to hold the keys for 800ms use:
+
+```yaml
+keycodes:
+  macro1:
+    keycode: macro
+    # This macro should output: abc111112222233333
+    # (the number of 1/2/3 depends on your OS key repeat rate setting).
+    commands:
+      - set_rate(1000)      # 1s between key presses #
+      - a
+      - b
+      - c
+      - set_clear_rate(800) # Keys are held for 0.8s before being released
+      - 1                   # should print `1` multiple times since its held
+      - 2                   # effect last until next `set_clear_rate()` is found
+      - 3
+```
+
+NOTE: Some programs may have issues when handling rapid button press sequences.
+Also, libinput on Linux has built in support for button debouncing, and may
+ignore some rapid presses. [See here for how to disable debouncing in
+libinput](../doc/disable_libinput_debouncing.md).
+
+#### Macro key presses and releases
+
+For more fine control over the button presses and release, the `press(keycode)`
+and the `release(keycode)` macro commands can be used.
+
+```yaml
+keycodes:
+  macro1:
+    keycode: macro
+    # This macro should output: ABCdef
+    commands:
+      - press(lsft)
+      - a
+      - b
+      - c
+      - release(lsft)
+      - d
+      - e
+      - f
+```
+
+#### Looping macros
+
+The `repeat` and `end_repeat` commands can be used to repeat a group of
+instructions a given amount of times.
+
+```yaml
+keycodes:
+  # A macro that rapidly clicks the left mouse button while it is held down.
+  rapid_click:
+    keycode: macro
+    commands: # run when key is pressed
+      - set_rate(10)
+      - repeat(100) # Repeat the commands between the repeat and end_repeat
+      -   press(lmsb)
+      -   release(lmsb)
+      - end_repeat
+    commands_release: # run when key is released
+      - release(lmsb)
+```
+
+To create an infinite loop use `repeat(0)`.
+
+#### Mouse motion
+
+The `move_mouse(x,y)` and `scroll_mouse(x,y)` can control the movement of the
+mouse.
+
+```yaml
+keycodes:
+  draw_triangle:
+    keycode: macro
+    commands:
+      - set_rate(500)
+      - move_mouse(-300, -300)
+      - move_mouse( 300,    0)
+      - move_mouse(   0,  300)
+```
+
+If smooth mouse motion between two points is desire, you can use loops:
+
+```yaml
+  smooth_triangle:
+    keycode: macro
+    commands:
+      - set_rate(5)
+      - repeat(100)
+      -   move_mouse(-3, -3)
+      - end_repeat()
+      - repeat(100)
+      -   move_mouse(+3,  0)
+      - end_repeat()
+      - repeat(100)
+      -   move_mouse( 0, +3)
+      - end_repeat()
+```
+
+#### List of macro functions
+
+Below is a list of commands that can be used in macros.
+
+Note: Macro commands are executed one after the other with a delay between each
+command. However, commands with no delay will be executed immediately one after
+the other.
+
+| Macro Command        | Delay | Range                | Description                                                                                       |
+| -------------        | ----- | -----                | -----------                                                                                       |
+| keyplus keycode      | yes   | non-macro keycode    | Send a press and then a release event for the given keycode.                                      |
+| `macro_finish()`     | no    |                      | Finish the macro. Automatically added at the end of the macro program.                            |
+| `set_rate(r)`        | no    | r: (0, 65535)        | Set the rate at which macro keys/commands are pressed/executed.                                   |
+| `set_clear_rate(r)`  | no    | r: (0, 65535)        | Set the hold time for key presses. That is how long it takes to generate a RELEASE after a PRESS. |
+| `clear_keyboard()`   | no    |                      | Unpress all HID keyboard keys.                                                                    |
+| `clear_mouse()`      | no    |                      | Unpress all mouse buttons.                                                                        |
+| `repeat(count)`      | no    | count: (0, 65535)    | Repeat the next block of command `count` times. Using `count=0` to repeat forever.                |
+| `end_repeat()`       | no    |                      | Finish a repeat block.                                                                            |
+| `press(keycode)`     | yes   |                      | Generate a press event for the given `keycode`.                                                   |
+| `release(keycode)`   | yes   |                      | Generate a release event for the given `keycode`.                                                 |
+| `move_mouse(x, y)`   | yes   | x,y: (-32768, 32767) | Move the mouse by the given `x`, `y` values.                                                      |
+| `scroll_mouse(x, y)` | yes   | x,y: (-128, 127)     | Scroll the mouse wheel by the given `x`, `y` values                                               |

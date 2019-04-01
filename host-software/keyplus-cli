@@ -14,6 +14,7 @@ import datetime
 
 import keyplus
 from keyplus.layout import KeyplusLayout
+from keyplus.layout.parser_info import KeyplusParserInfo
 from keyplus.device_info import KeyboardDeviceTarget, KeyboardFirmwareInfo
 
 from keyplus.chip_id import get_chip_id_from_name
@@ -548,11 +549,17 @@ class ProgramCommand(GenericDeviceCommand):
 
     def load_layout_file(self, args):
         try:
+            parser_info = KeyplusParserInfo()
+            parser_info.print_warnings = True
+            rf_parser_info = KeyplusParserInfo()
+            rf_parser_info.print_warnings = True
+
             kp_layout = KeyplusLayout()
             kp_layout.from_yaml_file(
                 layout_file = args.layout_file,
                 rf_file = args.rf_file,
-                print_warnings = True,
+                parser_info = parser_info,
+                rf_parser_info = rf_parser_info,
             )
             return kp_layout
         except KeyplusError as err:
@@ -672,8 +679,12 @@ class ProgramCommand(GenericDeviceCommand):
 
         kp_layout = self.load_layout_file(args)
 
-        settings_data = kp_layout.build_settings_section(device_target)
-        layout_data = kp_layout.build_layout_section(device_target)
+        try:
+            settings_data = kp_layout.build_settings_section(device_target)
+            layout_data = kp_layout.build_layout_section(device_target)
+        except Exception as err:
+            print_error(err)
+            exit(EXIT_BAD_FILE)
 
         if len(layout_data) > layout_size:
             print_error("layout data to large. Got {} bytes, but only "

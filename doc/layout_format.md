@@ -350,6 +350,10 @@ Layouts can also remap mouse buttons. To remap mouse buttons set
 buttons to the first device in the layout. For example
 
 ```yaml
+layouts:
+  # (optional) sets which layout the mouse uses by default on power up
+  default: numpad_layout
+
   numpad_layout:
     has_mouse_layers: true
 
@@ -385,7 +389,11 @@ The mouse buttons are treat the same as keyboard keys so they can be used as
 layers, modifiers, keystrokes, etc.
 
 Each layout can remap the mouse buttons differently, changing the mouse
-functionality depending on which keyboard is used with the mouse. If no keyboard
-is active, then the mouse will revert to the default mouse buttons.
+functionality depending on which keyboard is used with the mouse. To set which
+layout the mouse uses by default on power up, set the `default` field
+in the `layouts` section to the name of the desired default layout.
+
+If the active keyboard does not remap the mouse buttons, then they will revert
+to their default actions on a standard mouse.
 
 (TODO: allow the mouse to pick a default layout for when no keyboard is active.)

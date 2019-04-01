@@ -107,6 +107,7 @@ class LayoutKeyboard(object):
             self.layer_list.append(LayoutLayer(device_sizes = device_sizes))
 
         self.set_keycode_mapper(KeycodeMapper())
+        self.parser_info = None
 
     @property
     def number_layers(self):
@@ -146,6 +147,8 @@ class LayoutKeyboard(object):
                 {name: layout_json},
                 print_warnings = True
             )
+
+        self.keycode_mapper.attach_parser(parser_info)
 
         parser_info.enter(name)
         self.name = name
@@ -235,10 +238,8 @@ class LayoutKeyboard(object):
     def to_bytes(self):
         result = bytearray()
 
-
         # Construct the layout header
         result += struct.pack("<B", self.has_mouse_layers)
-
 
         keycodes = self.to_keycodes()
 

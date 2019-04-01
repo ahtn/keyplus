@@ -231,6 +231,10 @@ SYMBOL_TO_KEYCODE_MAP = {
     "rsft": MODKEY_RIGHT_SHIFT, "rshift": MODKEY_RIGHT_SHIFT,
     "ralt": MODKEY_RIGHT_ALT, "altgr": MODKEY_RIGHT_ALT,
     "rgui": MODKEY_RIGHT_GUI, "rwin": MODKEY_RIGHT_GUI, "rmeta": MODKEY_RIGHT_GUI,
+    # "ctrl": MODKEY_LEFT_CONTROL,
+    # "shift": MODKEY_LEFT_SHIFT,
+    # "alt": MODKEY_LEFT_ALT,
+    # "gui": MODKEY_LEFT_GUI, "win": MODKEY_LEFT_GUI, "meta": MODKEY_LEFT_GUI,
     # end normal HID keycodes
 
     "!": generate_modkey(KC_1, shift=True),
@@ -275,14 +279,15 @@ SYMBOL_TO_KEYCODE_MAP = {
 # 17-1F reserved
 
 # mouse button keycodes
-    "mouse_btn1": KC_MOUSE_BTN1, "btn1": KC_MOUSE_BTN1,
-    "mouse_btn2": KC_MOUSE_BTN2, "btn2": KC_MOUSE_BTN2,
-    "mouse_btn3": KC_MOUSE_BTN3, "btn3": KC_MOUSE_BTN3,
-    "mouse_btn4": KC_MOUSE_BTN4, "btn4": KC_MOUSE_BTN4,
-    "mouse_btn5": KC_MOUSE_BTN5, "btn5": KC_MOUSE_BTN5,
+    "mouse_btn1": KC_MOUSE_BTN1, "btn1": KC_MOUSE_BTN1, "lmsb": KC_MOUSE_BTN1,
+    "mouse_btn2": KC_MOUSE_BTN2, "btn2": KC_MOUSE_BTN2, "rmsb": KC_MOUSE_BTN2,
+    "mouse_btn3": KC_MOUSE_BTN3, "btn3": KC_MOUSE_BTN3, "mmsb": KC_MOUSE_BTN3,
+    "mouse_btn4": KC_MOUSE_BTN4, "btn4": KC_MOUSE_BTN4, "back": KC_MOUSE_BTN4,
+    "mouse_btn5": KC_MOUSE_BTN5, "btn5": KC_MOUSE_BTN5, "forward": KC_MOUSE_BTN5,
     "mouse_btn6": KC_MOUSE_BTN6, "btn6": KC_MOUSE_BTN6,
     "mouse_btn7": KC_MOUSE_BTN7, "btn7": KC_MOUSE_BTN7,
     "mouse_btn8": KC_MOUSE_BTN8, "btn8": KC_MOUSE_BTN8,
+
 # 28-2F reserved
 
 # system control

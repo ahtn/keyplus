@@ -10,11 +10,17 @@
 
 * `mouse-keys` improve keyboard mouse control
 
+* `macro` added macro keycodes
+* `macro` updated the old internal implementation of macros
+
 * `layout` make id field optional for non-split boards
 * `layout` added `has_mouse_layers` for enabling mouse layers
+* `layout` added `default` option to `layouts` field for setting the default
+    layout used by the mouse when the receiver is powered on
 
 * `firmware` matrix scanning for EFM8
 
+* `keyplus-cli` more options for `keyplus-cli debug` command
 * `keyplus-flasher` when a device has a critical error, perform a full reset
 * `keyplus-flasher` throw error when trying to use matrix scanning when a
     device does not support it.

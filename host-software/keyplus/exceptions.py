@@ -27,6 +27,9 @@ class KeyplusUnsupportedError(KeyplusError):
 class KeyplusParseError(KeyplusError):
     pass
 
+class KeyplusLayoutError(KeyplusError):
+    pass
+
 class KeyplusSettingsError(KeyplusError):
     pass
 

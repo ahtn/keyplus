@@ -49,64 +49,64 @@ class KeyplusLayout(object):
         self.kc_mapper.set_user_keycodes(self.user_keycodes)
 
 
-    def _from_file_common(self, layout_file=None, rf_file=None, print_warnings=False,
-                           load_method=yaml.safe_load, warnings=None):
+    def _from_file_common(self, layout_file=None, rf_file=None,
+                          parser_info=None, rf_parser_info=None,
+                          load_method=yaml.safe_load):
         basename = os.path.basename(layout_file)
         if layout_file:
             with io.open(layout_file, encoding='utf8') as f:
                 layout_json_obj = load_method(f.read())
-            parser_info = KeyplusParserInfo(
-                "<{}>".format(basename),
-                layout_json_obj,
-                print_warnings = print_warnings,
-            )
-        else:
-            parser_info = None
 
+                if parser_info and layout_json_obj:
+                    parser_info.set_parse_object(
+                        "<{}>".format(basename),
+                        layout_json_obj
+                    )
+                self._parser_info = parser_info
         if rf_file:
             rf_basename = os.path.basename(rf_file)
             with io.open(rf_file, encoding='utf8') as f:
                 rf_json_obj = load_method(f.read())
-            rf_parser_info = KeyplusParserInfo(
-                "<{}>".format(rf_basename),
-                rf_json_obj,
-                print_warnings = print_warnings,
-            )
-        else:
-            rf_parser_info = None
+
+                if rf_parser_info and rf_json_obj:
+                    rf_parser_info.set_parse_object(
+                        "<{}>".format(rf_basename),
+                        rf_json_obj
+                    )
+
+        self.kc_mapper.attach_parser(parser_info)
 
         result = self.parse_json(
             parser_info =  parser_info,
             rf_parser_info = rf_parser_info,
         )
 
-        if warnings != None:
-            # print(warnings, parser_info.warnings, rf_parser_info.warnings)
-            if parser_info != None:
-                warnings.extend(parser_info.warnings)
-            if rf_parser_info != None:
-                warnings.extend(rf_parser_info.warnings)
+        if False:
+            if warnings != None:
+                if parser_info != None:
+                    warnings.extend(parser_info.warnings)
+                if rf_parser_info != None:
+                    warnings.extend(rf_parser_info.warnings)
 
         return result
 
     def from_json_file(self, layout_file=None, rf_file=None,
-                       print_warnings=False, warnings=None):
+                       parser_info=None, rf_parser_info=None):
         return self._from_file_common(
             layout_file,
             rf_file,
-            print_warnings,
-            json.loads,
-            warnings,
+            parser_info=parser_info,
+            load_method=json.loads,
         )
 
     def from_yaml_file(self, layout_file=None, rf_file=None,
-                       print_warnings=False, warnings=None):
+                       parser_info=None, rf_parser_info=None):
         return self._from_file_common(
             layout_file,
             rf_file,
-            print_warnings,
-            yaml.safe_load,
-            warnings,
+            parser_info = parser_info,
+            rf_parser_info = rf_parser_info,
+            load_method = yaml.safe_load,
         )
 
     def add_device(self, device):
@@ -138,8 +138,11 @@ class KeyplusLayout(object):
         return self._layouts[layout_id]
 
     def get_layout_by_name(self, name):
-        layout_id = self._layout_id_map[name]
-        return self._layouts[layout_id]
+        if name in self._layout_id_map:
+            layout_id = self._layout_id_map[name]
+            return self._layouts[layout_id]
+        else:
+            return None
 
     def add_layout(self, layout):
         layout_id = layout.layout_id
@@ -186,18 +189,45 @@ class KeyplusLayout(object):
         self.user_keycodes.parse_json(parser_info = parser_info)
         self.ekc_data = self.user_keycodes.generate_ekc_data()
 
+    def get_default_layout_id(self):
+       """
+       Gets the default layout id. Return 0 if defualt layout not set
+       """
+       layout = self.get_layout_by_name(self.default_layout_name)
+       if layout != None:
+           return layout.layout_id
+       elif self.default_layout_name == None:
+           return 0
+       else:
+           self._parser_info.raise_exception(
+               "Default layout '{}' not found".format(self.default_layout_name)
+           )
+
     def _parse_layouts(self, parser_info):
         parser_info.enter("layouts")
-        for (layout_num, field) in enumerate(parser_info.iter_fields()):
-            layout = LayoutKeyboard(field)
+        self.default_layout_name = None
+
+        layout_id = 0
+
+        for layout_name in parser_info.iter_fields():
+            if layout_name == 'default':
+                if isinstance(parser_info.peek_field(layout_name), str):
+                    # default layout is an alias to another layout, so don't parse it
+                    self.default_layout_name = parser_info.try_get(layout_name)
+                    continue
+                else:
+                    self.default_layout_name = 'default'
+
+            layout = LayoutKeyboard(layout_name)
             layout.set_keycode_mapper(self.kc_mapper)
 
             layout.parse_json(
-                name = field,
+                name = layout_name,
                 parser_info = parser_info
             )
             if layout.layout_id == None:
-                layout.layout_id = layout_num
+                layout.layout_id = layout_id
+            layout_id += 1
             self.add_layout(layout)
         parser_info.exit()
 
@@ -207,14 +237,14 @@ class KeyplusLayout(object):
             parser_info = KeyplusParserInfo(
                 "<KeyplusLayout(layout)>",
                 layout_json,
-                print_warnings = True
             )
         if not rf_parser_info and rf_json:
             rf_parser_info = KeyplusParserInfo(
                 "<KeyplusLayout(rf)>",
                 rf_json,
-                print_warnings = True
             )
+
+        self.kc_mapper.attach_parser(parser_info)
 
         self.settings["name"] = parser_info.try_get(
             field = "name",
@@ -318,12 +348,14 @@ class KeyplusLayout(object):
     def build_layout_settings(self):
     # uint8_t number_layouts;
     # uint8_t number_devices;
-    # uint8_t _reserved[30]; // 32
+    # uint8_t default_layout_id;
+    # uint8_t _reserved[29]; // 32
     # keyboard_info_t layouts[MAX_NUM_KEYBOARDS];
     # device_info_t devices[MAX_NUM_DEVICES];
         layout_info = KeyboardLayoutInfo()
         layout_info.number_layouts = self.number_layouts
         layout_info.number_devices = max(self._devices)
+        layout_info.default_layout_id = self.get_default_layout_id()
 
         # struct keyboard_info_t layouts[MAX_NUM_KEYBOARDS];
 
