@@ -1,0 +1,353 @@
+# Written in 2017 by jem@seethis.link
+# This file is released into the public domain as per the CC0 Public Domain
+# Dedication (http://creativecommons.org/publicdomain/zero/1.0/)
+---
+# test keyboard layout
+
+name: "test-layout"
+version: 0.3.4
+report_mode: auto_nkro # options: auto_nkro, 6kro, nkro
+
+# NOTE: rf settings and encryption key are stored in a separate file
+
+# TODO: add more settings to control global configuration
+# TODO: add LED configuration settings
+# TODO: add mouse configuration
+
+devices:
+  "blue gamma split - left":
+    id: 12
+    wireless_split: true
+    wireless_mouse: true
+    wired_split: true
+    layout: gamma_split
+    layout_offset: 1
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: 4
+      cols: 6
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r2c2, r2c1, r2c0, r2c3, r2c4, r2c5,
+        r3c2, r3c1, r3c0, r3c3, r3c4, r3c5,
+        r1c2, r1c1, r1c0, r1c3, r1c4, r1c5,
+        r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
+      ]
+
+  "blue gamma split - right":
+    id: 13
+    wireless_split: true
+    wireless_mouse: true
+    wired_split: true
+    layout: gamma_split
+    layout_offset: 2
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: 4
+      cols: 6
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r2c2, r2c1, r2c0, r2c3, r2c4, r2c5,
+        r3c2, r3c1, r3c0, r3c3, r3c4, r3c5,
+        r1c2, r1c1, r1c0, r1c3, r1c4, r1c5,
+        r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
+      ]
+      debounce:
+        debounce_time_press: 5
+        debounce_time_release: 5
+        trigger_time_press: 5
+        trigger_time_release: 5
+        parasitic_discharge_delay_idle: 10.0
+        parasitic_discharge_delay_debouncing: 10.0
+
+  "orange γ split 🔥 left":
+    id: 14
+    wireless_split: true
+    wireless_mouse: true
+    wired_split: false
+    layout: gamma_split
+    layout_offset: 1
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: [D2, D3, D1, D0]
+      cols: [A2, A1, A0, A3, A4, A5]
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+        r3c0, r3c1, r3c2, r3c3, r3c4, r3c5,
+      ]
+      debounce:
+        debounce_time_press: 5
+        debounce_time_release: 5
+        trigger_time_press: 5
+        trigger_time_release: 5
+        parasitic_discharge_delay_idle: 10.0
+        parasitic_discharge_delay_debouncing: 10.0
+
+
+
+  "orange γ split - right":
+    id: 15
+    wireless_split: true
+    wireless_mouse: false
+    wired_split: false
+    layout: gamma_split
+    layout_offset: 2
+    scan_mode: # wireless only
+      mode: col_row # options: col_row, pins, none
+      rows: 4
+      cols: 6
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r2c2, r2c1, r2c0, r2c3, r2c4, r2c5,
+        r3c2, r3c1, r3c0, r3c3, r3c4, r3c5,
+        r1c2, r1c1, r1c0, r1c3, r1c4, r1c5,
+        r0c2, r0c1, r0c0, r0c3, r0c4, r0c5,
+      ]
+
+
+  jade split - left:
+    id: 16
+    mcu: atxmega32a4u
+    wireless_split: true
+    wireless_mouse: true
+    wired_split: false
+    layout: gamma_split
+    layout_offset: 1
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: [D2, D3, D1, D0]
+      cols: [A2, A1, A0, A3, A4, A5]
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+        r3c0, r3c1, r3c2, r3c3, r3c4, r3c5,
+      ]
+      # debounce:
+      #   debounce_time_press: 5
+      #   debounce_time_release: 5
+      #   trigger_time_press: 1
+      #   trigger_time_release: 1
+      #   parasitic_discharge_delay_idle: 10.0
+      #   parasitic_discharge_delay_debouncing: 10.0
+    studio_kle: [
+      "something"
+    ]
+
+
+  jade split - right:
+    id: 17
+    wireless_split: true
+    wireless_mouse: true
+    wired_split: false
+    layout: gamma_split
+    layout_offset: 2
+    scan_mode:
+      mode: col_row # options: col_row, pins, none
+      rows: [D2, D3, D1, D0]
+      cols: [A2, A1, A0, A3, A4, A5]
+      # maps how keys are physically wired, to how they appear visually
+      matrix_map: [
+        r0c0, r0c1, r0c2, r0c3, r0c4, r0c5,
+        r1c0, r1c1, r1c2, r1c3, r1c4, r1c5,
+        r2c0, r2c1, r2c2, r2c3, r2c4, r2c5,
+        r3c0, r3c1, r3c2, r3c3, r3c4, r3c5,
+      ]
+      # debounce:
+      #   debounce_time_press: 5
+      #   debounce_time_release: 5
+      #   trigger_time_press: 1
+      #   trigger_time_release: 1
+      #   parasitic_discharge_delay_idle: 10.0
+      #   parasitic_discharge_delay_debouncing: 10.0
+
+
+  # rf dongle
+  nRF24 Dongle 📻:
+    id: 48
+    wireless_split: true
+    wireless_mouse: true
+    scan_mode: # rf dongle, so don't need a matrix
+      mode: no_matrix # options: col_row, pins, no_matrix
+
+
+keycodes:
+  SFTEnt:
+    keycode: hold
+    tap_key: enter
+    hold_key: sticky_lshift
+
+    activate_type: other_key # activate hold_key when other key is pressed
+    # delay: 200 # currently doesn't do anything for other_key activation
+
+    # activate_type: delay # activate hold_key after delay
+    # delay: 200 # delay in milliseconds
+
+  # Close tab, no repeat
+  close_tab:
+    keycode: macro
+    commands:
+      - c-w
+
+  gesture:
+    keycode: mouse_gesture
+    left: c-pgup
+    right: c-pgdn
+    up: ca-up
+    down: ca-down
+    up_right: home
+    down_right: end
+    up_left: rapid_click
+    down_left: close_tab
+
+    # tap: TODO
+    #
+    threshold: 110
+    threshold_diag: 65
+    # threshold_tap: 30
+    threshold_tap: 0
+
+  rapid_click:
+    keycode: macro
+    commands:
+      - set_rate(8)
+      - repeat(0) # repeat forever
+      -   press(lmsb)
+      -   release(lmsb)
+      - end_repeat()
+    commands_release:
+      - release(lmsb)
+
+
+layouts:
+  default: gamma_split
+
+  gamma_split:
+    default_layer: 0
+    has_mouse_layers: True
+    layers: [
+      [ # layer 0 (colemak)
+        [ # mouse
+          BTN1, BTN2, BTN3, s_L4, s_lsft ,  s_L5, bspc , gesture
+          # BTN1, BTN2, BTN3, macro1, rapid_click  , s_lsft, s_L4  , gesture
+        ],
+        [ # left hand
+          tab , q   , w   , f   , p   , g   ,
+          SFTEnt , a   , r   , s   , t   , d   ,
+          lalt, z   , x   , c   , v   , b   ,
+          sticky_lshift , sticky_l4  , L6  , lctl  , L3  , spc ,
+        ],
+        [ # right hand
+          j   , l   , u   , y   , ";" , "-" ,
+          h   , n   , e   , i   , o   , "'" ,
+          k   , m   , "," , "." , "/" , "`" ,
+          sticky_lshift, sticky_L2, bspc, lgui, esc , ralt
+        ],
+      ],
+      [ # layer 1 (qwerty arrows)
+        [ # mouse
+          ____, ____, ____, ____, ____, ____, ____, ____,
+        ],
+        [ # left hand
+          ____, q   , w   , e   , r   , t   ,
+          ____, a   , s   , d   , f   , g   ,
+          ____, z   , x   , c   , v   , b   ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          y   , u   , up  , o   , p   , "-" ,
+          h   , left, down, rght, ";" , "'" ,
+          m   , n   , "," , "." , "/" , "`" ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+      ],
+      [ # layer 2 (symbol)
+        [ # mouse
+          ____, ____, ____, ____, ____, ____, ____, ____,
+        ],
+        [ # left hand
+          ____, "|" , "2" , "3" , "4" , "5" ,
+          ____, "1" , "\\", "(" , "[" , "{" ,
+          ____, "!" , "@" , "#" , "$" , "%" ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          "6" , "7" , "8" , "9" , "+" , "-" ,
+          "}" , "]" , ")" , "=" , "0" , "*" ,
+          "^" , "&" , "," , "." , "/" , "~" ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+      ],
+      [ # layer 3 (fn)
+        [ # mouse
+          ____, ____, ____, S-tab, tab , pgup, pgdn , ____,
+        ],
+        [ # left hand
+          ins , del , home, up  , end , pgup,
+          ____, esc , left, down, rght, pgdn,
+          ____, F1  , F2  , F3  , F4  , F5  ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          C-pgup, C-home, C-up  , C-end , C-del , F12 ,
+          C-pgdn, C-left, C-down, C-rght, C-bspc, F11 ,
+          F6    , F7    , F8    , F9    , F10   , CA-none ,
+          ____  , ____  , ____  , ____  , ____  , ____,
+        ],
+      ],
+      [ # layer 4 (reverse)
+        [ # mouse
+          ____, ____, ____, ____, ____, ____, ____, ____,
+        ],
+        [ # left hand
+          "-" , ";" , y   , u   , l   , j   ,
+          "'" , o   , i   , e   , n   , h   ,
+          "`" , "/" , "." , "," , m   , k   ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          g   , p   , f   , w   , q   , ____,
+          d   , t   , s   , r   , a   , ____,
+          b   , v   , c   , x   , z   , ____,
+          ____, ____, ____, ____, ____, ____,
+        ],
+      ],
+      [ # layer 5 (number)
+        [ # mouse
+          ____, ____, ____, ____, ____, ____, ____, ____,
+        ],
+        [ # left hand
+          "-" , "+" , 7   , 8   , 9   , j   ,
+          "." , 0   , 4   , 5   , 6   , h   ,
+          ____, "/" , 1   , 2   , 3   , k   ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          g   , p   , f   , w   , q   , ____,
+          d   , t   , s   , r   , a   , ____,
+          b   , v   , c   , x   , z   , ____,
+          ____, ____, ____, ____, ____, ____,
+        ],
+      ],
+      [ # layer 6 (media)
+        [ # mouse
+          ____, ____, ____, MPRV, MNXT, VOLU, VOLD, ____,
+        ],
+        [ # left hand
+          slck, pscr, mply, volu, mstp, F11 ,
+          bspc, mute, mprv, vold, mnxt, app ,
+          ____, C-y , CS-z , C-i , C-. , C-; ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+        [ # right hand
+          wh_u, btn1, ms_u, btn2, RS-c, dongle_0 ,
+          wh_d, ms_l, ms_d, ms_r, btn3, dongle_1 ,
+          set_l3 , set_l0 , set_l1 , set_l2 , set_l4, test_2 ,
+          ____, ____, ____, ____, ____, ____,
+        ],
+      ],
+    ]

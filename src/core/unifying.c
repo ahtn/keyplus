@@ -308,7 +308,6 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
 }
 
 void gesture_init(void) {
-
 }
 
 void gesture_press(uint16_t ekc_addr, uint8_t kb_id) {
@@ -329,7 +328,7 @@ void gesture_release(uint16_t ekc_addr, uint8_t kb_id) {
                 (abs(s_gesture.x) < s_gesture.threshold_tap) &&
                 (abs(s_gesture.y) < s_gesture.threshold_tap)
             ) {
-                USB_PRINT_TEXT("gesture tap\n");
+                // TAP
             }
             s_gesture.state = GESTURE_STATE_INACTIVE;
         } break;
@@ -410,14 +409,17 @@ void unifying_mouse_handle(void) REENT {
     // if (g_unifying_mouse_state.buttons_1 & 0x80) {
     switch (s_gesture.state) {
         case GESTURE_STATE_SCANNING: {
+            uint8_t has_pos_x, has_neg_x, has_pos_y, has_neg_y;
+
             s_gesture.x += g_unifying_mouse_state.x;
             s_gesture.y += g_unifying_mouse_state.y;
 
-            // trigger threshold
-            uint8_t has_pos_x = s_gesture.x >  s_gesture.threshold_diag;
-            uint8_t has_neg_x = s_gesture.x < -s_gesture.threshold_diag;
-            uint8_t has_pos_y = s_gesture.y >  s_gesture.threshold_diag;
-            uint8_t has_neg_y = s_gesture.y < -s_gesture.threshold_diag;
+            // trigger threshold for diagonal motions
+            has_pos_x = s_gesture.x >  s_gesture.threshold_diag;
+            has_neg_x = s_gesture.x < -s_gesture.threshold_diag;
+            has_pos_y = s_gesture.y >  s_gesture.threshold_diag;
+            has_neg_y = s_gesture.y < -s_gesture.threshold_diag;
+
             if (has_neg_x && has_neg_y) {
                 trigger_gesture(GESTURE_UP_LEFT);
             } else if (has_pos_x && has_neg_y) {

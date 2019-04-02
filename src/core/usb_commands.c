@@ -15,7 +15,10 @@
 #include "core/matrix_interpret.h"
 #include "core/matrix_scanner.h"
 #include "core/timer.h"
-#include "core/unifying.h"
+
+#if USE_UNIFYING
+#  include "core/unifying.h"
+#endif
 
 #include "usb_reports/keyboard_report.h"
 #include "usb_reports/media_report.h"
@@ -508,6 +511,7 @@ static void parse_cmd(void) REENT {
             cmd_read_layout();
         } break;
 
+#if USE_UNIFYING
         /// CMD_UNIFYING_SEND format:
         /// byte0:              this command name
         /// byte1:              n: length of unifying packet to send
@@ -522,7 +526,6 @@ static void parse_cmd(void) REENT {
             unifying_send_packet(g_vendor_report_out.data + 2, size);
         } break;
 
-#if USE_NRF24
         case CMD_UNIFYING_PAIR: {
             unifying_begin_pairing();
         } break;

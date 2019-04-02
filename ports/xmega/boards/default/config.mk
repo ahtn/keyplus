@@ -2,6 +2,10 @@ ifndef MCU
     MCU = atxmega32a4u
 endif
 
+ifndef LAYOUT_FILE
+    LAYOUT_FILE=../../layouts/small_split_test.yaml
+endif
+
 C_SRC += # extra includes
 
 # vbus check pin

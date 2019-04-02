@@ -7,15 +7,23 @@
 
 #include "core/matrix_interpret.h"
 #include "core/timer.h"
-#include "core/unifying.h"
+
+#if USE_UNIFYING
+#  include "core/unifying.h"
+#endif
 
 #include "usb_reports/mouse_report.h"
 
 // /* TODO: mouse keycode */
 bit_t is_mouse_keycode(keycode_t keycode) {
-    return IS_MOUSEKEY(keycode) || keycode == KC_MOUSE_GESTURE;
+#if USE_UNIFYING
+    return ( IS_MOUSEKEY(keycode) || keycode == KC_MOUSE_GESTURE);
+#else
+    return IS_MOUSEKEY(keycode);
+#endif
 }
 
+// TODO: make these configurable
 #define MOUSE_SPEED 10
 #define MOUSE_WHEEL_SPEED 1
 #define MOUSE_REPORT_RATE 10
@@ -51,7 +59,9 @@ void handle_mouse_keycode(keycode_t ekc, key_event_t event) REENT {
         s_relased_buttons = 0;
         s_num_mouse_keys_down = 0;
         s_num_mouse_keys_to_release = 0;
+#if USE_UNIFYING
         gesture_init();
+#endif
         return;
     }
 
@@ -100,6 +110,7 @@ void handle_mouse_keycode(keycode_t ekc, key_event_t event) REENT {
             }
             s_num_mouse_keys_to_release += 1;
         }
+#if USE_UNIFYING
     } else if (kc == KC_MOUSE_GESTURE) {
         // Mouse gesture
         uint8_t kb_id = get_active_keyboard_id();
@@ -108,6 +119,7 @@ void handle_mouse_keycode(keycode_t ekc, key_event_t event) REENT {
         } else {
             gesture_release(EKC_DATA_ADDR(ekc), kb_id);
         }
+#endif
     }
 }
 

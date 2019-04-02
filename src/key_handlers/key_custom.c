@@ -14,14 +14,6 @@
 
 #include "usb_reports/mouse_report.h"
 
-static const ROM char msg[] = "hello world\n";
-
-#if USE_NRF24
-static bit_t is_dongle_key(keycode_t keycode) {
-    return ( KC_DONGLE_0 <= keycode && keycode <= KC_DONGLE_7 );
-}
-#endif
-
 static bit_t keycode_checker(keycode_t keycode) {
     return ( KC_DONGLE_0 <= keycode && keycode <= KC_TEST_7);
 }
@@ -47,22 +39,10 @@ static void handler(keycode_t keycode, key_event_t event) REENT {
         } break;
 #endif
 
-        case KC_TEST_3: {
-            if (event == EVENT_PRESSED) {
-                usb_print((uint8_t *)msg, sizeof(msg));
-            }
-            return;
-        } break;
-
-        case KC_TEST_4: {
-            if (event == EVENT_PRESSED) {
-                // run_macro(0);
-            }
-            return;
-        } break;
     }
 
-#if USE_NRF24
+// #if USE_NRF24
+#if 0
     // TODO: move this to extended keycode type
     if (is_dongle_key(keycode) && event == EVENT_PRESSED) {
         const uint8_t id = keycode - KC_DONGLE_0;

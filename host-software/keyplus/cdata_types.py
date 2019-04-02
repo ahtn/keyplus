@@ -181,7 +181,8 @@ class firmware_info_t(CStructWithBytes):
     uint8_t page_size;
     uint8_t max_rows;
     uint8_t version_info;
-    uint8_t reserved[20];
+    uint8_t mouse_support;
+    uint8_t reserved[19];
     """
 
 make_bit_field_variables(firmware_info_t, [
@@ -213,6 +214,9 @@ make_bit_field_variables(firmware_info_t, [
     ("connectivity" , "has_bluetooth" , SUPPORT_BT)       ,
 
     ("version_info" , "is_stable_build"  , VERSION_IS_STABLE)    ,
+
+    ("mouse_support" , "has_mouse        "  , SUPPORT_MOUSE)  ,
+    ("mouse_support" , "has_mouse_gesture"  , SUPPORT_MOUSE_GESTURE)  ,
 ])
 
 class rf_settings_t(CStructWithBytes):

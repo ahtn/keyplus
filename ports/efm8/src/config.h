@@ -14,7 +14,7 @@
 
 #define USB_BUFFERED 0
 
-#define NO_SPLIT
+#define NO_SPLIT 1
 
 #ifndef BOOTLOADER_VID
   #define BOOTLOADER_VID 0x10C4

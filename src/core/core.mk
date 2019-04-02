@@ -47,11 +47,17 @@ CDEFS += -DDEVICE_ID=$(ID)
 # Note: Specific board configs are stored in the `boards` directory.
 
 ifndef BOARD
-  BOARD = keyplus_mini
+  $(info )
+  $(info Error: make pararmeter not given: BOARD )
+  $(info )
+  $(error BOARD variable not set)
 endif
 
 ifndef LAYOUT_FILE
-  LAYOUT_FILE=$(KEYPLUS_PATH)/../layouts/basic_split_test.yaml
+  $(info )
+  $(info Error: make pararmeter not given: LAYOUT_FILE )
+  $(info )
+  $(error LAYOUT_FILE variable not set)
 endif
 
 ifndef RF_FILE

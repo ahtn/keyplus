@@ -79,15 +79,16 @@ C_SRC += \
 	debug.c \
 	fuses.c \
 	hardware.c \
-	led_vm.c \
 	main.c \
 	matrix_scanner.c \
 	power.c \
-	ws2812.c \
 	port_impl/io_map.c \
 	port_impl/led.c \
 	port_impl/timer.c \
 	port_impl/flash.c \
+	# led_vm.c \
+	# ws2812.c \
+
 
 ifeq ($(USE_USB), 1)
 C_SRC += $(SRC_USB) \
@@ -226,6 +227,11 @@ $(BOOTLOADER_HEX):
 $(MERGED_HEX_WITH_BOOT): $(MERGED_HEX) $(BOOTLOADER_HEX)
 	head -n -1 "$(MERGED_HEX)" > "$(MERGED_HEX_WITH_BOOT)"
 	cat "$(BOOTLOADER_HEX)" >> "$(MERGED_HEX_WITH_BOOT)"
+
+
+.PHONY: check_sizes
+check_sizes:
+	$(AVR_MKFILE_PATH)/check_elf_sizes.sh $(TARGET_ELF) $(SECTION)
 
 #######################################################################
 #                     fuse and lock bit settings                      #

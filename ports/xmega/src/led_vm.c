@@ -23,7 +23,6 @@ rgb_color_t hsv_to_rgb(uint8_t h, uint8_t s, uint8_t v) {
         case 0: // hue: r=1, g++, b=0
             rgb.r = v;
             rgb.g = scale(cc + scale(~cc, ~s), v);
-            rgb.b = scale(~s, v);
         break;
 
         case 1: // hue: g=1, r--, b=0

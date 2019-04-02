@@ -264,7 +264,8 @@ typedef struct firmware_build_settings_t {
     uint8_t key_tap: 1;
     /// True if the device supports hold keys
     uint8_t key_hold: 1;
-    uint8_t _reserved3: 2; // 1 byte
+    uint8_t key_macro: 1;
+    uint8_t _reserved3: 1; // 1 byte
 
     // led_features
     /// True if the device supports indicator LEDs
@@ -310,7 +311,12 @@ typedef struct firmware_build_settings_t {
     uint8_t is_stable_build: 1;
     uint8_t reserved5: 7;
 
-    uint8_t reserved[20]; // pad to 62 bytes
+    // offset 42
+    uint8_t has_mouse: 1
+    uint8_t has_mouse_gesture: 1
+    uint8_t reserved5: 6;
+
+    uint8_t reserved[19]; // pad to 62 bytes
 } firmware_build_settings_t;
 
 /// Lookup a setting from the devices settings table in flash.
