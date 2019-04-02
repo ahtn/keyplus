@@ -132,8 +132,8 @@ const ROM firmware_build_settings_t g_firmware_build_settings = {
     .is_stable_build = KEYPLUS_VERSION_IS_STABLE,
 
 #if USE_UNIFYING
-    has_mouse = 1,
-    has_mouse_gesture = 1,
+    .has_mouse = 1,
+    .has_mouse_gesture = 1,
 #endif
 };
 

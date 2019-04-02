@@ -312,9 +312,10 @@ typedef struct firmware_build_settings_t {
     uint8_t reserved5: 7;
 
     // offset 42
-    uint8_t has_mouse: 1
-    uint8_t has_mouse_gesture: 1
-    uint8_t reserved5: 6;
+    // mouse support:
+    uint8_t has_mouse: 1; // has unifying mouse support
+    uint8_t has_mouse_gesture: 1;
+    uint8_t reserved6: 6;
 
     uint8_t reserved[19]; // pad to 62 bytes
 } firmware_build_settings_t;
