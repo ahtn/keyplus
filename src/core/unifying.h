@@ -184,7 +184,7 @@ typedef struct unifying_mouse_packet_t {
 /// NOTE: from dissasembly, when sending packet unifying receiver uses
 /// 15 retransmits with 1ms delay
 ///
-/// NOTE: Unifying receiver listen to one of 24 rf channels. Thes channels
+/// NOTE: Unifying receiver listen to one of 24 rf channels. These channels
 /// are pulled from this lookup table: [
 ///     5  , 8  , 11 , 14 , 17 , 20 , 23 , 26 ,
 ///     29 , 32 , 35 , 38 , 41 , 44 , 47 , 50 ,

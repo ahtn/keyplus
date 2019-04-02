@@ -29,6 +29,12 @@ PWR_0DB = 0x03
 
 MAX_RF_CHANNEL = 127
 
+UNIFYING_RF_CHANNELS = [
+5  , 8  , 11 , 14 , 17 , 20 , 23 , 26 ,
+29 , 32 , 35 , 38 , 41 , 44 , 47 , 50 ,
+53 , 56 , 59 , 62 , 65 , 68 , 71 , 74
+]
+
 RF_POWER_MAP = {
     '0db': PWR_0DB,
     '-6db': PWR_NEG_6DB,
@@ -85,10 +91,9 @@ class LayoutRFSettings(object):
 
     def generate_random_channel(self):
         """ Returns a random RF channel """
-        channel = MAX_RF_CHANNEL+1
-        while channel > MAX_RF_CHANNEL:
-            n = int((bytearray(os.urandom(1))[0]))
-            channel = 3*n+2
+        channel = -1
+        while channel not in UNIFYING_RF_CHANNELS:
+            channel = int((bytearray(os.urandom(1))[0]))
         self.channel = channel
 
     def generate_random_pipe_addresses(self):
