@@ -16,7 +16,7 @@
 
 // /* TODO: mouse keycode */
 bit_t is_mouse_keycode(keycode_t keycode) {
-#if USE_UNIFYING
+#if USE_UNIFYING && SUPPORT_GESTURE
     return ( IS_MOUSEKEY(keycode) || keycode == KC_MOUSE_GESTURE);
 #else
     return IS_MOUSEKEY(keycode);
@@ -59,7 +59,7 @@ void handle_mouse_keycode(keycode_t ekc, key_event_t event) REENT {
         s_relased_buttons = 0;
         s_num_mouse_keys_down = 0;
         s_num_mouse_keys_to_release = 0;
-#if USE_UNIFYING
+#if USE_UNIFYING && SUPPORT_GESTURE
         gesture_init();
 #endif
         return;
@@ -110,7 +110,7 @@ void handle_mouse_keycode(keycode_t ekc, key_event_t event) REENT {
             }
             s_num_mouse_keys_to_release += 1;
         }
-#if USE_UNIFYING
+#if USE_UNIFYING && SUPPORT_GESTURE
     } else if (kc == KC_MOUSE_GESTURE) {
         // Mouse gesture
         uint8_t kb_id = get_active_keyboard_id();

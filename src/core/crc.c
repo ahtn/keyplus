@@ -29,7 +29,7 @@ uint16_t crc16_buffer(const uint8_t *buf_ptr, uint8_t length) {
     return crc;
 }
 
-uint16_t crc16_flash_buffer(flash_ptr_t flash_ptr, uint8_t length) {
+uint16_t crc16_flash_buffer(flash_addr_t flash_ptr, uint8_t length) {
     uint16_t crc = 0xffff;
     while (length-- > 0) {
         const uint8_t flash_byte = flash_read_byte(flash_ptr++);

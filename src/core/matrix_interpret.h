@@ -39,7 +39,7 @@ extern bit_t dongle_active;
 typedef struct keyboard_t {
     uint8_t kb_id;
     uint8_t matrix_size;
-    flash_ptr_t layout;
+    flash_addr_t layout;
 
     uint8_t matrix[32];
     uint8_t matrix_prev[32];
@@ -72,7 +72,7 @@ void keyboards_init(void);
 void keyboard_update_device_matrix(uint8_t device_id, const XRAM uint8_t *matrix_packet) REENT;
 void update_mouse_matrix(uint8_t buttons);
 
-void keyboard_interpret_matrix(uint8_t keyboard_id) ;
+void keyboard_interpret_matrix(uint8_t keyboard_id);
 void keyboard_reset_matrix(uint8_t keyboard_id);
 layer_mask_t keyboard_get_layer_mask(uint8_t keyboard_id);
 void reset_layer_state(uint8_t keyboard_id);

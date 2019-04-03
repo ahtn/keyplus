@@ -60,7 +60,7 @@ uint16_t flash_read_word(flash_ptr_t addr) {
 }
 
 void flash_read(uint8_t* dest, flash_ptr_t addr, flash_size_t len) {
-    XRAM flash_size_t i;
+    flash_size_t i;
     for (i = 0; i < len; ++i) {
         dest[i] = ((ROM uint8_t *)addr)[i];
     }

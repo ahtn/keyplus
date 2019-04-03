@@ -40,6 +40,8 @@ XRAM keycode_callbacks_t *XRAM g_keyhandler_list[] WEAK = {
     &mouse_keycodes,
     &media_keycodes,
     &custom_keycodes,
+#if SUPPORT_MACRO
     &macro_keycodes,
+#endif
     NULL,
 };

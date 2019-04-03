@@ -294,6 +294,7 @@ void rf_init_receive(void) {
     g_rf_enabled = true;
 }
 
+#if SUPPORT_MULTI_RECEIVER
 // To disable sending auto ack packets as a receiver, we need to disable
 // enhanced shockburst mode and read the enhanced shockburst packets the
 // and validate the crc ourself
@@ -336,6 +337,7 @@ void rf_auto_ack(bit_t enabled) {
 bit_t is_auto_ack_enabled(void) {
     return auto_ack;
 }
+#endif
 
 // This function is used when a new device wants to connect to this receiver.
 // To prevent replay attacks, we construct a challenge packet to be sent to

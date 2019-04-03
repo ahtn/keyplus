@@ -39,7 +39,10 @@
 // TODO: should move this to an init function
 XRAM unifying_mouse_state_t g_unifying_mouse_state = {0};
 XRAM uint8_t g_unifying_mouse_activity = 0;
+
+#if SUPPORT_GESTURE
 XRAM gesture_state_t s_gesture = {0};
+#endif
 
 /// Address for the initial unifying pairing request.
 ///
@@ -307,6 +310,7 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
     }
 }
 
+#if SUPPORT_GESTURE
 void gesture_init(void) {
 }
 
@@ -368,6 +372,7 @@ void trigger_gesture(uint8_t gesture_type) {
     s_gesture.state = GESTURE_STATE_ACTIVATED;
     s_gesture.triggered_kc = gesture_kc;
 }
+#endif
 
 void unifying_mouse_handle(void) REENT {
     if (!g_unifying_mouse_activity) {
@@ -405,6 +410,7 @@ void unifying_mouse_handle(void) REENT {
         // so no need to do it here
     }
 
+#if SUPPORT_GESTURE
     // Gesture handling
     // if (g_unifying_mouse_state.buttons_1 & 0x80) {
     switch (s_gesture.state) {
@@ -439,6 +445,8 @@ void unifying_mouse_handle(void) REENT {
             }
         } break;
     }
+#endif
+
     g_unifying_mouse_activity = 0;
 
 }

@@ -23,7 +23,10 @@
 #include "core/timer.h"
 #include "core/util.h"
 
+#if SUPPORT_MACRO
 #include "core/macro.h"
+#endif
+
 #include "key_handlers/key_hold.h"
 #include "key_handlers/key_mouse.h"
 
@@ -109,7 +112,9 @@ void main(void) {
             irq_off();
             {
                 mouse_key_task();
+#if SUPPORT_MACRO
                 macro_task();
+#endif
 
                 // send reports
                 unifying_mouse_handle();

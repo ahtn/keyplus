@@ -42,23 +42,7 @@ XRAM matrix_scan_plan_t g_scan_plan;
 #endif
 
 
-AT__SETTINGS_ADDR const settings_t g_settings_storage = {
-
-    .device_id = DEVICE_ID,
-
-    .timestamp = { BUILD_TIME_STAMP },
-
-// TODO: handle custom settings when build from source better
-#include "settings/dev_global_settings.c"
-
-#include "settings/dev_layout_settings.c"
-
-#include "settings/dev_rf_settings.c"
-
-    // NOTE: can't do this at compile time, need to parse the layout file
-    // and generate it
-    .crc = 0x1234,
-};
+AT__SETTINGS_ADDR const settings_t g_settings_storage = { 0 };
 
 STATIC_ASSERT(
     sizeof(g_settings_storage) == SETTINGS_STORAGE_SIZE,
@@ -133,7 +117,7 @@ const ROM firmware_build_settings_t g_firmware_build_settings = {
 
 #if USE_UNIFYING
     .has_mouse = 1,
-    .has_mouse_gesture = 1,
+    .has_mouse_gesture = SUPPORT_GESTURE,
 #endif
 };
 

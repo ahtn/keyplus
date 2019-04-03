@@ -42,11 +42,27 @@ cp avr/* -t $avr8_folder/avr/include/avr
 # SDCC mcs51 tool chain
 #
 if [[ -z $SDCC_VERSION ]]; then
-    SDCC_VERSION=3.7.0
+    # This version has compiler error on the keyplus code base
+    # SDCC_VERSION=3.8.0
+
+    # This version produces larger code for bool (think in handling booleans)
+    # SDCC_VERSION=3.7.0
+
+    # This version produces smaller code than 3.7.0
+    SDCC_VERSION=9948
 fi
 
+# Version 3.7.0
+# sdcc_tar=sdcc-${SDCC_VERSION}-mcs51-x86_64-linux.tar.gz
+# sdcc_dist=https://github.com/ahtn/efm8_sdcc/releases/download/sdcc/$sdcc_tar
+
+# Version 3.8.0 sourceforge release
+# sdcc_tar=sdcc-3.8.0-amd64-unknown-linux2.5.tar.bz2
+# sdcc_dist=https://sourceforge.net/projects/sdcc/files/sdcc-linux-amd64/3.8.0/sdcc-3.8.0-amd64-unknown-linux2.5.tar.bz2/download
+
+# Version svn-#9948
 sdcc_tar=sdcc-${SDCC_VERSION}-mcs51-x86_64-linux.tar.gz
 sdcc_dist=https://github.com/ahtn/efm8_sdcc/releases/download/sdcc/$sdcc_tar
 
-wget $sdcc_dist
+wget $sdcc_dist -O $sdcc_tar
 tar xvf $sdcc_tar

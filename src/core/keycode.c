@@ -7,7 +7,7 @@
 
 #include "core/error.h"
 
-XRAM flash_ptr_t g_ekc_storage_ptr;
+XRAM flash_addr_t g_ekc_storage_ptr;
 XRAM uint32_t g_ekc_storage_size;
 
 keycode_t get_ekc_type(keycode_t kc) {
@@ -22,8 +22,8 @@ keycode_t get_ekc_type(keycode_t kc) {
 }
 
 uint8_t get_ekc_data(void *dest, uint16_t offset, uint16_t size) REENT {
-    if (is_valid_storage_pos((flash_ptr_t)g_ekc_storage_ptr + offset) &&
-        is_valid_storage_pos((flash_ptr_t)g_ekc_storage_ptr + offset + size - 1)
+    if (is_valid_storage_pos((flash_addr_t)g_ekc_storage_ptr + offset) &&
+        is_valid_storage_pos((flash_addr_t)g_ekc_storage_ptr + offset + size - 1)
        ) {
         flash_read(dest, g_ekc_storage_ptr + offset, size);
         return 0;

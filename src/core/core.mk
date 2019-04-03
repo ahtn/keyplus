@@ -72,6 +72,13 @@ ifndef KEYPLUS_CLI
     KEYPLUS_CLI   = python3 $(KEYPLUS_PATH)/../host-software/keyplus-cli
 endif
 
+ifndef SUPPORT_MACRO
+    SUPPORT_MACRO = 1
+endif
+
+ifndef SUPPORT_GESTURE
+    SUPPORT_GESTURE = 1
+endif
 
 #######################################################################
 #                            source files                             #
@@ -108,6 +115,11 @@ ifeq ($(USE_NRF24), 1)
     ifeq ($(USE_UNIFYING), 0)
         CDEFS += -DUSE_UNIFYING=0
     else
+        ifeq ($(SUPPORT_GESTURE), 1)
+            CDEFS += -DSUPPORT_GESTURE=1
+        else
+            CDEFS += -DSUPPORT_GESTURE=0
+        endif
         ifeq ($(USE_USB), 1)
             C_SRC += $(CORE_PATH)/unifying.c
             CDEFS += -DUSE_UNIFYING=1
@@ -154,8 +166,15 @@ else
         $(CORE_PATH)/mods.c \
         $(CORE_PATH)/matrix_interpret.c \
         $(CORE_PATH)/usb_commands.c \
-        $(CORE_PATH)/macro.c \
         $(CORE_PATH)/keycode.c \
+
+    ifeq ($(SUPPORT_MACRO), 1)
+        CDEFS += -DSUPPORT_MACRO=1
+        C_SRC += $(CORE_PATH)/macro.c
+    else
+        CDEFS += -DSUPPORT_MACRO=0
+    endif
+
 
     CDEFS += -DUSE_USB=1
 endif

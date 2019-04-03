@@ -431,7 +431,7 @@ enum {
 #define EKC_ADDR(kc) ((kc) & KC_EXTERNAL_ADDR_MASK)
 #define EKC_DATA_ADDR(kc) (((kc) & KC_EXTERNAL_ADDR_MASK) + 2)
 
-extern XRAM flash_ptr_t g_ekc_storage_ptr;
+extern XRAM flash_addr_t g_ekc_storage_ptr;
 extern XRAM uint32_t g_ekc_storage_size;
 
 uint8_t get_ekc_data(void *dest, uint16_t offset, uint16_t size) REENT;

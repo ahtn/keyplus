@@ -22,13 +22,13 @@
 #endif
 
 #ifdef NO_MATRIX
-#   define LAYOUT_PORT_KEY_NUM_MAP_ADDR (LAYOUT_ADDR + 0)
+#   define LAYOUT_PORT_KEY_NUM_MAP_ADDR (flash_addr_t)(LAYOUT_ADDR + 0)
 #else
-#   define LAYOUT_PORT_ROW_PINS_ADDR    (LAYOUT_ADDR + 0)
-// #define LAYOUT_PORT_COL_MASKS_ADDR   (LAYOUT_PORT_ROW_PINS_ADDR + MAX_NUM_ROWS)
-// #define LAYOUT_PORT_KEY_NUM_MAP_ADDR (LAYOUT_PORT_COL_MASKS_ADDR + IO_PORT_COUNT)
-#   define LAYOUT_PORT_COL_PINS_ADDR   (LAYOUT_PORT_ROW_PINS_ADDR + MAX_NUM_ROWS)
-#   define LAYOUT_PORT_KEY_NUM_MAP_ADDR (LAYOUT_PORT_COL_PINS_ADDR + MAX_NUM_COLS)
+#   define LAYOUT_PORT_ROW_PINS_ADDR    (flash_addr_t)(LAYOUT_ADDR + 0)
+// #define LAYOUT_PORT_COL_MASKS_ADDR   (flash_addr_t)(LAYOUT_PORT_ROW_PINS_ADDR + MAX_NUM_ROWS)
+// #define LAYOUT_PORT_KEY_NUM_MAP_ADDR (flash_addr_t)(LAYOUT_PORT_COL_MASKS_ADDR + IO_PORT_COUNT)
+#   define LAYOUT_PORT_COL_PINS_ADDR    (flash_addr_t)(LAYOUT_PORT_ROW_PINS_ADDR + MAX_NUM_ROWS)
+#   define LAYOUT_PORT_KEY_NUM_MAP_ADDR (flash_addr_t)(LAYOUT_PORT_COL_PINS_ADDR + MAX_NUM_COLS)
 #endif
 
 
@@ -36,6 +36,11 @@
 #define LAYOUT_MAX_NUMBER_DEVICES 64
 
 #define LAYOUT_HEADER_SIZE 1
+
+typedef struct layout_header_t {
+    uint8_t has_mouse_layers: 1;
+    uint8_t reserved0: 7;
+} layout_header_t;
 
 // #define LAYOUT_PORT_KEY_NUM_MAP_ADDR (LAYOUT_ADDR + 16)
 

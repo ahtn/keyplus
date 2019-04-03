@@ -3,7 +3,7 @@
 # source ./env/enter_env.sh
 
 if [[ -z $SDCC_VERSION ]]; then
-    SDCC_VERSION=3.7.0
+    SDCC_VERSION=9948
 fi
 
 # Values used for the virtual environment

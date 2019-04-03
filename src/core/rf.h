@@ -26,8 +26,10 @@ extern XRAM uint8_t g_rf_enabled;
 void rf_init_send(void);
 void rf_init_receive(void);
 
+#if SUPPORT_MULTI_RECEIVER
 void rf_auto_ack(bit_t enabled);
 bit_t is_auto_ack_enabled(void);
+#endif
 
 bit_t rf_task(void);
 
