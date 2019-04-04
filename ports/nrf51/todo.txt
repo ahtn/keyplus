@@ -1,0 +1,4 @@
+Include SDK v12 files for: 
+	UART (mitosis receiver)
+	AES ECB (nrf_ecb.h in the HAL)
+	ESB
