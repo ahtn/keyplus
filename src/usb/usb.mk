@@ -3,7 +3,7 @@
 
 MAKEFILE_INC += $(KEYPLUS_PATH)/usb/usb.mk
 
-USB_HID_PATH = usb
+USB_HID_PATH = $(KEYPLUS_PATH)/usb
 
 ifeq ($(USB_DESCRIPTOR_ARRANGEMENT), normal)
   C_SRC += $(USB_HID_PATH)/desc/normal/descriptors.c

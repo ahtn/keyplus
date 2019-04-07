@@ -1,11 +1,11 @@
 # Copyright 2017 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-CORE_PATH = core
+CORE_PATH = $(KEYPLUS_PATH)/core
 USB_REPORTS_PATH = usb_reports
 
 # Add this to the makefile list so changes to this will result in a rebuild
-MAKEFILE_INC += $(KEYPLUS_PATH)/core/core.mk
+MAKEFILE_INC += $(CORE_PATH)/core.mk
 
 #######################################################################
 #                  firmware compile time information                  #

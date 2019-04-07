@@ -1,0 +1,21 @@
+# Written in 2019 by jem@seethis.link
+# This file is released into the public domain as per the CC0 Public Domain
+# Dedication (http://creativecommons.org/publicdomain/zero/1.0/)
+---
+
+devices:
+  "nRF52_dk 4key":
+    scan_mode:
+      mode: pin_gnd
+      pins: [P0.11, P0.12, P0.24, P0.25]
+    layout: 4key
+
+layouts:
+  4key:
+    layers: [
+      [ # layer 0 (base)
+        [
+          1, 2, 3, 4
+        ]
+      ],
+    ]

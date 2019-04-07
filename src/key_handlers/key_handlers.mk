@@ -3,7 +3,7 @@
 
 MAKEFILE_INC += $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
 
-KEY_HANDLERS_PATH = key_handlers
+KEY_HANDLERS_PATH = $(KEYPLUS_PATH)/key_handlers
 
 C_SRC += \
 	$(KEY_HANDLERS_PATH)/key_custom.c \

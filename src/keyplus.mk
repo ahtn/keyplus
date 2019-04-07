@@ -6,9 +6,14 @@ MAKEFILE_INC += $(KEYPLUS_PATH)/keyplus.mk
 LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
 MERGED_HEX=$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex
 
-all: print_keyplus_info $(MERGED_HEX)
+all: print_keyplus_info create_build_dirs $(EXTRA_TARGET) $(MERGED_HEX)
+
+.PHONY: print_keyplus_info create_build_dirs
 
 $(LAYOUT_FILE):
+
+create_build_dirs:
+	@mkdir -p $(BUILD_TARGET_DIR)
 
 print_keyplus_info:
 	@echo "### Build settings ###"
@@ -35,3 +40,5 @@ $(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
 		-F chip_name="$(MCU_STRING)" \
 		-F scan_method=$(SCAN_METHOD) \
 		-F max_rows=$(MAX_NUM_ROWS) \
+
+# vim: noet
