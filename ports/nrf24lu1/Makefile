@@ -36,7 +36,7 @@ INC_PATHS += -I$(NRF24LU1_PATH)
 #                               config                                #
 #######################################################################
 
-include scripts/boards.mk
+include $(KEYPLUS_PATH)/boards.mk
 
 CHIP_NAME=nRF24LU1P-F32
 SCAN_METHOD=none
