@@ -45,6 +45,20 @@ def _create_nrf24(flash_size, name):
         usb = True,
     )
 
+def _create_nrf52(name, flash_size, ram_size, pins, pkg):
+    return ChipInfo(
+        name = name,
+        chip_id = None, # filled out automatically later
+        architecture = "nRF52",
+        processor = "ARM Cortex M4",
+        series = name.split('-')[0],
+        pins = pins,
+        package = pkg,
+        flash_size = flash_size * 2**10,
+        ram_size = ram_size * 2**10,
+        usb = True,
+    )
+
 def _create_xmega(flash_size, series):
     pins, usb_support = {
         'A4': (44, False),
@@ -231,6 +245,74 @@ CHIP_ID_TABLE = {
     CHIP_ID_NORDIC | 0x0001 : _create_nrf24(16, 'nRF24LU1-F16'),
     CHIP_ID_NORDIC | 0x0002 : _create_nrf24(16, 'nRF24LU1P-F16'),
     CHIP_ID_NORDIC | 0x0003 : _create_nrf24(32, 'nRF24LU1P-F32'),
+
+    # nRF52810
+    CHIP_ID_NORDIC | 0x5200 : _create_nrf52(
+        "nRF52810-QFAA",
+        192, 24,
+        48, "QFN"
+    ),
+    CHIP_ID_NORDIC | 0x5201 : _create_nrf52(
+        "nRF52810-QCAA",
+        192, 24,
+        32, "QFN"
+    ),
+    CHIP_ID_NORDIC | 0x5202 : _create_nrf52(
+        "nRF52810-CAAA",
+        192, 24,
+        33, "WLCSP"
+    ),
+
+    # nRF52811
+    CHIP_ID_NORDIC | 0x5210 : _create_nrf52(
+        "nRF52811-QFAA",
+        192, 24,
+        48, "QFN"
+    ),
+    CHIP_ID_NORDIC | 0x5211 : _create_nrf52(
+        "nRF52811-QCAA",
+        192, 24,
+        32, "QFN"
+    ),
+    CHIP_ID_NORDIC | 0x5212 : _create_nrf52(
+        "nRF52811-CAAA",
+        192, 24,
+        33, "WLCSP"
+    ),
+
+    # nRF52832
+    CHIP_ID_NORDIC | 0x5230 : _create_nrf52(
+        "nRF52832-QFAA",
+        512, 64,
+        48, "QFN"
+    ),
+    CHIP_ID_NORDIC | 0x5231 : _create_nrf52(
+        "nRF52832-QFAB",
+        256, 32,
+        48, "QFN"
+    ),
+    CHIP_ID_NORDIC | 0x5232 : _create_nrf52(
+        "nRF52832-CIAA",
+        512, 64,
+        50, "WLCSP"
+    ),
+    CHIP_ID_NORDIC | 0x5233 : _create_nrf52(
+        "nRF52832-CIAB",
+        256, 32,
+        50, "WLCSP"
+    ),
+
+    # nRF52840
+    CHIP_ID_NORDIC | 0x5240 : _create_nrf52(
+        "nRF52840-QIAA",
+        1024, 256,
+        73, "aQFN"
+    ),
+    CHIP_ID_NORDIC | 0x5241 : _create_nrf52(
+        "nRF52840-CKAA",
+        1024, 256,
+        93, "WLCSP"
+    ),
 
 ###############################################################################
 #                                Silicon Labs                                 #

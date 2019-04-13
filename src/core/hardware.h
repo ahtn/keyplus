@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "core/util.h"
+#include <stdint.h>
 
 #if !defined(DOXYGEN)
     // NOTE: must implement static_delay_us(t) and static_delay_ms(t)
@@ -50,7 +50,7 @@
     #define PAGE_SIZE
 #endif
 
-#include <stdint.h>
+#include "core/util.h"
 
 #ifndef F_CPU
     #error "F_CPU needs to be defined"

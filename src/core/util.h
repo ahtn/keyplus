@@ -26,6 +26,16 @@
     // sdcc has no attribute for packed structs, however since the target is 8
     // bit, padding won't be used anyway so it's not needed
     #define ATTR_PACKED
+#elif defined(__arm__) && defined(__GNUC__)
+    #define REENT
+    #define XRAM
+    #define IRAM
+    #define PRAM
+    #define ROM
+    #define WEAK __attribute__((weak))
+    #define ATTR_PACKED __attribute__((packed))
+    #define AT(address)
+    #define NO_RETURN_ATTR __ATTR_NORETURN__
 #elif defined(AVR) && defined(__GNUC__)
     #include "avr/pgmspace.h"
 
@@ -119,27 +129,17 @@
 ///
 /// If available use C11 _Static_assert, if compile doesn't support it then,
 /// use workaround
-#define STATIC_ASSERT(x, y) _Static_assert(x, y)
+#define KP_STATIC_ASSERT(x, y) _Static_assert(x, y)
 
-#ifndef UNREFERENCED_ARGUMENT
-    #if defined __SDCC
-        #define UNREFERENCED_ARGUMENT(arg) ((void)arg)
-    #else
-        #define UNREFERENCED_ARGUMENT(arg) ((void)arg)
-    #endif
+#if defined __SDCC
+    #define UNREFERENCED_ARGUMENT(arg) ((void)arg)
+#else
+    #define UNREFERENCED_ARGUMENT(arg) ((void)arg)
 #endif
 
-#ifndef SIGN
-    #define SIGN(x) ((x) == 0 ? 0 : ((x) < 0 ? -1 : +1))
-#endif
-
-#ifndef MAX
-    #define MAX(x, y) ((x) > (y) ? (x) : (y))
-#endif
-
-#ifndef MIN
-    #define MIN(x, y) ((x) < (y) ? (x) : (y))
-#endif
+#define KP_SIGN(x) ((x) == 0 ? 0 : ((x) < 0 ? -1 : +1))
+#define KP_MAX(x, y) ((x) > (y) ? (x) : (y))
+#define KP_MIN(x, y) ((x) < (y) ? (x) : (y))
 
 #define LSB_U16(x) ((x) & 0xff)
 #define MSB_U16(x) (((x) >> 8) & 0xff)

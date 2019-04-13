@@ -116,9 +116,8 @@ ret_code_t err_code = NRF_LOG_INIT(NULL);
 NRF_LOG_DEFAULT_BACKENDS_INIT();
 ```
 
-NOTE: some of the examples in the nRF52 SDK don't call the
-`NRF_LOG_DEFAULT_BACKENDS_INIT()` function, so you might need to add it
-yourself before the examples will log over UART or RTT.
+Also, if you have `NRF_LOG_DEFERRED` set in `sdk_config`, then the log
+output will not be updated until the `NRF_LOG_FLUSH()` macro is called.
 
 ##### UART Logging output
 
@@ -147,3 +146,41 @@ necessary.
 
 You then need to run the J-Link RTT Viewer program (JLinkRTTViewerExe). Then
 you should be able to connect to your device and view the log output.
+
+
+#### Debugging with GDB
+
+To run the J-Link GDB server run:
+
+```
+JLinkGDBServerCLExe -device nrf52832_xxaa -if swd -port 2331
+```
+
+Then run the GDB client:
+
+```
+arm-none-eabi-gdb
+(gdb) file <path-to-elf-file>
+(gdb) target remote localhost:2331
+```
+
+To make sure debug symbols are added to the elf file make sure the opt level
+is set appropriately, e.g. `OPT = -Og -g3`.
+
+Note the armgcc makefiles in the nRF52 SDK use the extension `.out` for the
+generated elf file.
+
+Use the `monitor` command the program to the device:
+
+```
+(gdb) mon speed 10000
+(gdb) mon flash download=1
+(gdb) # Now the 'load' command can be run to flash the device
+(gdb) load
+```
+
+You should now be able to set break points and start code execution with `c`.
+If you rebuild the binary make sure to run the `load` command again.
+
+To save repeating these steps, you can add commands to a GDB command file and
+and provide it with `arm-none-eabi-gdb -x <path_to_cmd_file>`.

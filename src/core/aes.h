@@ -13,6 +13,7 @@
 
 #define AES_BUF_SIZE                16
 #define AES_KEY_SIZE                16
+#define AES_BLOCK_SIZE              16
 
 typedef enum aes_crypt_mode_t {
     AES_ENCRYPT = 0,
@@ -24,7 +25,7 @@ typedef enum aes_crypt_mode_t {
 /// NOTE: AES is a symmetric algorithm so it only needs one key to encrypt and
 /// decrypt. However, this function requires both the AES key and the
 /// "decryption key" which is the final round key of the encryption operation
-/// (required for some decryption hardware).  The algorithm to compute the
+/// ().  The algorithm to compute the
 /// final round key is performed on the host software which saves code space
 /// (the algorithm needs a 256 byte lookup table, and some other code).
 ///

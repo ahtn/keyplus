@@ -16,9 +16,11 @@ ifndef BUILD_DIR
     BUILD_DIR = build
 endif
 
-ifneq ("$(wildcard boards/$(BOARD)/config.mk)","")
-    BOARD_MAKEFILE=$(BOARD_DIR)/$(BOARD)/config.mk
-    INC_PATHS += -I$(BOARD_DIR)/$(BOARD)
+TARGET_BOARD_DIR := $(BOARD_DIR)/$(BOARD)
+
+ifneq ("$(wildcard $(TARGET_BOARD_DIR)/config.mk)","")
+    BOARD_MAKEFILE=$(TARGET_BOARD_DIR)/config.mk
+    INC_PATHS += -I$(TARGET_BOARD_DIR)
     include $(BOARD_MAKEFILE)
     MAKEFILE_INC += $(BOARD_MAKEFILE)
     TARGET = $(TARGET_BASE_NAME)-$(BOARD)

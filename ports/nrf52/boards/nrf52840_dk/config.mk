@@ -3,4 +3,6 @@ ifndef LAYOUT_FILE
 endif
 
 MCU = nrf52840
+MCU_STRING = nRF52840_QIAA
 NRF52_LINK_SCRIPT := $(BOARD_DIR)/$(BOARD)/keyplus_gcc_nrf52840.ld
+

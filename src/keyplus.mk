@@ -6,9 +6,11 @@ MAKEFILE_INC += $(KEYPLUS_PATH)/keyplus.mk
 LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
 MERGED_HEX=$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex
 
-all: print_keyplus_info create_build_dirs $(EXTRA_TARGET) $(MERGED_HEX)
+.PHONY: all print_keyplus_info create_build_dirs hex
 
-.PHONY: print_keyplus_info create_build_dirs
+all: hex $(MERGED_HEX)
+
+hex: print_keyplus_info create_build_dirs $(EXTRA_TARGET)
 
 $(LAYOUT_FILE):
 

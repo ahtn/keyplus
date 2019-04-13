@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import keyplus.io_map.xmega
 import keyplus.io_map.mega
 import keyplus.io_map.efm8
+import keyplus.io_map.nrf52
 import keyplus.chip_id
 
 from keyplus.exceptions import KeyplusSettingsError
@@ -16,6 +17,7 @@ IO_MAPPER_LOOKUP_TABLE = {
     'AVR_XMEGA' : keyplus.io_map.xmega.IoMapperXmega,
     'AVR_MEGA' : keyplus.io_map.mega.IoMapperAVRMega,
     'EFM8' : keyplus.io_map.efm8.IoMapperEFM8,
+    'nRF52' : keyplus.io_map.nrf52.IoMapperNRF52,
 }
 
 def get_io_mapper_for_chip(chip_id):

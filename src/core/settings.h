@@ -44,7 +44,7 @@
     (!USE_BLUETOOTH * FEATURE_CTRL_BT_DISABLE)
 
 /// Contains information on device mapping
-typedef struct device_info_t {
+typedef struct ATTR_PACKED device_info_t {
     /// the keyboard layout that this device maps to
     uint8_t layout_id;
     /// the component byte offset into the given keyboard
@@ -56,7 +56,7 @@ typedef struct device_info_t {
 
 // TODO: maybe move layout and settings to start of layout_storage
 /// Contains information on layout mapping
-typedef struct layout_info_t {
+typedef struct ATTR_PACKED layout_info_t {
     // TODO: change this to a key number value
     // TODO: maybe store in layout section
     /// The size of one layer in the matrix.
@@ -71,7 +71,7 @@ typedef struct layout_info_t {
 /// The device and layout tables. This table is used by the device to lookup
 /// various settings about the layouts and devices in use.
 /// TODO: maybe move some of these settings to the layout section?
-typedef struct {
+typedef struct ATTR_PACKED layout_settings_t {
     uint8_t number_layouts;
     uint8_t number_devices;
     uint8_t default_layout_id;
@@ -84,7 +84,7 @@ typedef struct {
 #define SETTINGS_RF_INFO_HEADER_SIZE (SETTINGS_RF_INFO_SIZE - AES_KEY_LEN*2)
 #define SETTINGS_RF_INFO_OFFSET (offsetof(settings_t, rf))
 /// The RF settings used for wireless communication
-typedef struct rf_settings_t { // 64 bytes
+typedef struct ATTR_PACKED rf_settings_t { // 64 bytes
     /// The pipe0 for nRF24/nrf_esb
     uint8_t pipe_addr_0[NRF_ADDR_LEN];
     /// The pipe1 for nRF24/nrf_esb
@@ -153,7 +153,7 @@ typedef struct feature_ctrl_t {
 #define SETTINGS_STORAGE_SIZE 512
 #define SETTINGS_MAIN_INFO_SIZE 96
 /// The settings stored in flash to control this device.
-typedef struct settings_t { // 512 bytes
+typedef struct ATTR_PACKED settings_t { // 512 bytes
     /// The unique id identifying this device for split keyboard transactions
     uint8_t device_id;
     /// The name of this device. This name will show up when the device is
@@ -203,7 +203,7 @@ typedef struct runtime_settings_t {
 /// Information and features of the firmware. This features are baked in at
 /// compile time and can be used by the host software to discover what
 /// capabilities the firmware supports.
-typedef struct firmware_build_settings_t {
+typedef struct ATTR_PACKED firmware_build_settings_t {
     /// The major version number
     uint8_t version_major;
     /// The minor version number
