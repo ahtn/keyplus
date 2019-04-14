@@ -157,9 +157,11 @@ ASFLAGS  = -xglospff
 #                               recipes                               #
 #######################################################################
 
-C_REL_FILES = $(patsubst %.c, $(OBJ_DIR)/%.rel, $(C_SRC))
-ASM_REL_FILES = $(patsubst %.S, $(OBJ_DIR)/%.rel, $(ASM_SRC))
-DEP_FILES = $(patsubst %.c, $(OBJ_DIR)/%.dep, $(C_SRC))
+include $(KEYPLUS_PATH)/obj_file.mk
+
+C_REL_FILES = $(call obj_file_list, $(C_SRC),rel)
+ASM_REL_FILES = $(call obj_file_list, $(ASM_SRC),rel)
+DEP_FILES = $(call obj_file_list, $(C_SRC),dep)
 REL_FILES = $(C_REL_FILES) $(ASM_REL_FILES)
 
 
@@ -197,23 +199,27 @@ size: $(TARGET_HEX)
 	@echo "=== Size Information ($(TARGET))==="
 	@scripts/hex-size.sh $< $(BUILD_TARGET_DIR)/$(TARGET).mem
 
-# rule for c
-$(OBJ_DIR)/%.rel: %.c
-	@echo "compiling: $<"
-	@mkdir -p $(dir $@)
-	@$(CC) $(CFLAGS) -c $< -o $@
+define c_file_recipe
+	@echo "compiling: $$<"
+	@$(CC) $$(CFLAGS) -c $$< -o $$@
+endef
 
-# rule for asm
-$(OBJ_DIR)/%.rel: %.S
-	@mkdir -p $(dir $@)
-	@$(AS) $(ASFLAGS) $@ $<
+define asm_file_recipe
+	@echo "assembling: $$<"
+	@$(AS) $$(ASFLAGS) $$@ $$<
+endef
 
 # rule for DEP_FILES
 # sdcc doesn't pass the -MT flag correctly to the preprocessor, so need to
 # call the preprocessor directly to generate dependency files
-$(OBJ_DIR)/%.dep: %.c
-	@mkdir -p $(dir $@)
-	@$(PP) $(INC_PATHS) $(CDEFS) -MM -MT $(basename $@).rel $< -o $@
+define dep_file_recipe
+	@$(PP) $$(INC_PATHS) $$(CDEFS) -MM -MT $$(basename $$@).rel $$< -o $$@
+endef
+
+# Create the recipes for the object files
+$(call create_recipes, $(C_SRC),c_file_recipe,rel)
+$(call create_recipes, $(C_SRC),dep_file_recipe,dep)
+$(call create_recipes, $(ASM_SRC),asm_file_recipe,rel)
 
 clean:
 	rm -f $(BUILD_TARGET_DIR)/*.hex
