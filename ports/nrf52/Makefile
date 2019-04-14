@@ -49,19 +49,20 @@ include $(KEYPLUS_PATH)/core/core.mk
 #                             c settings                              #
 #######################################################################
 
-# CFLAGS += $(INC_PATHS)
 CFLAGS += -Wno-error=unused-variable
 CFLAGS += -Wno-error=unused-but-set-variable
 
 # List C source files here.
+#
+# NOTE/TODO: Nordic armgcc Makefile doesn't support files with identical
+# names in different folders
 C_SRC += \
 	$(PROJ_SRC_PATH)/main.c \
+	$(PROJ_SRC_PATH)/port_impl/matrix_scanner.c \
 	$(PROJ_SRC_PATH)/port_impl/io_map.c \
 	$(PROJ_SRC_PATH)/port_impl/flash.c \
 	$(PROJ_SRC_PATH)/port_impl/aes.c \
 	$(PROJ_SRC_PATH)/port_impl/nonce.c \
-	# $(KEYPLUS_PATH)/core/settings.c \
-
 
 ifeq ($(USE_USB), 1)
 C_SRC += $(SRC_USB) \
@@ -137,11 +138,13 @@ LDFLAGS += -Wl,--section-start=.key_layout_block=$(LAYOUT_ADDR)
 #                              recipes                               #
 #######################################################################
 
+ALL_CFLAGS = $(CFLAGS)
 include $(KEYPLUS_PATH)/keyplus.mk
+
+ABSOLUTE_PATHS := 1
 
 SRC_FILES += $(C_SRC)
 CFLAGS += $(CDEFS)
-# CFLAGS += $(INC_PATHS)
 
 INC_FOLDERS += $(KEYPLUS_PATH)
 INC_FOLDERS += $(PROJ_SRC_PATH)
@@ -149,16 +152,19 @@ INC_FOLDERS += $(TARGET_BOARD_DIR)
 
 include $(PROJ_PATH)/nrf52.mk
 
-$(TARGET_HEX): nrf52840_xxaa
-	cp $(BUILD_TARGET_DIR)/nrf52840_xxaa.hex $@
+# $(TARGET_HEX): nrf52840_xxaa
+# 	cp $(BUILD_TARGET_DIR)/nrf52840_xxaa.hex $@
 
-.PHONY: program gdb
+.PHONY: program gdb log
 
 # Flash the program
 program: $(MERGED_HEX)
 	@echo Flashing: $<
 	nrfjprog -f nrf52 --program $< --sectorerase
 	nrfjprog -f nrf52 --reset
+
+log:
+	picocom -b 115200 /dev/ttyACM0
 
 gdb:
 	arm-none-eabi-gdb -x .gdbinit

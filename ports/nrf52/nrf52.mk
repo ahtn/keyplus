@@ -10,9 +10,11 @@ LINKER_SCRIPT  := $(NRF52_LINK_SCRIPT)
 $(OUTPUT_DIRECTORY)/nrf52840_xxaa.out: \
   LINKER_SCRIPT  := $(NRF52_LINK_SCRIPT)
 
+ASM_FILES += \
+  $(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52840.S \
+
 # Source files common to all targets
 SRC_FILES += \
-  $(SDK_ROOT)/modules/nrfx/mdk/gcc_startup_nrf52840.S \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_rtt.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_serial.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_uart.c \
@@ -179,7 +181,7 @@ LIB_FILES += -lc -lnosys -lm
 .PHONY: default help
 
 # Default target - first one defined
-default: nrf52840_xxaa
+default: $(TARGET_HEX)
 
 
 # Print all targets that can be built
@@ -189,10 +191,13 @@ help:
 	@echo		sdk_config - starting external tool for editing sdk_config.h
 	@echo		flash      - flashing binary
 
-TEMPLATE_PATH := $(SDK_ROOT)/components/toolchain/gcc
+# TEMPLATE_PATH := $(SDK_ROOT)/components/toolchain/gcc
+# include $(TEMPLATE_PATH)/Makefile.common
 
+# TEMPLATE_PATH := $(PROJ_PATH)
+# include $(TEMPLATE_PATH)/Makefile.common
 
-include $(TEMPLATE_PATH)/Makefile.common
+include $(KEYPLUS_PATH)/arch/arm/armgcc.mk
 
 $(foreach target, $(TARGETS), $(call define_target, $(target)))
 
@@ -200,8 +205,8 @@ $(foreach target, $(TARGETS), $(call define_target, $(target)))
 
 # Flash the program
 flash: default
-	@echo Flashing: $(OUTPUT_DIRECTORY)/nrf52840_xxaa.hex
-	nrfjprog -f nrf52 --program $(OUTPUT_DIRECTORY)/nrf52840_xxaa.hex --sectorerase
+	@echo Flashing: $(TARGET_HEX)
+	nrfjprog -f nrf52 --program $(TARGET_HEX) --sectorerase
 	nrfjprog -f nrf52 --reset
 
 erase:
