@@ -4,5 +4,8 @@
 #include "core/hardware.h"
 
 io_port_t * const g_io_port_map[IO_PORT_COUNT] = {
-    // TODO:
+    NRF_P0,
+#if IO_PORT_COUNT > 1
+    NRF_P1,
+#endif
 };

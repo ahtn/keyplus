@@ -19,8 +19,8 @@ const ROM io_map_info_t g_io_map_info = {
 
 void io_map_init(void) {
     flash_load_from_rom(
-        s_available_pins,
-        g_io_map_info.usable_pins,
+        (uint8_t*)s_available_pins,
+        (uint8_t*)g_io_map_info.usable_pins,
         sizeof(port_mask_t)*IO_PORT_COUNT
     );
 }
@@ -62,7 +62,7 @@ uint8_t io_map_get_col_pin(uint8_t col) {
 }
 
 
-port_mask_t io_map_get_row_pin(uint8_t row) {
+uint8_t io_map_get_row_pin(uint8_t row) {
     return flash_read_byte(
         LAYOUT_PORT_ROW_PINS_ADDR + row
     );

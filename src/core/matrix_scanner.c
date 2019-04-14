@@ -8,6 +8,7 @@
 
 #include <string.h>
 
+#include "core/error.h"
 #include "core/io_map.h"
 #include "core/layout.h"
 #include "core/packet.h"
@@ -19,7 +20,7 @@
 #define MAX_DOWN_LIST 16
 
 // can probably make this static
-XRAM uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT];
+XRAM uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT*sizeof(port_mask_t)];
 
 /// This variable will be set to true if any row/col position in the matrix is
 /// updated (even if it is unused is the keymap).
@@ -82,7 +83,16 @@ static inline void set_debounce_time(uint8_t key_num, uint8_t time) {
     }
 }
 
-void init_matrix_scanner_utils(void) {
+int init_matrix_scanner_utils(void) {
+    if (
+        g_scan_plan.rows > MAX_NUM_ROWS ||
+        g_scan_plan.max_col_pin_num > IO_PORT_MAX_PIN_NUM
+    ) {
+        memset((uint8_t*)&g_scan_plan, 0, sizeof(matrix_scan_plan_t));
+        register_error(ERROR_MATRIX_PINS_CONFIG_TOO_LARGE);
+        return -1;
+    }
+
     g_delta_list_len = 0;
     g_down_list_len = 0;
     // TODO: load scan key map
@@ -90,6 +100,8 @@ void init_matrix_scanner_utils(void) {
     s_has_raw_matrix_updated = 0;
 
     scanner_init_debouncer();
+
+    return 0;
 }
 
 // TODO:

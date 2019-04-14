@@ -33,7 +33,7 @@ typedef uint32_t port_mask_t;
 #endif
 
 typedef struct io_map_info_t {
-    uint8_t usable_pins[16];
+    port_mask_t usable_pins[16];
     uint8_t reserved[16];
 } io_map_info_t;
 
@@ -60,6 +60,4 @@ uint8_t io_map_get_col_pin(uint8_t col);
 ///
 /// For example, if the matrix scanning algorithm is using pins P0.0, P0.1 and
 /// P0.7 as column pins on `P0`, then `get_column_masks(0) -> 0b10000011`.
-uint8_t io_map_get_col_port_mask(uint8_t port_num);
-
-uint8_t get_col_mask(uint8_t port_num);
+port_mask_t get_col_mask(uint8_t port_num);

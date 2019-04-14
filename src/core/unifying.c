@@ -400,8 +400,8 @@ void unifying_mouse_handle(void) REENT {
     if (g_unifying_mouse_activity == UNIFYING_MOUSE_ACTIVE) {
         g_mouse_report.x = g_unifying_mouse_state.x;
         g_mouse_report.y = g_unifying_mouse_state.y;
-        g_mouse_report.wheel_x = SIGN(g_unifying_mouse_state.wheel_x);
-        g_mouse_report.wheel_y = SIGN(g_unifying_mouse_state.wheel_y);
+        g_mouse_report.wheel_x = KP_SIGN(g_unifying_mouse_state.wheel_x);
+        g_mouse_report.wheel_y = KP_SIGN(g_unifying_mouse_state.wheel_y);
         g_report_pending_mouse = true;
     } else if (g_unifying_mouse_activity == UNIFYING_MOUSE_EXTRA_BUTTON) {
         // If a special button was pressed don't want to update the cursor position.

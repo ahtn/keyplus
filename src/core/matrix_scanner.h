@@ -94,20 +94,22 @@ typedef struct matrix_scan_plan_t {
  *                         global variables                          *
  *********************************************************************/
 
-extern XRAM uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT];
+extern XRAM uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT*sizeof(port_mask_t)];
 extern XRAM uint8_t g_key_num_bitmap[KEY_NUMBER_BITMAP_SIZE];
 
 extern const ROM uint8_t *g_scan_key_map;
 extern XRAM matrix_scan_plan_t g_scan_plan;
 
 /*********************************************************************
- *                         public functions                          *
+ *                    port implemented functions                     *
  *********************************************************************/
 
 /// Setup the matrix for scanning.
 void matrix_scanner_init(void);
 
 /// scan the whole matrix, result stored in g_matrix
+///
+/// @return true if the matrix state has changed
 bool matrix_scan(void);
 
 /// Put the matrix into interrupt mode.
@@ -126,8 +128,12 @@ bool matrix_scan_irq_has_triggered(void);
 /// Clear the matrix interrupt flag
 void matrix_scan_irq_clear(void);
 
-/// Returns true if
+/// Checks if the matrix has a key down in any row
 bool matrix_has_active_row(void);
+
+/*********************************************************************
+ *                         public functions                          *
+ *********************************************************************/
 
 /// How many bytes of data is stored in the matrix (i.e. size=ceil(num_physical_keys/8))
 uint8_t get_matrix_compressed_size(void);
@@ -136,8 +142,11 @@ uint8_t get_matrix_num_keys_down(void);
 /// Returns the number of keys currently being debounced in the matrix
 uint8_t get_matrix_num_keys_debouncing(void);
 
-/// functions to be called to update the key matrix
-void init_matrix_scanner_utils(void);
+/// setup for common scanning and debouncing code
+///
+/// @return returns non zero on error
+int init_matrix_scanner_utils(void);
+// void init_matrix_scanner_utils(void);
 
 /// Get a matrix packet that for the most recent matrix scan.
 ///

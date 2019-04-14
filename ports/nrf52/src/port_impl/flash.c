@@ -31,7 +31,7 @@ void flash_erase_page(flash_addr_t page_num) {
     nrf_nvmc_page_erase(page_num * PAGE_SIZE);
 }
 
-void flash_write(const uint8_t* src, flash_addr_t addr, flash_size_t len) {
+void flash_write(uint8_t* src, flash_addr_t addr, flash_size_t len) {
     // First write bytes that are not aligned (if any)
     uint32_t alignment = addr & (uint32_t)0x03;
     if (alignment != 0) {

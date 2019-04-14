@@ -30,7 +30,7 @@ XRAM matrix_scan_plan_t g_scan_plan;
 
 AT__SETTINGS_ADDR const settings_t g_settings_storage = { 0 };
 
-STATIC_ASSERT(
+KP_STATIC_ASSERT(
     sizeof(g_settings_storage) == SETTINGS_STORAGE_SIZE,
     "Settings storage must be 512 bytes"
 );
@@ -107,7 +107,7 @@ const ROM firmware_build_settings_t g_firmware_build_settings = {
 #endif
 };
 
-STATIC_ASSERT(
+KP_STATIC_ASSERT(
     sizeof(g_firmware_build_settings) == FIRMWARE_BUILD_SETTINGS_SIZE,
     "Firmware settings block must be 62 bytes"
 );

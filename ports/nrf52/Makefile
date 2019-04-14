@@ -58,11 +58,12 @@ CFLAGS += -Wno-error=unused-but-set-variable
 # names in different folders
 C_SRC += \
 	$(PROJ_SRC_PATH)/main.c \
-	$(PROJ_SRC_PATH)/port_impl/matrix_scanner.c \
-	$(PROJ_SRC_PATH)/port_impl/io_map.c \
-	$(PROJ_SRC_PATH)/port_impl/flash.c \
 	$(PROJ_SRC_PATH)/port_impl/aes.c \
+	$(PROJ_SRC_PATH)/port_impl/flash.c \
+	$(PROJ_SRC_PATH)/port_impl/io_map.c \
+	$(PROJ_SRC_PATH)/port_impl/matrix_scanner.c \
 	$(PROJ_SRC_PATH)/port_impl/nonce.c \
+	$(PROJ_SRC_PATH)/port_impl/timer.c \
 
 ifeq ($(USE_USB), 1)
 C_SRC += $(SRC_USB) \
@@ -167,5 +168,5 @@ log:
 	picocom -b 115200 /dev/ttyACM0
 
 gdb:
-	arm-none-eabi-gdb -x .gdbinit
+	arm-none-eabi-gdb -x gdb_cmds
 

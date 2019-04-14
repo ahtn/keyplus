@@ -9,20 +9,12 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
+#include "core/timer.h"
+#include "core/error.h"
 #include "core/flash.h"
 #include "core/settings.h"
 #include "core/nonce.h"
 #include "core/aes.h"
-
-//
-void flash_write_test(void) {
-    uint8_t data[] = {0,1,2,3,4,5,6,7,8};
-    flash_write(
-        data,
-        0x040066,
-        sizeof(data)
-    );
-}
 
 void init_logging(void) {
     uint32_t err_code = NRF_LOG_INIT(NULL);
@@ -31,18 +23,14 @@ void init_logging(void) {
     NRF_LOG_DEFAULT_BACKENDS_INIT();
 }
 
-int main(void) {
+static void print_settings_info(void) {
+    // Read session ID
     uint16_t sid = 0xFFFF;
-    init_logging();
-
-    NRF_LOG_INFO("main() started");
-
-    settings_load_from_flash();
-
     sid = load_session_id();
     NRF_LOG_INFO("sid: %d", sid);
 
-    NRF_LOG_INFO("=== Read settings === ");
+    // Print RF settings
+    NRF_LOG_INFO("=== Read settings ===");
     NRF_LOG_INFO("RF pipe_addr_0: ");
     NRF_LOG_HEXDUMP_INFO(g_rf_settings.pipe_addr_0, 5);
     NRF_LOG_INFO("RF pipe_addr_1: ");
@@ -59,7 +47,6 @@ int main(void) {
     NRF_LOG_FLUSH();
 
     NRF_LOG_INFO("> AES: begin test");
-    aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
     {
         uint8_t test_block[AES_BLOCK_SIZE] = {
             'h', 'e', 'l', 'l', 'o', ' ', 'w', 'o',
@@ -73,10 +60,38 @@ int main(void) {
     }
     NRF_LOG_INFO("> AES: finish test");
 
-    NRF_LOG_INFO("Starting main loop");
+}
+
+int main(void) {
+    init_logging();
+
+    NRF_LOG_INFO("main() started");
+
+    // Setup
+    {
+        NRF_LOG_INFO("loading settings from flash");
+        init_error_system();
+        timer_init();
+        settings_load_from_flash();
+        aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
+        matrix_scanner_init();
+    }
+
+    print_settings_info();
+
+    NRF_LOG_INFO("Starting main() loop");
 
     while (true) {
-        nrf_delay_ms(1000);
-        NRF_LOG_FLUSH();
+        nrf_delay_ms(10);
+        if (matrix_scan()) {
+            NRF_LOG_INFO(
+                "g_matrix[0]: %02X%02X%02X%02X",
+                g_matrix[0][3],
+                g_matrix[0][2],
+                g_matrix[0][1],
+                g_matrix[0][0]
+            );
+            NRF_LOG_FLUSH();
+        }
     }
 }
