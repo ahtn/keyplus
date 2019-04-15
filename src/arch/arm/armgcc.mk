@@ -64,6 +64,8 @@ endef
 $(call create_recipes, $(SRC_FILES),c_file_recipe,o)
 $(call create_recipes, $(ASM_FILES),asm_file_recipe,o)
 
+include $(DEP_FILES)
+
 # Link object files
 $(TARGET_OUT): $(OBJ_FILES)
 	@echo

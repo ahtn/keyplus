@@ -32,7 +32,6 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/memobj/nrf_memobj.c \
   $(SDK_ROOT)/components/libraries/ringbuf/nrf_ringbuf.c \
   $(SDK_ROOT)/components/libraries/strerror/nrf_strerror.c \
-  $(SDK_ROOT)/components/proprietary_rf/esb/nrf_esb.c \
   $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd/nrf_nvic.c \
   $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd/nrf_soc.c \
   $(SDK_ROOT)/external/fprintf/nrf_fprintf.c \
@@ -67,7 +66,6 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/boards \
   $(SDK_ROOT)/components/libraries/memobj \
   $(SDK_ROOT)/components/libraries/log/src \
-  $(SDK_ROOT)/components/proprietary_rf/esb \
   $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd \
   $(SDK_ROOT)/external/fprintf \
   $(SDK_ROOT)/modules/nrfx \
@@ -80,6 +78,25 @@ INC_FOLDERS += \
 
 # Libraries common to all targets
 LIB_FILES += \
+
+
+#######################################################################
+#                               nrf_esb                               #
+#######################################################################
+
+SRC_FILES += \
+  # $(SDK_ROOT)/components/proprietary_rf/esb/nrf_esb.c \
+
+# Include folders common to all targets
+INC_FOLDERS += \
+  # $(SDK_ROOT)/components/proprietary_rf/esb \
+
+# Libraries common to all targets
+LIB_FILES += \
+
+#######################################################################
+#                             AES crypto                              #
+#######################################################################
 
 # Files for AES crypto
 SRC_FILES += \
@@ -115,6 +132,21 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/mutex \
   $(SDK_ROOT)/external/cifra_AES128-EAX \
   $(SDK_ROOT)/external/nrf_cc310/include \
+
+#######################################################################
+#                              USB files                              #
+#######################################################################
+
+SRC_FILES += \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_usbd.c \
+  $(SDK_ROOT)/components/libraries/timer/app_timer.c \
+  $(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_power.c \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_power.c \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_systick.c \
+
+INC_FOLDERS += \
+  $(SDK_ROOT)/components/libraries/timer \
+
 
 CFLAGS += -DNRF_CRYPTO_MAX_INSTANCE_COUNT=1
 ASMFLAGS += -DNRF_CRYPTO_MAX_INSTANCE_COUNT=1

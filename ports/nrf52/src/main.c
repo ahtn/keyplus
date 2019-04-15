@@ -62,7 +62,11 @@ static void print_settings_info(void) {
 
 }
 
+int usb_test(void);
+
 int main(void) {
+    usb_test();
+
     init_logging();
 
     NRF_LOG_INFO("main() started");

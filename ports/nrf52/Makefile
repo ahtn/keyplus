@@ -58,6 +58,7 @@ CFLAGS += -Wno-error=unused-but-set-variable
 # names in different folders
 C_SRC += \
 	$(PROJ_SRC_PATH)/main.c \
+	$(PROJ_SRC_PATH)/usb_test.c \
 	$(PROJ_SRC_PATH)/port_impl/aes.c \
 	$(PROJ_SRC_PATH)/port_impl/flash.c \
 	$(PROJ_SRC_PATH)/port_impl/io_map.c \
