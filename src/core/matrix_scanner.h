@@ -94,8 +94,12 @@ typedef struct matrix_scan_plan_t {
  *                         global variables                          *
  *********************************************************************/
 
+#if USE_SCANNER
+
 extern XRAM uint8_t g_matrix[MAX_NUM_ROWS][IO_PORT_COUNT*sizeof(port_mask_t)];
 extern XRAM uint8_t g_key_num_bitmap[KEY_NUMBER_BITMAP_SIZE];
+
+#endif
 
 extern const ROM uint8_t *g_scan_key_map;
 extern XRAM matrix_scan_plan_t g_scan_plan;

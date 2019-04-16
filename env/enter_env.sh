@@ -14,6 +14,9 @@ AVR8_PATH="${PWD}/env/$avr8_tool_chain/bin"
 SDCC_BIN_PATH="${PWD}/env/$sdcc_tool_chain/bin"
 SDCC_PATH="${PWD}/env/$sdcc_tool_chain"
 
+ARM_PATH="${PWD}/env/gcc-arm-none-eabi-7-2018-q2-update/bin/"
+
+
 # Command to leave the environment
 deactivate_env () {
     if ! [ -z "${_OLD_ENV_PATH+_}" ]; then
@@ -51,5 +54,9 @@ export PS1
 export AVR8_PATH
 export SDCC_BIN_PATH
 export SDCC_PATH
+
+export GNU_INSTALL_ROOT=$ARM_PATH
+export GNU_VERSION=7.3.1
+export GNU_PREFIX=arm-none-eabi
 
 echo "New path: $PATH"

@@ -54,3 +54,12 @@ cd ports/efm8
   make BOARD=default LAYOUT_FILE=$layout_dir/efm8_4x6.yaml
   make BOARD=efm8ub30_qfn20 LAYOUT_FILE=$layout_dir/efm8_4x6.yaml
 cd ../..
+
+cd ports/nrf52
+  echo
+  echo "###########"
+  echo "#  nrf52  #"
+  echo "###########"
+  echo
+  make BOARD=nrf52840_dk LAYOUT_FILE=$layout_dir/nrf52_4key.yaml
+cd ../..

@@ -8,7 +8,7 @@ https://www.nordicsemi.com/DocLib?Product=SDK%20Documentation)
 
 ### SDK 15.3.0
 
-* [SDK 15.3.0](https://www.nordicsemi.com/-/media/Software-and-other-downloads/SDKs/nRF5/Binaries/nRF5SDK153059ac345.zip
+* [SDK 15.3.0](https://www.nordicsemi.com/-/media/Software-and-other-downloads/SDKs/nRF5/Binaries/nRF5SDK153059ac345.zip)
 * [SDK 15.3.0 Offline Documentation](http://developer.nordicsemi.com/nRF5_SDK/nRF5_SDK_v15.x.x/nRF5_SDK_15.3.0_offline_doc.zip)
 
 

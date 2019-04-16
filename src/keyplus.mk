@@ -24,6 +24,7 @@ print_keyplus_info:
 	@echo -e "MCU:\t\t$(MCU)"
 	@echo -e "LAYOUT_FILE:\t$(LAYOUT_FILE)"
 	@echo -e "RF_FILE:\t$(RF_FILE)"
+	@echo "compiler: $(CC)"
 	@echo "compiler c flags: $(ALL_CFLAGS)"
 	@echo ""
 

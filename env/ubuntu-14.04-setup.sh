@@ -13,6 +13,10 @@ fi
 # load version number into __version__ as a bash variable
 source ../host-software/keyplus/version.py
 
+#######################################################################
+#                          Python libraries                           #
+#######################################################################
+
 if [[ $TRAVIS ]]; then
     pip3 install --user -U setuptools
 fi
@@ -24,9 +28,10 @@ else
     pip3 install --user -U "keyplus==${__version__}"
 fi
 
-#
-# AVR8 tool chain
-#
+#######################################################################
+#                           AVR8 toolchain                            #
+#######################################################################
+
 avr8_folder=avr8-gnu-toolchain-linux_x86_64
 avr8_gnu=avr8-gnu-toolchain-3.5.4.1709-linux.any.x86_64.tar.gz
 avr8_link=http://ww1.microchip.com/downloads/en/DeviceDoc/$avr8_gnu
@@ -38,9 +43,11 @@ wget $avr8_headers
 unzip avr8-headers.zip
 cp avr/* -t $avr8_folder/avr/include/avr
 
-#
-# SDCC mcs51 tool chain
-#
+
+#######################################################################
+#                        SDCC MCS51 toolchain                         #
+#######################################################################
+
 if [[ -z $SDCC_VERSION ]]; then
     # This version has compiler error on the keyplus code base
     # SDCC_VERSION=3.8.0
@@ -66,3 +73,13 @@ sdcc_dist=https://github.com/ahtn/efm8_sdcc/releases/download/sdcc/$sdcc_tar
 
 wget $sdcc_dist -O $sdcc_tar
 tar xvf $sdcc_tar
+
+#######################################################################
+#                            ARM Toolchain                            #
+#######################################################################
+
+armgcc_tar=gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2
+armgcc_link=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/7-2018q2/$armgcc_tar
+
+wget $armgcc_link
+tar xvf $armgcc_tar
