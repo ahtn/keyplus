@@ -13,8 +13,8 @@ NRF52_48GPIO = PinMap(
         'P1': 1,
     },
     pins = [
-        0xffff_ffff,
-        0x0000_ffff,
+        0xffffffff,
+        0x0000ffff,
     ],
     gpio_count = 48,
     port_size = 32
