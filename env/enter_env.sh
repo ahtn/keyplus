@@ -15,6 +15,7 @@ SDCC_BIN_PATH="${PWD}/env/$sdcc_tool_chain/bin"
 SDCC_PATH="${PWD}/env/$sdcc_tool_chain"
 
 ARM_PATH="${PWD}/env/gcc-arm-none-eabi-7-2018-q2-update/bin/"
+NRF52_SDK_PATH="${PWD}/env/nRF5_SDK_15.3.0_59ac345"
 
 
 # Command to leave the environment
@@ -58,5 +59,6 @@ export SDCC_PATH
 export GNU_INSTALL_ROOT=$ARM_PATH
 export GNU_VERSION=7.3.1
 export GNU_PREFIX=arm-none-eabi
+export NRF52_SDK_ROOT=$NRF52_SDK_PATH
 
 echo "New path: $PATH"

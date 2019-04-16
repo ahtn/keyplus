@@ -22,7 +22,7 @@ VPATH += $(KEYPLUS_PATH)
 GNU_INSTALL_ROOT ?= /usr/bin/
 GNU_PREFIX ?= arm-none-eabi
 
-SDK_ROOT ?= $(HOME)/local/nRF5_SDK_15.3.0_59ac345
+NRF52_SDK_ROOT ?= $(HOME)/local/nRF5_SDK_15.3.0_59ac345
 
 #######################################################################
 #                        board config options                         #
@@ -143,14 +143,14 @@ LDFLAGS += -Wl,--section-start=.key_layout_block=$(LAYOUT_ADDR)
 ALL_CFLAGS = $(CFLAGS)
 include $(KEYPLUS_PATH)/keyplus.mk
 
-ABSOLUTE_PATHS := 1
-
 SRC_FILES += $(C_SRC)
 CFLAGS += $(CDEFS)
 
 INC_FOLDERS += $(KEYPLUS_PATH)
 INC_FOLDERS += $(PROJ_SRC_PATH)
 INC_FOLDERS += $(TARGET_BOARD_DIR)
+
+SDK_ROOT=$(NRF52_SDK_ROOT)
 
 include $(PROJ_PATH)/nrf52.mk
 

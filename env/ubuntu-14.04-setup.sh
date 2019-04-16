@@ -75,7 +75,7 @@ wget $sdcc_dist -O $sdcc_tar
 tar xvf $sdcc_tar
 
 #######################################################################
-#                            ARM Toolchain                            #
+#                      NRF52/ARM Toolchain                            #
 #######################################################################
 
 armgcc_tar=gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2
@@ -83,3 +83,9 @@ armgcc_link=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-
 
 wget $armgcc_link
 tar xvf $armgcc_tar
+
+nrf5_sdk_zip=nRF5SDK153059ac345.zip
+nrf5_sdk_link=https://www.nordicsemi.com/-/media/Software-and-other-downloads/SDKs/nRF5/Binaries/$nrf5_sdk_zip
+
+wget $nrf5_sdk_link
+unzip $nrf5_sdk_zip
