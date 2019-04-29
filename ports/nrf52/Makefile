@@ -9,8 +9,7 @@ TARGET_BASE_NAME = nrf52_keyplus
 # ARCH             = XMEGA
 F_CPU            = 64000000
 # F_USB            = 48000000
-# FORMAT           = ihex
-# SHELL            = /bin/bash
+CLOCK_SPEED_SLOW = 64000000
 
 KEYPLUS_PATH      = ../../src
 PROJ_PATH         = .
@@ -22,7 +21,11 @@ VPATH += $(KEYPLUS_PATH)
 GNU_INSTALL_ROOT ?= /usr/bin/
 GNU_PREFIX ?= arm-none-eabi
 
+
 NRF52_SDK_ROOT ?= $(HOME)/local/nRF5_SDK_15.3.0_59ac345
+
+# Disable implicit rules
+MAKEFLAGS += --no-builtin-rules
 
 #######################################################################
 #                        board config options                         #
@@ -42,8 +45,8 @@ include $(KEYPLUS_PATH)/boards.mk
 #######################################################################
 
 include $(KEYPLUS_PATH)/core/core.mk
-# include $(KEYPLUS_PATH)/usb/usb.mk
-# include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
+include $(KEYPLUS_PATH)/usb/usb.mk
+include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
 
 #######################################################################
 #                             c settings                              #
@@ -58,19 +61,18 @@ CFLAGS += -Wno-error=unused-but-set-variable
 # names in different folders
 C_SRC += \
 	$(PROJ_SRC_PATH)/main.c \
-	$(PROJ_SRC_PATH)/usb_test.c \
+	$(PROJ_SRC_PATH)/nrf52_usb.c \
 	$(PROJ_SRC_PATH)/port_impl/aes.c \
 	$(PROJ_SRC_PATH)/port_impl/flash.c \
+	$(PROJ_SRC_PATH)/port_impl/hardware.c \
 	$(PROJ_SRC_PATH)/port_impl/io_map.c \
+	$(PROJ_SRC_PATH)/port_impl/led.c \
 	$(PROJ_SRC_PATH)/port_impl/matrix_scanner.c \
 	$(PROJ_SRC_PATH)/port_impl/nonce.c \
+	$(PROJ_SRC_PATH)/port_impl/nrf24.c \
 	$(PROJ_SRC_PATH)/port_impl/timer.c \
+	$(PROJ_SRC_PATH)/port_impl/usb_reports.c \
 
-ifeq ($(USE_USB), 1)
-C_SRC += $(SRC_USB) \
-	$(PROJ_SRC_PATH)/descriptors.c \
-	$(PROJ_SRC_PATH)/usb_reports.c
-endif
 
 # List Assembler source files here.
 # NOTE: Use *.S for user written asm files. *.s is used for compiler generated

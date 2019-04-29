@@ -9,7 +9,7 @@
 typedef struct {
     uint8_t report_id;
     uint16_t code;
-} hid_report_media_t;
+} ATTR_PACKED hid_report_media_t;
 
 extern XRAM hid_report_media_t g_media_report;
 extern bit_t g_report_pending_media;

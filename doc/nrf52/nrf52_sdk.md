@@ -153,7 +153,7 @@ you should be able to connect to your device and view the log output.
 To run the J-Link GDB server run:
 
 ```
-JLinkGDBServerCLExe -device nrf52832_xxaa -if swd -port 2331
+JLinkGDBServerCLExe -device nrf52840_xxaa -if swd -port 2331
 ```
 
 Then run the GDB client:

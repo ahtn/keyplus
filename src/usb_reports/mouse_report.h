@@ -25,7 +25,7 @@ typedef struct hid_report_mouse_t {
     int16_t y;
     int8_t wheel_y;
     int8_t wheel_x;
-} hid_report_mouse_t;
+} ATTR_PACKED hid_report_mouse_t;
 
 extern XRAM hid_report_mouse_t g_mouse_report;
 extern bit_t g_report_pending_mouse;

@@ -5,6 +5,11 @@
 
 #include <stdint.h>
 
+
+#ifndef ATTR_PACKED
+    #define ATTR_PACKED __attribute__((packed))
+#endif
+
 // usb device descriptor
 typedef struct usb_device_desc_t {
     uint8_t   bLength;

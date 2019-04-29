@@ -79,6 +79,34 @@ INC_FOLDERS += \
 # Libraries common to all targets
 LIB_FILES += \
 
+#######################################################################
+#                               gpiote                                #
+#######################################################################
+
+SRC_FILES += \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_gpiote.c \
+
+# Include folders common to all targets
+INC_FOLDERS += \
+
+# Libraries common to all targets
+LIB_FILES += \
+
+
+
+#######################################################################
+#                              nrf_spim                               #
+#######################################################################
+
+SRC_FILES += \
+  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_spim.c \
+
+# Include folders common to all targets
+INC_FOLDERS += \
+
+# Libraries common to all targets
+LIB_FILES += \
+
 
 #######################################################################
 #                               nrf_esb                               #

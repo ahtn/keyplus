@@ -75,7 +75,7 @@ typedef struct {
     uint8_t id;
     uint8_t type;
     uint8_t step;
-} unifying_packet_header_t;
+} ATTR_PACKED unifying_packet_header_t;
 
 // Unifying Pairing packet step 1
 typedef struct {
@@ -92,7 +92,7 @@ typedef struct {
     uint8_t unknown_3[5];
     uint8_t unknown_4;
     uint8_t checksum;
-} unifying_req_1_t;
+} ATTR_PACKED unifying_req_1_t;
 
 typedef struct {
     uint8_t id; //< sending device id
@@ -103,7 +103,7 @@ typedef struct {
     uint16_t ability;
     uint8_t unknown_1[8];
     uint8_t checksum;
-} unifying_req_2_t;
+} ATTR_PACKED unifying_req_2_t;
 
 typedef struct {
     uint8_t id; //< sending device id
@@ -113,7 +113,7 @@ typedef struct {
     uint8_t len;
     uint8_t dev_str[16];
     uint8_t checksum;
-} unifying_req_3_t;
+} ATTR_PACKED unifying_req_3_t;
 
 typedef struct {
     uint8_t id; //< sending device id
@@ -121,7 +121,7 @@ typedef struct {
     uint8_t step; //< step == 3
     uint8_t crypto[6];
     uint8_t checksum;
-} unifying_resp_3_t;
+} ATTR_PACKED unifying_resp_3_t;
 
 typedef struct {
     uint8_t id; //< sending device id
@@ -129,7 +129,7 @@ typedef struct {
     uint8_t step;
     uint8_t cryto[6];
     uint8_t checksum;
-} unifying_req_4_t;
+} ATTR_PACKED unifying_req_4_t;
 
 typedef union unifying_packet_t {
     unifying_packet_header_t header;
@@ -171,7 +171,7 @@ typedef struct unifying_mouse_packet_t {
     int8_t wheel_y;
     int8_t wheel_x;
     uint8_t checksum;
-} unifying_mouse_packet_t;
+} ATTR_PACKED unifying_mouse_packet_t;
 
 /// Unifying keep alive packet
 /// Keep the RF channel on the unifying receiver open for the given amount of
@@ -200,7 +200,7 @@ typedef struct unifying_keep_alive_t {
     /// NOTE: network byte order is big endian
     uint16_t keep_alive_time;
     uint8_t checksum;
-} unifying_keep_alive_t;
+} ATTR_PACKED unifying_keep_alive_t;
 
 /// Unifying long keep alive packet
 /// Seems to be sent when transitioning between different keep alive states,
@@ -218,7 +218,7 @@ typedef struct unifying_keep_alive_long_t {
     uint16_t keep_alive_time;
     uint8_t unknown_1[4];
     uint8_t checksum;
-} unifying_keep_alive_long_t;
+} ATTR_PACKED unifying_keep_alive_long_t;
 
 
 // Unifying HID++ long packet
@@ -232,7 +232,7 @@ typedef struct unifying_hidpp10_long_t {
     uint8_t sub_id;
     uint8_t parameters[17];
     uint8_t checksum;
-} unifying_hidpp10_long_t;
+} ATTR_PACKED unifying_hidpp10_long_t;
 
 // Unifying HID++ short packet
 //
@@ -246,7 +246,7 @@ typedef struct unifying_hidpp10_t {
     uint8_t parameters[4];
     uint8_t unused;
     uint8_t checksum;
-} unifying_hidpp10_t;
+} ATTR_PACKED unifying_hidpp10_t;
 
 // Unifying HID++ long packet
 //
@@ -261,7 +261,7 @@ typedef struct unifying_hidpp20_long_t {
     uint8_t function_id : 4;
     uint8_t parameters[16];
     uint8_t checksum;
-} unifying_hidpp20_long_t;
+} ATTR_PACKED unifying_hidpp20_long_t;
 
 // Unifying HID++ short packet
 //
@@ -277,7 +277,7 @@ typedef struct unifying_hidpp20_t {
     uint8_t parameters[3];
     uint8_t unused;
     uint8_t checksum;
-} unifying_hidpp20_t;
+} ATTR_PACKED unifying_hidpp20_t;
 
 // Unifying HID++ special keys packet
 //
@@ -293,7 +293,7 @@ typedef struct unifying_hidpp20_diverted_buttons_t {
     uint16_t control_id_list[4]; //
     uint8_t padding[7];
     uint8_t checksum;
-} unifying_hidpp20_diverted_buttons_t;
+} ATTR_PACKED unifying_hidpp20_diverted_buttons_t;
 
 enum {
     GESTURE_STATE_INACTIVE = 0,

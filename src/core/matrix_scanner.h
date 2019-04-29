@@ -87,7 +87,7 @@ typedef struct matrix_scan_plan_t {
     uint8_t parasitic_discharge_delay_debouncing;
     uint8_t max_col_pin_num; ///< The largest column pin number used.
     uint8_t max_key_num; ///< The largest key number used.
-} matrix_scan_plan_t;
+} ATTR_PACKED matrix_scan_plan_t;
 
 
 /*********************************************************************

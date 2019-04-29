@@ -30,7 +30,7 @@ static void handler(keycode_t keycode, key_event_t event) REENT {
             reset_mcu();
         } break;
 
-#if USE_NRF24
+#if USE_UNIFYING
         case KC_UNIFYING_PAIR: {
             if (event == EVENT_PRESSED) {
                 unifying_begin_pairing();

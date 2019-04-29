@@ -34,3 +34,6 @@
 
 // nRF24LU1+ dongle only needs 50mA max current
 #define CUSTOM_USB_CURRENT_LIMIT 50
+
+// Use the SPI handling provided by core/nrf24.c
+#define NRF24_INBUILT_SPI_HANDLING 1

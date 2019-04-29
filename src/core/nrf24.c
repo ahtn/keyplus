@@ -4,6 +4,7 @@
 #include "core/nrf24.h"
 #include "core/hardware.h"
 
+#if NRF24_INBUILT_SPI_HANDLING
 static uint8_t nrf24_reg(nrf24_register_t reg, uint8_t val) {
     uint8_t result;
     nrf24_csn(0);
@@ -44,6 +45,7 @@ nrf24_status_t nrf24_read_status(void) {
     nrf24_csn(1);
     return result;
 }
+#endif
 
 uint8_t nrf24_read_reg(nrf24_register_t reg) {
     return nrf24_reg(R_REGISTER | reg, 0xff);

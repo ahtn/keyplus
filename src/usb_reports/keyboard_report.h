@@ -49,13 +49,13 @@ typedef struct {
 #endif
     uint8_t modifiers;
     uint8_t bitmask[NKRO_REPORT_BYTES];    // the keycode as defined in keycode.h
-} hid_report_nkro_keyboard_t;
+} ATTR_PACKED hid_report_nkro_keyboard_t;
 
 typedef struct {
     uint8_t modifiers;
     uint8_t unused;
     uint8_t keys[BOOT_REPORT_KEY_COUNT];
-} hid_report_boot_keyboard_t;
+} ATTR_PACKED hid_report_boot_keyboard_t;
 
 extern XRAM hid_report_boot_keyboard_t g_boot_keyboard_report;
 extern XRAM hid_report_nkro_keyboard_t g_nkro_keyboard_report;

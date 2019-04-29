@@ -43,7 +43,7 @@ typedef struct usb_config_desc_keyboard_t {
 #ifdef USE_WEBUSB
     usb_webusb_desc_t webusb;
 #endif
-} usb_config_desc_keyboard_t;
+} ATTR_PACKED usb_config_desc_keyboard_t;
 
 // endpoint and interface numbers
 #define INTERFACE_BOOT_KEYBOARD 0

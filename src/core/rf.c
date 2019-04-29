@@ -199,6 +199,8 @@ static void packet_buffer_add_byte(uint8_t byte) {
     ring_buf128_put(&s_rx_buffer, byte);
 }
 
+#if NRF24_INBUILT_SPI_HANDLING
+
 static void packet_buffer_load(uint8_t len) {
     uint8_t i;
     const nrf24_spi_command_t cmd = R_RX_PAYLOAD;
@@ -209,6 +211,22 @@ static void packet_buffer_load(uint8_t len) {
     }
     nrf24_csn(1);
 }
+
+#else
+// If the device doesn't use the inbuilt spi handling in `core/nrf24.c`, then
+// it doesn't provide `nrf24_spi_send_byte()`, so we use `nrf24_read_buf()`
+// here instead
+static void packet_buffer_load(uint8_t len) {
+    uint8_t i;
+    uint8_t s_rx_buf[MAX_PAYLOAD_LENGTH+1];
+
+    nrf24_read_buf(R_RX_PAYLOAD, s_rx_buf, len);
+
+    for (i = 0; i < len; ++i) {
+        ring_buf128_put(&s_rx_buffer, s_rx_buf[i]);
+    }
+}
+#endif
 
 static bit_t auto_ack = true;
 
@@ -281,7 +299,7 @@ void rf_init_receive(void) {
 
     nrf24_write_reg(CONFIG, RF_CRC_MODE | PWR_UP_bm | (1<<PRIM_RX) | NRF24_RX_IRQ_MASK);
 
-    nrf24_write_reg(NRF_STATUS, 0x70);
+    nrf24_write_reg(NRF_STATUS, NRF24_IRQ_MASK_ALL);
 
     packet_buffer_clear();
 
@@ -292,6 +310,10 @@ void rf_init_receive(void) {
     // enable the receiver
     nrf24_ce(1);
     g_rf_enabled = true;
+
+#if !RF_POLLING
+    rf_enable_receive_irq();
+#endif
 }
 
 #if SUPPORT_MULTI_RECEIVER
@@ -360,9 +382,7 @@ void rf_load_sync_ack_payload(uint8_t device_id) {
     memset(packet->sync.salt, 0, PACKET_SYNC_SALT_LENGTH);
     // encrypt and load into ack payload fifo
     aes_encrypt(tmp_buffer);
-    rf_disable_receive_irq();
     nrf24_write_ack_payload(tmp_buffer, PACKET_SIZE, device_id_to_pipe_num(device_id));
-    rf_enable_receive_irq();
 }
 
 // For a packet to be valid:
@@ -395,9 +415,6 @@ bit_t is_valid_packet(const packet_t *packet, uint8_t pipe_num) {
     return true;
 }
 
-// not being local helps SDCC
-// static XRAM uint8_t s_nrf_data[33];
-
 // Returns false if not a valid packet
 bit_t read_packet(void) REENT {
     static XRAM uint8_t packet_payload[PACKET_BUFFER_MAX_LEN];
@@ -405,8 +422,6 @@ bit_t read_packet(void) REENT {
     // get the packet pipe and size from the buffer
     uint8_t pipe_num;
     uint8_t width;
-
-    // Disable the rf IRQ while access the packet buffer
 
     pipe_num = packet_buffer_get();
     width = packet_buffer_get();
@@ -418,6 +433,7 @@ bit_t read_packet(void) REENT {
     // read out the packet payload into the buffer
     ring_buf128_take(&s_rx_buffer, packet_payload, width);
 
+#if USE_UNIFYING
     // NOTE: currently mouse pipes are disabled in passive listening mode
     if (pipe_num == UNIFYING_RF_PIPE_MOUSE || pipe_num == UNIFYING_RF_PIPE_DONGLE) {
         if (g_runtime_settings.feature.ctrl.rf_mouse_disabled) {
@@ -436,6 +452,11 @@ bit_t read_packet(void) REENT {
         unifying_read_packet(packet_payload, width);
         return true;
     }
+#else
+    if (pipe_num == UNIFYING_RF_PIPE_MOUSE || pipe_num == UNIFYING_RF_PIPE_DONGLE) {
+        return false;
+    }
+#endif
 
     // need to change how this is handled
 #if 0
@@ -632,12 +653,12 @@ void rf_packet_buffer_add(void) {
     packet_buffer_load(width);
 }
 
-// NOTE: because needs to control the nRF24, if other code needs to communicate
-// with the nRF24, it should disable this interrupt
+// NOTE: if other code needs to communicate with the nRF24L01+, it should
+// disable this interrupt
 void rf_isr(void) {
     uint8_t status = nrf24_read_status();
 
-    if (status & STATUS_RX_DR_bm) {
+    if (NRF24_STATUS_RX_PIPE(status) != STATUS_RX_FIFO_EMPTY) {
         do {
             rf_packet_buffer_add();
         } while ( (nrf24_get_rx_pipe_num()) != STATUS_RX_FIFO_EMPTY );

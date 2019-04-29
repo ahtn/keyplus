@@ -37,3 +37,6 @@
 #ifndef MAX_NUM_ROWS
 #define MAX_NUM_ROWS 18
 #endif
+
+// Use the SPI handling provided by core/nrf24.c
+#define NRF24_INBUILT_SPI_HANDLING 1

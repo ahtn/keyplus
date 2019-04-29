@@ -15,7 +15,7 @@ typedef struct vendor_report_t {
     /* vendor_report_data_t data; */
     uint8_t data[VENDOR_REPORT_LEN];
     uint8_t len;
-} vendor_report_t;
+} ATTR_PACKED vendor_report_t;
 
 extern XRAM vendor_report_t g_vendor_report_in;
 extern XRAM vendor_report_t g_vendor_report_out;

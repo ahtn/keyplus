@@ -26,3 +26,9 @@
 #define SCANNER_MATRIX_DELTA 1
 
 #define INTERNAL_SCAN_METHOD (MATRIX_SCANNER_INTERNAL_FAST_ROW_COL)
+
+// Don't use the SPI handling provided by core/nrf24.c
+#define NRF24_INBUILT_SPI_HANDLING 0
+
+// Don't use the IRQ pin
+#define RF_POLLING 1
