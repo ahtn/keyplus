@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <nrf_delay.h>
-#include <nrfx.h>
+#include "nrf_delay.h"
+#include "nrfx.h"
 
 #define static_delay_us(x) nrf_delay_us(x)
 #define static_delay_ms(x) nrf_delay_ms(x)
