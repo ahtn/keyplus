@@ -5,9 +5,14 @@ set -e
 
 git submodule update --init --recursive
 
+TARFLAGS="xvf"
+
 # Setup Ubuntu 14.04 dependencies
 if [[ -z $TRAVIS ]]; then
     sudo apt-get install -y make python3 python3-pip libpython-dev libffi-dev gawk libhidapi-dev python3-pyqt5
+else
+    # Reduce log output for travis
+    TARFLAGS="xf"
 fi
 
 # load version number into __version__ as a bash variable
@@ -38,7 +43,7 @@ avr8_gnu=avr8-gnu-toolchain-3.6.2.1759-linux.any.x86_64.tar.gz
 avr8_link=http://ww1.microchip.com/downloads/en/DeviceDoc/$avr8_gnu
 
 wget $avr8_link
-tar xvf ${avr8_gnu}
+tar $TARFLAGS ${avr8_gnu}
 
 
 #######################################################################
@@ -69,7 +74,7 @@ sdcc_tar=sdcc-${SDCC_VERSION}-mcs51-x86_64-linux.tar.gz
 sdcc_dist=https://github.com/ahtn/efm8_sdcc/releases/download/sdcc/$sdcc_tar
 
 wget $sdcc_dist -O $sdcc_tar
-tar xvf $sdcc_tar
+tar $TARFLAGS $sdcc_tar
 
 #######################################################################
 #                      NRF52/ARM Toolchain                            #
@@ -79,7 +84,7 @@ armgcc_tar=gcc-arm-none-eabi-7-2018-q2-update-linux.tar.bz2
 armgcc_link=https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/7-2018q2/$armgcc_tar
 
 wget $armgcc_link
-tar xvf $armgcc_tar
+tar $TARFLAGS $armgcc_tar
 
 nrf5_sdk_zip=nRF5SDK153059ac345.zip
 nrf5_sdk_link=https://www.nordicsemi.com/-/media/Software-and-other-downloads/SDKs/nRF5/Binaries/$nrf5_sdk_zip
