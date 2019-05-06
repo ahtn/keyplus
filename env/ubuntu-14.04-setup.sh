@@ -6,6 +6,7 @@ set -e
 git submodule update --init --recursive
 
 TARFLAGS="xvf"
+UNZIPFLAGS=""
 
 # Setup Ubuntu 14.04 dependencies
 if [[ -z $TRAVIS ]]; then
@@ -13,6 +14,7 @@ if [[ -z $TRAVIS ]]; then
 else
     # Reduce log output for travis
     TARFLAGS="xf"
+    UNZIPFLAGS="-q"
 fi
 
 # load version number into __version__ as a bash variable
@@ -90,4 +92,4 @@ nrf5_sdk_zip=nRF5SDK153059ac345.zip
 nrf5_sdk_link=https://www.nordicsemi.com/-/media/Software-and-other-downloads/SDKs/nRF5/Binaries/$nrf5_sdk_zip
 
 wget $nrf5_sdk_link
-unzip $nrf5_sdk_zip
+unzip $UNZIPFLAGS $nrf5_sdk_zip
