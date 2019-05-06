@@ -1,3 +1,4 @@
 avr*
 sdcc-*
 gcc-arm-none-eabi-*
+nRF5_SDK_*
