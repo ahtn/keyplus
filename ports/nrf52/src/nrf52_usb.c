@@ -51,7 +51,6 @@
 #include "nrf_log_default_backends.h"
 #include "app_timer.h"
 #include "app_error.h"
-#include "bsp.h"
 
 #include "usb/descriptors.h"
 #include "core/flash.h"
@@ -63,13 +62,6 @@
 static bool m_send_flag = 0;
 static bool m_mouse_dir = 0;
 
-/**
- * @brief Configuration status LED
- *
- * This LED would blink quickly (5&nbsp;Hz) when device is not configured
- * or slowly (1&nbsp;Hz) when configured and working properly.
- */
-#define LED_USB_STATUS BSP_BOARD_LED_0
 /**
  * @brief Enable power USB detection
  *
@@ -660,7 +652,7 @@ static void usbd_event_handler(nrf_drv_usbd_evt_t const *const p_event)
             static uint32_t cycle = 0;
             ++cycle;
             if ((cycle % (m_usbd_configured ? 500 : 100)) == 0) {
-                bsp_board_led_invert(LED_USB_STATUS);
+                // bsp_board_led_invert(LED_USB_STATUS);
             }
             break;
         }
@@ -830,7 +822,7 @@ static void power_usb_event_handler(nrf_drv_power_usb_evt_t event)
         /*
          * Turn OFF LEDs
          */
-        bsp_board_led_off(LED_USB_STATUS);
+        // bsp_board_led_off(LED_USB_STATUS);
         break;
     case NRF_DRV_POWER_USB_EVT_READY:
         NRF_LOG_INFO("USB ready");

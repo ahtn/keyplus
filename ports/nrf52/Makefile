@@ -78,6 +78,11 @@ C_SRC += \
 	$(PROJ_SRC_PATH)/port_impl/timer.c \
 	$(PROJ_SRC_PATH)/port_impl/usb_reports.c \
 
+ifeq ($(USE_BLUETOOTH), 1)
+	C_SRC += \
+		$(PROJ_SRC_PATH)/ble_test.c \
+	#
+endif
 
 # Place -D or -U options here for C sources
 CDEFS += -DCLOCK_SPEED_SLOW=$(CLOCK_SPEED_SLOW)UL

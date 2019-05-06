@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "nrf_nvic.h"
 #include "nrf_delay.h"
 #include "nrfx.h"
 
@@ -10,13 +11,15 @@
 #define static_delay_ms(x) nrf_delay_ms(x)
 
 #if USE_BLUETOOTH
+
 // When using a SOFT DEVICE use these to disable all non-vital interrupts
 #define enable_interrupts() do { \
-    sd_nvic_critical_region_enter(); \
+    uint8_t dummy; \
+    sd_nvic_critical_region_enter(&dummy); \
 } while(0);
 
 #define disable_interrupts() do { \
-    sd_nvic_critical_region_exit() \
+    sd_nvic_critical_region_exit(0); \
 } while(0);
 
 #else

@@ -65,4 +65,5 @@ cd ports/nrf52
   echo
   make BOARD=nrf52840_dk LAYOUT_FILE=$layout_dir/nrf52_4key.yaml ID=0
   make BOARD=nrf52840_dongle LAYOUT_FILE=$layout_dir/basic_split_test.yaml ID=21
+  make BOARD=nrf52840_dk_ble hex
 cd ../..

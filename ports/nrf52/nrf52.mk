@@ -32,8 +32,6 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/memobj/nrf_memobj.c \
   $(SDK_ROOT)/components/libraries/ringbuf/nrf_ringbuf.c \
   $(SDK_ROOT)/components/libraries/strerror/nrf_strerror.c \
-  $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd/nrf_nvic.c \
-  $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd/nrf_soc.c \
   $(SDK_ROOT)/external/fprintf/nrf_fprintf.c \
   $(SDK_ROOT)/external/fprintf/nrf_fprintf_format.c \
   $(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_uart.c \
@@ -63,7 +61,6 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/boards \
   $(SDK_ROOT)/components/libraries/memobj \
   $(SDK_ROOT)/components/libraries/log/src \
-  $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd \
   $(SDK_ROOT)/external/fprintf \
   $(SDK_ROOT)/modules/nrfx \
   $(SDK_ROOT)/modules/nrfx/hal \
@@ -74,6 +71,17 @@ INC_FOLDERS += \
 
 # Libraries common to all targets
 LIB_FILES += \
+
+
+ifeq ($(USE_SOFTDEVICE), 0)
+    SRC_FILES += \
+    $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd/nrf_nvic.c \
+    $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd/nrf_soc.c \
+
+    INC_FOLDERS += \
+    $(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd \
+    #
+endif
 
 #######################################################################
 #                             segger_rtt                              #
@@ -133,6 +141,121 @@ CFLAGS += -DESB_PRESENT
 ASMFLAGS += -DESB_PRESENT
 
 #######################################################################
+#                              Bluetooth                              #
+#######################################################################
+
+ifeq ($(USE_SOFTDEVICE), 1)
+
+    SRC_FILES += \
+    $(SDK_ROOT)/components/ble/peer_manager/auth_status_tracker.c \
+    $(SDK_ROOT)/components/ble/common/ble_advdata.c \
+    $(SDK_ROOT)/components/ble/ble_advertising/ble_advertising.c \
+    $(SDK_ROOT)/components/ble/common/ble_conn_params.c \
+    $(SDK_ROOT)/components/ble/common/ble_conn_state.c \
+    $(SDK_ROOT)/components/ble/ble_link_ctx_manager/ble_link_ctx_manager.c \
+    $(SDK_ROOT)/components/ble/common/ble_srv_common.c \
+    $(SDK_ROOT)/components/ble/peer_manager/gatt_cache_manager.c \
+    $(SDK_ROOT)/components/ble/peer_manager/gatts_cache_manager.c \
+    $(SDK_ROOT)/components/ble/peer_manager/id_manager.c \
+    $(SDK_ROOT)/components/ble/nrf_ble_gatt/nrf_ble_gatt.c \
+    $(SDK_ROOT)/components/ble/nrf_ble_qwr/nrf_ble_qwr.c \
+    $(SDK_ROOT)/components/ble/peer_manager/peer_data_storage.c \
+    $(SDK_ROOT)/components/ble/peer_manager/peer_database.c \
+    $(SDK_ROOT)/components/ble/peer_manager/peer_id.c \
+    $(SDK_ROOT)/components/ble/peer_manager/peer_manager.c \
+    $(SDK_ROOT)/components/ble/peer_manager/peer_manager_handler.c \
+    $(SDK_ROOT)/components/ble/peer_manager/pm_buffer.c \
+    $(SDK_ROOT)/components/ble/peer_manager/security_dispatcher.c \
+    $(SDK_ROOT)/components/ble/peer_manager/security_manager.c \
+    \
+    $(SDK_ROOT)/components/ble/ble_services/ble_bas/ble_bas.c \
+    $(SDK_ROOT)/components/ble/ble_services/ble_dis/ble_dis.c \
+    $(SDK_ROOT)/components/ble/ble_services/ble_hids/ble_hids.c \
+    $(SDK_ROOT)/components/softdevice/common/nrf_sdh.c \
+    $(SDK_ROOT)/components/softdevice/common/nrf_sdh_ble.c \
+    $(SDK_ROOT)/components/softdevice/common/nrf_sdh_soc.c \
+    \
+    $(SDK_ROOT)/components/libraries/atomic_fifo/nrf_atfifo.c \
+    $(SDK_ROOT)/components/libraries/atomic_flags/nrf_atflags.c \
+    $(SDK_ROOT)/components/libraries/bsp/bsp.c \
+    $(SDK_ROOT)/components/libraries/bsp/bsp_btn_ble.c \
+    $(SDK_ROOT)/components/libraries/button/app_button.c \
+    $(SDK_ROOT)/components/libraries/experimental_section_vars/nrf_section_iter.c \
+    $(SDK_ROOT)/components/libraries/fds/fds.c \
+    $(SDK_ROOT)/components/libraries/fstorage/nrf_fstorage.c \
+    $(SDK_ROOT)/components/libraries/fstorage/nrf_fstorage_sd.c \
+    $(SDK_ROOT)/components/libraries/pwr_mgmt/nrf_pwr_mgmt.c \
+    $(SDK_ROOT)/components/libraries/scheduler/app_scheduler.c \
+    $(SDK_ROOT)/components/libraries/sensorsim/sensorsim.c \
+    $(SDK_ROOT)/components/libraries/timer/app_timer.c \
+    $(SDK_ROOT)/components/libraries/crypto/nrf_crypto_rng.c \
+    \
+    $(SDK_ROOT)/external/utf_converter/utf.c \
+
+    # Include folders common to all targets
+    INC_FOLDERS += \
+    $(SDK_ROOT)/components/softdevice/s140/headers \
+    $(SDK_ROOT)/components/softdevice/s140/headers/nrf52 \
+    $(SDK_ROOT)/components/softdevice/common \
+    $(SDK_ROOT)/components/ble/ble_advertising \
+    $(SDK_ROOT)/components/ble/ble_dtm \
+    $(SDK_ROOT)/components/ble/ble_link_ctx_manager \
+    $(SDK_ROOT)/components/ble/ble_racp \
+    $(SDK_ROOT)/components/ble/ble_services/ble_ancs_c \
+    $(SDK_ROOT)/components/ble/ble_services/ble_ans_c \
+    $(SDK_ROOT)/components/ble/ble_services/ble_bas \
+    $(SDK_ROOT)/components/ble/ble_services/ble_bas_c \
+    $(SDK_ROOT)/components/ble/ble_services/ble_cscs \
+    $(SDK_ROOT)/components/ble/ble_services/ble_cts_c \
+    $(SDK_ROOT)/components/ble/ble_services/ble_dfu \
+    $(SDK_ROOT)/components/ble/ble_services/ble_dis \
+    $(SDK_ROOT)/components/ble/ble_services/ble_gls \
+    $(SDK_ROOT)/components/ble/ble_services/ble_hids \
+    $(SDK_ROOT)/components/ble/ble_services/ble_hrs \
+    $(SDK_ROOT)/components/ble/ble_services/ble_hrs_c \
+    $(SDK_ROOT)/components/ble/ble_services/ble_hts \
+    $(SDK_ROOT)/components/ble/ble_services/ble_ias \
+    $(SDK_ROOT)/components/ble/ble_services/ble_ias_c \
+    $(SDK_ROOT)/components/ble/ble_services/ble_lbs \
+    $(SDK_ROOT)/components/ble/ble_services/ble_lbs_c \
+    $(SDK_ROOT)/components/ble/ble_services/ble_lls \
+    $(SDK_ROOT)/components/ble/ble_services/ble_nus \
+    $(SDK_ROOT)/components/ble/ble_services/ble_nus_c \
+    $(SDK_ROOT)/components/ble/ble_services/ble_rscs \
+    $(SDK_ROOT)/components/ble/ble_services/ble_rscs_c \
+    $(SDK_ROOT)/components/ble/ble_services/ble_tps \
+    $(SDK_ROOT)/components/ble/common \
+    $(SDK_ROOT)/components/ble/nrf_ble_gatt \
+    $(SDK_ROOT)/components/ble/nrf_ble_qwr \
+    $(SDK_ROOT)/components/ble/peer_manager \
+    $(SDK_ROOT)/components/libraries/sensorsim \
+    $(SDK_ROOT)/components/libraries/scheduler \
+    $(SDK_ROOT)/components/libraries/fds \
+    $(SDK_ROOT)/components/libraries/fstorage \
+    $(SDK_ROOT)/components/libraries/pwr_mgmt \
+    $(SDK_ROOT)/components/libraries/atomic_fifo \
+    $(SDK_ROOT)/components/libraries/atomic_flags \
+    $(SDK_ROOT)/components/libraries/bsp \
+    $(SDK_ROOT)/components/libraries/button \
+    $(SDK_ROOT)/components/libraries/experimental_section_vars \
+    $(SDK_ROOT)/components/libraries/stack_info \
+
+    # Libraries common to all targets
+    LIB_FILES += \
+
+    CFLAGS += -DNRF_SD_BLE_API_VERSION=6
+    CFLAGS += -DS140
+    CFLAGS += -DSOFTDEVICE_PRESENT
+    CFLAGS += -DSWI_DISABLE0
+
+    ASMFLAGS += -DNRF_SD_BLE_API_VERSION=6
+    ASMFLAGS += -DS140
+    ASMFLAGS += -DSOFTDEVICE_PRESENT
+    ASMFLAGS += -DSWI_DISABLE0
+
+endif
+
+#######################################################################
 #                             AES crypto                              #
 #######################################################################
 
@@ -157,6 +280,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/crypto/nrf_crypto_init.c \
 
 INC_FOLDERS += \
+  $(SDK_ROOT)/components/libraries/crypto \
   $(SDK_ROOT)/components/libraries/crypto/backend/cc310 \
   $(SDK_ROOT)/components/libraries/crypto/backend/cc310_bl \
   $(SDK_ROOT)/components/libraries/crypto/backend/cifra \
@@ -171,6 +295,13 @@ INC_FOLDERS += \
   $(SDK_ROOT)/external/cifra_AES128-EAX \
   $(SDK_ROOT)/external/nrf_cc310/include \
 
+
+CFLAGS += -DNRF_CRYPTO_MAX_INSTANCE_COUNT=1
+ASMFLAGS += -DNRF_CRYPTO_MAX_INSTANCE_COUNT=1
+
+LIB_FILES += \
+  $(SDK_ROOT)/external/nrf_cc310/lib/cortex-m4/hard-float/libnrf_cc310_0.9.12.a \
+
 #######################################################################
 #                              USB files                              #
 #######################################################################
@@ -184,28 +315,26 @@ SRC_FILES += \
 INC_FOLDERS += \
   $(SDK_ROOT)/components/libraries/timer \
 
-
-CFLAGS += -DNRF_CRYPTO_MAX_INSTANCE_COUNT=1
-ASMFLAGS += -DNRF_CRYPTO_MAX_INSTANCE_COUNT=1
-
-LIB_FILES += \
-  $(SDK_ROOT)/external/nrf_cc310/lib/cortex-m4/hard-float/libnrf_cc310_0.9.12.a \
-
 #######################################################################
 #                           compiler flags                            #
 #######################################################################
 
 # Optimization flags
 # OPT ?= -O3
+# OPT ?= -O3 -g3
 OPT ?= -Og -g3
 
 # Uncomment the line below to enable link time optimization
 #OPT += -flto
 
+# ifeq ($(USE_BLUETOOTH), 1)
+#     CFLAGS += -DBSP_DEFINES_ONLY
+#     ASMFLAGS += -DBSP_DEFINES_ONLY
+# endif
+
 # C flags common to all targets
 CFLAGS += $(OPT)
 CFLAGS += -DBOARD_PCA10056
-CFLAGS += -DBSP_DEFINES_ONLY
 CFLAGS += -DCONFIG_GPIO_AS_PINRESET
 CFLAGS += -DFLOAT_ABI_HARD
 CFLAGS += -DNRF52840_XXAA
@@ -226,7 +355,6 @@ ASMFLAGS += -mcpu=cortex-m4
 ASMFLAGS += -mthumb -mabi=aapcs
 ASMFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 ASMFLAGS += -DBOARD_PCA10056
-ASMFLAGS += -DBSP_DEFINES_ONLY
 ASMFLAGS += -DCONFIG_GPIO_AS_PINRESET
 ASMFLAGS += -DFLOAT_ABI_HARD
 ASMFLAGS += -DNRF52840_XXAA
@@ -281,6 +409,13 @@ flash: default
 	@echo Flashing: $(TARGET_HEX)
 	nrfjprog -f nrf52 --program $(TARGET_HEX) --sectorerase
 	nrfjprog -f nrf52 --reset
+
+# Flash softdevice
+flash_softdevice:
+	@echo Flashing: s140_nrf52_6.1.1_softdevice.hex
+	nrfjprog -f nrf52 --program $(SDK_ROOT)/components/softdevice/s140/hex/s140_nrf52_6.1.1_softdevice.hex --sectorerase
+	nrfjprog -f nrf52 --reset
+
 
 erase:
 	nrfjprog -f nrf52 --eraseall

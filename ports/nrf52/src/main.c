@@ -111,8 +111,15 @@ NO_RETURN_ATTR void recovery_mode_main_loop(void) {
     }
 }
 
+int ble_test_main(uint8_t x);
+
 int main(void) {
     // usb_test();
+
+#if USE_BLUETOOTH
+    ble_test_main(0);
+#endif
+
 
     init_logging();
 

@@ -8,6 +8,9 @@ NRF52_LINK_SCRIPT := ld-scripts/mbr_nrf52840.ld
 # Bootloader reset pin on P0.19
 CDEFS += -DBOOTLOADER_RESET_PIN=19
 
+USE_SOFTDEVICE := 0
+USE_BLUETOOTH := 0
+
 USE_USB := 1
 USE_SCANNER := 1
 USE_NRF24 := 1
