@@ -42,9 +42,8 @@ void usb_read_out_endpoint(
 ) {
     const uint8_t ep = USB_DIR_OUT | endpoint_num;
 
-    nrf_drv_usbd_transfer_t transfer;
-    transfer.p_data.rx = dest;
     *length = nrf_drv_usbd_epout_size_get(ep);
+    NRF_DRV_USBD_TRANSFER_OUT(transfer, dest, *length);
 
     nrf_drv_usbd_ep_transfer(ep, &transfer);
 }

@@ -14,6 +14,11 @@
 #include "core/flash.h"
 #include "core/led.h"
 #include "core/nrf24.h"
+#if USE_NRF52_ESB
+#include "core/nrf52_esb.h"
+#include "nrf_esb.h"
+#include "nrf_log.h"
+#endif
 #include "core/packet.h"
 #include "core/ring_buf.h"
 #include "core/settings.h"
@@ -31,11 +36,11 @@ XRAM uint8_t g_rf_enabled;
 #define NRF24_TX_IRQ_MASK (0)
 #define NRF24_IRQ_MASK_ALL (MASK_MAX_RT_bm | MASK_TX_DS_bm | MASK_RX_DR_bm)
 
-static uint8_t device_id_to_pipe_num(const uint8_t device_id) {
+uint8_t device_id_to_pipe_num(const uint8_t device_id) {
     return device_id % NUM_KEYBOARD_PIPES;
 }
 
-void nrf_registers_common(void) {
+void nrf24_registers_common(void) {
     // When ack payloads > 15bytes are used @2Mbps, need ARD >=500µs.
     // maybe increase the auto matic retransmit delay?
     // The ARD is given by `(ard + 1) * 250µs` with a maximum delay of 4ms.
@@ -70,9 +75,9 @@ uint8_t is_buffer_zeroed(uint8_t *buffer, uint8_t len) {
 
 /* TODO: move settings */
 static void nrf_registers_init_sender(void) {
-    const uint8_t pipe_num = GET_SETTING(device_id) % NUM_KEYBOARD_PIPES;
+    const uint8_t pipe_num = device_id_to_pipe_num(GET_SETTING(device_id));
     // radio settings
-    nrf_registers_common();
+    nrf24_registers_common();
 
     // address settings
     if (pipe_num == 0) {
@@ -102,6 +107,15 @@ void rf_init_send(void) {
     if (g_runtime_settings.feature.ctrl.rf_disabled) {
         return;
     }
+
+#if USE_NRF52_ESB
+    if (g_rf_settings.hw_type == RF_HW_NRF52_ESB) {
+        nrf52_esb_init_tx();
+        return;
+    }
+#endif
+
+    g_rf_settings.hw_type = RF_HW_NRF24L01;
 
     nrf24_init();
 
@@ -143,6 +157,7 @@ void rf_handle_ack_payloads(void) {
         if (payload_width != PACKET_SIZE) {
             continue;
         }
+
         nrf24_read_rx_payload(data_buffer, payload_width);
         aes_decrypt(data_buffer);
         {
@@ -170,33 +185,35 @@ void rf_handle_ack_payloads(void) {
 #ifndef NO_RF_RECEIVE
 
 #define PACKET_BUFFER_MAX_LEN 22
-#define PACKET_BUFFER_ITEM_SIZE (PACKET_BUFFER_MAX_LEN+2)
-#define RECEIVE_BUFFER_MAX_LENGTH (127 / PACKET_BUFFER_ITEM_SIZE)
 
 static XRAM ring_buf128_type s_rx_buffer;
 
-static void packet_buffer_clear(void) {
+void packet_buffer_clear(void) {
     ring_buf128_clear(&s_rx_buffer);
 }
 
-static uint8_t packet_buffer_free_space(void) {
+uint8_t packet_buffer_free_space(void) {
     return ring_buf128_free_space(&s_rx_buffer);
 }
 
-static uint8_t packet_buffer_len(void) {
+uint8_t packet_buffer_len(void) {
     return ring_buf128_len(&s_rx_buffer);
 }
 
-static bit_t packet_buffer_has_data(void) {
+bit_t packet_buffer_has_data(void) {
     return ring_buf128_has_data(&s_rx_buffer);
 }
 
-static uint8_t packet_buffer_get(void) {
+uint8_t packet_buffer_get(void) {
     return ring_buf128_get(&s_rx_buffer);
 }
 
-static void packet_buffer_add_byte(uint8_t byte) {
+void packet_buffer_add_byte(uint8_t byte) {
     ring_buf128_put(&s_rx_buffer, byte);
+}
+
+void packet_buffer_take(XRAM uint8_t *dest, uint8_t width) {
+    ring_buf128_take(&s_rx_buffer, dest, width);
 }
 
 #if NRF24_INBUILT_SPI_HANDLING
@@ -207,7 +224,7 @@ static void packet_buffer_load(uint8_t len) {
     nrf24_csn(0);
     nrf24_spi_send_byte(cmd);
     for (i = 0; i < len; ++i) {
-        ring_buf128_put(&s_rx_buffer, nrf24_spi_send_byte(NRF_NOP));
+        packet_buffer_add_byte(nrf24_spi_send_byte(NRF_NOP));
     }
     nrf24_csn(1);
 }
@@ -223,7 +240,7 @@ static void packet_buffer_load(uint8_t len) {
     nrf24_read_buf(R_RX_PAYLOAD, s_rx_buf, len);
 
     for (i = 0; i < len; ++i) {
-        ring_buf128_put(&s_rx_buffer, s_rx_buf[i]);
+        packet_buffer_add_byte(s_rx_buf[i]);
     }
 }
 #endif
@@ -244,13 +261,14 @@ typedef struct packet_id_t {
 } packet_id_t;
 
 // TODO: put this in an `init` function
-static XRAM packet_id_t device_uid_list[MAX_NUM_DEVICES];
+XRAM packet_id_t device_uid_list[MAX_NUM_DEVICES];
+
 static XRAM uint16_t last_crc[NRF24_NUMBER_PIPES];
 
 static void nrf_registers_init_receiver(void) {
     uint8_t i;
 
-    nrf_registers_common();
+    nrf24_registers_common();
 
     { // pipe addresses
         nrf24_write_addr(RX_ADDR_P0, g_rf_settings.pipe_addr_0, RF_ADDR_WIDTH);
@@ -284,6 +302,20 @@ void rf_init_receive(void) {
         return;
     }
 
+    // setup buffer
+    init_uid_buffer_list();
+    packet_buffer_clear();
+    g_rf_enabled = true;
+
+#if USE_NRF52_ESB
+    if (g_rf_settings.hw_type == RF_HW_NRF52_ESB) {
+        nrf52_esb_init_rx();
+        return;
+    }
+#endif
+
+    g_rf_settings.hw_type = RF_HW_NRF24L01;
+
     nrf24_init();
 
     if (has_critical_error()) {
@@ -291,7 +323,6 @@ void rf_init_receive(void) {
     }
 
     nrf_registers_init_receiver();
-    init_uid_buffer_list();
 
     // init the receiver
     nrf24_flush_rx();
@@ -301,16 +332,12 @@ void rf_init_receive(void) {
 
     nrf24_write_reg(NRF_STATUS, NRF24_IRQ_MASK_ALL);
 
-    packet_buffer_clear();
-
 #if !RF_POLLING
     rf_init_receive_irq();
 #endif
 
     // enable the receiver
     nrf24_ce(1);
-    g_rf_enabled = true;
-
 #if !RF_POLLING
     rf_enable_receive_irq();
 #endif
@@ -373,7 +400,7 @@ bit_t is_auto_ack_enabled(void) {
 // knows what UID is, they will not be able to construct response packet because
 // they do not hold our preshared encryption key. If they try send a response
 // to the receiver, it will decrypt to junk data and be rejected.
-void rf_load_sync_ack_payload(uint8_t device_id) {
+void rf_nrf24_load_sync_ack_payload(uint8_t device_id) {
     XRAM uint8_t tmp_buffer[MAX_PAYLOAD_LENGTH];
     packet_t *packet = (packet_t*)tmp_buffer;
     // consturct the packet
@@ -400,7 +427,7 @@ bit_t is_valid_packet(const packet_t *packet, uint8_t pipe_num) {
     const uint32_t pid = packet->gen.packet_id;
     const uint32_t last_pid = device_uid_list[device_id].check_id;
     // packet needs to be received on the correct pipe for its device id
-    if (device_id % NUM_KEYBOARD_PIPES != pipe_num) {
+    if (device_id_to_pipe_num(device_id) != pipe_num) {
         return false;
     }
     // only except small jumps in pid
@@ -563,7 +590,22 @@ bit_t read_packet(void) REENT {
             // set the check_id for the challenge-response authentication
             device_uid_list[device_id].check_id = uid_generate();
             // construct and send a challenge packet for the device
-            rf_load_sync_ack_payload(device_id);
+            #if USE_NRF52_ESB && USE_NRF24
+                switch (g_rf_settings.hw_type) {
+                    case RF_HW_NRF24L01: {
+                        rf_nrf24_load_sync_ack_payload(device_id);
+                    } break;
+                    case RF_HW_NRF52_ESB: {
+                        rf_nrf52_load_sync_ack_payload(device_id);
+                    } break;
+                }
+            #elif USE_NRF24
+                rf_nrf24_load_sync_ack_payload(device_id);
+            #elif USE_NRF52_ESB
+                rf_nrf52_load_sync_ack_payload(device_id);
+            #else
+                #error "No NRF24 hardware type set"
+            #endif
 
             // reject all data until we have synced
             return false;
@@ -673,15 +715,25 @@ bit_t rf_task(void) {
     // have access to the nrf24 IRQ.
     bit_t has_data = false;
 
-#if RF_POLLING
-    rf_isr();
-#endif
+    if (g_rf_settings.hw_type == RF_HW_NRF24L01) {
+        #if RF_POLLING
+            rf_isr();
+        #endif
 
-    rf_disable_receive_irq();
-    while (packet_buffer_has_data()) {
-        has_data |= read_packet();
+        rf_disable_receive_irq();
+        while (packet_buffer_has_data()) {
+            has_data |= read_packet();
+        }
+        rf_enable_receive_irq();
+    } else {
+#if USE_NRF52_ESB
+        NVIC_DisableIRQ(ESB_EVT_IRQ);
+        while (packet_buffer_has_data()) {
+            has_data |= read_packet();
+        }
+        NVIC_EnableIRQ(ESB_EVT_IRQ);
+#endif
     }
-    rf_enable_receive_irq();
 
     return has_data;
 }

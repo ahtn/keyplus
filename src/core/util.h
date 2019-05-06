@@ -35,7 +35,7 @@
     #define WEAK __attribute__((weak))
     #define ATTR_PACKED __attribute__((packed))
     #define AT(address)
-    #define NO_RETURN_ATTR __ATTR_NORETURN__
+    #define NO_RETURN_ATTR __attribute__((noreturn))
 #elif defined(AVR) && defined(__GNUC__)
     #include "avr/pgmspace.h"
 
@@ -47,7 +47,7 @@
     #define WEAK __attribute__((weak))
     #define ATTR_PACKED __attribute__((packed))
     #define AT(address)
-    #define NO_RETURN_ATTR __ATTR_NORETURN__
+    #define NO_RETURN_ATTR __attribute__((noreturn))
 #else
     // fallback versions
 

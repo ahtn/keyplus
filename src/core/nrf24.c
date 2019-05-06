@@ -86,12 +86,12 @@ uint8_t nrf24_get_rx_pipe_num(void) {
     return NRF24_STATUS_RX_PIPE(nrf24_read_status());
 }
 
-nrf24_status_t nrf24_write_tx_payload(XRAM uint8_t *buf, uint8_t len) {
+nrf24_status_t nrf24_write_tx_payload(const XRAM uint8_t *buf, uint8_t len) {
     return nrf24_write_buf(W_TX_PAYLOAD, buf, len);
 }
 
 // write an ack payload packet
-nrf24_status_t nrf24_write_ack_payload(XRAM uint8_t *buf, uint8_t len, uint8_t pipe_num) {
+nrf24_status_t nrf24_write_ack_payload(const XRAM uint8_t *buf, uint8_t len, uint8_t pipe_num) {
     return nrf24_write_buf(W_ACK_PAYLOAD | (pipe_num & 0b0111), buf, len);
 }
 

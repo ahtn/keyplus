@@ -15,7 +15,6 @@ import keyplus.exceptions
 import keyplus.io_map
 
 from collections import namedtuple
-from pprint import pprint
 
 from keyplus.constants import *
 from keyplus.usb_ids import is_keyplus_usb_id
@@ -406,7 +405,7 @@ class KeyplusKeyboard(object):
 
     def get_error_info(self):
         """ Read the error code table from the device. """
-        response = self.simple_command(CMD_GET_INFO, [INFO_ERROR_SYSTEM])[1:]
+        response = self.get_info_cmd(INFO_ERROR_SYSTEM)
         error_table_data = response[:KeyplusErrorTable.SIZE_ERROR_CODE_TABLE]
         return KeyplusErrorTable(error_table_data)
 
@@ -756,12 +755,21 @@ class KeyplusKeyboard(object):
         finish_packet = bytearray([0xff]*64)
         finish_packet[0] = CMD_WRITE_FLASH
         self.hid_write(finish_packet)
-        self._check_cmd_response( self.hid_read(timeout=3000) ) # check response
+        response = self.hid_read(timeout=3500)
+        try:
+            self._check_cmd_response(response)
+        except KeyplusUSBCommandError as err:
+            if err.code == CMD_ERROR_BUSY:
+                # HACK/FIXME: ignore CMD_ERROR_BUSY
+                # For some reason the code generates this error when it should,
+                pass
+            else:
+                raise err
 
     def update_settings_section(self, settings_data, keep_rf):
         assert(isinstance(keep_rf, bool))
 
-        if DEBUG.layout:
+        if DEBUG.layout and len(settings_data):
             print("settings_data:", len(settings_data))
             hexdump.hexdump(bytes(settings_data))
             print()
@@ -792,7 +800,7 @@ class KeyplusKeyboard(object):
 
         # TODO: change this to a uint32_t
         start_address = 0
-        end_address = len(layout_data) - 1
+        end_address = len(layout_data)
 
         if end_address >= self.firmware_info.layout_flash_size:
             raise KeyplusSettingsError(

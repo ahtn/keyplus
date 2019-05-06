@@ -26,8 +26,8 @@ void io_map_init(void) {
 }
 
 // return non-zero on error
-uint8_t io_map_claim_pins(uint8_t port_num, uint8_t pin_mask) {
-    const uint8_t free_pins = s_available_pins[port_num];
+uint8_t io_map_claim_pins(uint8_t port_num, port_mask_t pin_mask) {
+    const port_mask_t free_pins = s_available_pins[port_num];
     if ( (free_pins & pin_mask) != pin_mask || port_num >= IO_PORT_COUNT) {
         // Some of the pins in the mask are in use
         register_error(ERROR_PIN_MAPPING_CONFLICT);

@@ -9,6 +9,8 @@
 
 #include "core/ring_buf.h"
 
+#include "config.h"
+
 #define VENDOR_REPORT_LEN EP_SIZE_VENDOR
 
 typedef struct vendor_report_t {

@@ -39,6 +39,7 @@ typedef uint32_t flash_addr_t;
 typedef uint32_t flash_size_t;
 
 #define MCU_BITNESS 32
+#define IO_PORT_SIZE 32
 typedef NRF_GPIO_Type io_port_t;
 
 #if NRF52810_XXAA

@@ -60,7 +60,7 @@ void nrf24_power_set(bool on);
 nrf24_status_t nrf24_read_status(void);
 
 // fn for writing and sending tx packets
-nrf24_status_t nrf24_write_tx_payload(XRAM uint8_t *buf, uint8_t len);
-nrf24_status_t nrf24_write_ack_payload(XRAM uint8_t *buf, uint8_t len, uint8_t pipe_num);
+nrf24_status_t nrf24_write_tx_payload(const XRAM uint8_t *buf, uint8_t len);
+nrf24_status_t nrf24_write_ack_payload(const XRAM uint8_t *buf, uint8_t len, uint8_t pipe_num);
 void nrf24_send_one(void);
 void nrf24_send_all(void);

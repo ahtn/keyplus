@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import struct
 import math
 import six
+import datetime
 
 from distutils.version import LooseVersion
 
@@ -170,6 +171,12 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
         elif six.PY3:
             self.timestamp = [int(c) for c in bytes_]
 
+    def get_timestamp(self):
+        try:
+            return datetime.datetime.fromtimestamp(self.timestamp_raw)
+        except OverflowError:
+            return None
+
     def set_device_name(self, new_name):
         # Internally we convert the given name to a USB string descriptor
         # encoded as:
@@ -315,6 +322,15 @@ class KeyboardFirmwareInfo(keyplus.cdata_types.firmware_info_t):
     @timestamp_raw.setter
     def timestamp_raw(self, value):
         self.timestamp = struct.to_bytes("<Q", value)
+
+    def get_timestamp(self):
+        try:
+            return datetime.datetime.fromtimestamp(self.timestamp_raw)
+        except OverflowError:
+            return None
+
+    def get_git_hash_str(self):
+        return "".join(["{:02x}".format(i) for i in self.git_hash])
 
     def get_interal_scan_method(self):
         return self.internal_scan_method

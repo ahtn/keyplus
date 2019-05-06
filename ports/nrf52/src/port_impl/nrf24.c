@@ -10,6 +10,8 @@
 #include "nrf_drv_gpiote.h"
 #include "nrfx_spim.h"
 
+#include "core/error.h"
+#include "core/io_map.h"
 #include "core/nrf24.h"
 #include "core/rf.h"
 
@@ -118,6 +120,20 @@ void spim_event_handler(nrfx_spim_evt_t const * p_event,
 
 
 void nrf24_init(void) {
+    uint32_t err = 0;
+
+    err |= IO_MAP_CLAIM_PIN_NUMBER(NRF24_PIN_CE);
+    err |= IO_MAP_CLAIM_PIN_NUMBER(NRF24_PIN_IRQ);
+
+    err |= IO_MAP_CLAIM_PIN_NUMBER(NRF24_PIN_CSN);
+    err |= IO_MAP_CLAIM_PIN_NUMBER(NRF24_PIN_MISO);
+    err |= IO_MAP_CLAIM_PIN_NUMBER(NRF24_PIN_MOSI);
+    err |= IO_MAP_CLAIM_PIN_NUMBER(NRF24_PIN_SCK);
+
+    if (err) {
+        return;
+    }
+
     nrf_gpio_cfg_output(NRF24_PIN_CE);
 
     nrfx_spim_config_t spi_config = NRFX_SPIM_DEFAULT_CONFIG;
@@ -129,7 +145,12 @@ void nrf24_init(void) {
     spi_config.ss_active_high = false;
     spi_config.orc            = NRF_NOP;
 
-    APP_ERROR_CHECK(nrfx_spim_init(&spi, &spi_config, spim_event_handler, NULL));
+    err = nrfx_spim_init(&spi, &spi_config, spim_event_handler, NULL);
+
+    if (err != NRF_SUCCESS) {
+        register_error(ERROR_NRF24_BAD_SPI_CONNECTION);
+    }
+    APP_ERROR_CHECK(err);
 }
 
 void nrf24_disable(void) {

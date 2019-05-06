@@ -45,9 +45,6 @@ SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_rtc.c \
   $(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_clock.c \
   $(SDK_ROOT)/modules/nrfx/mdk/system_nrf52840.c \
-  $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT.c \
-  $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_Syscalls_GCC.c \
-  $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_printf.c \
   $(SDK_ROOT)/modules/nrfx/hal/nrf_nvmc.c \
 
 # Include folders common to all targets
@@ -74,10 +71,21 @@ INC_FOLDERS += \
   $(SDK_ROOT)/modules/nrfx/drivers/include \
   $(SDK_ROOT)/integration/nrfx/legacy \
   $(SDK_ROOT)/integration/nrfx \
-  $(SDK_ROOT)/external/segger_rtt \
 
 # Libraries common to all targets
 LIB_FILES += \
+
+#######################################################################
+#                             segger_rtt                              #
+#######################################################################
+
+SRC_FILES += \
+  $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT.c \
+  $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_Syscalls_GCC.c \
+  $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_printf.c \
+
+INC_FOLDERS += \
+  $(SDK_ROOT)/external/segger_rtt \
 
 #######################################################################
 #                               gpiote                                #
@@ -107,20 +115,22 @@ INC_FOLDERS += \
 # Libraries common to all targets
 LIB_FILES += \
 
-
 #######################################################################
 #                               nrf_esb                               #
 #######################################################################
 
 SRC_FILES += \
-  # $(SDK_ROOT)/components/proprietary_rf/esb/nrf_esb.c \
+  $(SDK_ROOT)/components/proprietary_rf/esb/nrf_esb.c \
 
 # Include folders common to all targets
 INC_FOLDERS += \
-  # $(SDK_ROOT)/components/proprietary_rf/esb \
+  $(SDK_ROOT)/components/proprietary_rf/esb \
 
 # Libraries common to all targets
 LIB_FILES += \
+
+CFLAGS += -DESB_PRESENT
+ASMFLAGS += -DESB_PRESENT
 
 #######################################################################
 #                             AES crypto                              #
@@ -167,7 +177,6 @@ INC_FOLDERS += \
 
 SRC_FILES += \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_usbd.c \
-  $(SDK_ROOT)/components/libraries/timer/app_timer.c \
   $(SDK_ROOT)/integration/nrfx/legacy/nrf_drv_power.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_power.c \
   $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_systick.c \
@@ -182,9 +191,13 @@ ASMFLAGS += -DNRF_CRYPTO_MAX_INSTANCE_COUNT=1
 LIB_FILES += \
   $(SDK_ROOT)/external/nrf_cc310/lib/cortex-m4/hard-float/libnrf_cc310_0.9.12.a \
 
+#######################################################################
+#                           compiler flags                            #
+#######################################################################
+
 # Optimization flags
-# OPT = -O3 -g3
-OPT = -Og -g3
+# OPT ?= -O3
+OPT ?= -Og -g3
 
 # Uncomment the line below to enable link time optimization
 #OPT += -flto

@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "nrf_gpio.h"
+
 #define PORT_0_NUM 0
 #define PORT_1_NUM 1
 
@@ -11,7 +13,7 @@
     (port == NRF_P1) ? (PORT_1_NUM) : 255 \
 )
 
-#define IO_PORT_COUNT GPIO_COUNT
+#define IO_PORT_COUNT (GPIO_COUNT)
 #define IO_PORT_MAX_PIN_NUM ( IO_MAP_PIN_NUMBER(PORT_1_NUM, 15) )
 
 #define PORT_0_USABLE_PINS 0xffffffff

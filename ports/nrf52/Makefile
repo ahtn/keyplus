@@ -21,8 +21,9 @@ VPATH += $(KEYPLUS_PATH)
 GNU_INSTALL_ROOT ?= /usr/bin/
 GNU_PREFIX ?= arm-none-eabi
 
-
 NRF52_SDK_ROOT ?= $(HOME)/local/nRF5_SDK_15.3.0_59ac345
+
+LOG_TTY ?= /dev/ttyACM0
 
 # Disable implicit rules
 MAKEFLAGS += --no-builtin-rules
@@ -55,6 +56,8 @@ include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
 CFLAGS += -Wno-error=unused-variable
 CFLAGS += -Wno-error=unused-but-set-variable
 
+CDEFS += -DDEBUG
+
 # List C source files here.
 #
 # NOTE/TODO: Nordic armgcc Makefile doesn't support files with identical
@@ -62,6 +65,8 @@ CFLAGS += -Wno-error=unused-but-set-variable
 C_SRC += \
 	$(PROJ_SRC_PATH)/main.c \
 	$(PROJ_SRC_PATH)/nrf52_usb.c \
+	$(PROJ_SRC_PATH)/serial_num.c \
+	$(PROJ_SRC_PATH)/nrf52_esb.c \
 	$(PROJ_SRC_PATH)/port_impl/aes.c \
 	$(PROJ_SRC_PATH)/port_impl/flash.c \
 	$(PROJ_SRC_PATH)/port_impl/hardware.c \
@@ -73,19 +78,6 @@ C_SRC += \
 	$(PROJ_SRC_PATH)/port_impl/timer.c \
 	$(PROJ_SRC_PATH)/port_impl/usb_reports.c \
 
-
-# List Assembler source files here.
-# NOTE: Use *.S for user written asm files. *.s is used for compiler generated
-# ASM_SRC =
-
-# Optimization level, can be [0, 1, 2, 3, s].
-# OPT = 2
-
-# List any extra directories to look for include files here.
-# EXTRAINCDIRS =
-
-# Compiler flag to set the C Standard level.
-# CSTANDARD = -std=gnu99
 
 # Place -D or -U options here for C sources
 CDEFS += -DCLOCK_SPEED_SLOW=$(CLOCK_SPEED_SLOW)UL
@@ -167,8 +159,18 @@ program: $(MERGED_HEX)
 	nrfjprog -f nrf52 --program $< --sectorerase
 	nrfjprog -f nrf52 --reset
 
+# Repeatedly try to connect to the logging device
+#
+# Exit picocom by pressing: <c-A> <c-X>
 log:
-	picocom -b 115200 /dev/ttyACM0
+	@while true; do \
+		echo "Starting picocom:"; \
+		picocom -q -b 115200 $(LOG_TTY); \
+		clear -sx; \
+		echo "Attempting to reconnect..."; \
+		echo ""; \
+		sleep 1; \
+	done
 
 gdb:
 	arm-none-eabi-gdb -x gdb_cmds

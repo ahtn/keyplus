@@ -317,6 +317,16 @@ devices:
       pins: [P0.11, P0.12, P0.24, P0.25]
     layout: 4key
 
+  nrf52840_dongle:
+    id: 21
+    wireless_split: true
+    wireless_mouse: true
+    wired_split: false
+    scan_mode:
+      mode: pin_gnd
+      pins: [P1.06]
+    layout: 1key
+
   # rf dongle
   nRF24 Dongle 📻:
     id: 48
@@ -467,6 +477,15 @@ layouts:
       [ # layer 0 (base)
         [
           1, 2, 3, 4
+        ]
+      ],
+    ]
+
+  1key:
+    layers: [
+      [ # layer 0 (base)
+        [
+          x,
         ]
       ],
     ]

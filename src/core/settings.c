@@ -103,7 +103,7 @@ const ROM firmware_build_settings_t g_firmware_build_settings = {
 
 #if USE_UNIFYING
     .has_mouse = 1,
-    .has_mouse_gesture = SUPPORT_GESTURE,
+    .has_mouse_gesture = USE_MOUSE_GESTURE,
 #endif
 };
 

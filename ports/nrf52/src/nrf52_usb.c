@@ -58,6 +58,8 @@
 #include "core/settings.h"
 #include "core/timer.h"
 
+#include "serial_num.h"
+
 static bool m_send_flag = 0;
 static bool m_mouse_dir = 0;
 
@@ -98,7 +100,7 @@ static bool m_mouse_dir = 0;
 #define USBD_STRING_LANG_IX  0x00
 #define USBD_STRING_MANUFACTURER_IX  0x01
 #define USBD_STRING_PRODUCT_IX  0x02
-#define USBD_STRING_SERIAL_IX  0x00
+#define USBD_STRING_SERIAL_IX  0x03
 
 static const uint8_t get_config_resp_configured[] = { 1 };
 static const uint8_t get_config_resp_unconfigured[] = { 0 };
@@ -204,6 +206,7 @@ static ret_code_t ep_configuration(uint8_t index)
         nrf_drv_usbd_ep_dtoggle_clear(NRF_DRV_USBD_EPIN4);
         nrf_drv_usbd_ep_stall_clear(NRF_DRV_USBD_EPIN4);
         nrf_drv_usbd_ep_enable(NRF_DRV_USBD_EPIN4);
+
         nrf_drv_usbd_ep_dtoggle_clear(NRF_DRV_USBD_EPOUT4);
         nrf_drv_usbd_ep_stall_clear(NRF_DRV_USBD_EPOUT4);
         nrf_drv_usbd_ep_enable(NRF_DRV_USBD_EPOUT4);
@@ -417,16 +420,16 @@ static void usbd_setup_GetDescriptor(nrf_drv_usbd_setup_t const *const p_setup)
         if ((p_setup->bmRequestType) == 0x80) {
             // Select the string
             switch ((p_setup->wValue) & 0xFF) {
-            case USBD_STRING_LANG_IX:
-                respond_setup_data(p_setup,
-                           usb_string_desc_0,
-                           usb_string_desc_0[0]);
+            case USBD_STRING_LANG_IX: {
+                const uint8_t len = usb_string_desc_0[0] & 0xff;
+                respond_setup_data(p_setup, usb_string_desc_0, len);
                 return;
-            case USBD_STRING_MANUFACTURER_IX:
-                respond_setup_data(p_setup,
-                           usb_string_desc_1,
-                           usb_string_desc_1[0]);
+            } break;
+            case USBD_STRING_MANUFACTURER_IX: {
+                const uint8_t len = usb_string_desc_1[0] & 0xff;
+                respond_setup_data(p_setup, usb_string_desc_1, len);
                 return;
+            } break;
             case USBD_STRING_PRODUCT_IX: {
                 uint8_t len;
                 // First byte of the string desc which is its length
@@ -447,11 +450,12 @@ static void usbd_setup_GetDescriptor(nrf_drv_usbd_setup_t const *const p_setup)
             } break;
 
             // Serial number
-            case 3:
+            case USBD_STRING_SERIAL_IX: {
                 respond_setup_data(p_setup,
-                           usb_string_desc_1,
-                           usb_string_desc_1[0]);
+                                   g_nrf52_serial_usb_desc,
+                                   sizeof(g_nrf52_serial_usb_desc));
                 return;
+            } break;
 
             default:
                 break;

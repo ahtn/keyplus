@@ -28,12 +28,15 @@ class USBKeyplusKeyboardInfo(USBDeviceInfo):
         self.interface = interface
 
 class USBBootloaderInfo(USBDeviceInfo):
-    def __init__(self, vid, pid, bootloader, description, uses_serial_num):
+    def __init__(self, vid, pid, bootloader, description, uses_serial_num,
+                 nonHID=False, nonHIDMessage=None):
         super(USBBootloaderInfo, self).__init__(
             vid, pid, description
         )
         self.bootloader = bootloader
         self.uses_serial_num = uses_serial_num
+        self.nonHID = nonHID
+        self.nonHIDMessage = nonHIDMessage
 
 
 ###############################################################################
@@ -46,6 +49,9 @@ class BootloaderType(Enum):
     NRF24LU1P_FACTORY = 2
     KP_BOOT_32U4 = 3
     EFM8_BOOT = 4
+    NRF52840_OPEN_DFU_BOOTLOADER = 5
+
+    UNKNOWN = 255
 
 
 KEYPLUS_USB_IDS = {
@@ -128,6 +134,16 @@ BOOTLOADER_USB_IDS = {
         uses_serial_num = False,
     ),
 
+    (0x1915, 0x521f): USBBootloaderInfo(
+        vid = 0x1915,
+        pid = 0x521f,
+        bootloader = BootloaderType.NRF52840_OPEN_DFU_BOOTLOADER,
+        description = "Nordic Open DFU Bootloader",
+        uses_serial_num = True,
+        nonHID = True,
+        nonHIDMessage = "Use nRF Connect Programmer to flash a hex file.",
+    ),
+
     ######################
     #  efm8 bootloaders  #
     ######################
@@ -186,5 +202,14 @@ def is_bootloader_usb_id(vendor_id, product_id):
     return (vendor_id, product_id) in BOOTLOADER_USB_IDS
 
 def get_bootloader_info(vendor_id, product_id):
-    return BOOTLOADER_USB_IDS[(vendor_id, product_id)]
+    if (vendor_id, product_id) in BOOTLOADER_USB_IDS:
+        return BOOTLOADER_USB_IDS[(vendor_id, product_id)]
+    else:
+        return USBBootloaderInfo(
+            vid = vendor_id,
+            pid = product_id,
+            bootloader = BootloaderType.UNKNOWN,
+            description = "Unknown bootloader",
+            uses_serial_num = False,
+        )
 

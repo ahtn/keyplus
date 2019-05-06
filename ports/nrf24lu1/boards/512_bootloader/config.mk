@@ -11,6 +11,8 @@ CDEFS += -DUSE_UNIFYING_BOOTLOADER=0
 
 BOOTLOADER=bins/nrf24lu1_bootloader-f32.hex
 
+USE_MOUSE_GESTURE = 0
+
 ifeq ($(FLASH_SIZE), 16)
 	BOOTLOADER=bins/nrf24lu1_bootloader-f16.hex
 	CODE_SIZE=0x4000

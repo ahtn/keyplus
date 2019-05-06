@@ -311,7 +311,7 @@ static void parse_cmd(void) REENT {
         return;
     }
 
-    if (s_vendor_state == STATE_WRITE_FLASH && cmd != CMD_WRITE_FLASH) {
+    if ((s_vendor_state == STATE_WRITE_FLASH) && (cmd != CMD_WRITE_FLASH)) {
         // When writing flash, prevent other commands from executing
         cmd_error(CMD_ERROR_BUSY);
         return;

@@ -17,6 +17,7 @@
 #include "core/rf.h"
 #include "core/settings.h"
 #include "core/timer.h"
+#include "core/nrf52_esb.h"
 
 #include "nrf52_usb.h"
 
@@ -63,6 +64,8 @@ static void print_settings_info(void) {
     NRF_LOG_INFO("RF power: %d", g_rf_settings.power);
     NRF_LOG_FLUSH();
 
+#if 0
+    // NOTE: This seems code breaks when optimizations are enabled?
     NRF_LOG_INFO("> AES: begin test");
     {
         uint8_t test_block[AES_BLOCK_SIZE] = {
@@ -76,7 +79,36 @@ static void print_settings_info(void) {
         NRF_LOG_HEXDUMP_INFO(test_block, AES_BLOCK_SIZE);
     }
     NRF_LOG_INFO("> AES: finish test");
+#endif
+
     NRF_LOG_FLUSH();
+}
+
+NO_RETURN_ATTR void recovery_mode_main_loop(void) {
+    NRF_LOG_ERROR("keyplus: encountered critical error");
+    NRF_LOG_HEXDUMP_INFO(g_error_code_table, SIZE_ERROR_CODE_TABLE)
+    NRF_LOG_FLUSH();
+
+    while (1) {
+        if (is_usb_configured()) {
+            // send_keyboard_report();
+            // send_media_report();
+            // send_mouse_report();
+            send_vendor_report();
+        }
+
+        handle_vendor_out_reports();
+
+        wdt_kick();
+
+        // Even if we miss an event enabling USB, USB event would wake us up.
+        __WFE();
+        // Clear SEV flag if CPU was woken up by event
+        __SEV();
+        __WFE();
+
+        UNUSED_RETURN_VALUE(NRF_LOG_PROCESS());
+    }
 }
 
 int main(void) {
@@ -91,32 +123,53 @@ int main(void) {
         usb_init_power_clock();
         timer_init();
 
-        hardware_init();
-
-        NRF_LOG_INFO("loading settings from flash");
-        init_error_system();
-        settings_load_from_flash();
-        aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
-        matrix_scanner_init();
-
-        rf_init_receive();
-
         io_map_init();
+        hardware_init();
+        init_error_system();
 
+
+        NRF_LOG_INFO("Setting up USB");
+        usb_setup_nrf();
         // USB setup
         reset_usb_reports();
+
+        NRF_LOG_INFO("loading settings from flash");
+        settings_load_from_flash();
+        aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
         keyboards_init();
+
+        if (has_critical_error()) {
+            recovery_mode_main_loop();
+        }
+
+        matrix_scanner_init();
+
+        #if 1
+            g_rf_settings.hw_type = RF_HW_NRF52_ESB;
+            nrf52_esb_hw_init();
+            rf_init_receive();
+        #else
+            g_rf_enabled = false;
+        #endif
     }
     print_settings_info();
 
-    NRF_LOG_INFO("Setting up USB");
-    usb_setup_nrf();
-
     NRF_LOG_INFO("Starting main() loop");
+
+    uint32_t last_time = 0;
+
     while (true) {
-        // if (has_critical_error()) {
-        //     recovery_mode_main_loop();
-        // }
+        if (has_critical_error()) {
+            recovery_mode_main_loop();
+        }
+
+        {
+            uint32_t new_time = timer_read_ms();
+            if ((uint32_t)(new_time - last_time) >= 1000) {
+                NRF_LOG_INFO("time: %d", timer_read_ms());
+                last_time = new_time;
+            }
+        }
 
         // Matrix scanning
         {
@@ -167,7 +220,6 @@ int main(void) {
         hold_key_task(false);
 
         UNUSED_RETURN_VALUE(NRF_LOG_PROCESS());
-        // NRF_LOG_FLUSH();
 
         // Even if we miss an event enabling USB, USB event would wake us up.
         __WFE();

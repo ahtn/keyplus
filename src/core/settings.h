@@ -106,8 +106,10 @@ typedef struct ATTR_PACKED rf_settings_t { // 64 bytes
     uint8_t data_rate;
     /// The transmit power for the  nRF24/rnf_esb protocol.
     uint8_t power;
+    /// The type of ESB transmit e.g. nRF24L01+, nrf52_esb
+    uint8_t hw_type;
     /// These bytes are reserved for future use.
-    uint8_t _reserved[14]; // padding
+    uint8_t _reserved[13]; // padding
     /// The AES-128 encryption key used for nRF24/nrf_esb packets.
     uint8_t ekey[AES_KEY_LEN];
     /// The AES-128 decryption key used for nRF24/nrf_esb packets.
@@ -137,7 +139,7 @@ typedef struct ATTR_PACKED rf_settings_t { // 64 bytes
 #define FEATURE_CTRL_RESERVED_2       (1 << 7)
 
 /// Used to enable/disable hardware features
-typedef struct feature_ctrl_t {
+typedef struct ATTR_PACKED feature_ctrl_t {
     uint8_t usb_disabled: 1;
     uint8_t wired_disabled: 1;
     uint8_t rf_disabled: 1;

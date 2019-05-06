@@ -17,12 +17,14 @@
 #include "core/timer.h"
 #include "core/usb_commands.h"
 
+#if USE_NRF52_ESB
+#include "nrf_esb.h"
+#include "nrf_log.h"
+#include "core/nrf52_esb.h"
+#endif
+
 #include "key_handlers/key_hold.h"
-
 #include "usb_reports/mouse_report.h"
-
-/* #include "core/.h" */
-
 
 // NOTE: For uniyfing devices to work, we need to dedicated at least 2 pipes
 // for the device. These two pipes have the form:
@@ -32,7 +34,6 @@
 // to connect to the dongle by pinging the dongles address X0. If it gets a
 // response it, will then start sending messages on its own pipe X1. If it
 // disconnects, it will go back to pinging X0.
-
 #define UNIFYING_ADDR_WIDTH 5
 
 
@@ -40,8 +41,11 @@
 XRAM unifying_mouse_state_t g_unifying_mouse_state = {0};
 XRAM uint8_t g_unifying_mouse_activity = 0;
 
-#if SUPPORT_GESTURE
+#if USE_MOUSE_GESTURE
 XRAM gesture_state_t s_gesture = {0};
+
+// HID++ communication state
+static XRAM uint8_t s_index = 0;
 #endif
 
 /// Address for the initial unifying pairing request.
@@ -58,9 +62,6 @@ static XRAM uint16_t packet_timeout;
 
 // TODO: move to init function
 static XRAM uint8_t s_extra_button_last_state = 0;
-
-// HID++ communication state
-static uint8_t s_index = 0;
 
 // Seems to be a bug in the mouse firmware. It seems to send an extra report
 // after some requests (that seems to correspond to a left click, might
@@ -81,21 +82,59 @@ uint8_t unifying_calc_checksum(const XRAM uint8_t *data, const uint8_t len) {
     return -result;
 }
 
+#if USE_NRF52_ESB
+static nrf_esb_payload_t        tx_payload = NRF_ESB_CREATE_PAYLOAD(
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+);
+#endif
+
+static void write_ack_payload(
+    const XRAM uint8_t *data,
+    uint8_t len,
+    uint8_t pipe
+) {
+#if USE_NRF52_ESB && USE_NRF24
+    if (g_rf_settings.hw_type == RF_HW_NRF24L01) {
+#else
+    {
+#endif
+    #if USE_NRF24
+        if (nrf24_read_status() & STATUS_TX_FULL_bm) {
+            nrf24_flush_tx();
+        }
+
+        rf_disable_receive_irq();
+        nrf24_write_ack_payload(data, len, pipe);
+        rf_enable_receive_irq();
+    #endif
+#if USE_NRF52_ESB && USE_NRF24
+    } else {
+#endif
+    #if USE_NRF52_ESB
+        uint32_t err_code;
+
+
+        tx_payload.pipe = pipe;
+        tx_payload.length = len;
+        memcpy(tx_payload.data, data, len);
+
+        if ( (err_code = nrf_esb_write_payload(&tx_payload)) == NRF_SUCCESS) {
+        } else if (err_code == NRF_ERROR_NO_MEM) {
+            NRF_LOG_INFO("tx buffer full, flushing");
+            nrf_esb_flush_tx();
+        } else {
+            NRF_LOG_INFO("tx_payload failed: %d", err_code);
+        }
+    #endif
+    }
+}
+
 /// Send a packet to the device using ACK payloads.
 void unifying_send_packet(const XRAM uint8_t *data, uint8_t size) {
-    memcpy(tmp_buffer, data, size);
-
-    if (nrf24_read_status() & STATUS_TX_FULL_bm) {
-        nrf24_flush_tx();
-    }
-
-    rf_disable_receive_irq();
-    nrf24_write_ack_payload(
-        tmp_buffer,
-        size,
-        UNIFYING_RF_PIPE_MOUSE // nrf24 pipe of device
-    );
-    rf_enable_receive_irq();
+    write_ack_payload(data, size, UNIFYING_RF_PIPE_MOUSE);
 }
 
 void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
@@ -120,16 +159,16 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
                 break;
             }
 
-
+#if USE_MOUSE_GESTURE
             // On left mouse click, send a HID++ packet.
             if ((g_unifying_mouse_state.buttons_1 & 0x01) == 0 && (nrf_packet[2] & 0x01)) {
                 // TODO: integrate this functionality so it happens automatically
                 // on device power on and receiving packets from the mouse
-                unifying_hidpp20_t XRAM* report = (unifying_hidpp20_t*)tmp_buffer;
-                uint8_t size = sizeof(unifying_hidpp20_t);
+                unifying_hidpp20_long_t XRAM* report = (unifying_hidpp20_long_t*)tmp_buffer;
+                uint8_t size = sizeof(unifying_hidpp20_long_t);
                 memset(report, 0, size);
                 report->id = 0x00;
-                report->frame_type = UNIFYING_FRAME_HIDPP_SHORT;
+                report->frame_type = UNIFYING_FRAME_HIDPP_LONG;
                 report->device_index = 0x01;
 
 #if 0
@@ -173,7 +212,7 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
                     report->function_id = HIDPP20_SpecialKeysMSEButtons_SetCidReporting;
                     report->software_id = KEYPLUS_HIDPP_SOFTWARE_ID;
 
-                    report->parameters[0] = (cid>>8) & 0xff  ;
+                    report->parameters[0] = (cid>>8) & 0xff;
                     report->parameters[1] = (cid>>0) & 0xff;
 
                     report->parameters[2] = flags;
@@ -183,11 +222,13 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
                 }
 #endif
 
-                report->checksum = unifying_calc_checksum((uint8_t *XRAM)report, size);
+                report->checksum = unifying_calc_checksum((uint8_t *XRAM)report, size-1);
 
                 s_index++;
+
                 unifying_send_packet((uint8_t *XRAM)report, size);
             }
+#endif
 
 
             g_unifying_mouse_state.buttons_1 = nrf_packet[2] | s_extra_button_last_state;
@@ -201,6 +242,8 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
         } break;
 
         case UNIFYING_FRAME_EXTRA_BUTTON: { // 0xD1
+
+
             // NOTE: All packets I've recored so far have the bytes
             // 63 0A following D1.  This may be a constant or contain some
             // other information.
@@ -310,7 +353,7 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
     }
 }
 
-#if SUPPORT_GESTURE
+#if USE_MOUSE_GESTURE
 void gesture_init(void) {
 }
 
@@ -410,7 +453,7 @@ void unifying_mouse_handle(void) REENT {
         // so no need to do it here
     }
 
-#if SUPPORT_GESTURE
+#if USE_MOUSE_GESTURE
     // Gesture handling
     // if (g_unifying_mouse_state.buttons_1 & 0x80) {
     switch (s_gesture.state) {
@@ -451,24 +494,52 @@ void unifying_mouse_handle(void) REENT {
 
 }
 
+/*********************************************************************
+ *                         unifying pairing                          *
+ *********************************************************************/
+
+// TODO: need to add nrf_esb support for unifying pairing
 
 /// Set appropriate nrf24 radio settings and address for unifying pairing
 void unifying_begin_pairing(void) {
     uint8_t config;
 
-    disable_interrupts();
+#if USE_NRF52_ESB
+    NRF_LOG_INFO("Unifying begin pairing");
+    if (g_rf_settings.hw_type == RF_HW_NRF52_ESB) {
+        ret_code_t err_code;
+        err_code = nrf_esb_stop_rx();
+        APP_ERROR_CHECK(err_code);
 
-    rf_init_receive(); // set rf settings for receive mode
+        packet_buffer_clear();
 
-    unifying_set_pairing_address(g_rf_settings.pipe_addr_1, g_rf_settings.pipe_addr_4);
+        nrf52_esb_init_unifying_pair(
+            unifying_pairing_addr,
+            g_rf_settings.pipe_addr_1,
+            g_rf_settings.pipe_addr_4
+        );
 
-    // TODO: probably add interrupt based mode later, but for now just mask the
-    // IRQ for the NRF
-    config = nrf24_read_reg(CONFIG);
-    config = config | MASK_ALL_IRQ_bm;
-    nrf24_write_reg(CONFIG, config);
+        memcpy(pairing_target_addr, g_rf_settings.pipe_addr_1, UNIFYING_ADDR_WIDTH);
+        pairing_target_addr[0] = g_rf_settings.pipe_addr_4;
+    } else {
+#else
+    {
+#endif
+        disable_interrupts();
 
-    enable_interrupts();
+        rf_init_receive(); // set rf settings for receive mode
+
+        unifying_set_pairing_address(g_rf_settings.pipe_addr_1, g_rf_settings.pipe_addr_4);
+
+        // TODO: probably add interrupt based mode later, but for now just mask the
+        // IRQ for the NRF
+        config = nrf24_read_reg(CONFIG);
+        config = config | MASK_ALL_IRQ_bm;
+        nrf24_write_reg(CONFIG, config);
+
+        enable_interrupts();
+    }
+
     last_pairing_step = 0;
     pairing_timeout = timer_read16_ms() + UNIFYING_PAIRING_TIMEOUT;
 }
@@ -482,6 +553,7 @@ bit_t unifying_is_pairing_active(void) {
     return last_pairing_step != UNIFYING_PAIR_DISABLED;
 }
 
+#if USE_NRF24
 // Note: Assumes all other relevant settings are in place
 void unifying_set_pairing_address(const XRAM uint8_t *target_addr, uint8_t addr_lsb) {
     // Use first three pipes
@@ -501,12 +573,28 @@ void unifying_set_pairing_address(const XRAM uint8_t *target_addr, uint8_t addr_
 
     nrf24_write_reg(EN_RXADDR, 0b0111);
 }
+#endif
 
 bit_t handle_pairing(uint8_t pipe_num) {
     unifying_packet_t *packet = (unifying_packet_t*)tmp_buffer;
-    uint8_t width = nrf24_read_rx_payload_width();
+    uint8_t width;
+#if USE_NRF52_ESB
+    if (g_rf_settings.hw_type == RF_HW_NRF52_ESB) {
+        pipe_num = packet_buffer_get();
+        width = packet_buffer_get();
+        if (width > UNIFYING_MAX_PACKET_SIZE || width > packet_buffer_len())  {
+            packet_buffer_clear();
+            return false;
+        }
 
-    nrf24_read_rx_payload(tmp_buffer, width);
+        // read out the packet payload into the buffer
+        packet_buffer_take(tmp_buffer, width);
+    } else
+#endif
+    {
+        width = nrf24_read_rx_payload_width();
+        nrf24_read_rx_payload(tmp_buffer, width);
+    }
 
     if (pipe_num > 1) {
         return false;
@@ -540,17 +628,17 @@ bit_t handle_pairing(uint8_t pipe_num) {
         packet->req_1.addr[4] = pairing_target_addr[0];
 
         packet->req_1.checksum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_req_1_t)-1);
-        nrf24_write_ack_payload(tmp_buffer, sizeof(unifying_req_1_t), pipe_num);
+        write_ack_payload(tmp_buffer, sizeof(unifying_req_1_t), pipe_num);
     } else if (packet->header.step == 2 && last_pairing_step == 2) {
         //req_2->step = 2;
         packet->req_2.frame_type = 0x1f;
         packet->req_2.checksum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_req_2_t)-1);
-        nrf24_write_ack_payload(tmp_buffer, sizeof(unifying_req_2_t), pipe_num);
+        write_ack_payload(tmp_buffer, sizeof(unifying_req_2_t), pipe_num);
     } else if (packet->header.step == 3 && last_pairing_step == 3) {
         //resp_3->step = 3;
         packet->resp_3.frame_type = 0x0f;
         packet->resp_3.checksum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_resp_3_t)-1);
-        nrf24_write_ack_payload(tmp_buffer, sizeof(unifying_resp_3_t), pipe_num);
+        write_ack_payload(tmp_buffer, sizeof(unifying_resp_3_t), pipe_num);
     } else if (last_pairing_step >= 4) {
         // Successfully paired with the device, and received a packet from it
         // after it has paired
@@ -561,14 +649,30 @@ bit_t handle_pairing(uint8_t pipe_num) {
 
 // TODO: add interrupt based mode?
 void unifying_pairing_poll(void) {
-    uint8_t pipe_num = nrf24_get_rx_pipe_num();
     uint8_t pairing_complete = false;
 
-    while (pipe_num != 0b111) {
-        pairing_complete |= handle_pairing(pipe_num);
+#if USE_NRF52_ESB
+    if (g_rf_settings.hw_type == RF_HW_NRF52_ESB) {
+        NVIC_DisableIRQ(ESB_EVT_IRQ);
+        while (packet_buffer_has_data()) {
+            NRF_LOG_INFO("Unifying handling pairing packet");
+            pairing_complete |= handle_pairing(0);
+        }
+        NVIC_EnableIRQ(ESB_EVT_IRQ);
+        if (pairing_complete) {
+            NRF_LOG_INFO("Unifying Pairing complete");
+        }
+    } else
+#endif
+    {
+        uint8_t pipe_num = nrf24_get_rx_pipe_num();
 
-        led_testing_toggle();
-        pipe_num = nrf24_get_rx_pipe_num();
+        while (pipe_num != 0b111) {
+            pairing_complete |= handle_pairing(pipe_num);
+
+            led_testing_toggle();
+            pipe_num = nrf24_get_rx_pipe_num();
+        }
     }
 
     if (has_passed_time16(timer_read16_ms(), packet_timeout)) {

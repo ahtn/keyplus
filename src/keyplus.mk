@@ -5,12 +5,13 @@ MAKEFILE_INC += $(KEYPLUS_PATH)/keyplus.mk
 
 LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
 MERGED_HEX=$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex
+SETTINGS_HEX=$(basename $(TARGET_HEX))-$(LAYOUT_NAME)-settings-only.hex
 
 .PHONY: all print_keyplus_info create_build_dirs hex
 
 all: hex $(MERGED_HEX)
 
-hex: print_keyplus_info create_build_dirs $(EXTRA_TARGET)
+hex: print_keyplus_info create_build_dirs $(EXTRA_TARGET) $(TARGET_HEX)
 
 $(LAYOUT_FILE):
 
@@ -28,7 +29,19 @@ print_keyplus_info:
 	@echo "compiler c flags: $(ALL_CFLAGS)"
 	@echo ""
 
-$(MERGED_HEX): $(TARGET_HEX) $(LAYOUT_FILE) $(RF_FILE)
+$(SETTINGS_HEX): $(LAYOUT_FILE) $(RF_FILE)
+	$(KEYPLUS_CLI) program \
+		$(KEYPLUS_CLI_EXTRA) \
+		--new-id $(ID) \
+		--layout "$(LAYOUT_FILE)" \
+		--rf "$(RF_FILE)" \
+		-M $(SETTINGS_ADDR) $(LAYOUT_ADDR) $(LAYOUT_SIZE) \
+		-o "$(SETTINGS_HEX)" \
+		-F chip_name="$(MCU_STRING)" \
+		-F scan_method=$(SCAN_METHOD) \
+		-F max_rows=$(MAX_NUM_ROWS) \
+
+$(MERGED_HEX): $(TARGET_HEX) $(SETTINGS_HEX) $(LAYOUT_FILE) $(RF_FILE)
 	@echo
 	@echo "### Merging layout settings into hex file ###"
 	$(KEYPLUS_CLI) program \

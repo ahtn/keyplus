@@ -38,17 +38,21 @@ typedef struct io_map_info_t {
 } io_map_info_t;
 
 
-#define IO_MAP_PIN_NUMBER(port, pin) (port * MCU_BITNESS + pin)
-#define IO_MAP_GET_PIN_PORT(pin_num) (pin_num / MCU_BITNESS)
-#define IO_MAP_GET_PIN_BIT(pin_num) (pin_num % MCU_BITNESS)
+#define IO_MAP_PIN_NUMBER(port, pin) ((port) * MCU_BITNESS + (pin))
+#define IO_MAP_GET_PIN_PORT(pin_num) ((pin_num) / MCU_BITNESS)
+#define IO_MAP_GET_PIN_BIT(pin_num) ((pin_num) % MCU_BITNESS)
 
-#define IO_MAP_GET_PORT(port_num) (g_io_port_map[port_num])
+#define IO_MAP_GET_PORT(port_num) (g_io_port_map[(port_num)])
+
+#define IO_MAP_CLAIM_PIN_NUMBER(pin) (\
+    io_map_claim_pins(IO_MAP_GET_PIN_PORT(pin), (((port_mask_t)1)<<IO_MAP_GET_PIN_BIT(pin))) \
+)
 
 extern const ROM io_map_info_t g_io_map_info;
 extern io_port_t * const g_io_port_map[IO_PORT_COUNT];
 
 void io_map_init(void);
-uint8_t io_map_claim_pins(uint8_t port_num, uint8_t mask);
+uint8_t io_map_claim_pins(uint8_t port_num, port_mask_t mask);
 
 #if !defined(NO_MATRIX)
 uint8_t io_map_get_row_pin(uint8_t row);

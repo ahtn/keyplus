@@ -74,13 +74,13 @@ def print_device_info(device_info, indent="  "):
     print(indent, "row_count: ", device_info.scan_plan.rows)
     print(indent, "col_count: ", device_info.scan_plan.cols)
 
-def print_firmware_info(device, indent="  "):
-    fw_info = protocol.get_firmware_info(device)
-    print(indent, "build time: ", timestamp_to_string(fw_info.timestamp_raw))
-    print(indent, "git_hash: {:08x}".format(fw_info.git_hash))
+def print_firmware_info(fw_info, indent="  "):
+    print(indent, "build time: ", str(fw_info.get_timestamp()))
+    print(indent, "git_hash: {}".format(fw_info.get_git_hash_str()))
 
 def print_all_info(kb_device):
     print_hid_info(kb_device.hid_device)
+    print_firmware_info(kb_device.firmware_info)
     print_device_info(kb_device.device_info)
 
 
@@ -333,8 +333,11 @@ class ListCommand(GenericDeviceCommand):
         for kb_device in kb_devices:
             print_hid_info(kb_device.hid_device)
             if args.verbosity != None:
-                if args.verbosity >= 1:
+                if args.verbosity <= 1:
                     print_device_info(kb_device.device_info)
+                elif args.verbosity >= 2:
+                    print_all_info(kb_device)
+
 
 class ReadCommand(GenericDeviceCommand):
     def __init__(self):
@@ -584,13 +587,12 @@ class ProgramCommand(GenericDeviceCommand):
         if (
             args.new_id == None or
             args.layout_file == None or
-            args.rf_file == None or
-            args.hex_file == None
+            args.rf_file == None
         ):
             self.arg_parser.print_help()
             command_error(
                 "To generate a merged hex file, need the following options: "
-                "layout file (-l), rf file (-r), hex file (-x), and a device id (-I)"
+                "layout file (-l), rf file (-r), and a device id (-I)"
             )
 
         if len(args.merge_hex) != 3:
@@ -635,10 +637,15 @@ class ProgramCommand(GenericDeviceCommand):
             command_error("firmware setting '{}' must be set".format(err.args[0]))
 
 
-        # don't want to program the device, instead we want to build a
-        # hexfile with the settings preprogrammed
-        with open(args.hex_file) as f:
-            fw_hex = intelhex.IntelHex(f)
+        if args.hex_file:
+            # don't want to program the device, instead we want to build a
+            # hexfile with the settings preprogrammed
+            with open(args.hex_file) as f:
+                fw_hex = intelhex.IntelHex(f)
+        else:
+            # if no hex file is provided, create an empty file to merge the
+            # settings into
+            fw_hex = intelhex.IntelHex()
 
         # Add chip id to hex file.
         #

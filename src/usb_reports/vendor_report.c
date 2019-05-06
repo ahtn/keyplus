@@ -3,6 +3,8 @@
 
 #include "usb_reports/vendor_report.h"
 
+#include "config.h"
+
 #include "core/error.h"
 #include "core/debug.h"
 

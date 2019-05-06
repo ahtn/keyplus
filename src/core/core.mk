@@ -38,12 +38,6 @@ CDEFS += -DMCU_CHIP_ID=CHIP_ID_$(MCU_STRING)
 #                            board config                             #
 #######################################################################
 
-ifndef ID
-  ID = 0
-endif
-
-CDEFS += -DDEVICE_ID=$(ID)
-
 # Note: Specific board configs are stored in the `boards` directory.
 
 ifndef BOARD
@@ -53,32 +47,24 @@ ifndef BOARD
   $(error BOARD variable not set)
 endif
 
-ifndef LAYOUT_FILE
-  $(info )
-  $(info Error: make pararmeter not given: LAYOUT_FILE )
-  $(info )
-  $(error LAYOUT_FILE variable not set)
-endif
+# ifndef LAYOUT_FILE
+#   $(info )
+#   $(info NOTE: make pararmeter not given: LAYOUT_FILE )
+#   $(info )
+#   $(error LAYOUT_FILE variable not set)
+# endif
 
-ifndef RF_FILE
-  RF_FILE=$(KEYPLUS_PATH)/../layouts/test_rf_config.yaml
-endif
+RF_FILE           ?= $(KEYPLUS_PATH)/../layouts/test_rf_config.yaml
+KEYPLUS_CLI       ?= python3 $(KEYPLUS_PATH)/../host-software/keyplus-cli
 
-ifndef SCANNER_MAX_ROWS
-   MAX_NUM_ROWS=18
-endif
+ID                ?= 0
+MAX_NUM_ROWS      ?= 18
 
-ifndef KEYPLUS_CLI
-    KEYPLUS_CLI   = python3 $(KEYPLUS_PATH)/../host-software/keyplus-cli
-endif
+SUPPORT_MACRO     ?= 1
+USE_MOUSE_GESTURE ?= 1
 
-ifndef SUPPORT_MACRO
-    SUPPORT_MACRO = 1
-endif
+CDEFS += -DDEVICE_ID=$(ID)
 
-ifndef SUPPORT_GESTURE
-    SUPPORT_GESTURE = 1
-endif
 
 #######################################################################
 #                            source files                             #
@@ -115,10 +101,10 @@ ifeq ($(USE_NRF24), 1)
     ifeq ($(USE_UNIFYING), 0)
         CDEFS += -DUSE_UNIFYING=0
     else
-        ifeq ($(SUPPORT_GESTURE), 1)
-            CDEFS += -DSUPPORT_GESTURE=1
+        ifeq ($(USE_MOUSE_GESTURE), 1)
+            CDEFS += -DUSE_MOUSE_GESTURE=1
         else
-            CDEFS += -DSUPPORT_GESTURE=0
+            CDEFS += -DUSE_MOUSE_GESTURE=0
         endif
         ifeq ($(USE_USB), 1)
             C_SRC += $(CORE_PATH)/unifying.c
@@ -130,6 +116,12 @@ ifeq ($(USE_NRF24), 1)
 else
     CDEFS += -DUSE_NRF24=0
     CDEFS += -DUSE_UNIFYING=0
+endif
+
+ifeq ($(USE_NRF52_ESB), 1)
+    CDEFS += -DUSE_NRF52_ESB=1
+else
+    CDEFS += -DUSE_NRF52_ESB=0
 endif
 
 # I2C module, defaults to 0

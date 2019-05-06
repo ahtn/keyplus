@@ -22,6 +22,7 @@ void aes_encrypt(uint8_t *aes_block) {
     size_t      len_out;
     ret_code_t  ret_val;
     uint8_t     encrypted_text[AES_BLOCK_SIZE*2]; // nrf_crypto functions need 1 block padding
+    len_out = AES_BLOCK_SIZE*2;
 
     nrf_crypto_aes_context_t      ecb_encr_ctx;
 
