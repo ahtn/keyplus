@@ -9,5 +9,12 @@ rf_settings:
   pipe3: '01'
   pipe4: f6
   pipe5: '00'
-  rf_channel: 38
+  rf_channel: 35
   transmit_power: 0db
+
+
+# Tested all the channels on a device:
+# works m720:
+#   5, 8, 14, 17, 32, 35, 41, 44, 62, 65, 71, 74
+# doesn't:
+#   11, 20, 23, 26, 29, 38, 47, 50, 53, 56, 59, 68

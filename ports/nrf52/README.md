@@ -7,6 +7,16 @@
 
 ## Building
 
+<!-- ### Prerequisites -->
+
+<!-- `~/.profile` -->
+
+<!-- ``` -->
+<!-- export NRF52_SDK_ROOT=/path/to/nrf52_sdk -->
+<!-- ``` -->
+
+### Building with make
+
 Simplest way to build
 
 ```sh
@@ -20,7 +30,7 @@ make BOARD=nrf52840_dongle hex
 Use the `program` target, e.g.
 
 ```sh
-make BOARD=nrf52840_dongle LAYOUT_FILE=layout.yaml RF_FILE=rf.yaml ID=21 program
+make BOARD=nrf52840_dk LAYOUT_FILE=layout.yaml RF_FILE=rf.yaml ID=21 program
 ```
 
 ### Programming the Nordic nRF52840 USB Dongle

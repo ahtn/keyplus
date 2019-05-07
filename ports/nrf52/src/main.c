@@ -12,6 +12,7 @@
 #include "core/aes.h"
 #include "core/error.h"
 #include "core/flash.h"
+#include "core/led.h"
 #include "core/macro.h"
 #include "core/nonce.h"
 #include "core/rf.h"
@@ -118,6 +119,7 @@ int main(void) {
 
 #if USE_BLUETOOTH
     ble_test_main(0);
+    while (0) {}
 #endif
 
 
@@ -133,6 +135,7 @@ int main(void) {
         io_map_init();
         hardware_init();
         init_error_system();
+        led_init();
 
 
         NRF_LOG_INFO("Setting up USB");
@@ -170,6 +173,7 @@ int main(void) {
             recovery_mode_main_loop();
         }
 
+        // Log current time (for debugging)
         {
             uint32_t new_time = timer_read_ms();
             if ((uint32_t)(new_time - last_time) >= 1000) {

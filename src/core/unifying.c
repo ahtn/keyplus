@@ -511,16 +511,18 @@ void unifying_begin_pairing(void) {
         err_code = nrf_esb_stop_rx();
         APP_ERROR_CHECK(err_code);
 
-        packet_buffer_clear();
-
         nrf52_esb_init_unifying_pair(
             unifying_pairing_addr,
             g_rf_settings.pipe_addr_1,
             g_rf_settings.pipe_addr_4
         );
 
+        packet_buffer_clear();
+
         memcpy(pairing_target_addr, g_rf_settings.pipe_addr_1, UNIFYING_ADDR_WIDTH);
         pairing_target_addr[0] = g_rf_settings.pipe_addr_4;
+
+        led_testing_set(1, 1);
     } else {
 #else
     {
@@ -657,11 +659,16 @@ void unifying_pairing_poll(void) {
         while (packet_buffer_has_data()) {
             NRF_LOG_INFO("Unifying handling pairing packet");
             pairing_complete |= handle_pairing(0);
+            led_testing_set(1, 0);
+            led_testing_set(2, 0);
+            led_testing_toggle(3);
         }
         NVIC_EnableIRQ(ESB_EVT_IRQ);
+
         if (pairing_complete) {
             NRF_LOG_INFO("Unifying Pairing complete");
         }
+
     } else
 #endif
     {
@@ -670,7 +677,7 @@ void unifying_pairing_poll(void) {
         while (pipe_num != 0b111) {
             pairing_complete |= handle_pairing(pipe_num);
 
-            led_testing_toggle();
+            led_testing_toggle(0);
             pipe_num = nrf24_get_rx_pipe_num();
         }
     }

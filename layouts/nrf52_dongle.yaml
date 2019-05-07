@@ -1,0 +1,21 @@
+# 1 button layout for Nordic nRF52840 dongle
+devices:
+  nrf52840_dongle:
+    id: 0
+    wireless_split: true
+    wireless_mouse: true
+    wired_split: false
+    scan_mode:
+      mode: pin_gnd
+      pins: [P1.06]
+    layout: 1key
+
+layouts:
+  1key:
+    layers: [
+      [ # layer 0 (base)
+        [
+          x,
+        ]
+      ],
+    ]

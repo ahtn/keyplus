@@ -58,6 +58,7 @@
 #include "app_error.h"
 
 #include "core/rf.h"
+#include "core/led.h"
 
 
 static nrf_esb_payload_t        tx_payload = NRF_ESB_CREATE_PAYLOAD(
@@ -143,6 +144,7 @@ void rf_nrf52_load_sync_ack_payload(uint8_t device_id) {
 
 void nrf_esb_event_handler(nrf_esb_evt_t const * p_event) {
     esb_data_flag = true;
+    led_testing_toggle(2);
     switch (p_event->evt_id)
     {
         case NRF_ESB_EVENT_TX_SUCCESS:

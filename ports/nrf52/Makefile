@@ -6,9 +6,7 @@
 #######################################################################
 
 TARGET_BASE_NAME = nrf52_keyplus
-# ARCH             = XMEGA
 F_CPU            = 64000000
-# F_USB            = 48000000
 CLOCK_SPEED_SLOW = 64000000
 
 KEYPLUS_PATH      = ../../src
@@ -21,6 +19,10 @@ VPATH += $(KEYPLUS_PATH)
 GNU_INSTALL_ROOT ?= /usr/bin/
 GNU_PREFIX ?= arm-none-eabi
 
+# NOTE: if you have the SDK installed somewhere else, you can set this
+# in your ~/.profile file with `export NRF52_SDK_ROOT=/path/to/sdk` and the
+# makefile will use that version. Changes to ~/.profile may require a restart
+# to take effect.
 NRF52_SDK_ROOT ?= $(HOME)/local/nRF5_SDK_15.3.0_59ac345
 
 LOG_TTY ?= /dev/ttyACM0
@@ -55,8 +57,6 @@ include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
 
 CFLAGS += -Wno-error=unused-variable
 CFLAGS += -Wno-error=unused-but-set-variable
-
-CDEFS += -DDEBUG
 
 # List C source files here.
 #
@@ -114,10 +114,10 @@ MAKEFILE_INC += Makefile
 SETTINGS_SIZE = 0x200
 
 ifeq ($(MCU), nrf52840)
-  NONCE_ADDR := 0x40000 # need 2 pages for nonce (1 backup)
-  SETTINGS_ADDR := 0x42000
-  LAYOUT_ADDR := 0x43000
-  LAYOUT_SIZE := 0x1000
+  SETTINGS_ADDR := 0x0C0000
+  LAYOUT_ADDR := 0x0C1000
+  LAYOUT_SIZE := 0x2000
+  NONCE_ADDR := 0x0C3000 # need 2 pages for nonce (1 backup)
 else ifeq ($(MCU), nrf52832)
   $(message '$(MCU)' not implemented yet)
 else
@@ -156,10 +156,16 @@ include $(PROJ_PATH)/nrf52.mk
 # $(TARGET_HEX): nrf52840_xxaa
 # 	cp $(BUILD_TARGET_DIR)/nrf52840_xxaa.hex $@
 
-.PHONY: program gdb log
+.PHONY: program program_hex gdb log
 
 # Flash the program
 program: $(MERGED_HEX)
+	@echo Flashing: $<
+	nrfjprog -f nrf52 --program $< --sectorerase
+	nrfjprog -f nrf52 --reset
+
+# Flash the hex without settings section
+program_hex: $(TARGET_HEX)
 	@echo Flashing: $<
 	nrfjprog -f nrf52 --program $< --sectorerase
 	nrfjprog -f nrf52 --reset

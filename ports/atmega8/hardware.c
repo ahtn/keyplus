@@ -74,7 +74,7 @@ uint8_t nrf24_spi_send_byte(uint8_t byte) {
     return SPDR;
 }
 
-void led_testing_toggle(void) {
+void led_testing_toggle(uint8_t led_num) {
 }
 
 #if defined(AES_TINY128)

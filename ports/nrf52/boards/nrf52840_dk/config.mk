@@ -1,10 +1,15 @@
-ifndef LAYOUT_FILE
-    LAYOUT_FILE=$(KEYPLUS_PATH)/../layouts/nrf52_4key.yaml
-endif
+# Copyright 2019 jem@seethis.link
+# Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
 MCU = nrf52840
 MCU_STRING = nRF52840_QIAA
-NRF52_LINK_SCRIPT := $(BOARD_DIR)/$(BOARD)/keyplus_gcc_nrf52840.ld
+NRF52_LINK_SCRIPT := ld-scripts/plain_nrf52840.ld
+
+C_SRC += \
+    $(BOARD_DIR)/$(BOARD)/led.c
+
+CDEFS += -DDEBUG
+
 
 USE_SOFTDEVICE := 0
 USE_BLUETOOTH := 0

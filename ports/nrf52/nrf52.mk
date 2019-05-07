@@ -320,9 +320,7 @@ INC_FOLDERS += \
 #######################################################################
 
 # Optimization flags
-# OPT ?= -O3
-# OPT ?= -O3 -g3
-OPT ?= -Og -g3
+OPT ?= -O3
 
 # Uncomment the line below to enable link time optimization
 #OPT += -flto

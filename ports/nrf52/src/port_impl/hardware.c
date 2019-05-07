@@ -17,6 +17,8 @@ void hardware_init(void) {
 void bootloader_jmp(void) {
 #if BOOTLOADER_RESET_PIN
     NRF_LOG_FINAL_FLUSH();
+    static_delay_ms(100);
+
     nrf_gpio_cfg_output(BOOTLOADER_RESET_PIN);
     nrf_gpio_pin_clear(BOOTLOADER_RESET_PIN);
     while (1) { }
@@ -24,6 +26,9 @@ void bootloader_jmp(void) {
 }
 
 void reset_mcu(void) {
+    NRF_LOG_FINAL_FLUSH();
+    static_delay_ms(100);
+
 #if HAS_SOFTDEVICE
     sd_nvic_systemreset();
 #else

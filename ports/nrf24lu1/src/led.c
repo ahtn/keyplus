@@ -23,6 +23,7 @@ void led_testing_set(uint8_t led_number, uint8_t state) {
     }
 }
 
-void led_testing_toggle(void) {
+void led_testing_toggle(uint8_t led_num) {
+    UNREFERENCED_ARGUMENT(led_num);
     P03 = !P03;
 }

@@ -1046,6 +1046,7 @@ class Loader(QMainWindow):
             except (yaml.YAMLError) as err:
                 error_msg_box("YAML syntax error: \n" + str(err))
                 self.abort_update(target_device)
+                return
 
             with kb:
                 reset_type = RESET_TYPE_SOFTWARE
@@ -1118,12 +1119,18 @@ class Loader(QMainWindow):
                 device_target.device_id = target_id
                 settings_data = kp_layout.build_settings_section(device_target)
                 layout_data = kp_layout.build_layout_section(device_target)
-            except (KeyplusError, IOError) as err:
-                error_msg_box("KeyplusIOERROR: " + str(err))
+            except IOError as err:
+                error_msg_box("IOError: " + str(err))
                 self.abort_update(target_device)
+                return
+            except KeyplusError as err:
+                error_msg_box("KeyplusError: " + str(err))
+                self.abort_update(target_device)
+                return
             except (yaml.YAMLError) as err:
                 error_msg_box("YAML syntax error: \n" + str(err))
                 self.abort_update(target_device)
+                return
             except Exception as err:
                 traceback.print_tb(err.__traceback__, file=sys.stderr)
                 error_msg_box("Exception({}): {}\nAt: {}"

@@ -5,6 +5,7 @@
 
 devices:
   "nRF52_dk 4key":
+    id: 0
     wireless_split: true
     wireless_mouse: true
     wired_split: false

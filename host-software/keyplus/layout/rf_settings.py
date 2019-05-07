@@ -29,10 +29,16 @@ PWR_0DB = 0x03
 
 MAX_RF_CHANNEL = 127
 
+# all possible channels?
 UNIFYING_RF_CHANNELS = [
 5  , 8  , 11 , 14 , 17 , 20 , 23 , 26 ,
 29 , 32 , 35 , 38 , 41 , 44 , 47 , 50 ,
 53 , 56 , 59 , 62 , 65 , 68 , 71 , 74
+]
+
+# reduced channel set, used by actual device
+UNIFYING_RF_CHANNELS_REDUCED = [
+    5, 8, 14, 17, 32, 35, 41, 44, 62, 65, 71, 74
 ]
 
 RF_POWER_MAP = {
@@ -91,10 +97,15 @@ class LayoutRFSettings(object):
 
     def generate_random_channel(self):
         """ Returns a random RF channel """
-        channel = -1
-        while channel not in UNIFYING_RF_CHANNELS:
-            channel = int((bytearray(os.urandom(1))[0]))
-        self.channel = channel
+        index = 255
+        num_ch = len(UNIFYING_RF_CHANNELS_REDUCED)
+        bias = 255 % num_ch
+        while index >= (255 - bias):
+            # reroll to avoid sampling bias
+            index = int((bytearray(os.urandom(1))[0]))
+        index = index % num_ch
+
+        self.channel = UNIFYING_RF_CHANNELS_REDUCED[index]
 
     def generate_random_pipe_addresses(self):
         while True:
