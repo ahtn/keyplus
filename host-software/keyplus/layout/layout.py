@@ -53,7 +53,7 @@ class KeyplusLayout(object):
                           parser_info=None, rf_parser_info=None,
                           load_method=yaml.safe_load):
         basename = os.path.basename(layout_file)
-        if layout_file:
+        if layout_file != None:
             with io.open(layout_file, encoding='utf8') as f:
                 layout_json_obj = load_method(f.read())
 
@@ -63,7 +63,7 @@ class KeyplusLayout(object):
                         layout_json_obj
                     )
                 self._parser_info = parser_info
-        if rf_file:
+        if rf_file != None:
             rf_basename = os.path.basename(rf_file)
             with io.open(rf_file, encoding='utf8') as f:
                 rf_json_obj = load_method(f.read())
