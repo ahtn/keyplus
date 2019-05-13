@@ -37,8 +37,12 @@ MAKEFLAGS += --no-builtin-rules
 USB_DESCRIPTOR_ARRANGEMENT = normal
 SCAN_METHOD = fast_row_col
 
+BOARD_DIR := boards
+
 ifndef BOARD
-	BOARD=nrf52840_dk
+  $(info Error: BOARD variable not set, use one of:)
+  $(info $(shell ls $(BOARD_DIR)))
+  $(error BOARD not set)
 endif
 
 include $(KEYPLUS_PATH)/boards.mk
@@ -57,6 +61,9 @@ include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
 
 CFLAGS += -Wno-error=unused-variable
 CFLAGS += -Wno-error=unused-but-set-variable
+
+CDEFS += -DDEBUG
+OPT ?= -Og -g3
 
 # List C source files here.
 #
@@ -79,9 +86,10 @@ C_SRC += \
 	$(PROJ_SRC_PATH)/port_impl/usb_reports.c \
 
 ifeq ($(USE_BLUETOOTH), 1)
-	C_SRC += \
-		$(PROJ_SRC_PATH)/ble_test.c \
-	#
+  C_SRC += \
+	$(PROJ_SRC_PATH)/kp_ble/hid.c \
+    $(PROJ_SRC_PATH)/ble_test.c \
+
 endif
 
 # Place -D or -U options here for C sources
@@ -119,9 +127,9 @@ ifeq ($(MCU), nrf52840)
   LAYOUT_SIZE := 0x2000
   NONCE_ADDR := 0x0C3000 # need 2 pages for nonce (1 backup)
 else ifeq ($(MCU), nrf52832)
-  $(message '$(MCU)' not implemented yet)
+  $(info '$(MCU)' not implemented yet)
 else
-  $(message Error unsupported flash size='$(FLASH_SIZE)')
+  $(error Error unsupported flash size='$(FLASH_SIZE)')
 endif
 
 

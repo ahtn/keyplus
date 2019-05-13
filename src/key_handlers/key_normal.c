@@ -5,7 +5,7 @@
 
 #include "core/matrix_interpret.h"
 
-#include "usb_reports/keyboard_report.h"
+#include "hid_reports/keyboard_report.h"
 
 /* TODO: fn keycode */
 bit_t is_layer_keycode(keycode_t keycode) {

@@ -2,7 +2,6 @@
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
 CORE_PATH = $(KEYPLUS_PATH)/core
-USB_REPORTS_PATH = usb_reports
 
 # Add this to the makefile list so changes to this will result in a rebuild
 MAKEFILE_INC += $(CORE_PATH)/core.mk
@@ -54,7 +53,6 @@ endif
 #   $(error LAYOUT_FILE variable not set)
 # endif
 
-RF_FILE           ?= $(KEYPLUS_PATH)/../layouts/test_rf_config.yaml
 KEYPLUS_CLI       ?= python3 $(KEYPLUS_PATH)/../host-software/keyplus-cli
 
 ID                ?= 0
@@ -178,4 +176,4 @@ else
     CDEFS += -DUSE_BLUETOOTH=0
 endif
 
-include $(KEYPLUS_PATH)/$(USB_REPORTS_PATH)/usb_reports.mk
+include $(KEYPLUS_PATH)/hid_reports/hid_reports.mk

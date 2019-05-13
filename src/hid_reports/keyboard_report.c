@@ -3,7 +3,7 @@
 /// @file
 /// @brief 6KRO and NKRO USB reports
 
-#include "usb_reports/keyboard_report.h"
+#include "hid_reports/keyboard_report.h"
 
 #include <string.h>
 
@@ -11,7 +11,8 @@
 #include "core/matrix_interpret.h"
 #include "core/mods.h"
 
-#include "usb_reports/usb_reports.h"
+#include "hid_reports/usb_reports.h"
+#include "hid_reports/ble_reports.h"
 
 #define KEY_AGE_LIST_LEN BOOT_REPORT_KEY_COUNT
 
@@ -325,8 +326,20 @@ bit_t is_ready_nkro_keyboard_report(void) {
     return is_in_endpoint_ready(EP_NUM_NKRO_KEYBOARD);
 }
 
+
 /// Sends the 6KRO report over its USB endpoint
 bit_t send_boot_keyboard_report(void) {
+#if USE_BLUETOOTH
+    if (g_runtime_settings.mode == TRANS_MODE_BLE) {
+        kp_ble_hids_input_report_send(
+            BLE_INPUT_REPORT_INDEX_BOOT_KB,
+            sizeof(hid_report_boot_keyboard_t),
+            (uint8_t*)&g_boot_keyboard_report
+        );
+        return false;
+    }
+#endif
+
     if (is_ready_boot_keyboard_report()) {
         uint8_t report_size = sizeof(hid_report_boot_keyboard_t);
 
@@ -344,6 +357,17 @@ bit_t send_boot_keyboard_report(void) {
 
 /// Sends the NKRO report over its USB endpoint
 bit_t send_nkro_keyboard_report(void) {
+#if USE_BLUETOOTH
+    if (g_runtime_settings.mode == TRANS_MODE_BLE) {
+        kp_ble_hids_input_report_send(
+            BLE_INPUT_REPORT_INDEX_NKRO,
+            sizeof(hid_report_nkro_keyboard_t),
+            (uint8_t*)&g_nkro_keyboard_report
+        );
+        return false;
+    }
+#endif
+
     if (is_ready_nkro_keyboard_report()) {
         uint8_t report_size = sizeof(hid_report_nkro_keyboard_t);
 

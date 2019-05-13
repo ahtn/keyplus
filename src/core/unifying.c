@@ -24,7 +24,7 @@
 #endif
 
 #include "key_handlers/key_hold.h"
-#include "usb_reports/mouse_report.h"
+#include "hid_reports/mouse_report.h"
 
 // NOTE: For uniyfing devices to work, we need to dedicated at least 2 pipes
 // for the device. These two pipes have the form:

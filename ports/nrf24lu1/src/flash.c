@@ -6,7 +6,7 @@
 #include "core/flash.h"
 #include "core/settings.h"
 
-#include "usb_reports/vendor_report.h"
+#include "hid_reports/vendor_report.h"
 
 void flash_modify_enable(void) {
     disable_interrupts();

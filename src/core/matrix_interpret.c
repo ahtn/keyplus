@@ -34,7 +34,7 @@
 #include "key_handlers/key_handlers.h"
 #include "key_handlers/key_hold.h"
 
-#include "usb_reports/keyboard_report.h"
+#include "hid_reports/keyboard_report.h"
 
 XRAM keyboard_t g_keyboard_slots[MAX_NUM_KEYBOARD_SLOTS];
 XRAM uint8_t s_slot_id_map[MAX_NUM_KEYBOARDS];

@@ -13,8 +13,8 @@
 
 #include "key_handlers/key_normal.h"
 
-#include "usb_reports/keyboard_report.h"
-#include "usb_reports/mouse_report.h"
+#include "hid_reports/keyboard_report.h"
+#include "hid_reports/mouse_report.h"
 
 /*********************************************************************
  *                        macro repeat stack                         *

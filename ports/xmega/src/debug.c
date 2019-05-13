@@ -8,7 +8,7 @@
 #include "core/hardware.h"
 #include "core/debug.h"
 #include "core/usb_commands.h"
-#include "usb_reports/vendor_report.h"
+#include "hid_reports/vendor_report.h"
 #include "power.h"
 
 #if defined(DEBUG_LEVEL) && DEBUG_LEVEL >= 4

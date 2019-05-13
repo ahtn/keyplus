@@ -19,7 +19,8 @@ layouts:
     layers: [
       [ # layer 0 (base)
         [
-          1, 2, 3, 4
+          # 1, 2, VOLU, VOLD
+          1, 2, MS_D, MS_U
         ]
       ],
     ]

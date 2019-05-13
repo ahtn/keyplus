@@ -10,7 +10,7 @@ how to do is flash a layout file, see the [`keyplus_flasher` documentation(TODO)
 | @ref src/key_handlers | key handlers: responsible for mapping keycodes to functionality    |
 | @ref src/settings     | (obsolete) configuration settings in c, replaced by python modules |
 | @ref src/usb          | contains the USB descriptors and other utilities for usb           |
-| @ref src/usb_reports  | code for sending/receiving USB reports                             |
+| @ref src/hid_reports  | code for sending/receiving USB reports                             |
 
 Also, below is a list of different ports of keyplus to different microcontrollers.
 

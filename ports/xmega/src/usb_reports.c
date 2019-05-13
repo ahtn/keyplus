@@ -5,10 +5,10 @@
 
 #include "xmega/usb_xmega.h"
 
-#include "usb_reports/keyboard_report.h"
-#include "usb_reports/media_report.h"
-#include "usb_reports/mouse_report.h"
-#include "usb_reports/vendor_report.h"
+#include "hid_reports/keyboard_report.h"
+#include "hid_reports/media_report.h"
+#include "hid_reports/mouse_report.h"
+#include "hid_reports/vendor_report.h"
 
 bit_t is_in_endpoint_ready(uint8_t endpoint_num) {
     return usb_xmega_endpoints[endpoint_num].in.STATUS & USB_EP_UNF_bm;

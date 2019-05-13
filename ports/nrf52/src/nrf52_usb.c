@@ -57,6 +57,9 @@
 #include "core/settings.h"
 #include "core/timer.h"
 
+#include "hid_reports/mouse_report.h"
+#include "hid_reports/usb_reports.h"
+
 #include "serial_num.h"
 
 static bool m_send_flag = 0;
@@ -773,10 +776,6 @@ static void usbd_event_handler(nrf_drv_usbd_evt_t const *const p_event)
         break;
     }
 }
-
-#include "usb_reports/mouse_report.h"
-
-#include "usb_reports/usb_reports.h"
 
 static void move_mouse_pointer(void)
 {

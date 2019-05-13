@@ -84,6 +84,10 @@ static inline void set_debounce_time(uint8_t key_num, uint8_t time) {
 }
 
 int init_matrix_scanner_utils(void) {
+    if (has_critical_error()) {
+        return -1;
+    }
+
     if (
         g_scan_plan.rows > MAX_NUM_ROWS ||
         g_scan_plan.max_col_pin_num > IO_PORT_MAX_PIN_NUM

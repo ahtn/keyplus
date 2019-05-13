@@ -189,6 +189,13 @@ typedef struct ATTR_PACKED settings_t { // 512 bytes
     rf_settings_t rf; // size == 64
 } settings_t;
 
+typedef enum transmit_mode_t {
+    TRANS_MODE_USB,       // USB transmit mode
+    TRANS_MODE_NRF24,     // NRF24 transmit mode
+    TRANS_MODE_NRF52_ESB, // nRF52 esb transmit mode
+    TRANS_MODE_BLE,       // BLE transmit mode
+} transmit_mode_t;
+
 /// Settings that are loaded from flash and/or changeable at run time
 typedef struct runtime_settings_t {
     uint8_t device_id;
@@ -196,6 +203,7 @@ typedef struct runtime_settings_t {
         uint8_t ctrl_raw;
         feature_ctrl_t ctrl;
     } feature;
+    transmit_mode_t mode;
 } runtime_settings_t;
 
 /*********************************************************************

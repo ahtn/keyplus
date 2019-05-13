@@ -8,7 +8,7 @@
 
 #include "core/util.h"
 
-#include "usb_reports/usb_reports.h"
+#include "hid_reports/usb_reports.h"
 
 bit_t is_in_endpoint_ready(uint8_t endpoint_num) {
     return (USB_EP_IN_CS(endpoint_num) & CS_BSY) == 0;

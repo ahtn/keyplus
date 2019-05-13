@@ -9,7 +9,7 @@
 
 #include "core/keycode.h"
 
-#include "usb_reports/media_report.h"
+#include "hid_reports/media_report.h"
 
 bit_t is_media_keycode(keycode_t keycode) {
     return IS_MEDIA(keycode);

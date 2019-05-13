@@ -6,7 +6,7 @@
 #include "nrf_drv_rtc.h"
 #include "nrf_drv_clock.h"
 
-const nrf_drv_rtc_t rtc = NRF_DRV_RTC_INSTANCE(0); /**< Declaring an instance of nrf_drv_rtc for RTC0. */
+const nrf_drv_rtc_t rtc = NRF_DRV_RTC_INSTANCE(2); /**< Declaring an instance of nrf_drv_rtc for RTC2. */
 
 static volatile uint32_t s_timer_counter;
 

@@ -1,10 +1,13 @@
 // Copyright 2017 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-#include "usb_reports/mouse_report.h"
+#include "hid_reports/mouse_report.h"
 
-#include "usb_reports/usb_reports.h"
+#include "core/settings.h"
 #include "usb/descriptors.h"
+
+#include "hid_reports/usb_reports.h"
+#include "hid_reports/ble_reports.h"
 
 #include <string.h>
 
@@ -47,14 +50,39 @@ bit_t is_ready_mouse_report(void) {
     return is_in_endpoint_ready(EP_NUM_MOUSE);
 }
 
-#include "core/usb_commands.h"
+static void zero_mouse(void) {
+    { // Zero the mouse movement component now that the packet is sent
+        g_mouse_report.x = 0;
+        g_mouse_report.y = 0;
+        g_mouse_report.wheel_x = 0;
+        g_mouse_report.wheel_y = 0;
+    }
+
+    g_report_pending_mouse = false;
+}
 
 /// @brief Send any pending mouse report.
 ///
 /// @retval true A mouse report is ready but could not be sent and was left pending.
 /// @retval false No mouse report was left pending.
 bit_t send_mouse_report(void) {
-    if (is_ready_mouse_report() && g_report_pending_mouse) {
+    if (!g_report_pending_mouse) {
+        return false;
+    }
+
+#if USE_BLUETOOTH
+    if (g_runtime_settings.mode == TRANS_MODE_BLE) {
+        kp_ble_hids_input_report_send(
+            BLE_INPUT_REPORT_INDEX_MOUSE,
+            sizeof(hid_report_mouse_t),
+            (uint8_t*)&g_mouse_report
+        );
+        zero_mouse();
+        return false;
+    }
+#endif
+
+    if (is_ready_mouse_report()) {
         uint8_t report_size = sizeof(hid_report_mouse_t);
 
         usb_write_in_endpoint(
@@ -62,16 +90,7 @@ bit_t send_mouse_report(void) {
             (uint8_t*)&g_mouse_report,
             report_size
         );
-
-        { // Zero the mouse movement component now that the packet is sent
-            g_mouse_report.x = 0;
-            g_mouse_report.y = 0;
-            g_mouse_report.wheel_x = 0;
-            g_mouse_report.wheel_y = 0;
-        }
-
-        g_report_pending_mouse = false;
-
+        zero_mouse();
         return false;
     } else {
         return true;

@@ -38,6 +38,8 @@ INC_PATHS += -I$(NRF24LU1_PATH)
 
 include $(KEYPLUS_PATH)/boards.mk
 
+RF_FILE ?= $(KEYPLUS_PATH)/../layouts/test_rf_config.yaml
+
 CHIP_NAME=nRF24LU1P-F32
 SCAN_METHOD=none
 SCANNER_MAX_ROWS=0

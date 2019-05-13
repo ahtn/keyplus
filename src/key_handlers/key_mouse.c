@@ -12,7 +12,7 @@
 #  include "core/unifying.h"
 #endif
 
-#include "usb_reports/mouse_report.h"
+#include "hid_reports/mouse_report.h"
 
 // /* TODO: mouse keycode */
 bit_t is_mouse_keycode(keycode_t keycode) {

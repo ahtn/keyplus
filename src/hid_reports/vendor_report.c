@@ -1,14 +1,16 @@
 // Copyright 2017 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-#include "usb_reports/vendor_report.h"
+#include "hid_reports/vendor_report.h"
 
 #include "config.h"
 
+#include "core/settings.h"
 #include "core/error.h"
 #include "core/debug.h"
 
-#include "usb_reports/usb_reports.h"
+#include "hid_reports/usb_reports.h"
+#include "hid_reports/ble_reports.h"
 
 // TODO: would be much nicer to have a buffered/pipe interfaces for accessing
 // the vendor report.
@@ -151,28 +153,35 @@ bit_t is_ready_vendor_in_report(void) {
     return is_in_endpoint_ready(EP_NUM_VENDOR_IN);
 }
 
-static XRAM uint8_t first_sent = false;
-
 bit_t send_vendor_report(void) {
 #if USB_BUFFERED
-    if (is_ready_vendor_in_report() && vendor_in_buf_has_packet()) {
+    if (g_vendor_report_in.len == 0 && vendor_in_buf_has_packet()) {
         vendor_in_load_packet();
     }
 #endif
 
-    // if (is_ready_vendor_in_report() && g_vendor_report_in.len > 0
-    //     && !first_sent) {
-    //     first_sent = true;
-    //     g_vendor_report_in.len = 0;
-    //     return true;
-    // }
+    if (g_vendor_report_in.len == 0) {
+        return false;
+    }
 
-    if (is_ready_vendor_in_report() && g_vendor_report_in.len > 0) {
+#if USE_BLUETOOTH
+    if (g_runtime_settings.mode == TRANS_MODE_BLE) {
+        kp_ble_hids_input_report_send(
+            BLE_INPUT_REPORT_INDEX_VENDOR,
+            VENDOR_REPORT_LEN,
+            g_vendor_report_in.data
+        );
+        g_vendor_report_in.len = 0;
+        return false;
+    }
+#endif
+
+    if (is_ready_vendor_in_report()) {
         // Send the vendor report
         usb_write_in_endpoint(
             EP_NUM_VENDOR_IN,
             g_vendor_report_in.data,
-            EP_SIZE_VENDOR
+            VENDOR_REPORT_LEN
         );
         g_vendor_report_in.len = 0;
         return false;
@@ -186,6 +195,21 @@ bit_t is_ready_vendor_out_report(void) {
 }
 
 uint8_t read_vendor_report(void) {
+#if USE_BLUETOOTH
+    if (g_runtime_settings.mode == TRANS_MODE_BLE) {
+        if (!kp_ble_hids_output_has_data(BLE_OUTPUT_REPORT_INDEX_VENDOR)) {
+            return 1;
+        }
+
+        kp_ble_hids_output_report_read(
+            BLE_OUTPUT_REPORT_INDEX_VENDOR,
+            VENDOR_REPORT_LEN,
+            g_vendor_report_out.data
+        );
+        return 0;
+    }
+#endif
+
     if (!is_ready_vendor_out_report()) {
         return 1;
     }

@@ -36,7 +36,8 @@
 
 #include "core/settings.h"
 #include "usb/descriptors.h"
-#include "usb_reports/keyboard_report.h"
+#include "hid_reports/keyboard_report.h"
+#include "hid_reports/mouse_report.h"
 
 #include "usb_32u4.h"
 
@@ -610,9 +611,6 @@ uint8_t usb_handle_ep0(usb_request_std_t *req) {
     }
     return 0;
 }
-
-#include "usb_reports/mouse_report.h"
-
 
 void usb_hid_request(usb_request_std_t *req) {
     switch (req->wIndex) {

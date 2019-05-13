@@ -1,6 +1,6 @@
-ifndef LAYOUT_FILE
-    LAYOUT_FILE=$(KEYPLUS_PATH)/../layouts/nrf52_4key.yaml
-endif
+
+LAYOUT_FILE ?= $(KEYPLUS_PATH)/../layouts/nrf52_4key.yaml
+RF_FILE ?= $(KEYPLUS_PATH)/../layouts/test_rf_config2.yaml
 
 MCU = nrf52840
 MCU_STRING = nRF52840_QIAA

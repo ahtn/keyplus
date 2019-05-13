@@ -20,10 +20,7 @@
 #  include "core/unifying.h"
 #endif
 
-#include "usb_reports/keyboard_report.h"
-#include "usb_reports/media_report.h"
-#include "usb_reports/mouse_report.h"
-#include "usb_reports/vendor_report.h"
+#include "hid_reports/hid_reports.h"
 
 /* TODO: abstract mcu specifi usb code */
 
@@ -103,10 +100,7 @@ void reset_usb_reports(void) {
     passthrough_mode_on = false;
 #endif
 
-    reset_media_report();
-    reset_vendor_report();
-    reset_mouse_report();
-    reset_keyboard_reports();
+    reset_hid_reports();
 
     unlock_usb_commands();
 }

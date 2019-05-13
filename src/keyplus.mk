@@ -3,6 +3,16 @@
 
 MAKEFILE_INC += $(KEYPLUS_PATH)/keyplus.mk
 
+ifdef LAYOUT
+  LAYOUT_FILE ?= $(LAYOUT)
+endif
+
+ifdef RF
+  RF_FILE ?= $(RF)
+endif
+
+RF_FILE ?= $(KEYPLUS_PATH)/../layouts/test_rf_config.yaml
+
 LAYOUT_NAME=$(basename $(notdir $(LAYOUT_FILE)))
 MERGED_HEX=$(basename $(TARGET_HEX))-$(LAYOUT_NAME).hex
 SETTINGS_HEX=$(basename $(TARGET_HEX))-$(LAYOUT_NAME)-settings-only.hex

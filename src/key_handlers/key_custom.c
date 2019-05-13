@@ -12,7 +12,7 @@
 #include "core/unifying.h"
 #include "core/usb_commands.h"
 
-#include "usb_reports/mouse_report.h"
+#include "hid_reports/mouse_report.h"
 
 static bit_t keycode_checker(keycode_t keycode) {
     return ( KC_DONGLE_0 <= keycode && keycode <= KC_TEST_7);

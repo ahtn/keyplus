@@ -30,10 +30,10 @@
 #include "key_handlers/key_hold.h"
 #include "key_handlers/key_mouse.h"
 
-#include "usb_reports/keyboard_report.h"
-#include "usb_reports/media_report.h"
-#include "usb_reports/mouse_report.h"
-#include "usb_reports/vendor_report.h"
+#include "hid_reports/keyboard_report.h"
+#include "hid_reports/media_report.h"
+#include "hid_reports/mouse_report.h"
+#include "hid_reports/vendor_report.h"
 
 #include "usb/common.h"
 

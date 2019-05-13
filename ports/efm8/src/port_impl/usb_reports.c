@@ -1,7 +1,7 @@
 // Copyright 2018 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-#include "usb_reports/usb_reports.h"
+#include "hid_reports/usb_reports.h"
 
 #include "usb_test.h"
 
