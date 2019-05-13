@@ -1916,6 +1916,23 @@ static void idle_state_handle(void)
     }
 }
 
+#include "esb_timeslot.h"
+
+/// @brief Handler for receiving ESB data during a timeslot
+static void timeslot_data_handler(void * p_data, uint16_t length) {
+    // p_data, do something
+}
+
+static void esb_multiprotocol_start(void) {
+    uint32_t err_code;
+
+    err_code = esb_timeslot_init(timeslot_data_handler);
+    APP_ERROR_CHECK(err_code);
+
+    err_code = esb_timeslot_start();
+    APP_ERROR_CHECK(err_code);
+}
+
 #include "core/aes.h"
 #include "core/error.h"
 #include "core/hardware.h"
@@ -1926,6 +1943,8 @@ static void idle_state_handle(void)
 #include "core/usb_commands.h"
 #include "core/timer.h"
 #include "core/macro.h"
+#include "core/rf.h"
+#include "core/unifying.h"
 
 #include "key_handlers/key_mouse.h"
 
@@ -1951,8 +1970,10 @@ int ble_test_main(uint8_t x)
         settings_load_from_flash();
         aes_key_init(g_rf_settings.ekey, g_rf_settings.dkey);
         keyboards_init();
+        // matrix_scanner_init();
 
         g_runtime_settings.mode = TRANS_MODE_BLE;
+        g_rf_enabled = true;
 
         reset_hid_reports();
         // reset_usb_reports();
@@ -1983,7 +2004,10 @@ int ble_test_main(uint8_t x)
     timers_start();
     advertising_start(erase_bonds);
 
+    // TODO:
     matrix_scanner_init();
+
+    esb_multiprotocol_start();
 
     uint32_t last_time = 0;
 
@@ -1993,8 +2017,18 @@ int ble_test_main(uint8_t x)
         {
             uint32_t new_time = timer_read_ms();
             if ((uint32_t)(new_time - last_time) >= 1000) {
-                NRF_LOG_INFO("time: %d", new_time);
+                uint32_t time_sec = new_time/1000;
                 last_time = new_time;
+
+                NRF_LOG_INFO("time: %d", new_time);
+
+                if (time_sec % 5 == 0) {
+                    struct timeslot_stats_t stats = get_timeslot_stats();
+                    NRF_LOG_INFO(
+                        "timeslot stats: {start: %04d, end: %04d, rx: %04d, ext: %04d}",
+                        stats.start, stats.end, stats.rx, stats.extensions
+                    );
+                }
             }
         }
 
@@ -2015,6 +2049,21 @@ int ble_test_main(uint8_t x)
 
             interpret_all_keyboard_matrices();
         }
+
+#if USE_NRF24
+        if (g_rf_enabled) {
+            #if USE_UNIFYING
+                if (unifying_is_pairing_active()) {
+                    unifying_pairing_poll();
+                } else {
+                    rf_task();
+                }
+                unifying_mouse_handle();
+            #else
+                rf_task();
+            #endif
+        }
+#endif
 
         macro_task();
         mouse_key_task();

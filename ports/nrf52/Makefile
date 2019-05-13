@@ -89,6 +89,7 @@ ifeq ($(USE_BLUETOOTH), 1)
   C_SRC += \
 	$(PROJ_SRC_PATH)/kp_ble/hid.c \
     $(PROJ_SRC_PATH)/ble_test.c \
+    $(PROJ_SRC_PATH)/esb_timeslot.c \
 
 endif
 
