@@ -32,7 +32,6 @@
 #define MAX_TX_ATTEMPTS 10
 #define MAIN_DEBUG 0x12345678UL
 
-static timeslot_data_handler_t m_evt_handler = 0;
 static volatile bool        m_timeslot_session_open;
 static uint32_t             m_tx_attempts = 0;
 static volatile uint32_t    m_total_timeslot_length = 0;
@@ -519,17 +518,17 @@ void soc_evt_handler(uint32_t sys_evt, void *p_context) {
         } break;
 
         case NRF_EVT_RADIO_SIGNAL_CALLBACK_INVALID_RETURN: {
-            DEBUG_PRINT("NRF_EVT_RADIO_SIGNAL_CALLBACK_INVALID_RETURN\r\n");
+            NRF_LOG_DEBUG("NRF_EVT_RADIO_SIGNAL_CALLBACK_INVALID_RETURN\r\n");
             app_error_handler(MAIN_DEBUG, __LINE__, (const uint8_t*)__FILE__);
         } break;
 
         case NRF_EVT_RADIO_SESSION_CLOSED: {
-            DEBUG_PRINT("NRF_EVT_RADIO_SESSION_CLOSED\r\n");
+            NRF_LOG_DEBUG("NRF_EVT_RADIO_SESSION_CLOSED\r\n");
             m_timeslot_session_open = false;
         } break;
 
         case NRF_EVT_RADIO_SESSION_IDLE: {
-            DEBUG_PRINT("NRF_EVT_RADIO_SESSION_IDLE\r\n");
+            NRF_LOG_DEBUG("NRF_EVT_RADIO_SESSION_IDLE\r\n");
             uint32_t err_code = sd_radio_session_close();
             APP_ERROR_CHECK(err_code);
         } break;

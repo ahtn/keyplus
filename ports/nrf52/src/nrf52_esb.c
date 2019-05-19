@@ -123,9 +123,13 @@ void nrf52_esb_packet_buffer_add(nrf_esb_payload_t *packet) {
 void rf_esb_write_ack_payload(nrf_esb_payload_t *tx_payload) {
     uint32_t err_code;
 
+#if USE_BLUETOOTH
     if (g_rf_settings.hw_type == RF_HW_BLE_AND_ESB) {
         esb_timeslot_ack_payload(tx_payload);
     } else {
+#else
+    {
+#endif
         if ( (err_code = nrf_esb_write_payload(tx_payload)) == NRF_SUCCESS) {
             // nothing
         } else if (err_code == NRF_ERROR_NO_MEM) {
@@ -138,8 +142,6 @@ void rf_esb_write_ack_payload(nrf_esb_payload_t *tx_payload) {
 }
 
 void rf_nrf52_load_sync_ack_payload(uint8_t device_id) {
-    uint32_t err_code;
-
     packet_t *packet = (packet_t*)tx_payload.data;
 
     // construct the packet

@@ -5,9 +5,12 @@
 #include "core/flash.h"
 
 #include "app_error.h"
-
 #include "nrf_nvmc.h"
+
+#if USE_SOFTDEVICE
+#include "app_scheduler.h"
 #include "nrf_pwr_mgmt.h"
+#endif
 
 #include "esb_timeslot.h"
 
@@ -30,17 +33,11 @@
 #define FLASH_READ_U16(ADDR) (*(uint16_t*)(ADDR))
 #define FLASH_READ_U32(ADDR) (*(uint32_t*)(ADDR))
 
-#include "nrf_log.h"
-#include "nrf_log_ctrl.h"
-#include "nrf_delay.h"
-
-#include "app_scheduler.h"
-
 bool m_write_enabled = true;
 
 static void flash_page_erase(flash_addr_t page_addr) {
-    uint32_t err;
 #if USE_SOFTDEVICE
+    uint32_t err;
     if (m_write_enabled) {
         do {
             err = sd_flash_page_erase(page_addr / PAGE_SIZE);
@@ -60,15 +57,14 @@ static void flash_page_erase(flash_addr_t page_addr) {
         m_write_enabled = true;
     }
 #else
-    err = nrf_nvmc_page_erase(page_addr);
-    APP_ERROR_CHECK(err);
+    nrf_nvmc_page_erase(page_addr);
 #endif
 
 }
 
 static void flash_write_word(flash_addr_t addr, uint32_t value) {
-    uint32_t err;
 #if USE_SOFTDEVICE
+    uint32_t err;
     do {
         err = sd_flash_write((uint32_t*)addr, &value, 1);
         set_flash_busy_bit();
@@ -84,8 +80,7 @@ static void flash_write_word(flash_addr_t addr, uint32_t value) {
         nrf_pwr_mgmt_run();
     }
 #else
-    err = nrf_nvmc_write_word(addr, value);
-    APP_ERROR_CHECK(err);
+    nrf_nvmc_write_word(addr, value);
 #endif
 }
 

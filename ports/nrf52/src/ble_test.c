@@ -1386,15 +1386,10 @@ static void idle_state_handle(void) {
     }
 }
 
-/// @brief Handler for receiving ESB data during a timeslot
-static void timeslot_data_handler(void * p_data, uint16_t length) {
-    // p_data, do something
-}
-
 static void esb_multiprotocol_start(void) {
     uint32_t err_code;
 
-    err_code = esb_timeslot_init(timeslot_data_handler);
+    err_code = esb_timeslot_init();
     APP_ERROR_CHECK(err_code);
 
     err_code = esb_timeslot_start();

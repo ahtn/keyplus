@@ -464,7 +464,7 @@ bit_t read_packet(void) REENT {
 
     // read out the packet payload into the buffer
     packet_buffer_take(packet_payload, width);
-    enable_interrupts()
+    enable_interrupts();
 
 #if USE_UNIFYING
     // NOTE: currently mouse pipes are disabled in passive listening mode
