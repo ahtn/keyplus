@@ -7,32 +7,14 @@
 #include "nrf_delay.h"
 #include "nrfx.h"
 
+#include "app_util_platform.h"
+
 #define static_delay_us(x) nrf_delay_us(x)
 #define static_delay_ms(x) nrf_delay_ms(x)
 
-#if USE_BLUETOOTH
-
 // When using a SOFT DEVICE use these to disable all non-vital interrupts
-#define enable_interrupts() do { \
-    uint8_t dummy; \
-    sd_nvic_critical_region_enter(&dummy); \
-} while(0);
-
-#define disable_interrupts() do { \
-    sd_nvic_critical_region_exit(0); \
-} while(0);
-
-#else
-// These functions are unsafe when using a SOFT DEVICE
-#define enable_interrupts() do { \
-    __enable_irq(); \
-} while(0);
-
-#define disable_interrupts() do { \
-    __disable_irq(); \
-} while(0);
-#endif
-
+#define enable_interrupts() CRITICAL_REGION_EXIT()
+#define disable_interrupts() CRITICAL_REGION_ENTER()
 
 #define PAGE_SIZE           4096
 

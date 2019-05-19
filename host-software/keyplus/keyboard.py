@@ -258,7 +258,7 @@ class KeyplusKeyboard(object):
             response = self.hid_read(timeout=timeout)
 
             packet_type = None
-            if response != None:
+            if response != None and len(response) > 0:
                 packet_type = response[0]
 
             retries_left = 5
@@ -279,7 +279,7 @@ class KeyplusKeyboard(object):
                 elif response == None and retries_left < 3:
                     pass
                     # self.hid_write(nop_packet)
-                else:
+                elif len(response) > 0:
                     packet_type = response[0]
 
                 if self._is_broadcast_packet(packet_type):

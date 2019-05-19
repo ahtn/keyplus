@@ -4,7 +4,12 @@
 #include "core/nonce.h"
 #include "core/flash.h"
 
+#include "app_error.h"
+
 #include "nrf_nvmc.h"
+#include "nrf_pwr_mgmt.h"
+
+#include "esb_timeslot.h"
 
 #define NONCE_PAGE0_ADDR (NONCE_ADDR)
 #define NONCE_PAGE1_ADDR (NONCE_ADDR + PAGE_SIZE)
@@ -24,6 +29,65 @@
 
 #define FLASH_READ_U16(ADDR) (*(uint16_t*)(ADDR))
 #define FLASH_READ_U32(ADDR) (*(uint32_t*)(ADDR))
+
+#include "nrf_log.h"
+#include "nrf_log_ctrl.h"
+#include "nrf_delay.h"
+
+#include "app_scheduler.h"
+
+bool m_write_enabled = true;
+
+static void flash_page_erase(flash_addr_t page_addr) {
+    uint32_t err;
+#if USE_SOFTDEVICE
+    if (m_write_enabled) {
+        do {
+            err = sd_flash_page_erase(page_addr / PAGE_SIZE);
+            set_flash_busy_bit();
+            if (err == NRF_ERROR_BUSY) {
+                app_sched_execute();
+                nrf_pwr_mgmt_run();
+            }
+        } while( err == NRF_ERROR_BUSY );
+        APP_ERROR_CHECK(err);
+
+        while (is_flash_busy()) {
+            app_sched_execute();
+            nrf_pwr_mgmt_run();
+        }
+
+        m_write_enabled = true;
+    }
+#else
+    err = nrf_nvmc_page_erase(page_addr);
+    APP_ERROR_CHECK(err);
+#endif
+
+}
+
+static void flash_write_word(flash_addr_t addr, uint32_t value) {
+    uint32_t err;
+#if USE_SOFTDEVICE
+    do {
+        err = sd_flash_write((uint32_t*)addr, &value, 1);
+        set_flash_busy_bit();
+        if (err == NRF_ERROR_BUSY) {
+            app_sched_execute();
+            nrf_pwr_mgmt_run();
+        }
+    } while (err == NRF_ERROR_BUSY);
+    APP_ERROR_CHECK(err);
+
+    while (is_flash_busy()) {
+        app_sched_execute();
+        nrf_pwr_mgmt_run();
+    }
+#else
+    err = nrf_nvmc_write_word(addr, value);
+    APP_ERROR_CHECK(err);
+#endif
+}
 
 /// Returns -1 on error
 int16_t count_tally(flash_addr_t nonce_addr) {
@@ -61,11 +125,11 @@ int16_t inc_tally(flash_addr_t nonce_addr) {
         uint32_t tally_mark = ((uint32_t *)addr)[i];
         switch(tally_mark) {
             case TALLY_VALUE_0: {
-                nrf_nvmc_write_word(addr+sizeof(uint32_t)*i, TALLY_VALUE_1);
+                flash_write_word(addr+sizeof(uint32_t)*i, TALLY_VALUE_1);
                 return result+1;
             } break;
             case TALLY_VALUE_1: {
-                nrf_nvmc_write_word(addr+sizeof(uint32_t)*i, TALLY_VALUE_2);
+                flash_write_word(addr+sizeof(uint32_t)*i, TALLY_VALUE_2);
                 return result+2;
             } break;
             case TALLY_VALUE_2: {
@@ -94,9 +158,9 @@ static inline uint32_t read_magic(uint8_t page_id) {
 
 static void reset_nonce_value(uint8_t page_id, uint16_t value) {
     const flash_addr_t page_addr = NONCE_PAGE0_ADDR + PAGE_SIZE*page_id;
-    nrf_nvmc_page_erase(page_addr);
-    nrf_nvmc_write_word(page_addr + SID_ADDR_VALUE, value);
-    nrf_nvmc_write_word(page_addr + SID_ADDR_MAGIC, SID_MAGIC);
+    flash_page_erase(page_addr);
+    flash_write_word(page_addr + SID_ADDR_VALUE, value);
+    flash_write_word(page_addr + SID_ADDR_MAGIC, SID_MAGIC);
 }
 
 uint16_t load_session_id(void) {

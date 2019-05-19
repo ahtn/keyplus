@@ -6,6 +6,12 @@ MCU = nrf52840
 MCU_STRING = nRF52840_QIAA
 NRF52_LINK_SCRIPT := ld-scripts/s140_ble.ld
 
+GDB_CMD_FILE = $(BOARD_DIR)/$(BOARD)/gdb_cmds
+
+C_SRC += \
+    $(BOARD_DIR)/$(BOARD)/led.c \
+
+
 USE_SOFTDEVICE := 1
 USE_BLUETOOTH := 1
 

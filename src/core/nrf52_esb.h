@@ -3,7 +3,10 @@
 
 #include "core/util.h"
 
+#include "nrf_esb.h"
+
 void rf_nrf52_load_sync_ack_payload(uint8_t device_id);
+void rf_esb_write_ack_payload(nrf_esb_payload_t *esb);
 
 void nrf52_esb_hw_init(void);
 uint32_t nrf52_esb_init_rx(void);

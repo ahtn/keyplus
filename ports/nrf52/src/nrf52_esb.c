@@ -60,6 +60,7 @@
 #include "core/rf.h"
 #include "core/led.h"
 
+#include "esb_timeslot.h"
 
 static nrf_esb_payload_t        tx_payload = NRF_ESB_CREATE_PAYLOAD(
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -119,6 +120,23 @@ void nrf52_esb_packet_buffer_add(nrf_esb_payload_t *packet) {
     }
 }
 
+void rf_esb_write_ack_payload(nrf_esb_payload_t *tx_payload) {
+    uint32_t err_code;
+
+    if (g_rf_settings.hw_type == RF_HW_BLE_AND_ESB) {
+        esb_timeslot_ack_payload(tx_payload);
+    } else {
+        if ( (err_code = nrf_esb_write_payload(tx_payload)) == NRF_SUCCESS) {
+            // nothing
+        } else if (err_code == NRF_ERROR_NO_MEM) {
+            NRF_LOG_INFO("tx buffer full, flushing");
+            nrf_esb_flush_tx();
+        } else {
+            NRF_LOG_INFO("tx_payload failed: %d", err_code);
+        }
+    }
+}
+
 void rf_nrf52_load_sync_ack_payload(uint8_t device_id) {
     uint32_t err_code;
 
@@ -135,11 +153,7 @@ void rf_nrf52_load_sync_ack_payload(uint8_t device_id) {
 
     aes_encrypt(tx_payload.data); // PACKET_SIZE is one block
 
-    if ( (err_code = nrf_esb_write_payload(&tx_payload)) == NRF_SUCCESS) {
-    } else {
-        NRF_LOG_INFO("tx_payload failed: %d", err_code);
-        tx_failed_count++;
-    }
+    rf_esb_write_ack_payload(&tx_payload);
 }
 
 void nrf_esb_event_handler(nrf_esb_evt_t const * p_event) {

@@ -111,23 +111,17 @@ static void write_ack_payload(
         rf_enable_receive_irq();
     #endif
 #if USE_NRF52_ESB && USE_NRF24
-    } else {
+    } else if (
+        g_rf_settings.hw_type == RF_HW_NRF52_ESB
+        || g_rf_settings.hw_type == RF_HW_BLE_AND_ESB
+    ) {
 #endif
     #if USE_NRF52_ESB
-        uint32_t err_code;
-
-
         tx_payload.pipe = pipe;
         tx_payload.length = len;
         memcpy(tx_payload.data, data, len);
 
-        if ( (err_code = nrf_esb_write_payload(&tx_payload)) == NRF_SUCCESS) {
-        } else if (err_code == NRF_ERROR_NO_MEM) {
-            NRF_LOG_INFO("tx buffer full, flushing");
-            nrf_esb_flush_tx();
-        } else {
-            NRF_LOG_INFO("tx_payload failed: %d", err_code);
-        }
+        rf_esb_write_ack_payload(&tx_payload);
     #endif
     }
 }
@@ -630,17 +624,17 @@ bit_t handle_pairing(uint8_t pipe_num) {
         packet->req_1.addr[4] = pairing_target_addr[0];
 
         packet->req_1.checksum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_req_1_t)-1);
-        write_ack_payload(tmp_buffer, sizeof(unifying_req_1_t), pipe_num);
+        unifying_send_packet(tmp_buffer, sizeof(unifying_req_1_t));
     } else if (packet->header.step == 2 && last_pairing_step == 2) {
         //req_2->step = 2;
         packet->req_2.frame_type = 0x1f;
         packet->req_2.checksum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_req_2_t)-1);
-        write_ack_payload(tmp_buffer, sizeof(unifying_req_2_t), pipe_num);
+        unifying_send_packet(tmp_buffer, sizeof(unifying_req_2_t));
     } else if (packet->header.step == 3 && last_pairing_step == 3) {
         //resp_3->step = 3;
         packet->resp_3.frame_type = 0x0f;
         packet->resp_3.checksum = unifying_calc_checksum(tmp_buffer, sizeof(unifying_resp_3_t)-1);
-        write_ack_payload(tmp_buffer, sizeof(unifying_resp_3_t), pipe_num);
+        unifying_send_packet(tmp_buffer, sizeof(unifying_resp_3_t));
     } else if (last_pairing_step >= 4) {
         // Successfully paired with the device, and received a packet from it
         // after it has paired

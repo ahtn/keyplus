@@ -1,0 +1,5 @@
+# vim: ft=gdb
+target remote localhost:2331
+mon speed 10000
+mon flash download=1
+file ./build/nrf52840_dk_ble/nrf52_keyplus-nrf52840_dk_ble.out

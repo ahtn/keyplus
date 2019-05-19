@@ -24,6 +24,7 @@
 typedef enum {
     RF_HW_NRF24L01 = 0,
     RF_HW_NRF52_ESB = 1,
+    RF_HW_BLE_AND_ESB = 2,
 } rf_hw_type_t;
 
 extern XRAM uint8_t g_rf_enabled;

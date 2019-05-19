@@ -19,6 +19,10 @@ VPATH += $(KEYPLUS_PATH)
 GNU_INSTALL_ROOT ?= /usr/bin/
 GNU_PREFIX ?= arm-none-eabi
 
+# GDB cmd file for debugging
+
+GDB_CMD_FILE ?= gdb_cmds
+
 # NOTE: if you have the SDK installed somewhere else, you can set this
 # in your ~/.profile file with `export NRF52_SDK_ROOT=/path/to/sdk` and the
 # makefile will use that version. Changes to ~/.profile may require a restart
@@ -61,9 +65,13 @@ include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
 
 CFLAGS += -Wno-error=unused-variable
 CFLAGS += -Wno-error=unused-but-set-variable
+CFLAGS += -Wno-error=unused-function
+
+# CDEFS += -DDEBUG
+# OPT ?= -Og -g3
 
 CDEFS += -DDEBUG
-OPT ?= -Og -g3
+OPT ?= -O3
 
 # List C source files here.
 #
@@ -91,6 +99,7 @@ ifeq ($(USE_BLUETOOTH), 1)
     $(PROJ_SRC_PATH)/ble_test.c \
     $(PROJ_SRC_PATH)/esb_timeslot.c \
 
+  USE_SOFTDEVICE := 1
 endif
 
 # Place -D or -U options here for C sources
@@ -100,6 +109,7 @@ CDEFS += -D'HW_VERSION=$(HW_VERSION)'
 CDEFS += -D'FW_VERSION=$(FW_VERSION)'
 
 CDEFS += -DF_CPU=$(F_CPU)UL
+CDEFS += -DUSE_SOFTDEVICE=$(USE_SOFTDEVICE)
 
 # Place -D or -U options here for ASM sources
 ADEFS += $(USB_OPTS)
@@ -158,6 +168,7 @@ INC_FOLDERS += $(KEYPLUS_PATH)
 INC_FOLDERS += $(PROJ_SRC_PATH)
 INC_FOLDERS += $(TARGET_BOARD_DIR)
 
+# nrf52.mk uses SDK_ROOT for this value
 SDK_ROOT=$(NRF52_SDK_ROOT)
 
 include $(PROJ_PATH)/nrf52.mk
@@ -193,5 +204,5 @@ log:
 	done
 
 gdb:
-	arm-none-eabi-gdb -x gdb_cmds
+	arm-none-eabi-gdb -x $(GDB_CMD_FILE)
 

@@ -308,7 +308,9 @@ void rf_init_receive(void) {
     g_rf_enabled = true;
 
 #if USE_NRF52_ESB
-    if (g_rf_settings.hw_type == RF_HW_NRF52_ESB) {
+    if (g_rf_settings.hw_type == RF_HW_BLE_AND_ESB) {
+        return;
+    } else if (g_rf_settings.hw_type == RF_HW_NRF52_ESB) {
         nrf52_esb_init_rx();
         return;
     }
@@ -450,6 +452,8 @@ bit_t read_packet(void) REENT {
     uint8_t pipe_num;
     uint8_t width;
 
+
+    disable_interrupts();
     pipe_num = packet_buffer_get();
     width = packet_buffer_get();
     if (width > PACKET_BUFFER_MAX_LEN || width > packet_buffer_len())  {
@@ -457,8 +461,10 @@ bit_t read_packet(void) REENT {
         return false;
     }
 
+
     // read out the packet payload into the buffer
-    ring_buf128_take(&s_rx_buffer, packet_payload, width);
+    packet_buffer_take(packet_payload, width);
+    enable_interrupts()
 
 #if USE_UNIFYING
     // NOTE: currently mouse pipes are disabled in passive listening mode
@@ -595,6 +601,8 @@ bit_t read_packet(void) REENT {
                     case RF_HW_NRF24L01: {
                         rf_nrf24_load_sync_ack_payload(device_id);
                     } break;
+
+                    case RF_HW_BLE_AND_ESB:
                     case RF_HW_NRF52_ESB: {
                         rf_nrf52_load_sync_ack_payload(device_id);
                     } break;
@@ -725,13 +733,17 @@ bit_t rf_task(void) {
             has_data |= read_packet();
         }
         rf_enable_receive_irq();
-    } else {
 #if USE_NRF52_ESB
+    } else if (g_rf_settings.hw_type == RF_HW_NRF52_ESB) {
         NVIC_DisableIRQ(ESB_EVT_IRQ);
         while (packet_buffer_has_data()) {
             has_data |= read_packet();
         }
         NVIC_EnableIRQ(ESB_EVT_IRQ);
+    } else if (g_rf_settings.hw_type == RF_HW_BLE_AND_ESB) {
+        while (packet_buffer_has_data()) {
+            has_data |= read_packet();
+        }
 #endif
     }
 
