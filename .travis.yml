@@ -2,7 +2,7 @@ matrix:
   include:
     - os: linux
       sudo: true
-      dist: trusty
+      dist: xenial
       language: c
       addons:
         apt:
@@ -17,7 +17,7 @@ matrix:
       #   -
       install:
         - 'cd env'
-        - './ubuntu-14.04-setup.sh'
+        - './ubuntu-16.04-setup.sh'
         - 'cd ..'
       script:
         # Setup the build environment
