@@ -28,7 +28,7 @@ setup(
         'future', 'six', 'cstruct', 'enum-compat', 'hexdump', 'intelhex',
         'ruamel.yaml', 'pyusb', 'colorama',
         # Closely related
-        'easyhid>=0.0.9',
+        'easyhid>=0.0.10',
         'xusbboot>=0.0.2',
         'efm8boot>=0.0.7',
         'kp_boot_32u4>=0.0.2',

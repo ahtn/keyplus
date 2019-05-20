@@ -5,4 +5,5 @@
 *.spec
 *.egg-info
 build$
+!build.sh
 dist

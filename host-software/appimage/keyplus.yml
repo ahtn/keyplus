@@ -1,0 +1,37 @@
+app: keyplus-cli
+
+ingredients:
+  dist: xenial
+  sources:
+    - deb http://us.archive.ubuntu.com/ubuntu/ xenial xenial-updates xenial-security main universe
+    - deb http://us.archive.ubuntu.com/ubuntu/ xenial-updates main universe
+    - deb http://us.archive.ubuntu.com/ubuntu/ xenial-security main universe
+  packages:
+    - python3-venv
+    - libhidapi-hidraw0
+    # - libhidapi-libusb0
+  script:
+    # TODO get proper icons
+    -  wget -c https://raw.githubusercontent.com/mu-editor/mu/master/conf/mu.codewith.editor.png
+    -  wget -c https://raw.githubusercontent.com/mu-editor/mu/master/conf/mu.appdata.xml
+
+script:
+  - set -e
+  - # Setup the python virtual ENV
+  - python3 -m venv ENV
+  - source ./ENV/bin/activate
+  - # Install python application
+  - pip3 install --pre keyplus
+  - mkdir -p usr/share/applications/
+  - cp ENV/bin/keyplus-cli ./usr/bin/keyplus-cli
+  - # Create the desktop file
+  - cp ../../keyplus-cli.desktop usr/share/applications/keyplus-cli.desktop
+  - cp ../../keyplus-cli.desktop .
+  - # TODO: Install icons
+  - mv ../mu.codewith.editor.png ../keyplus-cli.png
+  - cp ../keyplus-cli.png ./usr/share/icons/hicolor/256x256/
+  - cp ../keyplus-cli.png .
+  - # version number
+  - pip3 freeze | grep "keyplus" | cut -d "=" -f 3 >> ../VERSION
+  - # Create AppRun payload
+  - cat ../../apprun.sh > AppRun

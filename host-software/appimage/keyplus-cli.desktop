@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=keyplus-cli
+Icon=keyplus-cli
+Exec=python3 bin/keyplus-cli
+Comment=A tool for controlling keyplus keyboards
+Categories=Utility;
+Keywords=Python;keyboard;flasher;
