@@ -10,7 +10,7 @@ UNZIPFLAGS=""
 
 # Setup Ubuntu 16.04 dependencies
 if [[ -z $TRAVIS ]]; then
-    sudo apt-get install -y make python3 python3-pip libpython-dev libffi-dev gawk libhidapi-dev python3-pyqt5
+    sudo apt-get install -y make python3 python3-pip libpython-dev libffi-dev gawk libhidapi-dev python3-pyqt5 python3-venv desktop-file-utils
 else
     # Reduce log output for travis
     TARFLAGS="xf"
