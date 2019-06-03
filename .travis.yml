@@ -16,6 +16,8 @@ matrix:
             - libhidapi-hidraw0
             - python3-venv
             - desktop-file-utils
+            - libevdev-dev
+            - libudev-dev
       # before_install:
       #   -
       install:

@@ -20,14 +20,15 @@ typedef enum hut_consumer_t {
     HID_CONSUMER_PLUS_10 = 0x20,
     HID_CONSUMER_PLUS_100 = 0x21,
     HID_CONSUMER_AM_PM = 0x22,
-    /* 23-3F Reserved 30 Power */
+    /* 23-3F Reserved */
+    HID_CONSUMER_Power = 0x30,
     HID_CONSUMER_RESET = 0x31,
     HID_CONSUMER_SLEEP = 0x32,
     HID_CONSUMER_SLEEP_AFTER = 0x33,
     HID_CONSUMER_SLEEP_MODE = 0x34,
     HID_CONSUMER_ILLUMINATION = 0x35,
     HID_CONSUMER_FUNCTION_BUTTONS = 0x36,
-    /* 37-3F Reserved 40 Menu */
+    /* 37-3F Reserved */
     HID_CONSUMER_MENU = 0x40,
     HID_CONSUMER_MENU_PICK = 0x41,
     HID_CONSUMER_MENU_UP = 0x42,

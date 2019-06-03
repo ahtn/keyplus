@@ -123,7 +123,7 @@ void handle_mouse_keycode(keycode_t ekc, key_event_t event) REENT {
     }
 }
 
-void mouse_key_task(void) {
+bool mouse_key_task(void) {
     if (
         s_num_mouse_keys_down &&
         ((uint8_t)(timer_read8_ms() - s_report_time) > MOUSE_REPORT_RATE)
@@ -150,6 +150,8 @@ void mouse_key_task(void) {
         g_report_pending_mouse = true;
         s_report_time = timer_read8_ms();
     }
+
+    return s_mouse_keys;
 }
 
 XRAM keycode_callbacks_t mouse_keycodes = {

@@ -28,6 +28,7 @@ COL_ROW = MATRIX_SCANNER_MODE_COL_ROW
 ROW_COL = MATRIX_SCANNER_MODE_ROW_COL
 PIN_GND = MATRIX_SCANNER_MODE_PIN_GND
 PIN_VCC = MATRIX_SCANNER_MODE_PIN_VCC
+VIRTUAL = MATRIX_SCANNER_MODE_VIRTUAL
 
 MODE_MAP = {
     'no_matrix': NO_MATRIX,
@@ -35,6 +36,7 @@ MODE_MAP = {
     'row_col': ROW_COL,
     'pin_gnd': PIN_GND,
     'pin_vcc': PIN_VCC,
+    'virtual': VIRTUAL,
 }
 
 INV_MODE_MAP = {}
@@ -56,6 +58,7 @@ class ScanMode(object):
         self.column_pins = []
         self.row_pins = []
         self.direct_wiring_pins = []
+        self.keys = []
 
         self.matrix_map = {}
         self.matrix_pin_map = {}
@@ -99,6 +102,8 @@ class ScanMode(object):
             return len(self.matrix_map) + len(self._unused_key_numbers)
         elif self.mode in [PIN_GND, PIN_VCC]:
             return len(self.direct_wiring_pins) + len(self._unused_key_numbers)
+        elif self.mode == VIRTUAL:
+            return len(self.keys)
 
     def is_pin_in_use(self, pin_name):
         """ Returns True if the pin has already been assigned for matrix scanning """
@@ -229,6 +234,8 @@ class ScanMode(object):
 
     def get_row_pin_numbers(self, io_mapper):
         if isinstance(self.row_pins, int):
+            # Mimic legacy behaviour were rows,cols were defined by a single
+            # integer.
             return io_mapper.get_default_rows(self.row_pins)
         else:
             return  io_mapper.get_pin_numbers(self.row_pins)
@@ -298,6 +305,11 @@ class ScanMode(object):
 
             scan_plan.max_key_num = max_pin
             scan_plan.max_col_pin_num = max_pin
+        elif self.mode == VIRTUAL:
+            scan_plan.cols = 255
+            scan_plan.rows = 1
+            scan_plan.max_key_num = 255
+            scan_plan.max_col_pin_num = 255
         else:
             raise KeyplusSettingsError("Unknown scan mode '{}'".format(self.mode))
 
@@ -417,6 +429,17 @@ class ScanMode(object):
                 direct_pins,
                 use_pin_map = True
             )
+        elif self.mode == VIRTUAL:
+            keys = io_mapper.get_pin_numbers(self.keys)
+            key_number_map = [0xff] * 512
+
+            for (key_num, key) in enumerate(keys):
+                key_number_map[key] = key_num
+
+            pin_mapping.key_number_map = key_number_map
+        else:
+            raise Exception("Internal Error")
+
 
         return pin_mapping
 
@@ -556,6 +579,11 @@ class ScanMode(object):
             )
         elif self.mode in [PIN_GND, PIN_VCC]:
             self.direct_wiring_pins = parser_info.try_get("pins", field_type=[list, int])
+        elif self.mode == VIRTUAL:
+            self.keys  = parser_info.try_get("keys", field_type=[list])
+        else:
+            raise Exception("Internal error, unexpected value for scan_mode")
+
 
         if parser_info.has_field('debounce', field_type=str):
             debounce_profile = parser_info.try_get("debounce", field_type=str)
@@ -623,6 +651,10 @@ class ScanMode(object):
             result['matrix_map'] = matrix_map
         elif self.mode in [PIN_GND, PIN_VCC]:
             result['pins'] = copy(self.direct_wiring_pins)
+        elif self.mode == VIRTUAL:
+            result['keys'] = copy(self.keys)
+        else:
+            raise Exception("Internal Error")
 
         result['debounce'] = self.debounce_to_json()
 

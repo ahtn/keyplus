@@ -27,5 +27,5 @@ typedef struct {
 
 extern XRAM keycode_callbacks_t hold_keycodes;
 
-void hold_key_task(uint8_t other_key_pressed);
+bool hold_key_task(uint8_t other_key_pressed);
 bit_t hold_key_buffer_other_keys(void);

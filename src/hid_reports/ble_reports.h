@@ -1,8 +1,10 @@
 // Copyright 2019 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-#include <stdint.h>
+/// API used to send HID reports over BLE
+///
 
+#include <stdint.h>
 #include "kp_ble/hid.h"
 
 void kp_ble_hids_input_report_send(

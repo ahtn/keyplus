@@ -28,7 +28,7 @@
 #include "core/layout.h"
 #include "core/packet.h"
 #include "core/timer.h"
-#include "core/usb_commands.h"
+// #include "core/usb_commands.h"
 #include "core/util.h"
 
 #include "key_handlers/key_handlers.h"
@@ -471,6 +471,52 @@ void keyboard_update_device_matrix(uint8_t device_id, const XRAM uint8_t *matrix
     s_has_dirty_matrix = true;
 }
 
+#if USE_VIRTUAL_MODE
+void keyboard_matrix_set_key(uint8_t device_id, int key_num, int value) REENT {
+    const uint8_t kb_id = GET_SETTING(layout.devices[device_id].layout_id);
+    const uint8_t device_matrix_offset = GET_SETTING(layout.devices[device_id].matrix_offset);
+    const uint8_t device_matrix_size = GET_SETTING(layout.devices[device_id].matrix_size);
+
+    XRAM uint8_t* matrix_write_pos;
+
+    // get matrix slot from kb_id
+    uint8_t kb_slot_id = get_slot_id(kb_id);
+
+    if (kb_id >= MAX_NUM_KEYBOARDS) {
+        return;
+    }
+
+    if (kb_slot_id == INVALID_DEVICE_ID) {
+        kb_slot_id = acquire_slot(kb_id);
+    }
+
+    matrix_write_pos = g_keyboard_slots[kb_slot_id].matrix + device_matrix_offset;
+
+    if (device_id > MAX_NUM_DEVICES) {
+        register_error(ERROR_RECEIVED_TOO_LARGE_DEVICE_ID);
+        return ;
+    }
+
+    // TODO: probably move this to an initialization function
+    // check that the device is configured properly and doesn't write outside its given matrix
+    if (device_matrix_offset + device_matrix_size > g_keyboard_slots[kb_slot_id].matrix_size) {
+        register_error(ERROR_RECEIVED_TOO_LARGE_MATRIX);
+        return;
+    }
+
+    {
+        if (value == 1) { // key pressed
+            matrix_write_pos[key_num/8] |= (1 << (key_num % 8));
+        } else { // key released
+            matrix_write_pos[key_num/8] &= ~(1 << (key_num % 8));
+        }
+    }
+
+    g_keyboard_slots[kb_slot_id].is_dirty = 1;
+    s_has_dirty_matrix = true;
+}
+#endif
+
 void update_mouse_matrix(uint8_t buttons) {
 #define MOUSE_OFFSET 0
     // The first device in the layout is treated as a special mouse
@@ -604,8 +650,14 @@ static void keyboard_interpret_layer_change(
 
 /// This function releases keys that were PRESSED by a sticky layer/mod.
 /// TODO: use a timer based event system as a nicer abstraction
-void sticky_key_task(void) {
-    if (s_clear_sticky_keys && sticky_relase_timer_done()) {
+///
+/// @return returns non-zero if this module is busy
+bool sticky_key_task(void) {
+    if (!s_clear_sticky_keys) {
+        return false;
+    }
+
+    if (sticky_relase_timer_done()) {
         if (s_sticky_has_stuck_layer) {
             const layer_mask_t new_layer = get_partial_layer_mask(s_sticky_stuck_kb_id);
             keyboard_interpret_layer_change(
@@ -621,6 +673,8 @@ void sticky_key_task(void) {
         del_fake_mods(s_sticky_mods);
         s_sticky_mods = 0;
     }
+
+    return true;
 }
 
 /// Generate key press and release events for the keyboard in the given slot.

@@ -4,7 +4,7 @@
 
 HID_REPORTS_PATH = $(KEYPLUS_PATH)/hid_reports
 
-ifeq ($(USE_USB), 1)
+ifeq ($(USE_HID), 1)
     C_SRC += \
         $(HID_REPORTS_PATH)/keyboard_report.c \
         $(HID_REPORTS_PATH)/media_report.c \

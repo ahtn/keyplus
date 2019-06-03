@@ -1,0 +1,8 @@
+#pragma once
+
+#define BOOTLOADER_VID 0
+#define BOOTLOADER_PID 0
+
+#define INTERNAL_SCAN_METHOD MATRIX_SCANNER_INTERNAL_NONE
+
+#define NO_MATRIX

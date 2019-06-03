@@ -36,6 +36,16 @@
     #define ATTR_PACKED __attribute__((packed))
     #define AT(address)
     #define NO_RETURN_ATTR __attribute__((noreturn))
+#elif (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__)
+    #define REENT
+    #define XRAM
+    #define IRAM
+    #define PRAM
+    #define ROM
+    #define WEAK __attribute__((weak))
+    #define ATTR_PACKED __attribute__((packed))
+    #define AT(address)
+    #define NO_RETURN_ATTR __attribute__((noreturn))
 #elif defined(AVR) && defined(__GNUC__)
     #include "avr/pgmspace.h"
 

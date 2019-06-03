@@ -4,10 +4,14 @@
 #include "hid_reports/mouse_report.h"
 
 #include "core/settings.h"
+
+#if defined(USE_USB) && USE_USB
 #include "usb/descriptors.h"
+#endif
 
 #include "hid_reports/usb_reports.h"
 #include "hid_reports/ble_reports.h"
+#include "hid_reports/virtual_reports.h"
 
 #include <string.h>
 
@@ -45,10 +49,12 @@ void touch_mouse_report(void) {
     g_report_pending_mouse = true;
 }
 
+#if USE_USB
 /// @brief Check if the HID endpoint for MOUSE reports is ready
 bit_t is_ready_mouse_report(void) {
     return is_in_endpoint_ready(EP_NUM_MOUSE);
 }
+#endif
 
 static void zero_mouse(void) {
     { // Zero the mouse movement component now that the packet is sent
@@ -70,6 +76,12 @@ bit_t send_mouse_report(void) {
         return false;
     }
 
+#if USE_VIRTUAL_MODE
+    kp_virtual_hid_mouse_report_send();
+    zero_mouse();
+    return false;
+#endif
+
 #if USE_BLUETOOTH
     if (g_runtime_settings.mode == TRANS_MODE_BLE) {
         kp_ble_hids_input_report_send(
@@ -82,6 +94,7 @@ bit_t send_mouse_report(void) {
     }
 #endif
 
+#if USE_USB
     if (is_ready_mouse_report()) {
         uint8_t report_size = sizeof(hid_report_mouse_t);
 
@@ -95,4 +108,5 @@ bit_t send_mouse_report(void) {
     } else {
         return true;
     }
+#endif
 }

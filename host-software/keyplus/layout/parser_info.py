@@ -51,11 +51,7 @@ class KeyplusParserInfo(object):
     def __init__(self, dict_name=None, dictionary=None, print_warnings=False):
         self.property_stack = []
 
-        self.current_field = dict_name
-        self.current_obj = dictionary or {}
-        self.untouched_fields = list(self.current_obj.keys())
-
-        self.last_field = None
+        self.set_parse_object(dict_name, dictionary or {})
 
         self.warnings = []
         self.print_warnings = print_warnings
@@ -63,6 +59,9 @@ class KeyplusParserInfo(object):
     def set_parse_object(self, name, obj):
         self.current_field = name
         self.current_obj = obj
+        self.untouched_fields = list(self.current_obj.keys())
+        self.last_field = None
+        self.finished = False
 
     def touch_field(self, field):
         if DEBUG.parsing:
@@ -105,8 +104,7 @@ class KeyplusParserInfo(object):
         return '.'.join(field_path)
 
     def exit(self):
-        assert(len(self.property_stack) != 0)
-
+        assert(not self.finished)
         old_field = self.current_field
 
         if len(self.untouched_fields) != 0:
@@ -127,8 +125,11 @@ class KeyplusParserInfo(object):
             # Clear the warnings now that we have printed them
             self.warnings = []
 
-        self.current_field, self.current_obj, self.untouched_fields = \
-            self.property_stack.pop()
+        if len(self.property_stack) != 0:
+            self.current_field, self.current_obj, self.untouched_fields = \
+                self.property_stack.pop()
+        else:
+            self.finished = True
 
         if DEBUG.parsing:
             self._debug_message("Exit field({})".format(old_field))

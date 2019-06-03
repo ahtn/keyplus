@@ -13,14 +13,72 @@
 #include "core/usb_commands.h"
 
 #include "hid_reports/mouse_report.h"
+#include "hid_reports/keyboard_report.h"
+#include "hid_reports/media_report.h"
+
+#include "usb/util/hut_consumer.h"
+#include "usb/util/hut_desktop.h"
 
 static bit_t keycode_checker(keycode_t keycode) {
     return ( KC_DONGLE_0 <= keycode && keycode <= KC_TEST_7);
 }
 
+static uint8_t s_hid_code;
+static uint16_t s_consumer;
+static uint8_t s_system;
+
 /* TODO:  */
 static void handler(keycode_t keycode, key_event_t event) REENT {
+    if (event == EVENT_RESET) {
+        s_hid_code = 0;
+        s_consumer = HID_CONSUMER_CONSUMER_CONTROL;
+        // s_consumer = HID_CONSUMER_GENERIC_GUI_APPLICATION_CONTROLS;
+        s_system = HID_DESKTOP_Pointer;
+    }
+
     switch (keycode) {
+
+        // test keyboard hid codes
+        case KC_TEST_0: {
+            if (event == EVENT_PRESSED) {
+                // skip problematic keys
+                if (s_hid_code == KC_POWER) {
+                    s_hid_code++;
+                }
+                add_keycode(s_hid_code);
+            } else if (EVENT_RELEASED) {
+                del_keycode(s_hid_code);
+                s_hid_code++;
+            }
+        } break;
+
+        // test keyboard consumer codes
+        case KC_TEST_1: {
+            if (event == EVENT_PRESSED) {
+                g_media_report.report_id = REPORT_ID_CONSUMER;
+                g_media_report.code = s_consumer;
+                touch_media_report();
+            } else if (EVENT_RELEASED) {
+                g_media_report.report_id = REPORT_ID_CONSUMER;
+                g_media_report.code = 0;
+                touch_media_report();
+                s_consumer++;
+            }
+        } break;
+
+        // test keyboard consumer codes
+        case KC_TEST_2: {
+            if (event == EVENT_PRESSED) {
+                g_media_report.report_id = REPORT_ID_SYSTEM;
+                g_media_report.code = s_system;
+                touch_media_report();
+            } else if (EVENT_RELEASED) {
+                g_media_report.report_id = REPORT_ID_SYSTEM;
+                g_media_report.code = 0;
+                touch_media_report();
+                s_system++;
+            }
+        } break;
 
         case KC_BOOTLOADER: {
             bootloader_jmp();

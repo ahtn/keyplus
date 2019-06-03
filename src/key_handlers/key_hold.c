@@ -47,12 +47,12 @@ void hold_key_delete_event(uint8_t i) {
     hold_event_list_len--;
 }
 
-void hold_key_task(uint8_t other_key_pressed) REENT {
+bool hold_key_task(uint8_t other_key_pressed) REENT {
     uint8_t i;
     uint16_t current_time;
 
     if (hold_event_list_len == 0) {
-        return;
+        return false;
     }
 
     current_time = timer_read16_ms();
@@ -130,6 +130,8 @@ void hold_key_task(uint8_t other_key_pressed) REENT {
             i--;
         }
     }
+
+    return true;
 }
 
 bit_t hold_key_buffer_other_keys(void) {

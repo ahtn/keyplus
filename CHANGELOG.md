@@ -1,4 +1,4 @@
-0.3.4 (unreleased)
+0.4.0 (unreleased)
 ==================
 
 * `mouse` added mouse gestures keycode. Move the mouse and press the gesture button to activate
@@ -13,6 +13,8 @@
 * `macro` added macro keycodes
 * `macro` updated the old internal implementation of macros
 
+* `keycodes` added support for HID System codes
+
 * `layout` make id field optional for non-split boards
 * `layout` added `has_mouse_layers` for enabling mouse layers
 * `layout` added `default` option to `layouts` field for setting the default
@@ -21,6 +23,7 @@
 
 * `firmware` matrix scanning for EFM8
 * `firmware` added basic nrf52840 support
+* `firmware` added linux user space driver to emulate keyplus on any keyboard
 
 * `keyplus-cli` more options for `keyplus-cli debug` command
 * `keyplus-flasher` when a device has a critical error, perform a full reset

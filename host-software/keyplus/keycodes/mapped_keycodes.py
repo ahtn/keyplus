@@ -294,6 +294,18 @@ SYMBOL_TO_KEYCODE_MAP = {
     "system_power": KC_SYSTEM_POWER,
     "system_sleep": KC_SYSTEM_SLEEP,
     "system_wake": KC_SYSTEM_WAKE,
+    "system_context_menu": KC_SYSTEM_CONTEXT_MENU,
+    "system_main_menu": KC_SYSTEM_MAIN_MENU,
+    "system_app_menu": KC_SYSTEM_APP_MENU,
+    "system_menu_help": KC_SYSTEM_MENU_HELP,
+    "system_menu_exit": KC_SYSTEM_MENU_EXIT,
+    "system_menu_select": KC_SYSTEM_MENU_SELECT,
+    "system_menu_right": KC_SYSTEM_MENU_RIGHT,
+    "system_menu_left": KC_SYSTEM_MENU_LEFT,
+    "system_menu_up": KC_SYSTEM_MENU_UP,
+    "system_menu_down": KC_SYSTEM_MENU_DOWN,
+    "system_cold_restart": KC_SYSTEM_COLD_RESTART,
+    "system_warm_restart": KC_SYSTEM_WARM_RESTART,
 
 # media control
     "audio_mute": KC_AUDIO_MUTE, "mute": KC_AUDIO_MUTE,

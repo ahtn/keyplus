@@ -40,6 +40,6 @@ typedef struct macro_cmd_mouse_wheel_t {
     int8_t y;
 } macro_cmd_mouse_wheel_t ;
 
-void macro_task(void);
+bool macro_task(void);
 void call_macro(uint16_t ekc_addr, uint8_t kb_id);
 void macro_abort(void);

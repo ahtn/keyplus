@@ -516,6 +516,13 @@ class ProgramCommand(GenericDeviceCommand):
         )
 
         self.arg_parser.add_argument(
+            '-f', '--format', dest='outfile_format',
+            type=str, default='hex',
+            help='The output file format. The default is hex. Possible values: '
+            'hex, bin'
+        )
+
+        self.arg_parser.add_argument(
             '-e', '--erase',
             action='store_const',
             const=True, default=False,
@@ -577,9 +584,16 @@ class ProgramCommand(GenericDeviceCommand):
 
     def write_hex_file(self, args, fw_hex):
         if args.outfile:
-            with open(args.outfile, 'w') as outfile:
-                fw_hex.write_hex_file(outfile)
+            if args.outfile_format == 'bin':
+                with open(args.outfile, 'wb') as outfile:
+                    fw_hex.tobinfile(outfile)
+            else:
+                with open(args.outfile, 'w') as outfile:
+                    fw_hex.write_hex_file(outfile)
         else:
+            if args.outfile_format == 'bin':
+                sys.stdout.buffer.write(fw_hex.tobinarray())
+            else:
                 fw_hex.write_hex_file(sys.stdout)
 
 
@@ -600,7 +614,8 @@ class ProgramCommand(GenericDeviceCommand):
                     "[settings_addr, layout_addr, layout_size] as arguments")
 
         if args.firmware_settings == None:
-            command_error("Must provide firmware settings with -F flag.")
+            args.firmware_settings = []
+            # command_error("Must provide firmware settings with -F flag.")
 
         known_settings = [
             'chip_name', 'scan_method', 'max_rows'
@@ -634,7 +649,9 @@ class ProgramCommand(GenericDeviceCommand):
         except KeyplusSettingsError as err:
             command_error(str(err))
         except KeyError as err:
-            command_error("firmware setting '{}' must be set".format(err.args[0]))
+            key = err.args[0]
+            print_error("Firmware setting '{}' must be set".format(key))
+            command_error("Provide firmware settings with: -F {}=value.".format(key))
 
 
         if args.hex_file:

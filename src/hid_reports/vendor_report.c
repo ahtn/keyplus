@@ -149,9 +149,11 @@ void vendor_out_write_byte(uint8_t byte) {
 }
 #endif
 
+#if USE_USB
 bit_t is_ready_vendor_in_report(void) {
     return is_in_endpoint_ready(EP_NUM_VENDOR_IN);
 }
+#endif
 
 bit_t send_vendor_report(void) {
 #if USB_BUFFERED
@@ -176,6 +178,7 @@ bit_t send_vendor_report(void) {
     }
 #endif
 
+#if USE_USB
     if (is_ready_vendor_in_report()) {
         // Send the vendor report
         usb_write_in_endpoint(
@@ -188,11 +191,14 @@ bit_t send_vendor_report(void) {
     } else {
         return true;
     }
+#endif
 }
 
+#if USE_USB
 bit_t is_ready_vendor_out_report(void) {
     return is_out_endpoint_ready(EP_NUM_VENDOR_OUT);
 }
+#endif
 
 uint8_t read_vendor_report(void) {
 #if USE_BLUETOOTH
@@ -210,6 +216,7 @@ uint8_t read_vendor_report(void) {
     }
 #endif
 
+#if USE_USB
     if (!is_ready_vendor_out_report()) {
         return 1;
     }
@@ -219,6 +226,7 @@ uint8_t read_vendor_report(void) {
         g_vendor_report_out.data,
         &g_vendor_report_out.len
     );
+#endif
 
     return 0;
 }

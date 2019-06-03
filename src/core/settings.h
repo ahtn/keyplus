@@ -330,10 +330,28 @@ typedef struct ATTR_PACKED firmware_build_settings_t {
     uint8_t reserved[19]; // pad to 62 bytes
 } firmware_build_settings_t;
 
-/// Lookup a setting from the devices settings table in flash.
-#define GET_SETTING(field) (\
-    ((ROM const settings_t *)SETTINGS_ADDR)->field \
-)
+#if USE_VIRTUAL_MODE
+    // Storage area that emulates flash
+    extern uint8_t g_virtual_storage[SETTINGS_SIZE + LAYOUT_SIZE];
+
+    /// Lookup a setting from the devices settings table in flash.
+    #define GET_SETTING(field) (\
+        ((ROM const settings_t *)(g_virtual_storage))->field \
+    )
+
+    #define GET_SETTING_ADDR(field) (\
+        0 + offsetof(settings_t, field) \
+    )
+#else
+    /// Lookup a setting from the devices settings table in flash.
+    #define GET_SETTING(field) (\
+        ((ROM const settings_t *)SETTINGS_ADDR)->field \
+    )
+
+    #define GET_SETTING_ADDR(field) (\
+        SETTINGS_ADDR + offsetof(settings_t, field) \
+    )
+#endif
 
 AT__SETTINGS_ADDR extern const settings_t g_settings_storage;
 

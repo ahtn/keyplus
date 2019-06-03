@@ -10,6 +10,8 @@
 #include "core/usb_commands.h"
 #include "core/error.h"
 
+#include "hid_reports/hid_reports.h"
+
 #if USE_I2C
 #include "wired.h"
 #endif
@@ -40,6 +42,10 @@ void software_reset(void) {
     }
 #endif
     led_init();
+#if USE_USB
     reset_usb_reports();
+#else
+    reset_hid_reports();
+#endif
     keyboards_init();
 }

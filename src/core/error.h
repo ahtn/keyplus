@@ -45,6 +45,7 @@ typedef enum error_code_type {
     ERROR_NRF24_BAD_SPI_CONNECTION = 70,
     ERROR_UNSUPPORTED_SCAN_MODE = 71,
     ERROR_MAXIMUM_KEY_NUMBER_EXCEEDED = 72,
+    ERROR_SETTINGS_INVALID_VALUE = 73,
 } error_code_type;
 
 /// Bitmap that holds the list of errors that have been triggered.

@@ -185,9 +185,9 @@ static uint8_t macro_step(void) REENT {
     return 0;
 }
 
-void macro_task(void) {
+bool macro_task(void) {
     if (!is_macro_running) {
-        return;
+        return false;
     }
 
     {
@@ -204,4 +204,6 @@ void macro_task(void) {
     }
 
     interpret_all_keyboard_matrices();
+
+    return true;
 }

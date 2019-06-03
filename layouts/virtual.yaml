@@ -1,0 +1,91 @@
+# Written in 2017 by jem@seethis.link
+# This file is released into the public domain as per the CC0 Public Domain
+# Dedication (http://creativecommons.org/publicdomain/zero/1.0/)
+---
+
+# report_mode: auto_nkro
+report_mode: nkro
+
+devices:
+  virtual_map_test:
+    id: 0
+    scan_mode:
+      mode: virtual
+      # hid_vid: 0x1209
+      # hid_pid: 0x1209
+      # hid_name: hello
+      # hid_serial: "123456abcdef"
+      # keys: [A, S, D, F, G, H, J, K, L, ";", "'"]
+      keys: [
+        F1,
+
+        TAB, Q , W , E , R , T , Y , U , I  , O  , P   , "[" , "]" , "\\" ,  INS, HOME, PGUP,
+        CAPS, A , S , D , F , G , H , J , K  , L  , ";" , "'" , ENT ,        DEL, END , PGDN,
+        LSFT,  Z , X , C , V , B , N , M , ",", ".", "/" , RSFT, UP,
+           LWIN,                                           LEFT, DOWN, RIGHT
+      ]
+    layout: 1key
+
+keycodes:
+  SFTEnt:
+    keycode: hold
+    tap_key: enter
+    hold_key: sticky_lshift
+
+    activate_type: other_key # activate hold_key when other key is pressed
+
+  M1:
+    keycode: macro
+    commands:
+      - set_clear_rate(10)
+      - set_rate(200)
+      - h
+      - e
+      - l
+      - l
+      - o
+    # commands_release:
+    #   -
+  M2:
+    keycode: macro
+    commands:
+      - system_power
+      - system_sleep
+      - system_wake
+      - system_context_menu
+      - system_main_menu
+      - system_app_menu
+      - system_menu_help
+      - system_menu_exit
+      - system_menu_select
+      - system_menu_right
+      - system_menu_left
+      - system_menu_up
+      - system_menu_down
+      - system_cold_restart
+      - system_warm_restart
+
+layouts:
+  1key:
+    layers: [
+      [ # layer 0 (base)
+        [
+          M1,
+
+          tab,  Q , W , F , P , G , J , L , U  , Y  , ";"   , "[" , "]" , "\\" ,  INS , HOME , PGUP,
+          lctrl, A , R , S , T , D , H , N , E  , I  ,  O , "'" , ENT ,           DEL , END  , PGDN,
+          s_lsft,  Z , X , C , V , B , K , M , ",", ".", "/" , s_rsft, UP  ,
+             L1,                                                 LEFT,  DOWN, RIGHT
+        ]
+      ],
+      [ # layer 1 (base)
+        [
+          M1,
+
+          tab,    PSCR,MPLY,VOLU,MSTP, G , J , L , U  , Y  , ";"   , "[" , "]" , "\\" ,   INS , BTN3, WH_U,
+          lctrl,  MUTE,MNXT,VOLD,MPRV, D , H , N , E  , I  ,  O , "'" , ENT ,             BTN1, BTN2, WH_D,
+          s_lsft,  Z  , X  , C  , V  , B , K , M , ",", ".", "/" , s_rsft, ms_u ,
+             L1,                                                    ms_l, ms_d, ms_r
+        ]
+      ],
+    ]

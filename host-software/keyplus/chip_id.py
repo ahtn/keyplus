@@ -11,9 +11,10 @@ from keyplus.exceptions import KeyplusSettingsError, KeyplusInternalError
 
 import re
 
-CHIP_ID_ATMEL = 0x03eb0000
-CHIP_ID_NORDIC = 0x19150000
-CHIP_ID_SILABS = 0x10C40000
+CHIP_ID_SPECIAL = 0x00000000
+CHIP_ID_ATMEL   = 0x03eb0000
+CHIP_ID_NORDIC  = 0x19150000
+CHIP_ID_SILABS  = 0x10C40000
 
 ChipInfo = namedtuple(
     'ChipInfo',
@@ -30,6 +31,21 @@ ChipInfo = namedtuple(
         "usb"
     ])
 )
+
+def _create_virtual():
+    return ChipInfo(
+        name = "virtual",
+        chip_id = None, # filled out automatically later
+        architecture = "virtual",
+        processor = "virtual",
+        series = "",
+        pins = 0,
+        package = "",
+        flash_size = 0,
+        ram_size = 0,
+        usb = False,
+    )
+
 
 def _create_nrf24(flash_size, name):
     return ChipInfo(
@@ -151,7 +167,6 @@ def _create_efm8(name):
         usb = True,
     )
 
-
 def get_chip_name_from_id(chip_id):
     if chip_id in CHIP_ID_TABLE:
         return CHIP_ID_TABLE[chip_id].name
@@ -184,6 +199,9 @@ def get_chip_id_from_name(name):
         raise KeyplusSettingsError("Unknown chip name '{}'".format(name))
 
 CHIP_ID_TABLE = {
+
+    CHIP_ID_SPECIAL | 0x0001: _create_virtual(),
+
 ###############################################################################
 #                              ATMEL (Microchip)                              #
 ###############################################################################

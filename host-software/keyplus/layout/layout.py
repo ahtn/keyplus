@@ -258,8 +258,8 @@ class KeyplusLayout(object):
             optional = True
         )
 
-        self.settings["default_report_mode"] = parser_info.try_get(
-            field = "default_report_mode",
+        self.settings["report_mode"] = parser_info.try_get(
+            field = "report_mode",
             field_type = str,
             default = KEYBOARD_REPORT_MODE_AUTO,
             remap_table = REPORT_MODE_MAP,
@@ -268,6 +268,8 @@ class KeyplusLayout(object):
         self._parse_devices(parser_info)
         self._parse_keycodes(parser_info)
         self._parse_layouts(parser_info)
+
+        parser_info.exit()
 
         for dev in six.itervalues(self._devices):
             if dev.scan_mode.mode == MATRIX_SCANNER_MODE_NO_MATRIX:
@@ -307,6 +309,7 @@ class KeyplusLayout(object):
         if rf_parser_info:
             self.rf_settings = LayoutRFSettings()
             self.rf_settings.parse_json(rf_json, rf_parser_info)
+            rf_parser_info.exit()
 
         if DEBUG.parsing_extra:
             for device in six.itervalues(self._devices):
@@ -354,7 +357,8 @@ class KeyplusLayout(object):
     # device_info_t devices[MAX_NUM_DEVICES];
         layout_info = KeyboardLayoutInfo()
         layout_info.number_layouts = self.number_layouts
-        layout_info.number_devices = max(self._devices)
+        # need to store the max device ID used by the device
+        layout_info.number_devices = max(self._devices)+1
         layout_info.default_layout_id = self.get_default_layout_id()
 
         # struct keyboard_info_t layouts[MAX_NUM_KEYBOARDS];
@@ -421,7 +425,7 @@ class KeyplusLayout(object):
 
         settings_header = device.build_settings_header(device_target)
         settings_header.timestamp_raw = int(time.time())
-        settings_header.default_report_mode = self.settings['default_report_mode']
+        settings_header.default_report_mode = self.settings['report_mode']
         settings_header.crc = settings_header.compute_crc()
 
         settings.header = settings_header

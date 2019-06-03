@@ -7,7 +7,9 @@
 
 #include "core/util.h"
 
+#if defined(USE_USB) && USE_USB
 #include "usb/descriptors.h"
+#endif
 
 /// The number of bytes in the NKRO report bitmask
 #define NKRO_REPORT_BYTES (0xe0/8)
@@ -29,6 +31,10 @@ typedef enum {
     KEYBOARD_REPORT_MODE_NKRO = 1,
     /// Send key presses over the 6KRO keyboard report
     KEYBOARD_REPORT_MODE_6KRO = 2,
+
+    /// Maximum value for report mode
+    KEYBOARD_REPORT_MODE_VALID = KEYBOARD_REPORT_MODE_6KRO,
+
     /// @brief Transitioning from 6KRO -> NKRO (internal use).
     ///
     /// If the report mode is set to @ref KEYBOARD_REPORT_MODE_AUTO, it will

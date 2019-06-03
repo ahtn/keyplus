@@ -10,21 +10,21 @@
 #include "core/settings.h"
 #include "core/matrix_interpret.h"
 #include "core/mods.h"
+#include "core/error.h"
 
 #include "hid_reports/usb_reports.h"
 #include "hid_reports/ble_reports.h"
+#include "hid_reports/virtual_reports.h"
 
 #define KEY_AGE_LIST_LEN BOOT_REPORT_KEY_COUNT
 
-// Boot keyboard report (6kro)
-// TODO: put these into an init function
-/// The 6KRO keyboard report
+/// The 6KRO boot keyboard report
 XRAM hid_report_boot_keyboard_t g_boot_keyboard_report;
 /// The NKRO keyboard report
 XRAM hid_report_nkro_keyboard_t g_nkro_keyboard_report;
 
 static XRAM uint8_t s_key_age[KEY_AGE_LIST_LEN];
-static XRAM uint8_t s_keyboard_report_mode = KEYBOARD_REPORT_MODE_AUTO;
+static XRAM uint8_t s_keyboard_report_mode;
 static XRAM uint8_t s_keyboard_report_dirty;
 static bit_t boot_protocol = false;
 
@@ -47,6 +47,12 @@ void reset_keyboard_reports(void) {
 #if SHARED_HID_DESCRIPTOR
     g_nkro_keyboard_report.report_id = REPORT_ID_NKRO;
 #endif
+    if (GET_SETTING(default_report_mode) <= KEYBOARD_REPORT_MODE_VALID) {
+        set_keyboard_report_mode(GET_SETTING(default_report_mode));
+    } else {
+        set_keyboard_report_mode(KEYBOARD_REPORT_MODE_AUTO);
+        register_error(ERROR_SETTINGS_INVALID_VALUE);
+    }
 }
 
 /// @brief Mark the keyboard report as modified and needs an update.
@@ -311,6 +317,7 @@ bit_t send_keyboard_report(void) {
     return result;
 }
 
+#if USE_USB
 /// Check if a keyboard report is ready to be sent.
 bit_t is_ready_keyboard_report(void) {
     return is_ready_boot_keyboard_report() && is_ready_nkro_keyboard_report();
@@ -325,10 +332,15 @@ bit_t is_ready_boot_keyboard_report(void) {
 bit_t is_ready_nkro_keyboard_report(void) {
     return is_in_endpoint_ready(EP_NUM_NKRO_KEYBOARD);
 }
-
+#endif
 
 /// Sends the 6KRO report over its USB endpoint
 bit_t send_boot_keyboard_report(void) {
+#if USE_VIRTUAL_MODE
+    kp_virtual_hid_boot_keyboard_report_send();
+    return false;
+#endif
+
 #if USE_BLUETOOTH
     if (g_runtime_settings.mode == TRANS_MODE_BLE) {
         kp_ble_hids_input_report_send(
@@ -340,6 +352,7 @@ bit_t send_boot_keyboard_report(void) {
     }
 #endif
 
+#if USE_USB
     if (is_ready_boot_keyboard_report()) {
         uint8_t report_size = sizeof(hid_report_boot_keyboard_t);
 
@@ -353,10 +366,16 @@ bit_t send_boot_keyboard_report(void) {
     } else {
         return true;
     }
+#endif
 }
 
 /// Sends the NKRO report over its USB endpoint
 bit_t send_nkro_keyboard_report(void) {
+#if USE_VIRTUAL_MODE
+    kp_virtual_hid_nkro_keyboard_report_send();
+    return false;
+#endif
+
 #if USE_BLUETOOTH
     if (g_runtime_settings.mode == TRANS_MODE_BLE) {
         kp_ble_hids_input_report_send(
@@ -368,6 +387,8 @@ bit_t send_nkro_keyboard_report(void) {
     }
 #endif
 
+
+#if USE_USB
     if (is_ready_nkro_keyboard_report()) {
         uint8_t report_size = sizeof(hid_report_nkro_keyboard_t);
 
@@ -381,4 +402,5 @@ bit_t send_nkro_keyboard_report(void) {
     } else {
         return true;
     }
+#endif
 }

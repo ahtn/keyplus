@@ -3,20 +3,27 @@
 
 #include "key_handlers/key_media.h"
 
-#include "usb/descriptors.h"
-#include "usb/util/hut_consumer.h"
-#include "usb/util/hut_desktop.h"
-
 #include "core/keycode.h"
 
 #include "hid_reports/media_report.h"
 
 bit_t is_media_keycode(keycode_t keycode) {
-    return IS_MEDIA(keycode);
+    return IS_MEDIA(keycode) || IS_SYSTEM(keycode);
 }
 
 void handle_media_keycode(keycode_t keycode, key_event_t event) REENT {
     uint8_t consumer_code = 0;
+    if (IS_SYSTEM(keycode)) {
+        g_media_report.report_id = REPORT_ID_SYSTEM;
+        if (event == EVENT_PRESSED) {
+            g_media_report.code = keycode & 0xff;
+        } else if (EVENT_RELEASED) {
+            g_media_report.code = 0;
+        }
+        touch_media_report();
+        return;
+    }
+
     if (event == EVENT_PRESSED) {
         switch (keycode) {
             case KC_MEDIA_NEXT_TRACK   : consumer_code = HID_CONSUMER_SCAN_NEXT_TRACK ; break ;

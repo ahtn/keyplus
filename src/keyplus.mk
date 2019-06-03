@@ -23,6 +23,8 @@ all: hex $(MERGED_HEX)
 
 hex: print_keyplus_info create_build_dirs $(EXTRA_TARGET) $(TARGET_HEX)
 
+hex_settings: $(SETTINGS_HEX)
+
 $(LAYOUT_FILE):
 
 create_build_dirs:

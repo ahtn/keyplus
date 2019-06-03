@@ -535,7 +535,7 @@ layouts:
           ____, ____, ____, ____, ____,
         ],
       ],
-      [ # layer 6 (qwerty arrows)
+      [ # layer 3 (qwerty arrows)
         [ # left hand
           ____, q   , w   , e   , r   , t   ,
           ____, a   , s   , d   , f   , g   ,
@@ -549,7 +549,7 @@ layouts:
           ____, ____, ____, ____, ____,
         ],
       ],
-      [ # layer 3 (symbol)
+      [ # layer 4 (symbol)
         [ # left hand
           ____, "|" , "2" , "3" , "4" , "5" ,
           ____, "1" , "\\", "(" , "[" , "{" ,
@@ -563,7 +563,7 @@ layouts:
           ____, ____, ____, ____, ____,
         ],
       ],
-      [ # layer 4 (fn)
+      [ # layer 5 (fn)
         [ # left hand
           ins , del , home, up  , end , pgup,
           ____, esc , left, down, rght, pgdn,
@@ -577,7 +577,7 @@ layouts:
           ____  , ____  , ____  , ____  , ____  ,
         ],
       ],
-      [ # layer 5 (media)
+      [ # layer 6 (media)
         [ # left hand
           slck, pscr, mply, volu, mstp, F11 ,
           bspc, mute, mprv, vold, mnxt, app ,
@@ -619,7 +619,8 @@ layouts:
     layers: [
       [ # layer 0 (colemak)
         [ # mouse
-          BTN1, BTN2, BTN3, s_L4, s_lsft ,  s_L5, bspc , gesture
+          # BTN1, BTN2, BTN3, s_L4, s_lsft ,  s_L5, bspc , gesture
+          BTN1, BTN2, BTN3, s_L5, s_lsft ,  s_L5, bspc , gesture
           # BTN1, BTN2, BTN3, macro1, rapid_click  , s_lsft, s_L4  , gesture
         ],
         [ # left hand
@@ -731,9 +732,9 @@ layouts:
           ____, ____, ____, ____, ____, ____,
         ],
         [ # right hand
-          wh_u, btn1, ms_u, btn2, RS-c, dongle_0 ,
-          wh_d, ms_l, ms_d, ms_r, btn3, dongle_1 ,
-          set_l3 , set_l0 , set_l1 , set_l2 , set_l4, test_2 ,
+          wh_u, btn1, ms_u, btn2, RS-c, system_menu_up ,
+          wh_d, ms_l, ms_d, ms_r, btn3, system_menu_down ,
+          set_l3 , set_l0 , set_l1 , set_l2 , set_l4, test_0 ,
           ____, ____, ____, ____, ____, ____,
         ],
       ],

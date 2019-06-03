@@ -5,11 +5,13 @@
 
 #include "core/util.h"
 
-#include "usb/descriptors.h"
-
 /* TODO: move this to a flash settings */
 #ifndef MOUSE_SMOOTH_SCROOL
 #define MOUSE_SMOOTH_SCROLL 0
+#endif
+
+#if USE_USB
+#include "usb/descriptors.h"
 #endif
 
 // TODO: Should probably make this compatiable with a HID boot mouse

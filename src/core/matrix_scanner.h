@@ -25,7 +25,11 @@
 /// Size of the bitmap used to store key numbers
 #define KEY_NUMBER_BITMAP_SIZE (MAX_NUM_KEYS/8)
 
+#if USE_SCANNER
 #define MAX_NUM_COLS IO_MAP_GPIO_COUNT
+#else
+#define MAX_NUM_COLS 0
+#endif
 
 /// How much ram is needed to store the matrix in the matrix scanner module
 #define MATRIX_DATA_SIZE ((MAX_NUM_ROWS) * (IO_PORT_COUNT))
@@ -39,6 +43,7 @@ typedef enum matrix_scanner_mode_t {
     MATRIX_SCANNER_MODE_ROW_COL = 0x02, ///< normal row -->|-- col pin matrix
     MATRIX_SCANNER_MODE_PIN_GND = 0x03, ///< each pin represents a key (active low)
     MATRIX_SCANNER_MODE_PIN_VCC = 0x04, ///< each pin represents a key (active high)
+    MATRIX_SCANNER_MODE_VIRTUAL = 0x05, ///< virtual mode for remapping a keyboard in OS
 } matrix_scanner_mode_t;
 
 /// Device information about the in-built scanning method used by the device.
@@ -66,7 +71,8 @@ typedef enum matrix_internal_scan_method_t {
     /// should still be remappable though.
     MATRIX_SCANNER_INTERNAL_HARD_CODED = 0x03,
     // MATRIX_SCANNER_INTERNAL_IO_EXPANDER = 0x04,
-    /// The matrix
+    /// For virtual devices remapping a keyboard in the OS
+    MATRIX_SCANNER_INTERNAL_VIRTUAL = 0x04,
     MATRIX_SCANNER_INTERNAL_CUSTOM = 0xff,
 } matrix_internal_scan_method_t;
 

@@ -7,12 +7,15 @@
 /// Upper 16 bits of the chip_id is used for vendor specific id. We use the
 /// USB Vendor ID of the chip manufacturer to differentiate them.
 enum chip_id_vendor_type {
-    CHIP_ID_ATMEL  = 0x03eb0000,
-    CHIP_ID_NORDIC = 0x19150000,
-    CHIP_ID_SILABS = 0x10C40000,
+    CHIP_ID_SPECIAL  = 0x00000000,
+    CHIP_ID_ATMEL    = 0x03eb0000,
+    CHIP_ID_NORDIC   = 0x19150000,
+    CHIP_ID_SILABS   = 0x10C40000,
 };
 
 enum chip_id_controller_type {
+
+    CHIP_ID_VIRTUAL = CHIP_ID_SPECIAL | 0x0001,
 /*********************************************************************
  *                               Atmel                               *
  *********************************************************************/

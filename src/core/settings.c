@@ -27,8 +27,10 @@ XRAM runtime_settings_t g_runtime_settings;
 XRAM matrix_scan_plan_t g_scan_plan;
 #endif
 
-
-AT__SETTINGS_ADDR const settings_t g_settings_storage = { 0 };
+#if USE_VIRTUAL_MODE
+#else
+    AT__SETTINGS_ADDR const settings_t g_settings_storage = { 0 };
+#endif
 
 KP_STATIC_ASSERT(
     sizeof(g_settings_storage) == SETTINGS_STORAGE_SIZE,
@@ -116,13 +118,13 @@ void settings_load_from_flash(void) {
     // load rf setings into ram
     flash_read(
         (uint8_t*)&g_rf_settings,
-        (flash_ptr_t)&(GET_SETTING(rf)),
+        GET_SETTING_ADDR(rf),
         sizeof(rf_settings_t)
     );
 
     { // validate that the settings are (not corrupt)/(have been initilized)
         const uint16_t flash_checksum = crc16_flash_buffer(
-            SETTINGS_ADDR,
+            GET_SETTING_ADDR(device_id), // NOTE: first setting in table
             SETTINGS_MAIN_INFO_SIZE-2
         );
         // WARNING: this crc doesn't output 0 when appended with the
@@ -140,7 +142,7 @@ void settings_load_from_flash(void) {
     // TODO: validate the settings before returning
     flash_read(
         (uint8_t*)&g_scan_plan,
-        ((flash_ptr_t)&GET_SETTING(scan_plan)),
+        GET_SETTING_ADDR(scan_plan),
         sizeof(matrix_scan_plan_t)
     );
 

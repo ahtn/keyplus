@@ -31,12 +31,16 @@ class KeyboardPinMapping(object):
     def _pin_map_to_bytes(self):
         result = bytearray(0)
 
+        # Generate the mapping from row numbers to gpio pins
         assert_less_eq(len(self.row_pins), self.max_rows+1)
         row_pin_padding = self.max_rows - len(self.row_pins)
         result += bytearray(self.row_pins) + bytearray([0]*row_pin_padding)
 
+        # Genrate the mapping from column numbers to gpio pins
         col_pin_padding = self.io_mapper.get_gpio_count() - len(self.column_pins)
         result += bytearray(self.column_pins) + bytearray([0]*col_pin_padding)
+
+        # Generate the mapping (row,col) numbers to key numbers
         result += bytearray(self.key_number_map)
 
         # Check that the resulting object has the correct size
@@ -84,6 +88,9 @@ class KeyboardPinMapping(object):
                     "`pin_gnd`, `col_row` and `row_col`."
                 )
             result += self._pin_map_to_bytes();
+        elif self.internal_scan_method == MATRIX_SCANNER_INTERNAL_VIRTUAL:
+            assert(len(self.key_number_map) <= 512)
+            result += bytearray(self.key_number_map)
         else:
             raise KeyplusSettingsError(
                 "Unknown internal scan method '{}'".format(self.internal_scan_method)

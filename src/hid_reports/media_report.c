@@ -13,9 +13,13 @@
 
 #include "hid_reports/usb_reports.h"
 #include "hid_reports/ble_reports.h"
+#include "hid_reports/virtual_reports.h"
 
 #include "core/settings.h"
+
+#if defined(USE_USB) && USE_USB
 #include "usb/descriptors.h"
+#endif
 
 XRAM hid_report_media_t g_media_report;
 
@@ -33,14 +37,22 @@ void reset_media_report(void) {
     g_report_pending_media = false;
 }
 
+#if USE_USB
 bit_t is_ready_media_report(void) {
     return is_in_endpoint_ready(EP_NUM_MEDIA);
 }
+#endif
 
 bit_t send_media_report(void) {
     if (!g_report_pending_media) {
         return false;
     }
+
+#if USE_VIRTUAL_MODE
+    kp_virtual_hid_media_report_send();
+    g_report_pending_media = false;
+    return false;
+#endif
 
 #if USE_BLUETOOTH
     if (g_runtime_settings.mode == TRANS_MODE_BLE) {
@@ -66,6 +78,7 @@ bit_t send_media_report(void) {
     }
 #endif
 
+#if USE_USB
     if (is_ready_media_report()) {
         const uint8_t report_size = sizeof(hid_report_media_t);
 
@@ -80,4 +93,5 @@ bit_t send_media_report(void) {
     } else {
         return true;
     }
+#endif
 }

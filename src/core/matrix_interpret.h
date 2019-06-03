@@ -25,9 +25,13 @@ typedef uint16_t layer_mask_t;
 
 #define INVALID_DEVICE_ID 0xff
 
-// Stick keys will be held down for this amount of time before the RELEASE
-// event is generated.
-#define STICKY_KEY_RELEASE_DELAY 5
+#if USE_VIRTUAL_MODE
+     #define STICKY_KEY_RELEASE_DELAY 5
+#else
+    // Stick keys will be held down for this amount of time before the RELEASE
+    // event is generated.
+    #define STICKY_KEY_RELEASE_DELAY 5
+#endif
 
 // TODO: add a keycode to dynamically toggle sticky layers and sticky key functionality
 
@@ -72,6 +76,10 @@ void keyboards_init(void);
 void keyboard_update_device_matrix(uint8_t device_id, const XRAM uint8_t *matrix_packet) REENT;
 void update_mouse_matrix(uint8_t buttons);
 
+#if USE_VIRTUAL_MODE
+void keyboard_matrix_set_key(uint8_t device_id, int key_num, int value) REENT;
+#endif
+
 void keyboard_interpret_matrix(uint8_t keyboard_id);
 void keyboard_reset_matrix(uint8_t keyboard_id);
 layer_mask_t keyboard_get_layer_mask(uint8_t keyboard_id);
@@ -79,7 +87,7 @@ void reset_layer_state(uint8_t keyboard_id);
 uint8_t get_slot_id(uint8_t kb_id);
 // void keyboard_trigger_event(keycode_t keycode, key_event_t event) REENT;
 
-void sticky_key_task(void);
+bool sticky_key_task(void);
 
 void interpret_all_keyboard_matrices(void);
 

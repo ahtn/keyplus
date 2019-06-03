@@ -1,0 +1,31 @@
+# udev rules for keyplusd user so it can access /dev/uinput and /dev/input/event*
+
+# `/dev/uinput` can exist in the file system, but the `uinput` kernel module
+# wouldn't be loaded. However, when a process with correct permissions tries
+# to access the `uinput` kernel module will automatically be loaded.
+#
+# NOTE: ideally we would like to use `setfacl` give just the `keyplusd` user
+# permission without having to rely on the existence of the `input` group.
+# However, the option `statice_node` only works for setting UID, GID and MODE.
+# See: https://github.com/systemd/systemd/blob/master/src/udev/udev-rules.c#L2501
+SUBSYSTEM=="misc", \
+    KERNEL=="uinput", \
+    GROUP="input", \
+    MODE="660", \
+    TAG+="keyplus", \
+    OPTIONS+="static_node=uinput"
+
+# Give the `keyplusd` user permission to access `/dev/uinput` when the uinput
+# kernel module is loaded.
+#
+# NOTE: if you mount the `uinput` kernel module at boot time, then you don't
+# need the previous rule.
+SUBSYSTEM=="misc", \
+    ACTION=="add", \
+    ENV{DEVNAME}=="/dev/uinput" \
+   	RUN+="/usr/bin/setfacl -m u:keyplusd:rw /dev/uinput"
+
+# Give the `keyplusd` user permission to access `/dev/input/eventX` devices
+KERNEL=="event*", NAME="input/%k", RUN+="/usr/bin/setfacl -m u:keyplusd:rw /dev/input/%k"
+
+# vim: ft=udevrules cms=#%s

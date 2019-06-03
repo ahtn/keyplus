@@ -3,7 +3,9 @@
 
 #pragma once
 
+#if defined(USE_USB) && USE_USB
 #include "usb/descriptors.h"
+#endif
 
 #include "core/util.h"
 
@@ -11,7 +13,11 @@
 
 #include "config.h"
 
-#define VENDOR_REPORT_LEN EP_SIZE_VENDOR
+#ifdef EP_SIZE_VENDOR
+    #define VENDOR_REPORT_LEN EP_SIZE_VENDOR
+#else
+    #define VENDOR_REPORT_LEN 64
+#endif
 
 typedef struct vendor_report_t {
     /* vendor_report_data_t data; */

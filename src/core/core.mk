@@ -12,6 +12,7 @@ MAKEFILE_INC += $(CORE_PATH)/core.mk
 
 PYTHON_CMD = /usr/bin/env python3
 
+# Get the build timestamp as a c byte array.
 BUILD_TIME_STAMP := $(shell $(PYTHON_CMD) -c "import datetime;\
 a = int(datetime.datetime.now().timestamp());\
 res = ','.join(['0x{:x}'.format((a >> (i*8))&0xff) for i in range(8)]); \
@@ -20,6 +21,7 @@ print(res); \
 
 GIT_HASH_FULL := $(shell git rev-parse HEAD)
 
+# Convert the git hash into a c byte array
 GIT_HASH := $(shell $(PYTHON_CMD) -c "import datetime;\
 hash = '$(GIT_HASH_FULL)'; \
 b = ['0x'+hash[i*2:(i+1)*2] for i in range(8)]; \
@@ -39,12 +41,12 @@ CDEFS += -DMCU_CHIP_ID=CHIP_ID_$(MCU_STRING)
 
 # Note: Specific board configs are stored in the `boards` directory.
 
-ifndef BOARD
-  $(info )
-  $(info Error: make pararmeter not given: BOARD )
-  $(info )
-  $(error BOARD variable not set)
-endif
+# ifndef BOARD
+#   $(info )
+#   $(info Error: make pararmeter not given: BOARD )
+#   $(info )
+#   $(error BOARD variable not set)
+# endif
 
 # ifndef LAYOUT_FILE
 #   $(info )
@@ -81,10 +83,17 @@ C_SRC += \
 
 INC_PATHS += -I$(KEYPLUS_PATH)
 
-CDEFS += -DSETTINGS_ADDR=$(SETTINGS_ADDR)
-CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
-CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
-CDEFS += -DBOOTLOADER_ADDR=$(BOOTLOADER_ADDR)
+USE_VIRTUAL_MODE ?= 0
+
+ifeq ($(USE_VIRTUAL_MODE), 0)
+    CDEFS += -DSETTINGS_ADDR=$(SETTINGS_ADDR)
+    CDEFS += -DLAYOUT_ADDR=$(LAYOUT_ADDR)
+    CDEFS += -DLAYOUT_SIZE=$(LAYOUT_SIZE)
+    CDEFS += -DBOOTLOADER_ADDR=$(BOOTLOADER_ADDR)
+    CDEFS += -DUSE_VIRTUAL_MODE=0
+else
+    CDEFS += -DUSE_VIRTUAL_MODE=1
+endif
 
 # NRF24 module, defaults to 0
 ifeq ($(USE_NRF24), 1)
@@ -153,11 +162,21 @@ ifeq ($(USE_USB), 0)
     CDEFS += -DUSE_USB=0
 else
     C_SRC += \
-        $(CORE_PATH)/mods.c \
-        $(CORE_PATH)/matrix_interpret.c \
         $(CORE_PATH)/usb_commands.c \
-        $(CORE_PATH)/keycode.c \
 
+    CDEFS += -DUSE_USB=1
+    USE_HID = 1
+endif
+
+# Bluetooth module, defaults to 0
+ifeq ($(USE_BLUETOOTH), 1)
+    CDEFS += -DUSE_BLUETOOTH=1
+    USE_HID = 1
+else
+    CDEFS += -DUSE_BLUETOOTH=0
+endif
+
+ifeq ($(USE_HID), 1)
     ifeq ($(SUPPORT_MACRO), 1)
         CDEFS += -DSUPPORT_MACRO=1
         C_SRC += $(CORE_PATH)/macro.c
@@ -165,15 +184,11 @@ else
         CDEFS += -DSUPPORT_MACRO=0
     endif
 
-
-    CDEFS += -DUSE_USB=1
-endif
-
-# Bluetooth module, defaults to 0
-ifeq ($(USE_BLUETOOTH), 1)
-    CDEFS += -DUSE_BLUETOOTH=1
-else
-    CDEFS += -DUSE_BLUETOOTH=0
+    C_SRC += \
+        $(CORE_PATH)/mods.c \
+        $(CORE_PATH)/matrix_interpret.c \
+        $(CORE_PATH)/keycode.c \
+    #
 endif
 
 include $(KEYPLUS_PATH)/hid_reports/hid_reports.mk

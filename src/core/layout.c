@@ -36,7 +36,11 @@
 //        keycode_t keycode_array[8 * matrix_size * layer_count]; // matrix_size = ceil(num_keys/8)
 //    }
 // }
-AT__LAYOUT_ADDR const uint8_t g_layout_storage[LAYOUT_SIZE] = {0};
+#if USE_VIRTUAL_MODE
+    //
+#else
+AT__LAYOUT_ADDR const uint8_t g_layout_storage[LAYOUT_SIZE] = { 0 };
+#endif
 
 // Lookup table for the address where a layout starts:
 // maps layout id -> start of layout in flash
@@ -47,12 +51,26 @@ void keyboard_layouts_init(void) {
 
     flash_addr_t storage_pos = LAYOUT_PORT_KEY_NUM_MAP_ADDR;
 
-#ifndef NO_MATRIX
+#if !defined(NO_MATRIX) && !USE_VIRTUAL_MODE
     // key num map section
     {
         // skip the key num map section, since it is in a known location at compile
         // time.
         flash_addr_t key_num_map_size = g_scan_plan.rows * (g_scan_plan.max_col_pin_num+1);
+        storage_pos += key_num_map_size;
+    }
+#endif
+
+#if USE_VIRTUAL_MODE && !defined(NO_MATRIX)
+    #error "should use `NO_MATRIX` with `USE_VIRTUAL_MODE`"
+#endif
+
+#if USE_VIRTUAL_MODE
+    // virtual mode includes the key number maps for all devices
+    {
+        // skip the key num map section, since it is in a known location at compile
+        // time.
+        flash_addr_t key_num_map_size = VIRTUAL_KEYNUM_MAP_SIZE * GET_SETTING(layout.number_devices);
         storage_pos += key_num_map_size;
     }
 #endif
