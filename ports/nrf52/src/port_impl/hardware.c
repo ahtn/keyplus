@@ -21,8 +21,9 @@ void bootloader_jmp(void) {
 
     nrf_gpio_cfg_output(BOOTLOADER_RESET_PIN);
     nrf_gpio_pin_clear(BOOTLOADER_RESET_PIN);
-    while (1) { }
 #endif
+
+    while (1) { }
 }
 
 void reset_mcu(void) {
@@ -34,6 +35,8 @@ void reset_mcu(void) {
 #else
     NVIC_SystemReset();
 #endif
+
+    while (1) { }
 }
 
 void wdt_kick(void) {

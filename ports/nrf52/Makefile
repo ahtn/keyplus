@@ -71,7 +71,8 @@ CFLAGS += -Wno-error=unused-function
 # OPT ?= -Og -g3
 
 CDEFS += -DDEBUG
-OPT ?= -O3
+OPT ?= -Og -g3
+# OPT ?= -O3
 
 # List C source files here.
 #

@@ -99,16 +99,17 @@ INC_FOLDERS += \
 #                               gpiote                                #
 #######################################################################
 
-SRC_FILES += \
-  $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_gpiote.c \
+ifeq (0, 1)
+    SRC_FILES += \
+    $(SDK_ROOT)/modules/nrfx/drivers/src/nrfx_gpiote.c \
 
-# Include folders common to all targets
-INC_FOLDERS += \
+    # Include folders common to all targets
+    INC_FOLDERS += \
 
-# Libraries common to all targets
-LIB_FILES += \
+    # Libraries common to all targets
+    LIB_FILES += \
 
-
+endif
 
 #######################################################################
 #                              nrf_spim                               #
@@ -177,8 +178,6 @@ ifeq ($(USE_SOFTDEVICE), 1)
     \
     $(SDK_ROOT)/components/libraries/atomic_fifo/nrf_atfifo.c \
     $(SDK_ROOT)/components/libraries/atomic_flags/nrf_atflags.c \
-    $(SDK_ROOT)/components/libraries/bsp/bsp.c \
-    $(SDK_ROOT)/components/libraries/bsp/bsp_btn_ble.c \
     $(SDK_ROOT)/components/libraries/button/app_button.c \
     $(SDK_ROOT)/components/libraries/experimental_section_vars/nrf_section_iter.c \
     $(SDK_ROOT)/components/libraries/fds/fds.c \
@@ -235,7 +234,6 @@ ifeq ($(USE_SOFTDEVICE), 1)
     $(SDK_ROOT)/components/libraries/pwr_mgmt \
     $(SDK_ROOT)/components/libraries/atomic_fifo \
     $(SDK_ROOT)/components/libraries/atomic_flags \
-    $(SDK_ROOT)/components/libraries/bsp \
     $(SDK_ROOT)/components/libraries/button \
     $(SDK_ROOT)/components/libraries/experimental_section_vars \
     $(SDK_ROOT)/components/libraries/stack_info \

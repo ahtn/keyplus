@@ -70,14 +70,12 @@
 #include "ble_dis.h"
 #include "ble_conn_params.h"
 #include "sensorsim.h"
-#include "bsp_btn_ble.h"
 #include "app_scheduler.h"
 #include "nrf_sdh.h"
 #include "nrf_sdh_soc.h"
 #include "nrf_sdh_ble.h"
 #include "app_timer.h"
 #include "peer_manager.h"
-#include "fds.h"
 #include "ble_conn_state.h"
 #include "nrf_ble_gatt.h"
 #include "nrf_ble_qwr.h"
@@ -93,6 +91,7 @@
 
 #include "esb_timeslot.h"
 
+#include "nrf_drv_power.h"
 
 #define SHIFT_BUTTON_ID                     1                          /**< Button used as 'SHIFT' Key. */
 
@@ -109,9 +108,9 @@
 #define BATTERY_LEVEL_INCREMENT             1                          /**< Increment between each simulated battery level measurement. */
 
 #define PNP_ID_VENDOR_ID_SOURCE             0x02                       /**< Vendor ID Source. */
-#define PNP_ID_VENDOR_ID                    0x1915                     /**< Vendor ID. */
-#define PNP_ID_PRODUCT_ID                   0xEEEE                     /**< Product ID. */
-#define PNP_ID_PRODUCT_VERSION              0x0001                     /**< Product Version. */
+#define PNP_ID_VENDOR_ID                    USB_VID                    /**< Vendor ID. */
+#define PNP_ID_PRODUCT_ID                   USB_PID                    /**< Product ID. */
+#define PNP_ID_PRODUCT_VERSION              (USB_DEVICE_VERSION | USB_VERSION_ACCESS_TYPE)                    /**< Product Version. */
 
 #define APP_ADV_FAST_INTERVAL               0x0028                     /**< Fast advertising interval (in units of 0.625 ms. This value corresponds to 25 ms.). */
 #define APP_ADV_SLOW_INTERVAL               0x0C80                     /**< Slow advertising interval (in units of 0.625 ms. This value corrsponds to 2 seconds). */
@@ -604,9 +603,9 @@ static uint8_t report_map_data[] = {
     HID_REPORT_ID(1)       , BLE_REPORT_ID_SYSTEM,
     // hid system code
     HID_LOGICAL_MINIMUM(1) , DB8(0x01),
-    HID_LOGICAL_MAXIMUM(2) , DB16(HID_DESKTOP_System_Display_LCD_Autoscale),
+    HID_LOGICAL_MAXIMUM(2) , DB16(HID_DESKTOP_SYSTEM_DISPLAY_LCD_AUTOSCALE),
     HID_USAGE_MINIMUM(1)   , DB8(0x01),
-    HID_USAGE_MAXIMUM(2)   , DB16(HID_DESKTOP_System_Display_LCD_Autoscale),
+    HID_USAGE_MAXIMUM(2)   , DB16(HID_DESKTOP_SYSTEM_DISPLAY_LCD_AUTOSCALE),
     HID_REPORT_SIZE(1)     , 16,
     HID_REPORT_COUNT(1)    , 1,
     HID_INPUT(1)           , IOF_DATA | IOF_ARRAY | IOF_ABSOLUTE,
@@ -1022,12 +1021,7 @@ void send_vendor(uint32_t code) {
 static void sleep_mode_enter(void) {
     ret_code_t err_code;
 
-    err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-    APP_ERROR_CHECK(err_code);
-
     // Prepare wakeup buttons.
-    err_code = bsp_btn_ble_sleep_mode_prepare();
-    APP_ERROR_CHECK(err_code);
 
     // Go to system-off mode (this function will not return; wakeup will cause a reset).
     err_code = sd_power_system_off();
@@ -1076,42 +1070,26 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt) {
     switch (ble_adv_evt) {
         case BLE_ADV_EVT_DIRECTED_HIGH_DUTY:
             NRF_LOG_INFO("High Duty Directed advertising.");
-            err_code =
-                bsp_indication_set(BSP_INDICATE_ADVERTISING_DIRECTED);
-            APP_ERROR_CHECK(err_code);
             break;
 
         case BLE_ADV_EVT_DIRECTED:
             NRF_LOG_INFO("Directed advertising.");
-            err_code =
-                bsp_indication_set(BSP_INDICATE_ADVERTISING_DIRECTED);
-            APP_ERROR_CHECK(err_code);
             break;
 
         case BLE_ADV_EVT_FAST:
             NRF_LOG_INFO("Fast advertising.");
-            err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING);
-            APP_ERROR_CHECK(err_code);
             break;
 
         case BLE_ADV_EVT_SLOW:
             NRF_LOG_INFO("Slow advertising.");
-            err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING_SLOW);
-            APP_ERROR_CHECK(err_code);
             break;
 
         case BLE_ADV_EVT_FAST_WHITELIST:
             NRF_LOG_INFO("Fast advertising with whitelist.");
-            err_code =
-                bsp_indication_set(BSP_INDICATE_ADVERTISING_WHITELIST);
-            APP_ERROR_CHECK(err_code);
             break;
 
         case BLE_ADV_EVT_SLOW_WHITELIST:
             NRF_LOG_INFO("Slow advertising with whitelist.");
-            err_code =
-                bsp_indication_set(BSP_INDICATE_ADVERTISING_WHITELIST);
-            APP_ERROR_CHECK(err_code);
             break;
 
         case BLE_ADV_EVT_IDLE:
@@ -1190,20 +1168,18 @@ static void ble_evt_handler(ble_evt_t const *p_ble_evt, void *p_context) {
     ret_code_t err_code;
 
     switch (p_ble_evt->header.evt_id) {
-        case BLE_GAP_EVT_CONNECTED:
+        case BLE_GAP_EVT_CONNECTED: {
             NRF_LOG_INFO("Connected");
-            err_code = bsp_indication_set(BSP_INDICATE_CONNECTED);
-            APP_ERROR_CHECK(err_code);
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             err_code =
                 nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
             APP_ERROR_CHECK(err_code);
-            break;
+        } break;
 
-        case BLE_GAP_EVT_DISCONNECTED:
-            NRF_LOG_INFO("Disconnected");
-            // Dequeue all keys without transmission.
-            // (void)buffer_dequeue(false);
+        case BLE_GAP_EVT_DISCONNECTED: {
+            const uint8_t reason = p_ble_evt->evt.gap_evt.params.disconnected.reason;
+            NRF_LOG_INFO("Disconnected: %d", reason);
+
 
             m_conn_handle = BLE_CONN_HANDLE_INVALID;
             m_conn_sec_established = false;
@@ -1213,13 +1189,10 @@ static void ble_evt_handler(ble_evt_t const *p_ble_evt, void *p_context) {
             // report containing the Caps lock state.
             m_caps_on = false;
             // disabling alert 3. signal - used for capslock ON
-            err_code = bsp_indication_set(BSP_INDICATE_ALERT_OFF);
-            APP_ERROR_CHECK(err_code);
 
-            break;      // BLE_GAP_EVT_DISCONNECTED
+        } break;      // BLE_GAP_EVT_DISCONNECTED
 
-        case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
-            {
+        case BLE_GAP_EVT_PHY_UPDATE_REQUEST: {
                 NRF_LOG_DEBUG("PHY update request.");
                 ble_gap_phys_t const phys = {
                     .rx_phys = BLE_GAP_PHY_AUTO,
@@ -1229,34 +1202,34 @@ static void ble_evt_handler(ble_evt_t const *p_ble_evt, void *p_context) {
                     sd_ble_gap_phy_update(p_ble_evt->evt.gap_evt.
                         conn_handle, &phys);
                 APP_ERROR_CHECK(err_code);
-            } break;
+        } break;
 
         case BLE_GATTS_EVT_HVN_TX_COMPLETE:
             // Send next key event
             // (void)buffer_dequeue(true);
             break;
 
-        case BLE_GATTC_EVT_TIMEOUT:
+        case BLE_GATTC_EVT_TIMEOUT: {
             // Disconnect on GATT Client timeout event.
             NRF_LOG_DEBUG("GATT Client Timeout.");
             err_code =
                 sd_ble_gap_disconnect(p_ble_evt->evt.gattc_evt.conn_handle,
                     BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
             APP_ERROR_CHECK(err_code);
-            break;
+        } break;
 
-        case BLE_GATTS_EVT_TIMEOUT:
+        case BLE_GATTS_EVT_TIMEOUT: {
             // Disconnect on GATT Server timeout event.
             NRF_LOG_DEBUG("GATT Server Timeout.");
             err_code =
                 sd_ble_gap_disconnect(p_ble_evt->evt.gatts_evt.conn_handle,
                     BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
             APP_ERROR_CHECK(err_code);
-            break;
+        } break;
 
-        default:
+        default: {
             // No implementation needed.
-            break;
+        } break;
     }
 }
 
@@ -1368,6 +1341,94 @@ static void log_init(void) {
     NRF_LOG_DEFAULT_BACKENDS_INIT();
 }
 
+static void log_resetreason(void) {
+    // Reset reason
+    uint32_t rr = nrf_power_resetreas_get();
+    nrf_power_resetreas_clear(rr);
+    NRF_LOG_INFO("Reset reasons:");
+    if (0 == rr) {
+        NRF_LOG_INFO("- NONE");
+    }
+    if (0 != (rr & NRF_POWER_RESETREAS_RESETPIN_MASK)) {
+        NRF_LOG_INFO("- RESETPIN");
+    }
+    if (0 != (rr & NRF_POWER_RESETREAS_DOG_MASK)) {
+        NRF_LOG_INFO("- DOG");
+    }
+    if (0 != (rr & NRF_POWER_RESETREAS_SREQ_MASK)) {
+        NRF_LOG_INFO("- SREQ");
+    }
+    if (0 != (rr & NRF_POWER_RESETREAS_LOCKUP_MASK)) {
+        NRF_LOG_INFO("- LOCKUP");
+    }
+
+    // Reset from SYSTEM OFF sleep state
+    if (0 != (rr & NRF_POWER_RESETREAS_OFF_MASK)) {
+        NRF_LOG_INFO("- OFF");
+    }
+    if (0 != (rr & NRF_POWER_RESETREAS_LPCOMP_MASK)) {
+        NRF_LOG_INFO("- LPCOMP");
+    }
+    if (0 != (rr & NRF_POWER_RESETREAS_DIF_MASK)) {
+        NRF_LOG_INFO("- DIF");
+    }
+    if (0 != (rr & NRF_POWER_RESETREAS_NFC_MASK)) {
+        NRF_LOG_INFO("- NFC");
+    }
+    if (0 != (rr & NRF_POWER_RESETREAS_VBUS_MASK)) {
+        NRF_LOG_INFO("- VBUS");
+    }
+}
+
+
+// void ble_hrs_app_start(void) {
+//     gap_params_init();
+//     advertising_init();
+//     services_init();
+//     sensor_simulator_init();
+//     conn_params_init();
+//     application_timers_start();
+//     sec_params_init();
+//     advertising_start();
+// }
+
+void stop_ble_services(void) {
+    ret_code_t err_code;
+
+    if (m_conn_handle != BLE_CONN_HANDLE_INVALID) {
+        err_code = sd_ble_gap_disconnect(
+            m_conn_handle,
+            BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION
+        );
+        APP_ERROR_CHECK(err_code);
+    }
+
+    // TODO: stop advertising
+#if 0
+    if () {
+    }
+#endif
+
+
+    // Stop any impending connection parameters update.
+    err_code = ble_conn_params_stop();
+    APP_ERROR_CHECK(err_code);
+
+    // Stop application timers.
+    err_code = app_timer_stop(m_battery_timer_id);
+    APP_ERROR_CHECK(err_code);
+}
+
+void stop_softdevice(void) {
+    ret_code_t err_code;
+
+    // Disable the soft device
+    err_code = nrf_sdh_disable_request();
+    APP_ERROR_CHECK(err_code);
+
+    ASSERT(!nrf_sdh_is_enabled());
+}
+
 /// @brief Function for initializing power management.
 static void power_management_init(void) {
     ret_code_t err_code;
@@ -1412,12 +1473,84 @@ static void esb_multiprotocol_start(void) {
 #include "key_handlers/key_mouse.h"
 #include "key_handlers/key_hold.h"
 
+void vbus_detect_event_handler(nrf_drv_power_usb_evt_t event) {
+    switch (event) {
+    case NRF_DRV_POWER_USB_EVT_DETECTED:
+        NRF_LOG_INFO("USB power detected");
+        break;
+    case NRF_DRV_POWER_USB_EVT_REMOVED:
+        NRF_LOG_INFO("USB power removed");
+        break;
+    case NRF_DRV_POWER_USB_EVT_READY:
+        NRF_LOG_INFO("USB ready");
+        break;
+    default:
+        ASSERT(false);
+    }
+}
+
+#if 0
+void no_sd_setup_vbus_detection(void) {
+    ret_code_t ret;
+    static const nrf_drv_power_usbevt_config_t config = {
+        .handler = vbus_detect_event_handler
+    };
+    ret = nrf_drv_power_usbevt_init(&config);
+    APP_ERROR_CHECK(ret);
+
+    nrf_delay_us(100);
+
+    if (!nrf_drv_power_init_check()) {
+        ret = nrf_drv_power_init(NULL);
+        APP_ERROR_CHECK(ret);
+    }
+    nrfx_power_usb_state_t state = nrf_drv_power_usbstatus_get();
+
+    switch (state) {
+        case NRF_DRV_POWER_USB_STATE_CONNECTED:
+        case NRF_DRV_POWER_USB_STATE_READY: {
+            NRF_LOG_INFO("VBUS connected");
+        } break;
+
+        case NRF_DRV_POWER_USB_STATE_DISCONNECTED: {
+            NRF_LOG_INFO("VBUS disconnected");
+        } break;
+    }
+}
+#endif
+
+void setup_vbus_detection(void) {
+    sd_power_usbdetected_enable(true);
+    sd_power_usbpwrrdy_enable(true);
+    sd_power_usbremoved_enable(true);
+
+    {
+        uint32_t status;
+        sd_power_usbregstatus_get(&status);
+        switch (status) {
+            case NRF_DRV_POWER_USB_STATE_CONNECTED:
+            case NRF_DRV_POWER_USB_STATE_READY: {
+                NRF_LOG_INFO("Inital VBUS state: connected");
+            } break;
+
+            case NRF_DRV_POWER_USB_STATE_DISCONNECTED: {
+                NRF_LOG_INFO("Inital VBUS state: disconnected");
+            } break;
+        }
+    }
+}
+
 /// @brief Function for application main entry.
 int ble_test_main(uint8_t x) {
     bool erase_bonds = false;
 
     // Initialize.
     log_init();
+
+    // Reset reason
+    log_resetreason();
+
+    // no_sd_setup_vbus_detection();
 
     // keyplus init
     {
@@ -1465,6 +1598,9 @@ int ble_test_main(uint8_t x) {
     conn_params_init();
     peer_manager_init();
 
+    // Enable vusb detection
+    setup_vbus_detection();
+
     // Start execution.
     NRF_LOG_INFO("BLE HID Keyboard example started.");
     timers_start();
@@ -1473,6 +1609,7 @@ int ble_test_main(uint8_t x) {
     esb_multiprotocol_start();
 
     uint32_t last_time = 0;
+    bool quiet = true;
 
     // Enter main loop.
     for (;;) {
@@ -1486,21 +1623,41 @@ int ble_test_main(uint8_t x) {
                 uint32_t time_sec = new_time/1000;
                 last_time = new_time;
 
-                NRF_LOG_INFO("time: %d", new_time);
+                if (quiet) {
+                    if (time_sec % 15 == 0) {
+                        NRF_LOG_INFO("time: %d", time_sec);
+                    }
+                } else {
+                    NRF_LOG_INFO("time: %d", new_time);
 
-                if (time_sec % 5 == 0) {
-                    struct timeslot_stats_t stats = get_timeslot_stats();
-                    NRF_LOG_INFO(
-                        "timeslot stats: {start: %04d, end: %04d, "
-                        "tx: %04d, rx: %04d, ext: %04d}",
-                        stats.start, stats.end,
-                        stats.tx, stats.rx,
-                        stats.extensions
-                        );
-                    NRF_LOG_INFO(
-                        "conn stats: {handle: %d, established: %d, sec: %d}",
-                        m_conn_handle, m_conn_established, m_conn_sec_established
-                        );
+                    if (time_sec % 5 == 0) {
+                        struct timeslot_stats_t stats = get_timeslot_stats();
+                        NRF_LOG_INFO(
+                            "timeslot stats: {start: %04d, end: %04d, "
+                            "tx: %04d, rx: %04d, ext: %04d}",
+                            stats.start, stats.end,
+                            stats.tx, stats.rx,
+                            stats.extensions
+                            );
+                        NRF_LOG_INFO(
+                            "conn stats: {handle: %d, established: %d, sec: %d}",
+                            m_conn_handle, m_conn_established, m_conn_sec_established
+                            );
+                    }
+                }
+
+
+                if (0) {
+                    if (time_sec % 21 == 19) {
+                        NRF_LOG_INFO("about to power off");
+                    }
+
+                    if (time_sec % 21 == 20) {
+                        stop_ble_services();
+                        stop_softdevice();
+                        nrf_delay_ms(100);
+                        sd_power_system_off();
+                    }
                 }
 
 #if 0

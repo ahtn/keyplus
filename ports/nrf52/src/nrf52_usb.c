@@ -430,7 +430,7 @@ static void usbd_setup_GetDescriptor(nrf_drv_usbd_setup_t const *const p_setup)
                 // First byte of the string desc which is its length
                 flash_read(
                     &len,
-                    (flash_ptr_t)(GET_SETTING(device_name)),
+                    GET_SETTING_ADDR(device_name),
                     1
                 );
 

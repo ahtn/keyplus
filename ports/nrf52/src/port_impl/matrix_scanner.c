@@ -7,7 +7,11 @@
 
 #include <string.h>
 #include "nrf_gpio.h"
+#include "nrf_gpiote.h"
 #include "nrf_delay.h"
+#include "nrf_log.h"
+
+#define GPIOTE_IRQPriority (APP_IRQ_PRIORITY_LOW)
 
 static uint32_t s_ports_per_row;
 static uint32_t s_bytes_per_row;
@@ -100,7 +104,7 @@ static void setup_columns(void) {
                     NRF_GPIO_PIN_INPUT_CONNECT,
                     NRF_GPIO_PIN_PULLDOWN,
                     NRF_GPIO_PIN_S0S1,
-                    NRF_GPIO_PIN_NOSENSE
+                    NRF_GPIO_PIN_SENSE_HIGH
                 );
             } break;
 
@@ -120,7 +124,7 @@ static void setup_columns(void) {
                     NRF_GPIO_PIN_INPUT_CONNECT,
                     NRF_GPIO_PIN_PULLUP,
                     NRF_GPIO_PIN_S0S1,
-                    NRF_GPIO_PIN_NOSENSE
+                    NRF_GPIO_PIN_SENSE_LOW
                 );
             } break;
 
@@ -325,6 +329,8 @@ bool matrix_scan(void) {
     return false;
 }
 
+/// When `select_all_rows()` has been called, this function can be used to
+/// check if any key is down in any row.
 bool matrix_has_active_row(void) {
     return (
         (nrf_gpio_port_in_read(NRF_P0) & s_col_masks[0])
@@ -334,12 +340,32 @@ bool matrix_has_active_row(void) {
     );
 }
 
-void matrix_scan_irq_enable(void) {
+void GPIOTE_IRQHandler(void) {
+    NRF_LOG_INFO("GPIOTE IRQ CALLED");
 
+    if(nrf_gpiote_event_is_set(NRF_GPIOTE_EVENTS_PORT)){
+        nrf_gpiote_event_clear(NRF_GPIOTE_EVENTS_PORT);
+        NRF_LOG_INFO("PORT IRQ CALLED");
+    }
+}
+
+void matrix_scan_irq_enable(void) {
+    nrf_gpiote_int_disable(NRF_GPIOTE_INT_PORT_MASK);
+    {
+        NVIC_ClearPendingIRQ(GPIOTE_IRQn);
+        NVIC_SetPriority(GPIOTE_IRQn, GPIOTE_IRQPriority);
+        nrf_gpiote_event_clear(NRF_GPIOTE_EVENTS_PORT);
+        NVIC_EnableIRQ(GPIOTE_IRQn);
+    }
+    nrf_gpiote_int_enable(NRF_GPIOTE_INT_PORT_MASK);
+
+    select_all_rows();
 }
 
 void matrix_scan_irq_disable(void) {
-
+    NVIC_DisableIRQ(GPIOTE_IRQn);
+    nrf_gpiote_int_disable(NRF_GPIOTE_INT_PORT_MASK);
+    unselect_all_rows();
 }
 
 bool matrix_scan_irq_has_triggered(void) {
@@ -349,5 +375,3 @@ bool matrix_scan_irq_has_triggered(void) {
 void matrix_scan_irq_clear(void) {
 
 }
-
-

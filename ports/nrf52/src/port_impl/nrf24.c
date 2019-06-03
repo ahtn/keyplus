@@ -168,6 +168,7 @@ void nrf24_disable(void) {
 // However, might want to enable the interrupt to allow us to wake from sleep
 // modes, and it will also help us avoid unnecessary SPI transactions
 
+#if 0
 void nrf24_irq_handler(nrf_drv_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {
     // bsp_board_led_invert(0);
     // rf_isr();
@@ -198,3 +199,12 @@ void rf_disable_receive_irq(void) {
 uint8_t nrf24_irq(void) {
     return nrf_gpio_pin_read(NRF24_PIN_IRQ);
 }
+#else
+
+void rf_enable_receive_irq(void) {
+}
+
+void rf_disable_receive_irq(void) {
+}
+
+#endif

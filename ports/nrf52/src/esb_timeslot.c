@@ -16,18 +16,18 @@
 
 #define TIMESLOT_BEGIN_IRQn        LPCOMP_IRQn
 #define TIMESLOT_BEGIN_IRQHandler  LPCOMP_IRQHandler
-#define TIMESLOT_BEGIN_IRQPriority 1
+#define TIMESLOT_BEGIN_IRQPriority APP_IRQ_PRIORITY_HIGH
 #define TIMESLOT_END_IRQn          QDEC_IRQn
 #define TIMESLOT_END_IRQHandler    QDEC_IRQHandler
-#define TIMESLOT_END_IRQPriority   1
+#define TIMESLOT_END_IRQPriority   APP_IRQ_PRIORITY_HIGH
 
 #define TS_LEN_US            (5000UL)   //< Starting timeslot length in µs
 #define TX_LEN_EXTENSION_US  (5000UL)   //< Length of timeslot extension in µs
 
 /// The timeslot activity should be finished with this much to spare.
-#define TS_SAFETY_MARGIN_US  (700UL)
+#define TS_SAFETY_MARGIN_US  (500UL)
 /// The timeslot activity should request an extension this long before end of timeslot.
-#define TS_EXTEND_MARGIN_US  (2000UL)
+#define TS_EXTEND_MARGIN_US  (1000UL)
 
 #define MAX_TX_ATTEMPTS 10
 #define MAIN_DEBUG 0x12345678UL
@@ -43,7 +43,6 @@ typedef enum {
     TIMESLOT_STATE_IDLE,   // timeslot is inactive
     TIMESLOT_STATE_START,  // timeslot just started
     TIMESLOT_STATE_ACTIVE, // timeslot has started and BEGIN_IRQ has been called
-    TIMESLOT_STATE_EXTEND_FAILED, // failed to extend timeslot
 } timeslot_state_t;
 
 static volatile timeslot_state_t m_state = TIMESLOT_STATE_IDLE;
@@ -425,7 +424,6 @@ static nrf_radio_signal_callback_return_param_t * radio_callback (uint8_t signal
 
 
             // Schedule next timeslot
-            // return (nrf_radio_signal_callback_return_param_t*) &m_rsc_return_sched_next;
             return (nrf_radio_signal_callback_return_param_t*) &m_rsc_return_sched_next;
         }
 
@@ -452,7 +450,6 @@ static nrf_radio_signal_callback_return_param_t * radio_callback (uint8_t signal
 
     case NRF_RADIO_CALLBACK_SIGNAL_TYPE_EXTEND_FAILED: {
         // Don't do anything. Our timer will expire before timeslot ends
-        m_state = TIMESLOT_STATE_EXTEND_FAILED;
         NVIC_SetPendingIRQ(TIMESLOT_END_IRQn);
         return (nrf_radio_signal_callback_return_param_t*) &m_rsc_return_no_action;
     } break;
@@ -533,6 +530,18 @@ void soc_evt_handler(uint32_t sys_evt, void *p_context) {
             APP_ERROR_CHECK(err_code);
         } break;
 
+        case NRF_EVT_POWER_USB_DETECTED: {
+            NRF_LOG_INFO("SD SOC EVT: usb power detected");
+        } break;
+
+        case NRF_EVT_POWER_USB_POWER_READY: {
+            NRF_LOG_INFO("SD SOC EVT: usb power ready");
+        } break;
+
+        case NRF_EVT_POWER_USB_REMOVED: {
+            NRF_LOG_INFO("SD SOC EVT: usb power removed");
+        } break;
+
         default: {
             // No implementation needed.
         } break;
@@ -569,8 +578,21 @@ void TIMESLOT_END_IRQHandler(void) {
     m_stats.end++;
     led_testing_toggle(3);
 
+    // Infrequently nrf_esb_stop_rx() will fail with NRF_ESB_ERROR_NOT_IN_RX_MODE
+    // so check state to avoid this. However, even with this check it still
+    // fails.  I'm unsure what code path allows either TIMESLOT_END to be
+    // called twice, or TIMESLOT_END to be called before TIMESLOT_BEGIN.
+    if (m_state != TIMESLOT_STATE_ACTIVE) {
+        return;
+    }
+
     // Timeslot is about to end
     err_code = nrf_esb_stop_rx();
+    if (err_code == NRF_ESB_ERROR_NOT_IN_RX_MODE) {
+        // HACK/BUG: this probably shouldn't happen, but on rare occasions it
+        // does.  Temporary fix for now
+        goto cleanup;
+    }
     APP_ERROR_CHECK(err_code);
     err_code = nrf_esb_flush_tx();
     APP_ERROR_CHECK(err_code);
@@ -579,6 +601,7 @@ void TIMESLOT_END_IRQHandler(void) {
     err_code = nrf_esb_disable();
     APP_ERROR_CHECK(err_code);
 
+cleanup:
     m_state = TIMESLOT_STATE_IDLE;
 
     m_total_timeslot_length = 0;
