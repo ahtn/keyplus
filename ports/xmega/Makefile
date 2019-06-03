@@ -101,7 +101,7 @@ endif
 ASM_SRC =
 
 # Optimization level, can be [0, 1, 2, 3, s].
-OPT = 2
+OPT = s
 
 # List any extra directories to look for include files here.
 EXTRAINCDIRS = $(XMEGA_PATH)/
