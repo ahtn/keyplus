@@ -64,6 +64,8 @@ int create_virtual_keyboard(void) {
     }
 
     libevdev_free(dev);
+
+    return 0;
 }
 
 int create_virtual_mouse(void) {
@@ -102,6 +104,8 @@ int create_virtual_mouse(void) {
     }
 
     libevdev_free(dev);
+
+    return 0;
 }
 
 int kp_virtual_keyboard_send(unsigned int type, unsigned int code, int value) {

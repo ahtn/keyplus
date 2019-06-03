@@ -9,6 +9,11 @@
 // See: http://www.usb.org/developers/hidpage/Hut1_12v2.pdf
 #include <linux/input-event-codes.h>
 
+// for older versions
+#ifndef KEY_ASSISTANT
+    #define KEY_ASSISTANT		0x247	/* AL Context-aware desktop assistant */
+#endif
+
 #include "debug.h"
 
 #define KB_EVENT_MAP_LEN        256

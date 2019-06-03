@@ -257,7 +257,6 @@ static int enumerate(struct udev *udev, struct kp_udev_info **targets, size_t le
     udev_list_entry_foreach(entry, devices) {
         const char* path;
         struct udev_device *dev;
-        struct udev_list_entry *props;
         int match;
         int rc;
 
@@ -276,6 +275,8 @@ static int enumerate(struct udev *udev, struct kp_udev_info **targets, size_t le
         KP_ASSERT(rc > 0);
 
         #if defined(DEBUG) && DEBUG > 2
+        {
+            struct udev_list_entry *props;
             props = udev_device_get_properties_list_entry(dev);
             while (props != NULL) {
                 KP_DEBUG_PRINT(3, "B: %s=%s\n",
@@ -284,6 +285,7 @@ static int enumerate(struct udev *udev, struct kp_udev_info **targets, size_t le
                 props = udev_list_entry_get_next(props);
             }
             KP_DEBUG_PRINT(3, "----------\n");
+        }
         #endif
 
         /* free dev */
@@ -329,7 +331,6 @@ int handle_udev_event(void) {
 
     int act = kp_udev_parse_action(dev);
     if (act == UDEV_ACTION_ADD) {
-        struct libevdev *evdev;
         const char *path = udev_device_get_property_value(dev, "DEVNAME");
         if (path == NULL) {
             KP_LOG_ERROR("couldn't read DEVNAME");
@@ -404,8 +405,8 @@ static int handle_evdev_event(int i) {
         if (ev.type == EV_KEY) {
             int key_num = mapper_event_to_key_num(kb_id, ev.code);
             if (key_num != UNMAPPED_KEY) {
-                KP_DEBUG_PRINT(2, "%09lu: Event(%d): %s -> %d == %d\n",
-                       timer_read_ms(),
+                KP_DEBUG_PRINT(2, "%09u: Event(%d): %s -> %d == %d\n",
+                       (unsigned int)timer_read_ms(),
                        kb_id,
                        libevdev_event_code_get_name(ev.type, ev.code),
                        key_num, ev.value);
@@ -416,8 +417,8 @@ static int handle_evdev_event(int i) {
                     updated++;
                 }
             } else {
-                KP_DEBUG_PRINT(2, "%09lu: Event(%d): forwarding %s %d\n",
-                               timer_read_ms(),
+                KP_DEBUG_PRINT(2, "%09u: Event(%d): forwarding %s %d\n",
+                               (unsigned int)timer_read_ms(),
                                kb_id,
                                libevdev_event_code_get_name(ev.type, ev.code),
                                ev.value);
@@ -429,8 +430,8 @@ static int handle_evdev_event(int i) {
             }
         } else {
             KP_DEBUG_PRINT(2,
-                           "%09lu: Event(%d): %s\t%s\t\t%d\n",
-                           timer_read_ms(),
+                           "%09u: Event(%d): %s\t%s\t\t%d\n",
+                           (unsigned int)timer_read_ms(),
                            kb_id,
                            libevdev_event_type_get_name(ev.type),
                            libevdev_event_code_get_name(ev.type, ev.code),

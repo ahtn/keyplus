@@ -24,7 +24,7 @@ void register_error(uint8_t code) {
     }
 
     g_error_code_table[code / 8] =
-        g_error_code_table[code / 8] | (1 << (code & 0b111));
+        g_error_code_table[code / 8] | (1 << (code % 8));
 }
 
 void unregister_error(uint8_t code) {

@@ -62,13 +62,17 @@ include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
 #                          c compiler flags                           #
 #######################################################################
 
+CFLAGS += $(CDEFS)
+
 # Compiler flags to generate dependency files.
 CFLAGS += -MMD -MP
 
-CFLAGS += $(CDEFS)
+CFLAGS += -Wall
+CFLAGS += -Werror
+CFLAGS += -Wno-error=unused-variable
 
 # C std to use
-# CFLAGS += -std=c99
+CFLAGS += -std=gnu99
 
 # turn on debugging
 CFLAGS += -DDEBUG=1

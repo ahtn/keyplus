@@ -32,7 +32,6 @@ static int handle_mods(uint8_t old_mods, uint8_t new_mods) {
     uint8_t changed_mods = old_mods ^ new_mods;
 
     if (changed_mods) {
-        int mod_pos = 0;
         updated = 1;
 
         if (changed_mods & MOD_LCTL) {
@@ -147,7 +146,6 @@ void kp_virtual_hid_mouse_report_send(void) {
 
     uint8_t changed_buttons = s_last_mouse_report.buttons_1 ^ g_mouse_report.buttons_1;
     if (changed_buttons) {
-        int mod_pos = 0;
         int new_mods = g_mouse_report.buttons_1;
         changed = 1;
 

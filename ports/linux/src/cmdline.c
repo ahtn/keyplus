@@ -51,7 +51,6 @@ void print_usage(void) {
 /// Parse the command line args and set their default values in `args`
 void parse_cmdline_args(struct cmdline_args *args, int argc, char** argv) {
     int c;
-    int digit_optind = 0;
 
     const struct option long_options[] = {
         {"help"      , no_argument       , 0 , 'h' } ,
@@ -71,10 +70,7 @@ void parse_cmdline_args(struct cmdline_args *args, int argc, char** argv) {
     args->daemonize = true;
 
     while (1) {
-        int this_option_optind = optind ? optind : 1;
         int option_index = 0;
-
-
         c = getopt_long(argc, argv, opt_string, long_options, &option_index);
         if (c == -1)
             break;

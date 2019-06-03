@@ -166,6 +166,11 @@ bit_t send_vendor_report(void) {
         return false;
     }
 
+#if USE_VIRTUAL_MODE
+    assert(false);
+    return false;
+#endif
+
 #if USE_BLUETOOTH
     if (g_runtime_settings.mode == TRANS_MODE_BLE) {
         kp_ble_hids_input_report_send(

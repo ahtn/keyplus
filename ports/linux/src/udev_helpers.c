@@ -78,10 +78,14 @@ static void kp_udev_info_bluetooth_get(struct udev_device *dev,
     // PRODUCT contains VID and PID e.g:  PRODUCT=5/1209/bb00/0
     prop = udev_device_get_property_value(parent, "PRODUCT");
     if (prop != NULL) {
-        rc = sscanf(prop, "%*x/%04x/%04x/%*x", &info->vid, &info->pid);
+        unsigned int vid, pid;
+        rc = sscanf(prop, "%*x/%04x/%04x/%*x", &vid, &pid);
         if (rc <= 0) {
             info->vid = 0;
             info->pid = 0;
+        } else {
+            info->vid = vid;
+            info->pid = pid;
         }
     }
 
@@ -99,18 +103,24 @@ static void kp_udev_info_usb_get(struct udev_device *dev, struct kp_udev_info *i
     // vendor id
     prop = udev_device_get_property_value(parent, "ID_VENDOR_ID");
     if (prop != NULL) {
-        rc = sscanf(prop, "%04x", &info->vid);
+        unsigned int vid;
+        rc = sscanf(prop, "%04x", &vid);
         if (rc < 0) {
             info->vid = 0;
+        } else {
+            info->vid = vid;
         }
     }
 
     // product id
     prop = udev_device_get_property_value(parent, "ID_MODEL_ID");
     if (prop != NULL) {
-        rc = sscanf(prop, "%04x", &info->pid);
+        unsigned int pid;
+        rc = sscanf(prop, "%04x", &pid);
         if (rc < 0) {
             info->pid = 0;
+        } else {
+            info->pid = pid;
         }
     }
 

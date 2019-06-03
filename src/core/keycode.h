@@ -26,17 +26,17 @@ typedef uint16_t keycode_t;
 #define KC_TYPE_BIT_POS 12
 
 typedef enum keycode_type_t {
-    KC_TYPE_L_MODKEY = 0b0000,
-    KC_TYPE_R_MODKEY = 0b0001,
+    KC_TYPE_L_MODKEY = 0x00,
+    KC_TYPE_R_MODKEY = 0x01,
     // TODO: should probably remove force and just make it the default
     // behaviour for modkeys since it seems like the more logical behaviour
-    KC_TYPE_L_MODKEY_FORCE = 0b0010,
-    KC_TYPE_R_MODKEY_FORCE = 0b0011,
+    KC_TYPE_L_MODKEY_FORCE = 0x02,
+    KC_TYPE_R_MODKEY_FORCE = 0x03,
 
-    KC_TYPE_SPECIAL = 0b0100,
-    KC_TYPE_SPECIAL2 = 0b0101,
+    KC_TYPE_SPECIAL = 0x04,
+    KC_TYPE_SPECIAL2 = 0x05,
 
-    KC_TYPE_MACRO_COMMAND = 0b0110,
+    KC_TYPE_MACRO_COMMAND = 0x06,
 } keycode_type_t;
 
 #define KC_TYPE_L_MODKEY_MASK       (KC_TYPE_L_MODKEY << KC_TYPE_BIT_POS)
