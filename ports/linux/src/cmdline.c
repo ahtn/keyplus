@@ -45,7 +45,7 @@ void print_usage(void) {
         "  -p --pidfile PID_FILE      * Set the location of the pid lockfile\n"
         "  -u --as-user               * Run as the current user in the shell\n"
     );
-    printf(usage_str);
+    printf("%s", usage_str);
 }
 
 /// Parse the command line args and set their default values in `args`
