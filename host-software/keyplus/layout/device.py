@@ -13,7 +13,6 @@ from keyplus.device_info import KeyboardSettingsInfo
 
 from keyplus.constants import *
 
-import six
 import struct
 
 DEFAULT_FEATURE_MASK = FEATURE_CTRL_RF_DISABLE | FEATURE_CTRL_RF_MOUSE_DISABLE \
@@ -91,7 +90,7 @@ class LayoutDevice(object):
         self.mcu = parser_info.try_get(
             "mcu",
             default = None,
-            field_type = six.string_types,
+            field_type = str,
             optional = True,
         )
 

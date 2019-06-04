@@ -7,8 +7,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from copy import copy
 
-import six
-
 from keyplus.keycodes import *
 from keyplus.layout.parser_info import KeyplusKeycodeWarning
 from keyplus.exceptions import KeyplusParseError
@@ -46,7 +44,7 @@ class KeycodeMapper(object):
         return inverse_map
 
     def get_keycode_type(self, keycode):
-        if not isinstance(keycode, six.integer_types):
+        if not isinstance(keycode, int):
             raise KeyplusParseError("keycode must be an int")
         if keycode < 0 or keycode > 0xffff:
             raise KeyplusParseError("keycode must be a 16 bit integer")
@@ -85,7 +83,7 @@ class KeycodeMapper(object):
 
 
     def keycode_to_string(self, keycode):
-        assert(isinstance(keycode, six.integer_types))
+        assert(isinstance(keycode, int))
         assert(0 <= keycode <= 0xffff)
 
         if keycode in self.keycode_to_symbol_map:

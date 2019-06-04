@@ -5,7 +5,6 @@
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import six
 import sys
 
 from keyplus.exceptions import *
@@ -187,10 +186,6 @@ class KeyplusParserInfo(object):
 
             has_matching_type = True
 
-            # Python2 compatibility
-            if field_type == str:
-                field_type = six.string_types
-
             if field_type == None:
                 pass
             elif isinstance(field_type, list):
@@ -215,7 +210,7 @@ class KeyplusParserInfo(object):
             self.last_field = field
             self.touch_field(field)
 
-            if ignore_case and isinstance(value, six.string_types):
+            if ignore_case and isinstance(value, str):
                 value = value.lower()
 
             def check_in_set(valid_values):
@@ -309,4 +304,4 @@ class KeyplusParserInfo(object):
         return self.current_obj[field]
 
     def iter_fields(self):
-        return six.iterkeys(self.current_obj)
+        return self.current_obj.keys()

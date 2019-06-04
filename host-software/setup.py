@@ -1,19 +1,21 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright 2018 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
 from setuptools import setup, find_packages
 import os
+import sys
+
+if sys.version_info < (3, 5):
+    sys.exit("Requires python 3.5+")
 
 # Load the version number
-try: # python3
-    fields = {}
-    with open(os.path.join("keyplus", "version.py")) as f:
-        exec(f.read(), fields)
-    __version__ = fields['__version__']
-except: # python2
-    execfile(os.path.join("keyplus", "version.py"))
+fields = {}
+with open(os.path.join("keyplus", "version.py")) as f:
+    exec(f.read(), fields)
+__version__ = fields['__version__']
+
 
 setup(
     name = 'keyplus',
@@ -25,7 +27,7 @@ setup(
     license = 'MIT',
     packages = find_packages(include=['keyplus', 'keyplus.*']),
     install_requires = [
-        'future', 'six', 'cstruct', 'enum-compat', 'hexdump', 'intelhex',
+        'future', 'cstruct', 'enum-compat', 'hexdump', 'intelhex',
         'ruamel.yaml', 'pyusb', 'colorama',
         # Closely related
         'easyhid>=0.0.10',

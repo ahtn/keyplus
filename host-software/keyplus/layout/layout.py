@@ -10,7 +10,6 @@ import json
 import ruamel.yaml as yaml
 import os
 import io
-import six
 import time
 import copy
 import math
@@ -271,7 +270,7 @@ class KeyplusLayout(object):
 
         parser_info.exit()
 
-        for dev in six.itervalues(self._devices):
+        for dev in self._devices.values():
             if dev.scan_mode.mode == MATRIX_SCANNER_MODE_NO_MATRIX:
                 continue
 
@@ -312,11 +311,11 @@ class KeyplusLayout(object):
             rf_parser_info.exit()
 
         if DEBUG.parsing_extra:
-            for device in six.itervalues(self._devices):
+            for device in self._devices.values():
                 print("LayoutDevice({})".format(device.name))
                 print(device.to_json())
                 print()
-            for layout in six.itervalues(self._layouts):
+            for layout in self._layouts.values():
                 print("LayoutKeyboard({}, {})".format(layout.layout_id, layout.name))
                 print(layout.to_json())
                 print()

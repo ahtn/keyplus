@@ -8,16 +8,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import ruamel.yaml as yaml
 import time
 import colorama
-import six
 import intelhex
 
 from pprint import pprint
 from hexdump import hexdump as hexdump
-
-if six.PY2:
-    def hexdump_py2(data):
-        hexdump_(bytes(data))
-    hexdump = hexdump_py2
 
 import keyplus
 from keyplus.constants import *

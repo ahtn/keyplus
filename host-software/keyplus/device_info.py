@@ -7,7 +7,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import struct
 import math
-import six
 import datetime
 
 from distutils.version import LooseVersion
@@ -173,10 +172,7 @@ class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
     @timestamp_raw.setter
     def timestamp_raw(self, value):
         bytes_ = struct.pack("<Q", value)
-        if six.PY2:
-            self.timestamp = [ord(c) for c in bytes_]
-        elif six.PY3:
-            self.timestamp = [int(c) for c in bytes_]
+        self.timestamp = [int(c) for c in bytes_]
 
     def get_timestamp(self):
         try:
@@ -346,7 +342,7 @@ class KeyboardFirmwareInfo(keyplus.cdata_types.firmware_info_t):
         return self.internal_scan_method_to_str(self.internal_scan_method)
 
     def set_internal_scan_method(self, new_value):
-        if isinstance(new_value, six.string_types):
+        if isinstance(new_value, str):
             self.internal_scan_method = self.internal_scan_method_from_str(new_value)
         elif isinstance(new_value, int):
             self.internal_scan_method = new_value
