@@ -23,32 +23,32 @@ Just download the EXE file.
 
 ### Linux
 
-Clone the repository:
+Clone the repository and submodules:
 ```bash
 git clone https://github.com/ahtn/keyplus
-git checkout v0.3.0
-```
-
-Next, install the packages `avr-gcc`, `avr-libc`, `avr-binutils`, `python3`, `make`, `hidapi` or `libhidapi-dev`, and `python3-pyqt5`.
-
-Then, install the python dependencies:
-```bash
-pip install -U --user keyplus
-```
-
-Also, you need to initialize the git submodules:
-
-```bash
+git checkout v0.3.3 # or master for the latest version
 cd keyplus
 git submodule update --init --recursive
 ```
 
-Now, you can run the program:
+Next install the packages `avr-gcc`, `avr-libc`, `avr-binutils`, `make`,
+`libhidapi-dev`, `libevdev-dev`, `libudev-dev`, `python3`, `python3-pip`,
+`python3-pyqt5`.
+
+Next install python dependencies by running:
+```bash
+pip3 install -U keyplus
+```
+
+Now you should be able to run the program:
 
 ```bash
 cd host-software
-sudo python3 keyplus_flasher.py
+sudo ./keyplus_flasher.py
 ```
+
+NOTE: if you are having issues with missing python dependencies, make sure that
+they were installed with `pip3` because python2.7 is not supported.
 
 #### Flashing without sudo on Linux
 
