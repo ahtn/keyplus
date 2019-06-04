@@ -62,17 +62,20 @@ include $(KEYPLUS_PATH)/key_handlers/key_handlers.mk
 #                          c compiler flags                           #
 #######################################################################
 
+CC = gcc
+
+# C std to use
+CFLAGS += -std=gnu99
+
 CFLAGS += $(CDEFS)
 
 # Compiler flags to generate dependency files.
 CFLAGS += -MMD -MP
 
+# Turn on all warnings and treat them as errors
 CFLAGS += -Wall
 CFLAGS += -Werror
 CFLAGS += -Wno-error=unused-variable
-
-# C std to use
-CFLAGS += -std=gnu99
 
 # turn on debugging
 CFLAGS += -DDEBUG=1
@@ -113,7 +116,7 @@ $(BUILD_TARGET): $(OBJ_FILES)
 	$(eval LD_INPUT := $(@:=.in))
 	@echo $(OBJ_FILES) $(LIB_FILES) > $(LD_INPUT)
 	@# link the executable
-	$(CC) $(LDFLAGS) $(LDLIBS) @$(LD_INPUT) -Wl,-Map=$(@:=.map) -o $@
+	$(CC) $(LDFLAGS) @$(LD_INPUT) $(LDLIBS) -Wl,-Map=$(@:=.map) -o $@
 	@echo
 
 #######################################################################
