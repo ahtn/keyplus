@@ -36,6 +36,9 @@ static int m_fd_udevmon;
 static struct pollfd m_event_fds[MAX_EVENT_COUNT];
 static struct kp_evdev_device m_dev_array[MAX_EVENT_COUNT];
 
+// keep track of the highest number of fds in m_event_fds
+static unsigned int m_highest_event_count;
+
 #if 1
 static kp_udev_info m_match_usb = {
     .kb_id = 0,
@@ -98,7 +101,7 @@ int kp_evdev_array_add(const char *path, int kb_id) {
 
         m_dev_array[i].path = strdup(path);
         if (m_dev_array[i].path == NULL) {
-            KP_LOG_ERROR("strdup failed (%s)\n", strerror(errno));
+            KP_LOG_ERROR("strdup failed (%s)", strerror(errno));
             rc = -errno;
             goto error;
         }
@@ -108,6 +111,7 @@ int kp_evdev_array_add(const char *path, int kb_id) {
         m_event_fds[i].revents = 0;
         m_dev_array[i].evdev = evdev;
         m_dev_array[i].kb_id = kb_id;
+        m_highest_event_count = KP_MAX(m_highest_event_count, i+1);
 
         return i;
     }
@@ -125,12 +129,21 @@ error:
 }
 
 /// Check if an item occupies a given index
-static inline bool kp_evdev_array_has_item(size_t i) {
+static inline bool kp_evdev_array_has_item_at(size_t i) {
     return (m_event_fds[i].fd != -1);
 }
 
+/// Get
+static inline const char* kp_evdev_array_get_path(size_t i) {
+    KP_ASSERT(i != 0);
+    KP_ASSERT(i < MAX_EVENT_COUNT);
+    KP_ASSERT(m_event_fds[i].fd != -1);
+
+    return m_dev_array[i].path;
+}
+
 /// Free the device with the given index
-void kp_evdev_array_free(size_t i) {
+static void kp_evdev_array_free_device(size_t i) {
     int rc;
 
     KP_ASSERT(i != 0);
@@ -150,9 +163,9 @@ void kp_evdev_array_free(size_t i) {
 /// Find the device with the given path
 ///
 /// @return the index of the device, or -1 if it does not exist
-int kp_evdev_array_get_path(const char *path) {
-    for (int i = 1; i < MAX_EVENT_COUNT; ++i) {
-        if (!kp_evdev_array_has_item(i)) {
+static int kp_evdev_array_find_path(const char *path) {
+    for (int i = 1; i < m_highest_event_count; ++i) {
+        if (!kp_evdev_array_has_item_at(i)) {
             continue;
         }
 
@@ -166,10 +179,10 @@ int kp_evdev_array_get_path(const char *path) {
 /// Free all
 static void kp_evdev_array_free_all(void) {
     for (int i = 1; i < MAX_EVENT_COUNT; ++i) {
-        if (!kp_evdev_array_has_item(i)) {
+        if (!kp_evdev_array_has_item_at(i)) {
             continue;
         }
-        kp_evdev_array_free(i);
+        kp_evdev_array_free_device(i);
     }
 }
 
@@ -187,7 +200,7 @@ static void clear_poll_fds(struct pollfd *fds, size_t len) {
 int device_manager_init(void) {
 	m_udev = udev_new();
 	if (!m_udev) {
-		KP_LOG_ERROR("Can't create udev\n");
+		KP_LOG_ERROR("Can't create udev");
 		return -1;
 	}
 
@@ -204,6 +217,8 @@ int device_manager_init(void) {
     m_event_fds[0].events = POLLIN;
     m_dev_array[0].path = NULL;
     m_dev_array[0].evdev = NULL;
+
+    m_highest_event_count = 1;
 
     return 0;
 }
@@ -231,25 +246,25 @@ static int enumerate(struct udev *udev, struct kp_udev_info **targets, size_t le
 
     en = udev_enumerate_new(udev);
     if (en == NULL) {
-        KP_LOG_ERROR("udev_enumerate_new failed\n");
+        KP_LOG_ERROR("udev_enumerate_new failed");
         return -1;
     }
 
     rc = udev_enumerate_add_match_subsystem(en, "input");
     if (rc < 0) {
-        KP_LOG_ERROR("udev_enumerate_add_match_subsystem() failed\n");
+        KP_LOG_ERROR("udev_enumerate_add_match_subsystem() failed");
         return -1;
     }
 
     rc = udev_enumerate_scan_devices(en);
     if (rc < 0) {
-        KP_LOG_ERROR("udev_enumerate_scan_devices() failed\n");
+        KP_LOG_ERROR("udev_enumerate_scan_devices() failed");
         return -1;
     }
 
     devices = udev_enumerate_get_list_entry(en);
     if (!devices) {
-        KP_LOG_ERROR("udev_enumerate_get_list_entry() failed\n");
+        KP_LOG_ERROR("udev_enumerate_get_list_entry() failed");
         return -1;
     }
 
@@ -336,7 +351,7 @@ int handle_udev_event(void) {
             KP_LOG_ERROR("couldn't read DEVNAME");
             rc = 0;
         } else {
-            KP_DEBUG_PRINT(1, "adding: %s\n", path);
+            KP_LOG_INFO("adding: %s\n", path);
             rc = kp_evdev_array_add(path, match_id);
             if (rc < 0) {
                 KP_LOG_ERROR("couldn't open %s: %s", path, strerror(-rc));
@@ -346,12 +361,12 @@ int handle_udev_event(void) {
         const char *path;
         path = udev_device_get_property_value(dev, "DEVNAME");
 
-        rc = kp_evdev_array_get_path(path);
+        rc = kp_evdev_array_find_path(path);
         if (rc == -1) {
-            KP_DEBUG_PRINT(1, "not removing: %s\n", path);
+            KP_DEBUG_PRINT(1, "already removed: %s\n", path);
         } else {
             KP_DEBUG_PRINT(1, "removing: %s\n", path);
-            kp_evdev_array_free(rc);
+            kp_evdev_array_free_device(rc);
         }
     }
 
@@ -448,12 +463,14 @@ static int handle_evdev_event(int i) {
 ///
 /// @return a negative errno on error, a positive integer if a input event was
 ///     detected, otherwise 0.
+/// @return -EIO when reading on the udev_monitor fd fails
 int device_manager_poll(bool block) {
     int rc;
     bool has_update = false;
     int delay_value = block ? -1 : 1;
+    int messages_left;
 
-    rc = poll(m_event_fds, MAX_EVENT_COUNT, delay_value);
+    rc = poll(m_event_fds, m_highest_event_count, delay_value);
     if (rc < 0) {
         if (errno != EINTR) {
             KP_CHECK_ERRNO(rc);
@@ -463,15 +480,44 @@ int device_manager_poll(bool block) {
         return false;
     }
 
+    messages_left = rc;
 
-    for (int i = 0; i < MAX_EVENT_COUNT; ++i) {
-        // handle inotify events
-        if ((m_event_fds[i].revents & POLLIN) && m_event_fds[i].fd == m_fd_udevmon) {
-            handle_udev_event();
+    for (int i = 0; messages_left > 0; ++i) {
+        short revents = m_event_fds[i].revents;
+
+        // ignore invalid fd value
+        if (m_event_fds[i].fd == -1 || revents == 0) {
             continue;
         }
 
-        if (m_event_fds[i].revents & POLLIN && m_event_fds[i].fd > 0) {
+        messages_left--;
+
+        // remove device on read() errors
+        if (revents & (POLLERR | POLLHUP | POLLNVAL)) {
+            KP_ASSERT(!(revents & POLLNVAL));
+
+            if (i == 0) {
+                KP_LOG_ERROR("udev device monitor read error\n");
+                // NOTE: maybe we could try and recover here
+                return -EIO;
+            } else {
+                const char* path = kp_evdev_array_get_path(i);
+
+                KP_LOG_INFO("read error on %s, disconnecting it", path);
+                // something has gone wrong, so we close the device to be safe
+                kp_evdev_array_free_device(i);
+            }
+            continue;
+        }
+
+        // ignore devices without data
+        if (!(revents & POLLIN)) {
+            continue;
+        }
+
+        if (m_event_fds[i].fd == m_fd_udevmon) {
+            handle_udev_event();
+        } else if (m_event_fds[i].fd > 0) {
             rc = handle_evdev_event(i);
             if (rc > 0) {
                 has_update = true;

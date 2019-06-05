@@ -109,7 +109,9 @@ int kp_mainloop(int argc, const char **argv){
 
         rc = device_manager_poll(should_sleep);
 
-        if (rc == -EINTR) {
+        if (rc == -EINTR) { // received a signal, which indicates we should close
+            break;
+        } else if (rc == -EIO) { // fatal error
             break;
         }
 

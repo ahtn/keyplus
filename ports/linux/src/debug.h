@@ -18,8 +18,8 @@
 #endif
 
 #define KP_LOG_ERROR(fmt, args...) do { \
-    fprintf(stderr, "ERROR %s:%d: " fmt, __FILE__, __LINE__, ##args); \
-    syslog(LOG_ERR, "ERROR %s:%d: " fmt, __FILE__, __LINE__, ##args); \
+    fprintf(stderr, "ERROR %s:%d: " fmt "\n", __FILE__, __LINE__, ##args); \
+    syslog(LOG_ERR, "ERROR %s:%d: " fmt "\n", __FILE__, __LINE__, ##args); \
 } while (0)
 
 #define KP_LOG_INFO(fmt, args...) do { \

@@ -138,7 +138,7 @@ setup:
 	./setup.sh
 
 gdb: $(BUILD_TARGET)
-	gdb $(BUILD_TARGET) -c ./test_settings.bin
+	gdb --args $(BUILD_TARGET) --as-user -c $(TEST_CONFIG_BIN)
 
 valgrind: $(BUILD_TARGET)
 	@# NOTE: lax-ioctls is used to suppress false positives when accessing /dev/uinput
@@ -148,7 +148,7 @@ valgrind: $(BUILD_TARGET)
 			 --track-origins=yes \
 			 --verbose \
 			 --sim-hints=lax-ioctls \
-			 ./$(BUILD_TARGET) -c ./test_settings.bin
+			 ./$(BUILD_TARGET) -c $(TEST_CONFIG_BIN)
 
 layout: $(TEST_CONFIG_BIN)
 
