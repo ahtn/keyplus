@@ -95,42 +95,6 @@ else
     CDEFS += -DUSE_VIRTUAL_MODE=1
 endif
 
-# NRF24 module, defaults to 0
-ifeq ($(USE_NRF24), 1)
-    C_SRC += \
-        $(CORE_PATH)/nrf24.c \
-        $(CORE_PATH)/rf.c \
-        $(CORE_PATH)/nonce.c
-
-    CDEFS += -DUSE_NRF24=1
-    CDEFS += -DNONCE_ADDR=$(NONCE_ADDR)
-
-    ifeq ($(USE_UNIFYING), 0)
-        CDEFS += -DUSE_UNIFYING=0
-    else
-        ifeq ($(USE_MOUSE_GESTURE), 1)
-            CDEFS += -DUSE_MOUSE_GESTURE=1
-        else
-            CDEFS += -DUSE_MOUSE_GESTURE=0
-        endif
-        ifeq ($(USE_USB), 1)
-            C_SRC += $(CORE_PATH)/unifying.c
-            CDEFS += -DUSE_UNIFYING=1
-        else
-            $(error "Need USB for unifying support")
-        endif
-    endif
-else
-    CDEFS += -DUSE_NRF24=0
-    CDEFS += -DUSE_UNIFYING=0
-endif
-
-ifeq ($(USE_NRF52_ESB), 1)
-    CDEFS += -DUSE_NRF52_ESB=1
-else
-    CDEFS += -DUSE_NRF52_ESB=0
-endif
-
 # I2C module, defaults to 0
 ifeq ($(USE_I2C), 1)
     CDEFS += -DUSE_I2C=1
@@ -190,5 +154,50 @@ ifeq ($(USE_HID), 1)
         $(CORE_PATH)/keycode.c \
     #
 endif
+
+# NRF24 module, defaults to 0
+ifeq ($(USE_NRF24), 1)
+    C_SRC += \
+        $(CORE_PATH)/nrf24.c \
+        $(CORE_PATH)/rf.c \
+        $(CORE_PATH)/nonce.c
+
+    CDEFS += -DUSE_NRF24=1
+    CDEFS += -DNONCE_ADDR=$(NONCE_ADDR)
+
+    ifeq ($(USE_UNIFYING), 0)
+        CDEFS += -DUSE_UNIFYING=0
+    else
+        ifeq ($(USE_HID), 0)
+            $(error "Need USB/BT for unifying support")
+        endif
+        C_SRC += $(CORE_PATH)/unifying.c
+        CDEFS += -DUSE_UNIFYING=1
+        USE_MOUSE = 1
+    endif
+else
+    CDEFS += -DUSE_NRF24=0
+    CDEFS += -DUSE_UNIFYING=0
+endif
+
+ifeq ($(USE_NRF52_ESB), 1)
+    CDEFS += -DUSE_NRF52_ESB=1
+else
+    CDEFS += -DUSE_NRF52_ESB=0
+endif
+
+ifeq ($(USE_MOUSE), 1)
+    CDEFS += -DUSE_MOUSE=1
+    C_SRC += $(CORE_PATH)/mouse.c
+    ifeq ($(USE_MOUSE_GESTURE), 1)
+        CDEFS += -DUSE_MOUSE_GESTURE=1
+    else
+        CDEFS += -DUSE_MOUSE_GESTURE=0
+    endif
+else
+    CDEFS += -DUSE_MOUSE_GESTURE=0
+    CDEFS += -DUSE_MOUSE=0
+endif
+
 
 include $(KEYPLUS_PATH)/hid_reports/hid_reports.mk

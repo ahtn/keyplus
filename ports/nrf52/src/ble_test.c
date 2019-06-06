@@ -1469,6 +1469,7 @@ static void esb_multiprotocol_start(void) {
 #include "core/macro.h"
 #include "core/rf.h"
 #include "core/unifying.h"
+#include "core/mouse.h"
 
 #include "key_handlers/key_mouse.h"
 #include "key_handlers/key_hold.h"
@@ -1700,7 +1701,7 @@ int ble_test_main(uint8_t x) {
             } else {
                 rf_task();
             }
-            unifying_mouse_handle();
+            handle_mouse_events();
 #else
             rf_task();
 #endif

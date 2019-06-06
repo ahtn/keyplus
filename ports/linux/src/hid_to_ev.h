@@ -28,6 +28,11 @@ extern const uint16_t HID_MOUSE_TO_EV[MOUSE_EVENT_MAP_LEN];
 extern const uint16_t HID_SYSTEM_TO_EV_TABLE[SYSTEM_EVENT_MAP_LEN];
 extern const uint16_t HID_CONSUMER_TO_EV_TABLE[CONSUMER_EVENT_MAP_LEN];
 
+static inline int hid_mouse_to_ev(uint8_t btn) {
+    KP_ASSERT(btn < MOUSE_EVENT_MAP_LEN);
+    return HID_MOUSE_TO_EV[btn];
+}
+
 static inline uint16_t hid_system_to_ev(uint8_t code) {
     if (code < SYSTEM_MAP_OFFSET) {
         return 0;

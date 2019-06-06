@@ -156,7 +156,6 @@ void kp_virtual_hid_mouse_report_send(void) {
             }
 
             value = !!(new_mods & (1 << i));
-            printf("btn %d == %d\n", i, value);
             kp_virtual_mouse_send(EV_KEY, HID_MOUSE_TO_EV[i], value);
             changed = 1;
         }

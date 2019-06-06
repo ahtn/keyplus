@@ -117,7 +117,7 @@ void main(void) {
 #endif
 
                 // send reports
-                unifying_mouse_handle();
+                handle_mouse_events();
                 send_keyboard_report();
                 send_media_report();
                 send_mouse_report();

@@ -15,6 +15,7 @@
 
 #include "core/settings.h"
 #include "core/timer.h"
+#include "core/mouse.h"
 #include "core/matrix_interpret.h"
 
 #include "udev_helpers.h"
@@ -40,11 +41,19 @@ static struct kp_evdev_device m_dev_array[MAX_EVENT_COUNT];
 static unsigned int m_highest_event_count;
 
 #if 1
+// static kp_udev_info m_match_usb = {
+//     .kb_id = 0,
+//     .vid = 0x046d,
+//     .pid = 0xc52b,
+//     .name = "Logitech K270",
+//     .serial = NULL,
+// };
+
 static kp_udev_info m_match_usb = {
     .kb_id = 0,
     .vid = 0x046d,
     .pid = 0xc52b,
-    .name = "Logitech K270",
+    .name = "Logitech M720",
     .serial = NULL,
 };
 
@@ -375,6 +384,86 @@ cleanup:
     udev_device_unref(dev);
     return rc;
 }
+static int map_event(int kb_id, struct input_event ev) {
+    int rc;
+
+    if (ev.type == EV_KEY && ev.code == EXIT_KEY) {
+        g_running = false;
+    }
+
+    if (ev.type == EV_MSC) {
+        return 0;
+    }
+
+    if (ev.type == EV_SYN) {
+        return 0;
+    }
+
+    if ( ev.type == EV_REL) {
+        const int v = ev.value;
+        // rc = kp_virtual_mouse_send(ev.type, ev.code, ev.value);
+        // KP_CHECK_ERRNO(rc);
+        // rc = kp_virtual_mouse_send(EV_SYN, SYN_REPORT, 0);
+        // KP_CHECK_ERRNO(rc);
+        switch (ev.code) {
+            case REL_X:             { mouse_move(v, 0, 0, 0); } break;
+            case REL_Y:             { mouse_move(0, v, 0, 0); } break;
+            case REL_WHEEL:         { mouse_move(0, 0, v, 0); } break;
+            case REL_HWHEEL:        { mouse_move(0, 0, 0, v); } break;
+            // case REL_WHEEL_HI_RES:  { mouse_move(0, 0, v/15, 0); } break;
+            // case REL_HWHEEL_HI_RES: { mouse_move(0, 0, 0, v/15); } break;
+            case REL_WHEEL_HI_RES:  { /* ignore for now */ } break;
+            case REL_HWHEEL_HI_RES: { /* ignore for now */ } break;
+
+            default: {
+                KP_LOG_INFO("got unsupported EV_REL == %s<%d>",
+                            libevdev_event_code_get_name(ev.type, ev.code),
+                            ev.code);
+            } break;
+
+        }
+    }
+
+    if (ev.type == EV_KEY) {
+        int key_num = mapper_event_to_key_num(kb_id, ev.code);
+        if (key_num != UNMAPPED_KEY) {
+            KP_DEBUG_PRINT(2, "%09u: Event(%d): %s<0x%x> -> key_num<%d>, State: %d\n",
+                (unsigned int)timer_read_ms(),
+                kb_id,
+                libevdev_event_code_get_name(ev.type, ev.code),
+                ev.code,
+                key_num,
+                ev.value);
+
+            if (ev.value != 2) {
+                // Set the key number in its matrix
+                keyboard_matrix_set_key(kb_id, key_num, ev.value);
+                return 1;
+            }
+        } else {
+            KP_DEBUG_PRINT(2, "%09u: Event(%d): forwarding %s %d\n",
+                (unsigned int)timer_read_ms(),
+                kb_id,
+                libevdev_event_code_get_name(ev.type, ev.code),
+                ev.value);
+
+            rc = kp_virtual_keyboard_send(ev.type, ev.code, ev.value);
+            KP_CHECK_ERRNO(rc);
+            rc = kp_virtual_keyboard_send(EV_SYN, SYN_REPORT, 0);
+            KP_CHECK_ERRNO(rc);
+        }
+    } else {
+        KP_DEBUG_PRINT(2,
+            "%09u: Event(%d): %s\t%s\t\t%d\n",
+            (unsigned int)timer_read_ms(),
+            kb_id,
+            libevdev_event_type_get_name(ev.type),
+            libevdev_event_code_get_name(ev.type, ev.code),
+            ev.value);
+    }
+
+    return 0;
+}
 
 /// When an handle events for a given input device
 static int handle_evdev_event(int i) {
@@ -393,65 +482,9 @@ static int handle_evdev_event(int i) {
             return -1;
         }
 
-        if (ev.type == EV_KEY && ev.code == EXIT_KEY) {
-            g_running = false;
-        }
-
-        if (ev.type == EV_MSC) {
-            continue;
-        }
-
-        if (ev.type == EV_SYN) {
-            continue;
-        }
-
-        if (
-            ev.type == EV_REL ||
-            (ev.type == EV_KEY && (BTN_LEFT <= ev.code && ev.code <= BTN_TASK))
-        ) {
-            rc = kp_virtual_mouse_send(ev.type, ev.code, ev.value);
-            KP_CHECK_ERRNO(rc);
-            rc = kp_virtual_mouse_send(EV_SYN, SYN_REPORT, 0);
-            KP_CHECK_ERRNO(rc);
-        }
-
-
         int kb_id = m_dev_array[i].kb_id;
-        if (ev.type == EV_KEY) {
-            int key_num = mapper_event_to_key_num(kb_id, ev.code);
-            if (key_num != UNMAPPED_KEY) {
-                KP_DEBUG_PRINT(2, "%09u: Event(%d): %s -> %d == %d\n",
-                       (unsigned int)timer_read_ms(),
-                       kb_id,
-                       libevdev_event_code_get_name(ev.type, ev.code),
-                       key_num, ev.value);
+        updated += map_event(kb_id, ev);
 
-                if (ev.value != 2) {
-                    // Set the key number in its matrix
-                    keyboard_matrix_set_key(kb_id, key_num, ev.value);
-                    updated++;
-                }
-            } else {
-                KP_DEBUG_PRINT(2, "%09u: Event(%d): forwarding %s %d\n",
-                               (unsigned int)timer_read_ms(),
-                               kb_id,
-                               libevdev_event_code_get_name(ev.type, ev.code),
-                               ev.value);
-
-                rc = kp_virtual_keyboard_send(ev.type, ev.code, ev.value);
-                KP_CHECK_ERRNO(rc);
-                rc = kp_virtual_keyboard_send(EV_SYN, SYN_REPORT, 0);
-                KP_CHECK_ERRNO(rc);
-            }
-        } else {
-            KP_DEBUG_PRINT(2,
-                           "%09u: Event(%d): %s\t%s\t\t%d\n",
-                           (unsigned int)timer_read_ms(),
-                           kb_id,
-                           libevdev_event_type_get_name(ev.type),
-                           libevdev_event_code_get_name(ev.type, ev.code),
-                           ev.value);
-        }
     } while (libevdev_has_event_pending(evdev));
 
     return updated;

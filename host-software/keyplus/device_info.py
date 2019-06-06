@@ -88,7 +88,7 @@ class KeyboardPinMapping(object):
                 )
             result += self._pin_map_to_bytes();
         elif self.internal_scan_method == MATRIX_SCANNER_INTERNAL_VIRTUAL:
-            assert(len(self.key_number_map) <= 512)
+            assert(len(self.key_number_map) <= VIRTUAL_MAP_TABLE_SIZE)
             result += bytearray(self.key_number_map)
         else:
             raise KeyplusSettingsError(

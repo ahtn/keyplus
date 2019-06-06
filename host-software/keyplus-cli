@@ -706,7 +706,7 @@ class ProgramCommand(GenericDeviceCommand):
         try:
             settings_data = kp_layout.build_settings_section(device_target)
             layout_data = kp_layout.build_layout_section(device_target)
-        except Exception as err:
+        except KeyplusError as err:
             print_error(err)
             exit(EXIT_BAD_FILE)
 

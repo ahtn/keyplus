@@ -23,6 +23,7 @@
 #include "core/settings.h"
 #include "core/timer.h"
 #include "core/usb_commands.h"
+#include "core/mouse.h"
 
 #include "hid_reports/keyboard_report.h"
 #include "hid_reports/media_report.h"
@@ -365,7 +366,7 @@ void usb_mode_main_loop(void) {
             } else {
                 rf_task();
             }
-            unifying_mouse_handle();
+            handle_mouse_events();
         }
 #endif
         macro_task();

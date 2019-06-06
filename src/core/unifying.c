@@ -8,14 +8,13 @@
 
 #include "core/hardware.h"
 #include "core/hidpp20.h"
-#include "core/layout.h"
 #include "core/led.h"
-#include "core/matrix_interpret.h"
 #include "core/nrf24.h"
 #include "core/rf.h"
 #include "core/settings.h"
 #include "core/timer.h"
 #include "core/usb_commands.h"
+#include "core/mouse.h"
 
 #if USE_NRF52_ESB
 #include "nrf_esb.h"
@@ -23,7 +22,6 @@
 #include "core/nrf52_esb.h"
 #endif
 
-#include "key_handlers/key_hold.h"
 #include "hid_reports/mouse_report.h"
 
 // NOTE: For uniyfing devices to work, we need to dedicated at least 2 pipes
@@ -35,18 +33,6 @@
 // response it, will then start sending messages on its own pipe X1. If it
 // disconnects, it will go back to pinging X0.
 #define UNIFYING_ADDR_WIDTH 5
-
-
-// TODO: should move this to an init function
-XRAM unifying_mouse_state_t g_unifying_mouse_state = {0};
-XRAM uint8_t g_unifying_mouse_activity = 0;
-
-#if USE_MOUSE_GESTURE
-XRAM gesture_state_t s_gesture = {0};
-
-// HID++ communication state
-static XRAM uint8_t s_index = 0;
-#endif
 
 /// Address for the initial unifying pairing request.
 ///
@@ -67,6 +53,9 @@ static XRAM uint8_t s_extra_button_last_state = 0;
 // after some requests (that seems to correspond to a left click, might
 // be specific to m560???).
 static XRAM uint8_t s_ignore_buggy_report = 0;
+
+// HID++ communication state
+static XRAM uint8_t s_index = 0;
 
 void unifying_set_pairing_address(const XRAM uint8_t *target_addr, uint8_t addr_lsb);
 
@@ -155,7 +144,7 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
 
 #if USE_MOUSE_GESTURE
             // On left mouse click, send a HID++ packet.
-            if ((g_unifying_mouse_state.buttons_1 & 0x01) == 0 && (nrf_packet[2] & 0x01)) {
+            if ((g_mouse_state.buttons_1 & 0x01) == 0 && (nrf_packet[2] & 0x01)) {
                 // TODO: integrate this functionality so it happens automatically
                 // on device power on and receiving packets from the mouse
                 unifying_hidpp20_long_t XRAM* report = (unifying_hidpp20_long_t*)tmp_buffer;
@@ -225,14 +214,14 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
 #endif
 
 
-            g_unifying_mouse_state.buttons_1 = nrf_packet[2] | s_extra_button_last_state;
-            g_unifying_mouse_state.buttons_2 = nrf_packet[3];
-            g_unifying_mouse_state.x = sign_extend_12(x);
-            g_unifying_mouse_state.y = sign_extend_12(y);
-            g_unifying_mouse_state.wheel_y = nrf_packet[7];
-            g_unifying_mouse_state.wheel_x = nrf_packet[8];
+            g_mouse_state.buttons_1 = nrf_packet[2] | s_extra_button_last_state;
+            g_mouse_state.buttons_2 = nrf_packet[3];
+            g_mouse_state.x = sign_extend_12(x);
+            g_mouse_state.y = sign_extend_12(y);
+            g_mouse_state.wheel_y = nrf_packet[7];
+            g_mouse_state.wheel_x = nrf_packet[8];
 
-            g_unifying_mouse_activity = UNIFYING_MOUSE_ACTIVE;
+            g_mouse_activity = UNIFYING_MOUSE_ACTIVE;
         } break;
 
         case UNIFYING_FRAME_EXTRA_BUTTON: { // 0xD1
@@ -268,14 +257,14 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
                 // was released. Therefore we must release all buttons to be
                 // safe.
                 case 0x00: {
-                    g_unifying_mouse_state.buttons_1 &= ~s_extra_button_last_state;
+                    g_mouse_state.buttons_1 &= ~s_extra_button_last_state;
                     s_extra_button_last_state = 0;
                 } break;
             }
 
-            g_unifying_mouse_state.buttons_1 |= s_extra_button_last_state;
+            g_mouse_state.buttons_1 |= s_extra_button_last_state;
 
-            g_unifying_mouse_activity = UNIFYING_MOUSE_EXTRA_BUTTON;
+            g_mouse_activity = UNIFYING_MOUSE_EXTRA_BUTTON;
         } break;
 
         case UNIFYING_FRAME_HIDPP_LONG_RESP: {
@@ -321,10 +310,10 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
             }
 
             // When reporting in this mode, we control these bits directly
-            g_unifying_mouse_state.buttons_1 &= ~(0xE0);
-            g_unifying_mouse_state.buttons_1 |= s_extra_button_last_state;
+            g_mouse_state.buttons_1 &= ~(0xE0);
+            g_mouse_state.buttons_1 |= s_extra_button_last_state;
 
-            g_unifying_mouse_activity = UNIFYING_MOUSE_EXTRA_BUTTON;
+            g_mouse_activity = UNIFYING_MOUSE_EXTRA_BUTTON;
         } break;
 #if 0
         // Unecrypted HID packet
@@ -333,159 +322,18 @@ void unifying_read_packet(const XRAM uint8_t *nrf_packet, uint8_t width) {
         }
 
         case UNIFYING_FRAME_KEEP_ALIVE_2: { // 0x4F
-            // g_unifying_mouse_activity = true;
+            // g_mouse_activity = true;
         } break; */
 
         case UNIFYING_FRAME_KEEP_ALIVE_1: { // 0x40 */
             mouse_active = false;
             if (mouse_active) {
-            g_unifying_mouse_activity = true;
+            g_mouse_activity = true;
             }
-            memset(&g_unifying_mouse_state, 0, sizeof(g_unifying_mouse_state));
+            memset(&g_mouse_state, 0, sizeof(g_mouse_state));
         }
 #endif
     }
-}
-
-#if USE_MOUSE_GESTURE
-void gesture_init(void) {
-}
-
-void gesture_press(uint16_t ekc_addr, uint8_t kb_id) {
-    if (s_gesture.state == GESTURE_STATE_INACTIVE) {
-        s_gesture.x = 0;
-        s_gesture.y = 0;
-        s_gesture.state = GESTURE_STATE_SCANNING;
-        s_gesture.ekc_addr = ekc_addr;
-        s_gesture.kb_id = kb_id;
-        get_ekc_data(&s_gesture.threshold, s_gesture.ekc_addr, sizeof(uint16_t)*3);
-    }
-}
-
-void gesture_release(uint16_t ekc_addr, uint8_t kb_id) {
-    switch (s_gesture.state) {
-        case GESTURE_STATE_SCANNING: {
-            if (
-                (abs(s_gesture.x) < s_gesture.threshold_tap) &&
-                (abs(s_gesture.y) < s_gesture.threshold_tap)
-            ) {
-                // TAP
-            }
-            s_gesture.state = GESTURE_STATE_INACTIVE;
-        } break;
-        case GESTURE_STATE_ACTIVATED: {
-            queue_keycode_event(s_gesture.triggered_kc, EVENT_RELEASED, s_gesture.kb_id);
-            s_gesture.state = GESTURE_STATE_INACTIVE;
-        } break;
-    }
-}
-
-void trigger_gesture(uint8_t gesture_type) {
-    // Gesture EKC data layout:
-    //
-    // typedef struct ekc_gesture_t {
-    // 00:  uint16_t threshold;
-    // 02:  uint16_t threshold_diag;
-    // 04:  uint16_t threshold_tap;
-    // 06:  keycode_t left;
-    // 08:  keycode_t right;
-    // 0A:  keycode_t up;
-    // 0C:  keycode_t down;
-    // 1E:  keycode_t up_left;
-    // 10:  keycode_t up_right;
-    // 12:  keycode_t down_left;
-    // 14:  keycode_t down_right;
-    // 16:  keycode_t tap;
-    // } ekc_gesture_t;
-    keycode_t gesture_kc;
-    get_ekc_data(
-        &gesture_kc,
-        s_gesture.ekc_addr + EKC_GESTURE_LEFT_ADDR + gesture_type*2,
-        sizeof(keycode_t)
-    );
-
-    queue_keycode_event(gesture_kc, EVENT_PRESSED, s_gesture.kb_id);
-
-    s_gesture.state = GESTURE_STATE_ACTIVATED;
-    s_gesture.triggered_kc = gesture_kc;
-}
-#endif
-
-void unifying_mouse_handle(void) REENT {
-    if (!g_unifying_mouse_activity) {
-        return;
-    }
-
-    if (has_active_slot() && has_mouse_layers(get_active_keyboard_id())) {
-        update_mouse_matrix(g_unifying_mouse_state.buttons_1);
-    } else {
-        // If no keyboard layout is active, use default button mapping
-        g_mouse_report.buttons_1 = g_unifying_mouse_state.buttons_1;
-        g_mouse_report.buttons_2 = g_unifying_mouse_state.buttons_2;
-        g_report_pending_mouse = true;
-
-        if (g_mouse_report.buttons_1) {
-            hold_key_task(true);
-        }
-    }
-
-    if (g_mouse_report.buttons_1 || g_mouse_report.buttons_2) {
-        // Allow mouse button presses to clear sticky mods
-        clear_sticky_mods();
-    }
-
-    if (g_unifying_mouse_activity == UNIFYING_MOUSE_ACTIVE) {
-        g_mouse_report.x = g_unifying_mouse_state.x;
-        g_mouse_report.y = g_unifying_mouse_state.y;
-        g_mouse_report.wheel_x = KP_SIGN(g_unifying_mouse_state.wheel_x);
-        g_mouse_report.wheel_y = KP_SIGN(g_unifying_mouse_state.wheel_y);
-        g_report_pending_mouse = true;
-    } else if (g_unifying_mouse_activity == UNIFYING_MOUSE_EXTRA_BUTTON) {
-        // If a special button was pressed don't want to update the cursor position.
-        //
-        // NOTE: x and y cleared automatically whenever a mouse report is sent
-        // so no need to do it here
-    }
-
-#if USE_MOUSE_GESTURE
-    // Gesture handling
-    // if (g_unifying_mouse_state.buttons_1 & 0x80) {
-    switch (s_gesture.state) {
-        case GESTURE_STATE_SCANNING: {
-            uint8_t has_pos_x, has_neg_x, has_pos_y, has_neg_y;
-
-            s_gesture.x += g_unifying_mouse_state.x;
-            s_gesture.y += g_unifying_mouse_state.y;
-
-            // trigger threshold for diagonal motions
-            has_pos_x = s_gesture.x >  s_gesture.threshold_diag;
-            has_neg_x = s_gesture.x < -s_gesture.threshold_diag;
-            has_pos_y = s_gesture.y >  s_gesture.threshold_diag;
-            has_neg_y = s_gesture.y < -s_gesture.threshold_diag;
-
-            if (has_neg_x && has_neg_y) {
-                trigger_gesture(GESTURE_UP_LEFT);
-            } else if (has_pos_x && has_neg_y) {
-                trigger_gesture(GESTURE_UP_RIGHT);
-            } else if (has_neg_x && has_pos_y) {
-                trigger_gesture(GESTURE_DOWN_LEFT);
-            } else if (has_pos_x && has_pos_y) {
-                trigger_gesture(GESTURE_DOWN_RIGHT);
-            } else if (s_gesture.x < -s_gesture.threshold) {
-                trigger_gesture(GESTURE_LEFT);
-            } else if (s_gesture.x > s_gesture.threshold) {
-                trigger_gesture(GESTURE_RIGHT);
-            } else if (s_gesture.y < -s_gesture.threshold) {
-                trigger_gesture(GESTURE_UP);
-            } else if (s_gesture.y >  s_gesture.threshold) {
-                trigger_gesture(GESTURE_DOWN);
-            }
-        } break;
-    }
-#endif
-
-    g_unifying_mouse_activity = 0;
-
 }
 
 /*********************************************************************

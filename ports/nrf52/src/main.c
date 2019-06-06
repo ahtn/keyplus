@@ -19,6 +19,7 @@
 #include "core/settings.h"
 #include "core/timer.h"
 #include "core/nrf52_esb.h"
+#include "core/mouse.h"
 
 #include "nrf52_usb.h"
 
@@ -207,7 +208,7 @@ int main(void) {
                 } else {
                     rf_task();
                 }
-                unifying_mouse_handle();
+                handle_mouse_events();
             #else
                 rf_task();
             #endif

@@ -53,7 +53,6 @@ void mapper_set_map(int kb_id, uint8_t *map) {
     // table.  However values > 255 correspond to values in the System and
     // Consumer usage tables. See ref: TODO
     for (int i = 0; i < KEY_MAP_SIZE; ++i) {
-        int hid;
         int key_num;
         int event_code;
 
@@ -62,22 +61,34 @@ void mapper_set_map(int kb_id, uint8_t *map) {
             continue;
         }
 
-        // HID code equals position in the table
-        hid = i;
+        if (HID_MAP_KB_START <= i && i <= HID_MAP_KB_END) {
+            // HID code equals position in the table
+            int hid = i;
 
-        // TODO: handle cases above 255 for Consumer/System HID codes
-        KP_ASSERT(hid <= 255);
+            event_code = HID_KB_TO_EV[hid];
 
-        event_code = HID_KB_TO_EV[hid];
+            KP_DEBUG_PRINT(2,
+                        "Event(%d): mapping %s<%d>/HID<%d> --> key_num<%d> \n",
+                        kb_id,
+                        libevdev_event_code_get_name(EV_KEY, event_code),
+                        event_code,
+                        hid,
+                        key_num);
 
-        KP_DEBUG_PRINT(2,
-                       "Event(%d): mapping %s<%d> -> HID<%d>\n",
-                       kb_id,
-                       libevdev_event_code_get_name(EV_KEY, event_code),
-                       event_code,
-                       hid);
+            m_keyboards[kb_id].key_num_map[event_code] = key_num;
+        } else if (HID_MAP_SYS_START <= i && i <= HID_MAP_SYS_END) {
 
-        m_keyboards[kb_id].key_num_map[event_code] = key_num;
+        } else if (HID_MAP_MOUSE_START <= i && i <= HID_MAP_MOUSE_END) {
+            int mouse_btn = i - HID_MAP_MOUSE_START;
+            event_code = hid_mouse_to_ev(mouse_btn);
+            KP_DEBUG_PRINT(2,
+                        "Event(%d): mapping %s<%d> -> MouseBTN<%d>\n",
+                        kb_id,
+                        libevdev_event_code_get_name(EV_KEY, event_code),
+                        event_code,
+                        mouse_btn);
+            m_keyboards[kb_id].key_num_map[event_code] = key_num;
+        }
     }
 }
 

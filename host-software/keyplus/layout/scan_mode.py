@@ -431,7 +431,7 @@ class ScanMode(object):
             )
         elif self.mode == VIRTUAL:
             keys = io_mapper.get_pin_numbers(self.keys)
-            key_number_map = [0xff] * 512
+            key_number_map = [0xff] * VIRTUAL_MAP_TABLE_SIZE
 
             for (key_num, key) in enumerate(keys):
                 key_number_map[key] = key_num

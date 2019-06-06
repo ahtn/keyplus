@@ -67,12 +67,6 @@ typedef enum {
     UNIFYING_MSB_EXTRA_3 = 0x80,
 } unifying_mouse_button_mask_t;
 
-typedef enum {
-    UNIFYING_MOUSE_INACTIVE = 0x00,
-    UNIFYING_MOUSE_ACTIVE = 0x01,
-    UNIFYING_MOUSE_EXTRA_BUTTON = 0x02,
-} unifying_mouse_activity_t;
-
 typedef struct {
     uint8_t id;
     uint8_t type;
@@ -297,50 +291,10 @@ typedef struct unifying_hidpp20_diverted_buttons_t {
     uint8_t checksum;
 } ATTR_PACKED unifying_hidpp20_diverted_buttons_t;
 
-enum {
-    GESTURE_STATE_INACTIVE = 0,
-    GESTURE_STATE_SCANNING = 1,
-    GESTURE_STATE_ACTIVATED = 2,
-};
-
-enum {
-    GESTURE_LEFT = 0,
-    GESTURE_RIGHT = 1,
-    GESTURE_UP = 2,
-    GESTURE_DOWN = 3,
-    GESTURE_UP_LEFT = 4,
-    GESTURE_UP_RIGHT = 5,
-    GESTURE_DOWN_LEFT = 6,
-    GESTURE_DOWN_RIGHT = 7,
-    GESTURE_TAP = 8,
-};
-
-#define EKC_GESTURE_LEFT_ADDR 0x06
-typedef struct gesture_state_t {
-    uint8_t state;
-    int16_t x;
-    int16_t y;
-    uint8_t kb_id;
-    uint16_t ekc_addr;
-    keycode_t triggered_kc;
-    int16_t threshold;
-    int16_t threshold_diag;
-    int16_t threshold_tap;
-} gesture_state_t;
-
-extern XRAM unifying_mouse_state_t g_unifying_mouse_state;
-extern XRAM uint8_t g_unifying_mouse_state_changed;
-
 uint8_t unifying_calc_checksum(const XRAM uint8_t *data, const uint8_t len);
-
 void unifying_send_packet(const XRAM uint8_t *data, uint8_t size);
 void unifying_read_packet(const uint8_t XRAM *nrf_packet, uint8_t width);
-void unifying_mouse_handle(void) REENT;
 void unifying_begin_pairing(void);
 void unifying_pairing_poll(void);
-
-void gesture_init(void);
-void gesture_press(uint16_t ekc_addr, uint8_t kd_id);
-void gesture_release(uint16_t ekc_addr, uint8_t kd_id);
 
 bit_t unifying_is_pairing_active(void);

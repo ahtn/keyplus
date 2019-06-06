@@ -245,6 +245,32 @@ virtual_key_map = {
     'RIGHT_ALT' : 0xe6, 'RALT' : 0xe6,
     'RIGHT_GUI' : 0xe7, 'RGUI' : 0xe7, 'RMETA' : 0xe7, 'RWIN' : 0xe7,
     # /* reserved e8-ffff */
+
+    'SYS_POWER'         : 0x101,  # 0x81: HID_DESKTOP_SYSTEM_POWER_DOWN
+    'SYS_SLEEP'         : 0x102,  # 0x82: HID_DESKTOP_SYSTEM_SLEEP
+    'SYS_WAKEUP'        : 0x103,  # 0x83: HID_DESKTOP_SYSTEM_WAKE_UP
+    'SYS_CONTEXT_MENU'  : 0x104,  # 0x84: HID_DESKTOP_SYSTEM_CONTEXT_MENU
+    'SYS_MENU'          : 0x105,  # 0x85: HID_DESKTOP_SYSTEM_MAIN_MENU
+    'SYS_APP_MENU'      : 0x106,  # 0x86: HID_DESKTOP_SYSTEM_APP_MENU
+    'SYS_HELP'          : 0x107,  # 0x87: HID_DESKTOP_SYSTEM_MENU_HELP
+    'SYS_EXIT'          : 0x108,  # 0x88: HID_DESKTOP_SYSTEM_MENU_EXIT
+    'SYS_SELECT'        : 0x109,  # 0x89: HID_DESKTOP_SYSTEM_MENU_SELECT
+    'SYS_RIGHT'         : 0x10a,  # 0x8a: HID_DESKTOP_SYSTEM_MENU_RIGHT
+    'SYS_LEFT'          : 0x10b,  # 0x8b: HID_DESKTOP_SYSTEM_MENU_LEFT
+    'SYS_UP'            : 0x10c,  # 0x8c: HID_DESKTOP_SYSTEM_MENU_UP
+    'SYS_DOWN'          : 0x10d,  # 0x8d: HID_DESKTOP_SYSTEM_MENU_DOWN
+    'SYS_COLD_RESTART'  : 0x10e,  # 0x8e: HID_DESKTOP_SYSTEM_COLD_RESTART
+    'SYS_WARM_RESTART'  : 0x10f,  # 0x8f: HID_DESKTOP_SYSTEM_WARM_RESTART
+
+    'BTN1' : 0x110,  # Left Mouse Button
+    'BTN2' : 0x111,  # Right Mouse Button
+    'BTN3' : 0x112,  # Middle Mouse Button
+    'BTN4' : 0x113,  # Mouse Button 4
+    'BTN5' : 0x114,  # Mouse Button 5
+    'BTN6' : 0x115,  # Mouse Button 6
+    'BTN7' : 0x116,  # Mouse Button 7
+    'BTN8' : 0x117,  # Mouse Button 8
+
 }
 
 

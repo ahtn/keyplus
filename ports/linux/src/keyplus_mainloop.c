@@ -15,6 +15,7 @@
 #include "core/flash.h"
 #include "core/macro.h"
 #include "core/matrix_interpret.h"
+#include "core/mouse.h"
 #include "core/settings.h"
 #include "hid_reports/hid_reports.h"
 #include "key_handlers/key_hold.h"
@@ -114,6 +115,8 @@ int kp_mainloop(int argc, const char **argv){
         } else if (rc == -EIO) { // fatal error
             break;
         }
+
+        handle_mouse_events();
 
         interpret_all_keyboard_matrices();
 

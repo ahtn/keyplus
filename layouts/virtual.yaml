@@ -7,7 +7,25 @@
 report_mode: nkro
 
 devices:
-  virtual_map_test:
+  # virtual_map_test:
+  #   id: 0
+  #   scan_mode:
+  #     mode: virtual
+  #     # hid_vid: 0x1209
+  #     # hid_pid: 0x1209
+  #     # hid_name: hello
+  #     # hid_serial: "123456abcdef"
+  #     keys: [
+  #       F1,
+
+  #       TAB, Q , W , E , R , T , Y , U , I  , O  , P   , "[" , "]" , "\\" ,  INS, HOME, PGUP,
+  #       CAPS, A , S , D , F , G , H , J , K  , L  , ";" , "'" , ENT ,        DEL, END , PGDN,
+  #       LSFT,  Z , X , C , V , B , N , M , ",", ".", "/" , RSFT, UP,
+  #          LWIN,                                           LEFT, DOWN, RIGHT
+  #     ]
+  #   layout: colemak
+
+  mouse_map_test:
     id: 0
     scan_mode:
       mode: virtual
@@ -15,16 +33,10 @@ devices:
       # hid_pid: 0x1209
       # hid_name: hello
       # hid_serial: "123456abcdef"
-      # keys: [A, S, D, F, G, H, J, K, L, ";", "'"]
       keys: [
-        F1,
-
-        TAB, Q , W , E , R , T , Y , U , I  , O  , P   , "[" , "]" , "\\" ,  INS, HOME, PGUP,
-        CAPS, A , S , D , F , G , H , J , K  , L  , ";" , "'" , ENT ,        DEL, END , PGDN,
-        LSFT,  Z , X , C , V , B , N , M , ",", ".", "/" , RSFT, UP,
-           LWIN,                                           LEFT, DOWN, RIGHT
+        BTN1, BTN2, BTN3, BTN4, BTN5, BTN6, BTN7
       ]
-    layout: 1key
+    layout: mouse
 
 keycodes:
   SFTEnt:
@@ -65,27 +77,97 @@ keycodes:
       - system_cold_restart
       - system_warm_restart
 
+  # Default key repeat rate is too fast for changing tabs,
+  # so this macro lets the keyboard control it
+  slow_tab_change_left:
+    keycode: macro
+    commands:
+      - set_clear_rate(10)
+      - set_rate(200)
+      - repeat(0)
+      -   c-pgup
+      -   none
+      - end_repeat()
+    commands_release:
+      - release(c-pgup)
+
+  slow_tab_change_right:
+    keycode: macro
+    commands:
+      - set_clear_rate(10)
+      - set_rate(200)
+      - repeat(0)
+      -   c-pgdn
+      -   none
+      - end_repeat()
+    commands_release:
+      - release(c-pgdn)
+
+  # Close tab, no repeat
+  close_tab:
+    keycode: macro
+    commands:
+      - c-w
+
+  rapid_click:
+    keycode: macro
+    commands:
+      - set_rate(8)
+      - repeat(0) # repeat forever
+      -   press(lmsb)
+      -   release(lmsb)
+      - end_repeat()
+    commands_release:
+      - release(lmsb)
+
+  gesture:
+    keycode: mouse_gesture
+    left: slow_tab_change_left
+    right: slow_tab_change_right
+    up: ca-up
+    down: ca-down
+    up_right: home
+    down_right: end
+    up_left: rapid_click
+    down_left: close_tab
+
+    # tap: TODO
+    #
+    threshold: 110
+    threshold_diag: 65
+    # threshold_tap: 30
+    threshold_tap: 0
+
 layouts:
-  1key:
+  mouse:
     layers: [
-      [ # layer 0 (base)
-        [
-          M1,
-
-          tab,  Q , W , F , P , G , J , L , U  , Y  , ";"   , "[" , "]" , "\\" ,  INS , HOME , PGUP,
-          lctrl, A , R , S , T , D , H , N , E  , I  ,  O , "'" , ENT ,           DEL , END  , PGDN,
-          s_lsft,  Z , X , C , V , B , K , M , ",", ".", "/" , s_rsft, UP  ,
-             L1,                                                 LEFT,  DOWN, RIGHT
-        ]
-      ],
-      [ # layer 1 (base)
-        [
-          M1,
-
-          tab,    PSCR,MPLY,VOLU,MSTP, G , J , L , U  , Y  , ";"   , "[" , "]" , "\\" ,   INS , BTN3, WH_U,
-          lctrl,  MUTE,MNXT,VOLD,MPRV, D , H , N , E  , I  ,  O , "'" , ENT ,             BTN1, BTN2, WH_D,
-          s_lsft,  Z  , X  , C  , V  , B , K , M , ",", ".", "/" , s_rsft, ms_u ,
-             L1,                                                    ms_l, ms_d, ms_r
-        ]
+      [ # Layer 0
+        [ # Mouse
+          1, 2, gesture, BTN4, BTN5, BTN6, BTN7
+        ],
       ],
     ]
+
+  # colemak:
+  #   layers: [
+  #     [ # layer 0 (base)
+  #       [
+  #         M1,
+
+  #         tab,  Q , W , F , P , G , J , L , U  , Y  , ";"   , "[" , "]" , "\\" ,  INS , HOME , PGUP,
+  #         lctrl, A , R , S , T , D , H , N , E  , I  ,  O , "'" , ENT ,           DEL , END  , PGDN,
+  #         s_lsft,  Z , X , C , V , B , K , M , ",", ".", "/" , s_rsft, UP  ,
+  #            L1,                                                 LEFT,  DOWN, RIGHT
+  #       ]
+  #     ],
+  #     [ # layer 1 (base)
+  #       [
+  #         M1,
+
+  #         tab,    PSCR,MPLY,VOLU,MSTP, G , J , L , U  , Y  , ";"   , "[" , "]" , "\\" ,   INS , BTN3, WH_U,
+  #         lctrl,  MUTE,MNXT,VOLD,MPRV, D , H , N , E  , I  ,  O , "'" , ENT ,             BTN1, BTN2, WH_D,
+  #         s_lsft,  Z  , X  , C  , V  , B , K , M , ",", ".", "/" , s_rsft, ms_u ,
+  #            L1,                                                    ms_l, ms_d, ms_r
+  #       ]
+  #     ],
+  #   ]
