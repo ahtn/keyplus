@@ -45,6 +45,17 @@ typedef struct layout_header_t {
     uint8_t reserved0: 7;
 } layout_header_t;
 
+typedef struct virtual_device_header_t {
+    char name[64];
+    char serial[64];
+    uint8_t dev_id;
+    uint16_t vid;
+    uint16_t pid;
+    uint8_t reserved[123];
+} ATTR_PACKED virtual_device_header_t;
+
+KP_STATIC_ASSERT(sizeof(virtual_device_header_t)==256, "internal error");
+
 // #define LAYOUT_PORT_KEY_NUM_MAP_ADDR (LAYOUT_ADDR + 16)
 
 AT__LAYOUT_ADDR extern const uint8_t g_layout_storage[];

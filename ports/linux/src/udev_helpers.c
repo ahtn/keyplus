@@ -153,7 +153,7 @@ static void kp_udev_info_get(struct udev_device *dev, struct kp_udev_info *info)
 /// Check if `dev` matches against any of the elements in `targets`
 ///
 /// @return Return the id of the match or -1 on no match.
-int kp_udev_match(struct udev_device *dev, struct kp_udev_info **targets, size_t len) {
+int kp_udev_match(struct udev_device *dev, virtual_device_header_t *targets, size_t len) {
     struct kp_udev_info new_dev;
 
     KP_ASSERT(dev != NULL);
@@ -174,28 +174,28 @@ int kp_udev_match(struct udev_device *dev, struct kp_udev_info **targets, size_t
 
         KP_ASSERT(dev != NULL);
 
-        vid = targets[i]->vid;
+        vid = targets[i].vid;
         if (vid != 0 && vid != new_dev.vid) {
             continue;
         }
 
-        pid = targets[i]->pid;
+        pid = targets[i].pid;
         if (pid != 0 && pid != new_dev.pid) {
             continue;
         }
 
-        target_str = targets[i]->name;
-        if (target_str != NULL && strstr(new_dev.name, target_str) == NULL) {
+        target_str = targets[i].name;
+        if (target_str[0] != 0xff && strstr(new_dev.name, target_str) == NULL) {
             continue;
         }
 
-        target_str = targets[i]->serial;
-        if (target_str != NULL && strstr(new_dev.serial, target_str) == NULL) {
-            continue;
-        }
+        // target_str = targets[i].serial;
+        // if (target_str[0] != 0xff && strstr(new_dev.serial, target_str) == NULL) {
+        //     continue;
+        // }
 
         // if we reach here, all fields matched
-        return targets[i]->kb_id;
+        return i;
     }
 
     // couldn't find a match

@@ -353,6 +353,10 @@ typedef struct ATTR_PACKED firmware_build_settings_t {
     )
 #endif
 
+#define GET_LAYOUT_ID_FOR_DEVICE(dev_id) (\
+    GET_SETTING(layout.devices[(dev_id)].layout_id) \
+)
+
 AT__SETTINGS_ADDR extern const settings_t g_settings_storage;
 
 extern XRAM rf_settings_t g_rf_settings;

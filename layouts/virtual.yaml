@@ -1,4 +1,4 @@
-# Written in 2017 by jem@seethis.link
+# Written in 2019 by jem@seethis.link
 # This file is released into the public domain as per the CC0 Public Domain
 # Dedication (http://creativecommons.org/publicdomain/zero/1.0/)
 ---
@@ -7,36 +7,54 @@
 report_mode: nkro
 
 devices:
-  # virtual_map_test:
-  #   id: 0
-  #   scan_mode:
-  #     mode: virtual
-  #     # hid_vid: 0x1209
-  #     # hid_pid: 0x1209
-  #     # hid_name: hello
-  #     # hid_serial: "123456abcdef"
-  #     keys: [
-  #       F1,
-
-  #       TAB, Q , W , E , R , T , Y , U , I  , O  , P   , "[" , "]" , "\\" ,  INS, HOME, PGUP,
-  #       CAPS, A , S , D , F , G , H , J , K  , L  , ";" , "'" , ENT ,        DEL, END , PGDN,
-  #       LSFT,  Z , X , C , V , B , N , M , ",", ".", "/" , RSFT, UP,
-  #          LWIN,                                           LEFT, DOWN, RIGHT
-  #     ]
-  #   layout: colemak
-
-  mouse_map_test:
-    id: 0
+  virtual_map_test:
+    id: 1
     scan_mode:
       mode: virtual
-      # hid_vid: 0x1209
-      # hid_pid: 0x1209
-      # hid_name: hello
-      # hid_serial: "123456abcdef"
+      vid: "046d"
+      pid: "c52b"
+      name: Logitech K270
+      # serial: "123456abcdef"
+
+      # The keys we want to remap. The order we relist them as here, will be
+      # the same as how we list them in the `layers` section below.
       keys: [
-        BTN1, BTN2, BTN3, BTN4, BTN5, BTN6, BTN7
+        F1,
+
+        TAB, Q , W , E , R , T , Y , U , I  , O  , P   , "[" , "]" , "\\" ,  INS, HOME, PGUP,
+        CAPS, A , S , D , F , G , H , J , K  , L  , ";" , "'" , ENT ,        DEL, END , PGDN,
+        LSFT,  Z , X , C , V , B , N , M , ",", ".", "/" , RSFT, UP,
+           LWIN,                                           LEFT, DOWN, RIGHT
+      ]
+    layout: colemak
+
+    # Each layer in the `layouts` section below can be made up of multiple
+    # devices. This offset tells us which one this device maps to.
+    layout_offset: 1
+
+  # NOTE: might change mouse remapping behaviour slightly
+  mouse_map_test:
+    id: 2
+    scan_mode:
+      mode: virtual
+      vid: "046d"
+      pid: "c52b"
+      name: Logitech M720
+      # serial: "123456abcdef"
+      keys: [
+        BTN1, BTN2, BTN3, BTN4, BTN5, BTN6, BTN7, BTN8
       ]
     layout: mouse
+
+  # this should be ignored because scan_mode.mode != virtual
+  dummy:
+    id: 3
+    layout: mouse
+    layout_offset: 0
+    scan_mode:
+      mode: pin_gnd # options: col_row, pins, none
+      pins: [D2, D3, D1, D0, A2, A1, A0, A3]
+      # maps how keys are physically wired, to how they appear visually
 
 keycodes:
   SFTEnt:
@@ -48,7 +66,7 @@ keycodes:
 
   M1:
     keycode: macro
-    commands:
+    commands: # commands on key press
       - set_clear_rate(10)
       - set_rate(200)
       - h
@@ -56,26 +74,8 @@ keycodes:
       - l
       - l
       - o
-    # commands_release:
+    # commands_release: # commands on key release
     #   -
-  M2:
-    keycode: macro
-    commands:
-      - system_power
-      - system_sleep
-      - system_wake
-      - system_context_menu
-      - system_main_menu
-      - system_app_menu
-      - system_menu_help
-      - system_menu_exit
-      - system_menu_select
-      - system_menu_right
-      - system_menu_left
-      - system_menu_up
-      - system_menu_down
-      - system_cold_restart
-      - system_warm_restart
 
   # Default key repeat rate is too fast for changing tabs,
   # so this macro lets the keyboard control it
@@ -109,6 +109,7 @@ keycodes:
     commands:
       - c-w
 
+  # rapidly click the left mouse button while this key is "DOWN"
   rapid_click:
     keycode: macro
     commands:
@@ -117,9 +118,13 @@ keycodes:
       -   press(lmsb)
       -   release(lmsb)
       - end_repeat()
-    commands_release:
+    commands_release: # when key is release, make sure we unpress left mouse button
       - release(lmsb)
 
+  # Mouse gesture.
+  #
+  # To activate press the keycode, and move the mouse in
+  # left, right etc. and the corresponding action will be executed.
   gesture:
     keycode: mouse_gesture
     left: slow_tab_change_left
@@ -140,34 +145,45 @@ keycodes:
 
 layouts:
   mouse:
+    has_mouse_layers: True
     layers: [
       [ # Layer 0
         [ # Mouse
-          1, 2, gesture, BTN4, BTN5, BTN6, BTN7
+          LMSB, RMSB, MMSB, gesture, BTN5, BTN6, BTN7, BTN8
         ],
       ],
     ]
 
-  # colemak:
-  #   layers: [
-  #     [ # layer 0 (base)
-  #       [
-  #         M1,
+  colemak:
+    # When this is set, the first device in each layer corresponds to the mouse
+    # buttons.
+    has_mouse_layers: True
 
-  #         tab,  Q , W , F , P , G , J , L , U  , Y  , ";"   , "[" , "]" , "\\" ,  INS , HOME , PGUP,
-  #         lctrl, A , R , S , T , D , H , N , E  , I  ,  O , "'" , ENT ,           DEL , END  , PGDN,
-  #         s_lsft,  Z , X , C , V , B , K , M , ",", ".", "/" , s_rsft, UP  ,
-  #            L1,                                                 LEFT,  DOWN, RIGHT
-  #       ]
-  #     ],
-  #     [ # layer 1 (base)
-  #       [
-  #         M1,
+    layers: [
+      [ # layer 0 (base)
+        [ # Mouse
+          LMSB, RMSB, MMSB, gesture, BTN5, BTN6, BTN7, BTN8
+        ],
+        [
+          M1,
 
-  #         tab,    PSCR,MPLY,VOLU,MSTP, G , J , L , U  , Y  , ";"   , "[" , "]" , "\\" ,   INS , BTN3, WH_U,
-  #         lctrl,  MUTE,MNXT,VOLD,MPRV, D , H , N , E  , I  ,  O , "'" , ENT ,             BTN1, BTN2, WH_D,
-  #         s_lsft,  Z  , X  , C  , V  , B , K , M , ",", ".", "/" , s_rsft, ms_u ,
-  #            L1,                                                    ms_l, ms_d, ms_r
-  #       ]
-  #     ],
-  #   ]
+          tab,  Q , W , F , P , G , J , L , U  , Y  , ";"   , "[" , "]" , "\\" ,  INS , HOME , PGUP,
+          lctrl, A , R , S , T , D , H , N , E  , I  ,  O , "'" , ENT ,           DEL , END  , PGDN,
+          s_lsft,  Z , X , C , V , B , K , M , ",", ".", "/" , s_rsft, UP  ,
+             L1,                                                 LEFT,  DOWN, RIGHT
+        ]
+      ],
+      [ # layer 1 (base)
+        [ # Mouse
+          ____, ____, ____, ____, ____, ____, ____, ____
+        ],
+        [
+          M1,
+
+          tab,    PSCR,MPLY,VOLU,MSTP, G , J , L , U  , Y  , ";"   , "[" , "]" , "\\" ,   INS , BTN3, WH_U,
+          lctrl,  MUTE,MNXT,VOLD,MPRV, D , H , N , E  , I  ,  O , "'" , ENT ,             BTN1, BTN2, WH_D,
+          s_lsft,  Z  , X  , C  , V  , B , K , M , ",", ".", "/" , s_rsft, ms_u ,
+             L1,                                                    ms_l, ms_d, ms_r
+        ]
+      ],
+    ]

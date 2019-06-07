@@ -9,6 +9,7 @@ from collections import namedtuple
 from copy import copy
 import re
 import sys
+import struct
 
 from keyplus.device_info import KeyboardPinMapping
 import keyplus.cdata_types
@@ -62,6 +63,8 @@ class ScanMode(object):
 
         self.matrix_map = {}
         self.matrix_pin_map = {}
+
+        self.virtual_device = {}
 
         self._unused_key_numbers = []
 
@@ -580,6 +583,44 @@ class ScanMode(object):
         elif self.mode in [PIN_GND, PIN_VCC]:
             self.direct_wiring_pins = parser_info.try_get("pins", field_type=[list, int])
         elif self.mode == VIRTUAL:
+            def _parse_hex_u16(s):
+                try:
+                    v = int(s, 16)
+                    if 0 < v > 0xffff:
+                        raise Exception
+                    return v
+                except:
+                    raise KeyplusParseError("bad VID/PID value")
+
+
+            self.virtual_device["vid"] = parser_info.try_get(
+                field = "vid",
+                field_type=[str],
+                remap_function = _parse_hex_u16,
+                default = 0
+            )
+
+            self.virtual_device["pid"] = parser_info.try_get(
+                field = "pid",
+                field_type=[str],
+                remap_function = _parse_hex_u16,
+                default = 0
+            )
+
+            self.virtual_device["name"] = parser_info.try_get(
+                field = "name",
+                field_type=[str],
+                optional = True,
+                ignore_case = False
+            )
+
+            self.virtual_device["serial"] = parser_info.try_get(
+                field = "serial",
+                field_type=[str],
+                optional = True,
+                ignore_case = False
+            )
+
             self.keys  = parser_info.try_get("keys", field_type=[list])
         else:
             raise Exception("Internal error, unexpected value for scan_mode")
@@ -631,6 +672,61 @@ class ScanMode(object):
             parser_info.exit()
 
         parser_info.exit()
+
+    def _virtual_device_header_to_bytes(self, dev_id):
+        """
+        The device header is used to match USB/BT devices that are connected
+        to see if we should use them.
+        """
+        result = bytearray()
+
+        """
+        virtula_device_header_t {
+            char name[64];
+            char serial[64];
+            uint8_t dev_id;
+            uint16_t vid;
+            uint16_t pid;
+            uint8_t reserved[123];
+        }
+        sizeof(virtual_device_header_t) == 256
+        """
+
+        if self.virtual_device["name"] != None:
+            name = self.virtual_device["name"].encode('utf8')[:63]
+            result += name + bytearray(max(0, 64 - len(name)))
+        else:
+            result += bytearray([0xff]*64)
+
+        if self.virtual_device["serial"] != None:
+            serial = self.virtual_device["serial"].encode('utf8')[:63]
+            result += serial + bytearray(max(0, 63 - len(serial)))
+        else:
+            result += bytearray([0xff]*64)
+
+        result += struct.pack("<B", dev_id)
+        result += struct.pack("<H", self.virtual_device["vid"])
+        result += struct.pack("<H", self.virtual_device["pid"])
+
+        result += bytearray(123)
+
+        assert(len(result)==256)
+
+        return result
+
+
+    def virtual_device_to_bytes(self, target, dev_id):
+        result = bytearray()
+
+        # Device header
+        result += self._virtual_device_header_to_bytes(dev_id)
+
+        # Generate the table that remaps HID codes to keyplus key numbers
+        pin_map = self.generate_pin_mapping(target)
+        result += pin_map.to_bytes()
+
+        return result
+
 
     def to_json(self):
         result  = {}

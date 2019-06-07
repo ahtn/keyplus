@@ -7,6 +7,8 @@
 #include <stdbool.h>
 #include <libudev.h>
 
+#include "core/layout.h"
+
 typedef enum udev_action {
     UDEV_ACTION_ADD,
     UDEV_ACTION_REMOVE,
@@ -24,5 +26,5 @@ typedef struct kp_udev_info {
 } kp_udev_info;
 
 int kp_udev_parse_action(struct udev_device *dev);
-int kp_udev_match(struct udev_device *dev, struct kp_udev_info **targets, size_t len);
+int kp_udev_match(struct udev_device *dev, virtual_device_header_t *targets, size_t len);
 

@@ -12,6 +12,7 @@ import datetime
 from distutils.version import LooseVersion
 
 import keyplus.cdata_types
+import keyplus.chip_id
 from keyplus.utility import crc16_bytes
 from keyplus.constants import *
 from keyplus.exceptions import *
@@ -149,6 +150,8 @@ class KeyboardDeviceTarget(object):
     def get_io_mapper(self):
         return self.io_mapper
 
+    def is_virtual(self):
+        return self.firmware_info.chip_id == keyplus.chip_id.CHIP_ID_VIRTUAL
 
 class KeyboardSettingsInfo(keyplus.cdata_types.settings_header_t):
     USB_DESC_STRING = 0x03

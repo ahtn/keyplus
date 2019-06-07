@@ -198,6 +198,8 @@ def get_chip_id_from_name(name):
     else:
         raise KeyplusSettingsError("Unknown chip name '{}'".format(name))
 
+CHIP_ID_VIRTUAL = CHIP_ID_SPECIAL | 0x0001
+
 CHIP_ID_TABLE = {
 
     CHIP_ID_SPECIAL | 0x0001: _create_virtual(),

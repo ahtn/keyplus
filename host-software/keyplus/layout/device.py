@@ -19,7 +19,7 @@ DEFAULT_FEATURE_MASK = FEATURE_CTRL_RF_DISABLE | FEATURE_CTRL_RF_MOUSE_DISABLE \
     | FEATURE_CTRL_WIRED_DISABLE;
 
 class LayoutDevice(object):
-    def __init__(self, device_id=0, name=None, layout_name=None,
+    def __init__(self, device_id=0, name="", layout_name=None,
                  scan_mode=None, layout_id=None, split_device_num=0):
         self.device_id = device_id
         self.name = name

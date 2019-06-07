@@ -14,7 +14,8 @@ BUILD_TARGET = $(BUILD_DIR)/$(TARGET)
 
 MCU_STRING = VIRTUAL
 
-CONFIG_FILE_PATH ?= /etc/keyplusd.conf
+# CONFIG_FILE_PATH ?= /etc/keyplusd/config.yaml
+CONFIG_FILE_PATH ?= /etc/keyplusd/config.bin
 LOCKFILE_PATH ?= /tmp/keyplusd.lock
 
 TEST_CONFIG_LAYOUT ?= ../../layouts/virtual.yaml
@@ -47,6 +48,7 @@ C_SRC += \
 	$(SRC_PATH)/udev_helpers.c \
 	$(SRC_PATH)/virtual_input.c \
 	$(SRC_PATH)/device_manager.c \
+	$(SRC_PATH)/settings_loader.c \
 	$(SRC_PATH)/event_mapper.c \
 	$(SRC_PATH)/hid_to_ev.c \
 	$(SRC_PATH)/port_impl/hardware.c \
@@ -81,6 +83,7 @@ CFLAGS += -Wno-error=unused-variable
 
 # turn on debugging
 CFLAGS += -DDEBUG=1
+CFLAGS += -DDEBUG_EXIT_KEY=KEY_GRAVE
 # CFLAGS += -g3
 CFLAGS += -ggdb3
 
@@ -129,6 +132,7 @@ run: $(BUILD_TARGET) $(TEST_CONFIG_BIN)
 	./$(BUILD_TARGET) --as-user -c $(TEST_CONFIG_BIN)
 
 run-daemon: $(BUILD_TARGET)
+	sudo ../../host-software/keyplus-cli program -D "$(TEST_CONFIG_LAYOUT)"
 	sudo ./$(BUILD_TARGET)
 
 # Delete all build files
@@ -150,19 +154,11 @@ valgrind: $(BUILD_TARGET)
 			 --track-origins=yes \
 			 --verbose \
 			 --sim-hints=lax-ioctls \
-			 ./$(BUILD_TARGET) -c $(TEST_CONFIG_BIN)
+			 ./$(BUILD_TARGET) --as-user -c $(TEST_CONFIG_BIN)
 
 layout: $(TEST_CONFIG_BIN)
 
 $(TEST_CONFIG_BIN): $(TEST_CONFIG_LAYOUT)
-	../../host-software/keyplus-cli program \
-		-M 0x0000 0x0200 0x1000 \
-		-o "$@" -f bin \
-		--new-id 0 \
-		--layout "$<" \
-		--rf ../../layouts/test_rf_config.yaml \
-		-F chip_name=virtual \
-		-F scan_method=virtual \
-		-F max_rows=1
+	../../host-software/keyplus-cli program -D "$<" -o "$@"
 
 .PHONY: all run run-user clean setup gdb layout

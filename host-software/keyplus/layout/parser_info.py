@@ -91,7 +91,7 @@ class KeyplusParserInfo(object):
 
     def get_current_path(self):
         def sanitize_field(field):
-            if field.isalnum():
+            if field.isidentifier():
                 return field
             else:
                 return "'{}'".format(field)

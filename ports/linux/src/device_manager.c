@@ -5,6 +5,7 @@
 
 #include "device_manager.h"
 
+#include <stdbool.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
@@ -13,7 +14,6 @@
 // See: https://www.freedesktop.org/software/libevdev/doc/latest/libevdev_8h.html
 #include <libevdev/libevdev.h>
 
-#include "core/settings.h"
 #include "core/timer.h"
 #include "core/mouse.h"
 #include "core/matrix_interpret.h"
@@ -23,66 +23,83 @@
 #include "event_mapper.h"
 #include "debug.h"
 
+#define MAX_EVENT_COUNT (MAX_NUM_DEVICES+1)
 #define UNMAPPED_KEY 0xff
 
 // TODO: move exit ability to a key_handler
-#include <stdbool.h>
-#define EXIT_KEY KEY_GRAVE
+#ifndef DEBUG_EXIT_KEY
+    #define DEBUG_EXIT_KEY KEY_GRAVE
+#endif
 extern bool g_running;
 
 static struct udev *m_udev = NULL;
+
 static struct udev_monitor *m_udev_mon = NULL;
 static int m_fd_udevmon;
 
+/// List of file descriptors that we receive events from.
+///
+/// The first entry in the list is for the `udev_monitor` which detects when
+/// devices are added/removed.
+///
+/// The entries after the first are fd to /dev/input/event devices which we
+/// receive input from.
+///
+/// This array is used to directly in calls to `poll()`.
 static struct pollfd m_event_fds[MAX_EVENT_COUNT];
+
+/// The list of /dev/input/eventX devices that we are managing.
+///
+/// Note: the first entry in this array cannot be used. It is just a dummy
+/// value so the indices in this array match to the file descriptors in the
+/// `m_event_fds` array.
 static struct kp_evdev_device m_dev_array[MAX_EVENT_COUNT];
 
-// keep track of the highest number of fds in m_event_fds
+/// The highest index in the `m_events_fds` array that points to a valid fd.
 static unsigned int m_highest_event_count;
 
-#if 1
-// static kp_udev_info m_match_usb = {
-//     .kb_id = 0,
-//     .vid = 0x046d,
-//     .pid = 0xc52b,
-//     .name = "Logitech K270",
-//     .serial = NULL,
-// };
+/// The number of devices being tracket
+static size_t m_udev_targets_len;
+/// The list of devices being tracket
+virtual_device_header_t m_udev_targets[MAX_NUM_DEVICES];
 
-static kp_udev_info m_match_usb = {
-    .kb_id = 0,
-    .vid = 0x046d,
-    .pid = 0xc52b,
-    .name = "Logitech M720",
-    .serial = NULL,
-};
+/// Reset the list of tracked devices
+void device_manager_targets_reset(void) {
+    m_udev_targets_len = 0;
+    memset(m_udev_targets, 0, sizeof(m_udev_targets));
+}
 
-static kp_udev_info m_match_bt = {
-    .kb_id = 0,
-    .vid = 0x1209,
-    .pid = 0xBB00,
-    .name = "Nordic",
-    .serial = NULL,
-};
+/// Add a new device target to track
+void device_manager_targets_add(virtual_device_header_t *target) {
+    if (m_udev_targets_len == MAX_NUM_DEVICES) {
+        KP_LOG_ERROR("too many devices added");
+        exit(EXIT_FAILURE);
+    }
 
-static size_t m_udev_targets_len = 1;
-static kp_udev_info *m_udev_targets[1] = {
-    &m_match_usb,
-    // &m_match_bt,
-};
+    memcpy(&m_udev_targets[m_udev_targets_len],
+           target,
+           sizeof(virtual_device_header_t));
+#if DEBUG >= 3
+    hexDump ("virt_header", target, sizeof(virtual_device_header_t));
 #endif
 
+    m_udev_targets_len++;
+
+}
 
 /// Create a new `kp_evdev_device` with the given path
 ///
+/// @param path         path to the /dev/input/eventX device
+/// @param match_id     index into m_udev_targets array for the corresponding keyplus device
+///
 /// @return the index where it was placed in the device arrary, a negative value
 ///   on error
-int kp_evdev_array_add(const char *path, int kb_id) {
+static int kp_evdev_array_add(const char *path, int match_id) {
     int rc;
     int fd = -1;
     struct libevdev *evdev = NULL;
 
-    for (int i = 0; i < MAX_EVENT_COUNT; ++i) {
+    for (int i = 1; i < MAX_EVENT_COUNT; ++i) {
         if (m_event_fds[i].fd != -1) {
             continue;
         }
@@ -115,12 +132,18 @@ int kp_evdev_array_add(const char *path, int kb_id) {
             goto error;
         }
 
-        m_event_fds[i].fd = fd;
-        m_event_fds[i].events = POLLIN;
-        m_event_fds[i].revents = 0;
-        m_dev_array[i].evdev = evdev;
-        m_dev_array[i].kb_id = kb_id;
-        m_highest_event_count = KP_MAX(m_highest_event_count, i+1);
+        {
+            const uint8_t dev_id = m_udev_targets[match_id].dev_id;
+            const uint8_t layout_id = GET_LAYOUT_ID_FOR_DEVICE(dev_id);
+
+            m_event_fds[i].fd = fd;
+            m_event_fds[i].events = POLLIN;
+            m_event_fds[i].revents = 0;
+            m_dev_array[i].evdev = evdev;
+            m_dev_array[i].dev_id = dev_id;
+            m_dev_array[i].layout_id = layout_id;
+            m_highest_event_count = KP_MAX(m_highest_event_count, i+1);
+        }
 
         return i;
     }
@@ -218,8 +241,8 @@ int device_manager_init(void) {
 	udev_monitor_enable_receiving(m_udev_mon);
 	m_fd_udevmon = udev_monitor_get_fd(m_udev_mon);
 
+
     clear_poll_fds(m_event_fds, MAX_EVENT_COUNT);
-    // dev_array_init(m_dev_array, MAX_EVENT_COUNT);
 
     // first slot in event array is for the udev device monitor
     m_event_fds[0].fd = m_fd_udevmon;
@@ -247,7 +270,7 @@ void device_manager_free(void) {
 ///
 /// @param targets  the list of devices we are interested
 /// @param len  the number of targets
-static int enumerate(struct udev *udev, struct kp_udev_info **targets, size_t len) {
+static int enumerate(struct udev *udev, virtual_device_header_t *targets, size_t len) {
     struct udev_enumerate *en;
     struct udev_list_entry *devices;
 
@@ -281,21 +304,21 @@ static int enumerate(struct udev *udev, struct kp_udev_info **targets, size_t le
     udev_list_entry_foreach(entry, devices) {
         const char* path;
         struct udev_device *dev;
-        int match;
+        int match_id;
         int rc;
 
         path = udev_list_entry_get_name(entry);
         dev = udev_device_new_from_syspath(udev, path);
 
-        match = kp_udev_match(dev, targets, len);
-        if (match < 0) {
+        match_id = kp_udev_match(dev, targets, len);
+        if (match_id < 0) {
             udev_device_unref(dev);
             continue;
         }
 
         path = udev_device_get_property_value(dev, "DEVNAME");
         KP_DEBUG_PRINT(1, "adding %s\n", path);
-        rc = kp_evdev_array_add(path, match);
+        rc = kp_evdev_array_add(path, match_id);
         KP_ASSERT(rc > 0);
 
         #if defined(DEBUG) && DEBUG > 2
@@ -384,12 +407,14 @@ cleanup:
     udev_device_unref(dev);
     return rc;
 }
-static int map_event(int kb_id, struct input_event ev) {
+static int map_event(int dev_id, struct input_event ev) {
     int rc;
 
-    if (ev.type == EV_KEY && ev.code == EXIT_KEY) {
+#if DEBUG >= 1
+    if (ev.type == EV_KEY && ev.code == DEBUG_EXIT_KEY) {
         g_running = false;
     }
+#endif
 
     if (ev.type == EV_MSC) {
         return 0;
@@ -422,14 +447,22 @@ static int map_event(int kb_id, struct input_event ev) {
             } break;
 
         }
+    } else if (ev.type == EV_KEY && IS_MOUSE_EVENT(ev.code)) {
+        uint8_t button_mask = MOUSE_EVENT_TO_MASK(ev.code);
+        switch (ev.value) {
+            case 0: mouse_unclick(button_mask); break;
+            case 1: mouse_click(button_mask); break;
+            case 2: break;
+        }
     }
 
     if (ev.type == EV_KEY) {
-        int key_num = mapper_event_to_key_num(kb_id, ev.code);
+        int key_num = mapper_event_to_key_num(dev_id, ev.code);
         if (key_num != UNMAPPED_KEY) {
-            KP_DEBUG_PRINT(2, "%09u: Event(%d): %s<0x%x> -> key_num<%d>, State: %d\n",
-                (unsigned int)timer_read_ms(),
-                kb_id,
+            KP_DEBUG_PRINT(2, "%06u.%03u: Event(dev:%d): %s<0x%x> -> key_num<%d>, State: %d\n",
+                (unsigned int)timer_read_ms() / 1000,
+                (unsigned int)timer_read_ms() % 1000,
+                dev_id,
                 libevdev_event_code_get_name(ev.type, ev.code),
                 ev.code,
                 key_num,
@@ -437,13 +470,14 @@ static int map_event(int kb_id, struct input_event ev) {
 
             if (ev.value != 2) {
                 // Set the key number in its matrix
-                keyboard_matrix_set_key(kb_id, key_num, ev.value);
+                keyboard_matrix_set_key(dev_id, key_num, ev.value);
                 return 1;
             }
         } else {
-            KP_DEBUG_PRINT(2, "%09u: Event(%d): forwarding %s %d\n",
-                (unsigned int)timer_read_ms(),
-                kb_id,
+            KP_DEBUG_PRINT(2, "%06u.%03u: Event(dev:%d): forwarding %s %d\n",
+                (unsigned int)timer_read_ms() / 1000,
+                (unsigned int)timer_read_ms() % 1000,
+                dev_id,
                 libevdev_event_code_get_name(ev.type, ev.code),
                 ev.value);
 
@@ -454,9 +488,10 @@ static int map_event(int kb_id, struct input_event ev) {
         }
     } else {
         KP_DEBUG_PRINT(2,
-            "%09u: Event(%d): %s\t%s\t\t%d\n",
-            (unsigned int)timer_read_ms(),
-            kb_id,
+            "%06u.%03u: Event(dev:%d): %s\t%s\t\t%d\n",
+            (unsigned int)timer_read_ms() / 1000,
+            (unsigned int)timer_read_ms() % 1000,
+            dev_id,
             libevdev_event_type_get_name(ev.type),
             libevdev_event_code_get_name(ev.type, ev.code),
             ev.value);
@@ -482,8 +517,7 @@ static int handle_evdev_event(int i) {
             return -1;
         }
 
-        int kb_id = m_dev_array[i].kb_id;
-        updated += map_event(kb_id, ev);
+        updated += map_event(m_dev_array[i].dev_id, ev);
 
     } while (libevdev_has_event_pending(evdev));
 

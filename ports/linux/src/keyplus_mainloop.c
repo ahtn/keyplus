@@ -8,6 +8,7 @@
 #include "virtual_input.h"
 #include "device_manager.h"
 #include "event_mapper.h"
+#include "settings_loader.h"
 #include "hid_to_ev.h"
 
 #include "core/error.h"
@@ -53,16 +54,28 @@ void load_config(const char* file_name) {
     storage_pos += rc;
 
     {
-        int num_devices = GET_SETTING(layout.number_devices);
-        KP_ASSERT(num_devices <= MAX_NUM_DEVICES);
-        for (int i = 0; i < num_devices; ++i) {
-            rc = fread(storage_pos, 1, KEY_MAP_SIZE, config);
-            if (rc != KEY_MAP_SIZE) {
+        const int per_device_storage_size = KEY_MAP_SIZE + sizeof(virtual_device_header_t);
+        uint32_t section_size, size;
+
+        rc = fread(storage_pos, 1, sizeof(uint32_t), config);
+        if (rc != sizeof(uint32_t)) {
+            KP_LOG_ERROR("configuration file error reading <section_size>, "
+                            "expected %ld bytes but got %d",
+                            sizeof(uint32_t), rc);
+            exit(EXIT_FAILURE);
+        }
+        section_size = *((uint32_t*)storage_pos);
+        storage_pos += rc;
+
+        for (int i=0; size < section_size; ++i) {
+            rc = fread(storage_pos, 1, per_device_storage_size, config);
+            if (rc != per_device_storage_size) {
                 KP_LOG_ERROR("configuration file error reading <keymap table %d>, "
                              "expected %d bytes but got %d",
-                             i, KEY_MAP_SIZE, rc);
+                             i, per_device_storage_size, rc);
                 exit(EXIT_FAILURE);
             }
+            size += per_device_storage_size;
             storage_pos += rc;
         }
     }
@@ -90,8 +103,10 @@ int kp_mainloop(int argc, const char **argv){
 
     KP_ASSERT(argc == 2);
 
+    printf("%s", argv[1]);
+
     load_config(argv[1]);
-    mapper_init();
+    load_virtual_device_settings();
 
     kp_init_all();
 

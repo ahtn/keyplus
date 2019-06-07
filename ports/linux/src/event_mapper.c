@@ -7,29 +7,27 @@
 
 #include <libevdev/libevdev.h>
 
-#include "core/flash.h"
-
 #include "hid_to_ev.h"
 #include "debug.h"
 
-static struct kb_event_map m_keyboards[MAX_KB_COUNT];
+static struct kb_event_map m_devices[MAX_NUM_DEVICES];
 
-int mapper_event_to_key_num(int kb_id, int event_code) {
+int mapper_event_to_key_num(int dev_id, int event_code) {
     KP_ASSERT(event_code < KEY_CNT);
-    KP_ASSERT(kb_id < MAX_KB_COUNT);
-    KP_ASSERT(m_keyboards[kb_id].kb_id == kb_id);
+    KP_ASSERT(dev_id < MAX_NUM_DEVICES);
+    KP_ASSERT(m_devices[dev_id].dev_id != 0xff);
 
-    return m_keyboards[kb_id].key_num_map[event_code];
+    return m_devices[dev_id].key_num_map[event_code];
 }
 
-void mapper_clear_map(int kb_id) {
-    m_keyboards[kb_id].kb_id = -1;
-    memset(m_keyboards[kb_id].key_num_map, UNMAPPED_KEY, KEY_CNT*sizeof(uint8_t));
+void mapper_clear_map(int dev_id) {
+    m_devices[dev_id].dev_id = 0xff;
+    memset(m_devices[dev_id].key_num_map, UNMAPPED_KEY, KEY_CNT*sizeof(uint8_t));
 }
 
 /// Clear all the keyboard mappers
 void mapper_reset(void) {
-    for (int i = 0; i < MAX_KB_COUNT; ++i) {
+    for (int i = 0; i < MAX_NUM_DEVICES; ++i) {
         mapper_clear_map(i);
     }
 }
@@ -39,11 +37,11 @@ void mapper_reset(void) {
 /// Takes a hid -> key_num map and assigns
 ///
 /// @param map      A hid -> key_num map
-void mapper_set_map(int kb_id, uint8_t *map) {
-    KP_ASSERT(kb_id < MAX_KB_COUNT);
-    memset(m_keyboards[kb_id].key_num_map, UNMAPPED_KEY, KEY_CNT*sizeof(uint8_t));
+void mapper_set_map(int dev_id, uint8_t *map) {
+    KP_ASSERT(dev_id < MAX_NUM_DEVICES);
+    memset(m_devices[dev_id].key_num_map, UNMAPPED_KEY, KEY_CNT*sizeof(uint8_t));
 
-    m_keyboards[kb_id].kb_id = kb_id;
+    m_devices[dev_id].dev_id = dev_id;
 
     // We want the `key_num_map` to map from linux event codes -> key numbers.
     // However, the `key_map` in "flash" provides HID codes -> key numbers.
@@ -69,13 +67,13 @@ void mapper_set_map(int kb_id, uint8_t *map) {
 
             KP_DEBUG_PRINT(2,
                         "Event(%d): mapping %s<%d>/HID<%d> --> key_num<%d> \n",
-                        kb_id,
+                        dev_id,
                         libevdev_event_code_get_name(EV_KEY, event_code),
                         event_code,
                         hid,
                         key_num);
 
-            m_keyboards[kb_id].key_num_map[event_code] = key_num;
+            m_devices[dev_id].key_num_map[event_code] = key_num;
         } else if (HID_MAP_SYS_START <= i && i <= HID_MAP_SYS_END) {
 
         } else if (HID_MAP_MOUSE_START <= i && i <= HID_MAP_MOUSE_END) {
@@ -83,25 +81,11 @@ void mapper_set_map(int kb_id, uint8_t *map) {
             event_code = hid_mouse_to_ev(mouse_btn);
             KP_DEBUG_PRINT(2,
                         "Event(%d): mapping %s<%d> -> MouseBTN<%d>\n",
-                        kb_id,
+                        dev_id,
                         libevdev_event_code_get_name(EV_KEY, event_code),
                         event_code,
                         mouse_btn);
-            m_keyboards[kb_id].key_num_map[event_code] = key_num;
+            m_devices[dev_id].key_num_map[event_code] = key_num;
         }
     }
 }
-
-/// TODO:
-void mapper_init(void) {
-    mapper_reset();
-    mapper_clear_map(0);
-
-    m_keyboards[0].kb_id = 0;
-    mapper_set_map(0, virtual_storage_get_address(0x200));
-    // m_keyboards[0].key_num_map[KEY_A] = 0;
-    // m_keyboards[0].key_num_map[KEY_S] = 1;
-    // m_keyboards[0].key_num_map[KEY_D] = 2;
-    // m_keyboards[0].key_num_map[KEY_F] = 3;
-}
-

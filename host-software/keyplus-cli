@@ -462,6 +462,8 @@ class HelpCommand(GenericCommand):
 
 
 class ProgramCommand(GenericDeviceCommand):
+    NO_RF_FILE = -1
+
     def __init__(self):
         super(ProgramCommand, self).__init__(
             'Program layout, rf settings and hex files'
@@ -530,6 +532,14 @@ class ProgramCommand(GenericDeviceCommand):
             ' with --merge-hex, generate a hex file with an erase layout.'
         )
 
+        self.arg_parser.add_argument(
+            '-D', '--daemon', dest='daemon_conf',
+            type=str,
+            help='Program the keyplusd daemon/emulator with the given'
+            ' configuration file.'
+        )
+
+
     def task(self, args):
         if (
             args.layout_file == None and
@@ -537,11 +547,14 @@ class ProgramCommand(GenericDeviceCommand):
             args.rf_file == None and
             args.new_id == None and
             args.merge_hex == None and
-            args.erase == None
+            args.erase == None and
+            args.daemon_conf
         ):
             self.arg_parser.print_help()
             exit(EXIT_NO_ERROR)
 
+        if args.daemon_conf:
+            self.task_daemon_conf(args)
         if args.merge_hex:
             self.task_mereged_hex(args)
         elif args.erase:
@@ -561,13 +574,38 @@ class ProgramCommand(GenericDeviceCommand):
         try:
             parser_info = KeyplusParserInfo()
             parser_info.print_warnings = True
+
             rf_parser_info = KeyplusParserInfo()
             rf_parser_info.print_warnings = True
+            rf_file = args.rf_file
+
+            if args.rf_file == ProgramCommand.NO_RF_FILE:
+                dummy_settings = {
+                    "rf_settings": {
+                        "aes_encryption_key": "00000000000000000000000000000000",
+                        "rf_channel": 0,
+                        "auto_retransmit_count": 0,
+                        "data_rate": "2mbps",
+                        "transmit_power": "0dB",
+                        "pipe0": '0000000000',
+                        "pipe1": '0000000000',
+                        "pipe2": '00',
+                        "pipe3": '00',
+                        "pipe4": '00',
+                        "pipe5": '00',
+                    }
+                }
+                rf_parser_info.set_parse_object(
+                    "<NO_RF_FILE>",
+                    dummy_settings
+                )
+                rf_file = None
+
 
             kp_layout = KeyplusLayout()
             kp_layout.from_yaml_file(
                 layout_file = args.layout_file,
-                rf_file = args.rf_file,
+                rf_file = rf_file,
                 parser_info = parser_info,
                 rf_parser_info = rf_parser_info,
             )
@@ -596,6 +634,32 @@ class ProgramCommand(GenericDeviceCommand):
             else:
                 fw_hex.write_hex_file(sys.stdout)
 
+    def task_daemon_conf(self, args):
+        ## Default location to save this config file
+        # outfile = "/etc/keyplusd/config.yaml"
+        outfile = "/etc/keyplusd/config.bin"
+
+        if args.outfile:
+            outfile = args.outfile
+
+        # set the cmdline args for `task_mereged_hex()`
+        merge_hex_args = {
+            "merge_hex": (0x0000, 0x0200, 0x4000),
+            "outfile" : outfile,
+            "outfile_format": "bin",
+            "new_id": 0,
+            "layout_file": args.daemon_conf,
+            "rf_file": ProgramCommand.NO_RF_FILE,
+            "firmware_settings": (
+                "chip_name=virtual",
+                "scan_method=virtual",
+                "max_rows=1"
+            ),
+            "hex_file": None,
+            "erase": None,
+        }
+
+        self.task_mereged_hex(argparse.Namespace(**merge_hex_args));
 
     def task_mereged_hex(self, args):
         if (

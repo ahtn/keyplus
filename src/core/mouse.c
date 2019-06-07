@@ -83,13 +83,13 @@ void trigger_gesture(uint8_t gesture_type) {
 
 #if USE_VIRTUAL_MODE
 void mouse_click(uint8_t buttons) {
-    g_mouse_state.buttons_1 = buttons;
+    g_mouse_state.buttons_1 |= buttons;
 
     g_mouse_activity = UNIFYING_MOUSE_ACTIVE;
 }
 
 void mouse_unclick(uint8_t buttons) {
-    g_mouse_state.buttons_1 = buttons;
+    g_mouse_state.buttons_1 &= ~buttons;
 
     g_mouse_activity = UNIFYING_MOUSE_ACTIVE;
 }

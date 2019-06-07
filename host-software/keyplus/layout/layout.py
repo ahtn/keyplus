@@ -15,7 +15,7 @@ import copy
 import math
 
 from keyplus.layout.parser_info import KeyplusParserInfo
-from keyplus.layout.device import LayoutDevice
+from keyplus.layout.device import LayoutDevice, MATRIX_SCANNER_MODE_VIRTUAL
 from keyplus.layout.keyboard_layout import *
 from keyplus.layout.rf_settings import *
 from keyplus.layout.ekc_data import *
@@ -95,6 +95,7 @@ class KeyplusLayout(object):
             layout_file,
             rf_file,
             parser_info=parser_info,
+            rf_parser_info=rf_parser_info,
             load_method=json.loads,
         )
 
@@ -275,6 +276,11 @@ class KeyplusLayout(object):
                 continue
 
             layout = self.get_layout_by_name(dev.layout)
+            if layout == None:
+                raise KeyplusParseError(
+                    "Device '{}' references non-existent layout '{}'"
+                    .format(dev.name, dev.layout)
+                )
             dev_sizes = layout.layer_list[0].device_sizes
 
             if dev.split_device_num >= len(dev_sizes):
@@ -418,7 +424,10 @@ class KeyplusLayout(object):
         return self._devices[dev_id]
 
     def build_settings_section(self, device_target):
-        device = self.get_device(device_target.device_id)
+        if device_target.is_virtual():
+            device = LayoutDevice()
+        else:
+            device = self.get_device(device_target.device_id)
 
         settings = settings_t()
 
@@ -439,12 +448,20 @@ class KeyplusLayout(object):
         return settings.to_bytes()
 
     def build_layout_section(self, device_target):
-        device = self.get_device(device_target.device_id)
         result = bytearray()
 
-        pin_map = device.scan_mode.generate_pin_mapping(device_target)
+        if device_target.is_virtual():
+            device_maps = bytearray()
+            for (dev_id, dev) in self._devices.items():
+                if dev.scan_mode.mode == MATRIX_SCANNER_MODE_VIRTUAL:
+                    device_maps += dev.scan_mode.virtual_device_to_bytes(device_target, dev_id)
+            result += struct.pack("<I", len(device_maps))
+            result += device_maps
+        else:
+            device = self.get_device(device_target.device_id)
+            pin_map = device.scan_mode.generate_pin_mapping(device_target)
+            result += pin_map.to_bytes()
 
-        result += pin_map.to_bytes()
         result += self.ekc_data.to_bytes()
         result += self._build_layouts()
 

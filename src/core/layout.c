@@ -68,10 +68,10 @@ void keyboard_layouts_init(void) {
 #if USE_VIRTUAL_MODE
     // virtual mode includes the key number maps for all devices
     {
-        // skip the key num map section, since it is in a known location at compile
-        // time.
-        flash_addr_t key_num_map_size = VIRTUAL_KEYNUM_MAP_SIZE * GET_SETTING(layout.number_devices);
-        storage_pos += key_num_map_size;
+        // skip the key num map section
+        uint32_t key_num_map_size;
+        flash_read((uint8_t*)&key_num_map_size, storage_pos, sizeof(uint32_t));
+        storage_pos += key_num_map_size + sizeof(uint32_t);
     }
 #endif
 
