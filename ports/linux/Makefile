@@ -149,6 +149,7 @@ setup:
 	./setup.sh
 
 install: $(BUILD_TARGET)
+	./setup.sh
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install $(BUILD_TARGET) $(DESTDIR)$(PREFIX)/bin
 	install -d $(DESTDIR)$(PREFIX)/lib/udev/rules.d/

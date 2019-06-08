@@ -4,31 +4,16 @@
 It runs as a process on your computer and remaps keyboard and mouse actions
 according to your keyplus layout file.
 
-## TODO
+## Install
 
-* TODO: allow the config file to be changed without restarting `keyplusd`
-* TODO: document layout configuration
-
-## Setup
-
-Run
-
-```
-./setup.sh
-```
-
-After running this script you may need to reboot for some of the `udev` rules
-to take effect.  To build the daemon, run:
+To install run:
 
 ```
 make
+make install
 ```
 
-When make finishes the executable will be placed in the `build` directory.
-
-## Install
-
-TODO
+NOTE: you may need to reboot before some of the udev rules to take effect.
 
 ## Simple usage
 
@@ -43,11 +28,14 @@ For an example configuration file see
 run:
 
 ```
-./build/keyplusd
+keyplusd
 ```
 
-NOTE: you will need root privileges to run these commands
+NOTE: You will need root privileges to run these commands.
 
+## Configuration
+
+TODO
 
 ## Debugging
 
@@ -68,18 +56,6 @@ You can provide another layout file by running make with the
 make run TEST_CONFIG_LAYOUT=./config.yaml
 ```
 
-## Debugging - killing the daemon
-
-To kill the daemon run:
-
-```
-kill $(cat /tmp/keyplusd.lock)
-```
-
-If you have built the project in debug mode, you can also use `DEBUG_EXIT_KEY`
-to kill the daemon. By default this value is set to `~`/`KEY_GRAVE`. Note that
-this is the value of the key before it is remapped by keyplus.
-
 ## Debugging - run as daemon
 
 ```
@@ -94,3 +70,15 @@ journalctl -b -f
 
 NOTE: since the daemon runs as the `keyplusd` user, make sure the config file
 is located where the `keyplusd` user will have read access.
+
+## Debugging - killing the daemon
+
+To kill the daemon run:
+
+```
+kill $(cat /tmp/keyplusd.lock)
+```
+
+If you have built the project in debug mode, you can also use `DEBUG_EXIT_KEY`
+to kill the daemon. By default this value is set to `~`/`KEY_GRAVE`. Note that
+this is the value of the key before it is remapped by keyplus.
