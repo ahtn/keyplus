@@ -3,7 +3,6 @@
 # Copyright 2018 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 # TODO: might need to make this data device dependant since the efm8 port
 # might need to use a different endpoint configuration

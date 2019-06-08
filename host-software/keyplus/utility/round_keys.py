@@ -3,7 +3,6 @@
 # Copyright 2017 jem@seethis.link
 # Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 SBOX = [
     99, 124, 119, 123, 242, 107, 111, 197,  48,   1, 103,  43, 254, 215, 171, 118,

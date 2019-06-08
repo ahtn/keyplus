@@ -45,7 +45,6 @@ BNF reference: http://theory.lcs.mit.edu/~rivest/sexp.txt
 <null>        	:: "" ;
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 from pyparsing import *
 from base64 import b64decode
