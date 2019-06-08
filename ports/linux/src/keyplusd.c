@@ -204,7 +204,16 @@ void signal_handler(int sig) {
     }
 }
 
-
+static void check_file_readable(const char * name) {
+    FILE *f;
+    f = fopen(name , "r");
+    if (f == NULL) {
+        KP_LOG_ERRNO("Couldn't read config file");
+        exit(EXIT_FAILURE);
+    } else {
+        fclose(f);
+    }
+}
 
 int main(int argc, char **argv) {
     int rc;
@@ -213,6 +222,10 @@ int main(int argc, char **argv) {
     parse_cmdline_args(&m_settings, argc, argv);
 
     openlog(proc_name, LOG_PID|LOG_CONS, LOG_DAEMON);
+
+    // Verify that we can read the config file now before we daemonize so we
+    // can notify the user on stderr
+    check_file_readable(m_settings.config);
 
     // setup signal handlers
     {
