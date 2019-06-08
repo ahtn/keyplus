@@ -21,6 +21,9 @@ static struct cmdline_args m_settings;
 static int m_uid = -1;
 static int m_gid = -1;
 
+static volatile sig_atomic_t m_running;
+static volatile sig_atomic_t m_signal_num = -1;
+
 void set_target_user(void) {
     struct passwd *pwd;
 
@@ -174,13 +177,15 @@ void daemonize(void) {
 }
 
 void signal_handler(int sig) {
+    m_signal_num = sig;
+
     switch (sig) {
         case SIGTERM:
         case SIGINT: {
             int rc;
             struct sigaction sigact;
 
-            syslog(LOG_INFO, "got signal %d: '%s', preparing to shutdown", sig, strsignal(sig));
+            m_running = 0;
 
             // Re-enable the default action, something goes wrong in cleanup
             // we can still be terminated.
@@ -188,8 +193,13 @@ void signal_handler(int sig) {
             sigemptyset(&sigact.sa_mask);
             sigact.sa_flags = 0;
             rc = sigaction(SIGINT, &sigact, NULL);
+            KP_CHECK_ERRNO(rc);
             rc = sigaction(SIGTERM, &sigact, NULL);
             KP_CHECK_ERRNO(rc);
+        } break;
+
+        case SIGHUP: {
+            m_running = 1;
         } break;
     }
 }
@@ -212,7 +222,10 @@ int main(int argc, char **argv) {
         sigact.sa_flags = 0;
 
         rc = sigaction(SIGINT, &sigact, NULL);
+        KP_CHECK_ERRNO(rc);
         rc = sigaction(SIGTERM, &sigact, NULL);
+        KP_CHECK_ERRNO(rc);
+        rc = sigaction(SIGHUP, &sigact, NULL);
         KP_CHECK_ERRNO(rc);
     }
 
@@ -224,12 +237,18 @@ int main(int argc, char **argv) {
     }
 
     KP_LOG_INFO("Starting keyplus daemon");
-    {
+    m_running = 1;
+    do {
         int argc = 2;
         const char *argv[2];
         argv[1] = m_settings.config;
         rc = kp_mainloop(argc, argv);
-    }
+
+        if (m_signal_num != -1) {
+            syslog(LOG_INFO, "got signal %d: '%s'", m_signal_num, strsignal(m_signal_num));
+            m_signal_num = -1;
+        }
+    } while (m_running);
 
     close_lockfile();
 

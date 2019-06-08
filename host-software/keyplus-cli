@@ -6,6 +6,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import intelhex
 import argparse
 import sys
+import os
+import signal
 import hexdump
 import colorama
 from colorama import Fore, Style
@@ -450,7 +452,7 @@ class HelpCommand(GenericCommand):
     def task(self, args):
         if args.command_name == None:
             self.arg_parser.print_help()
-            exit(EXIT_NO_ERROR)
+            return
 
         if args.command_name in KeyplusCLI.COMMAND_NAME_MAP:
             cmd = KeyplusCLI.COMMAND_NAME_MAP[args.command_name]()
@@ -551,11 +553,11 @@ class ProgramCommand(GenericDeviceCommand):
             args.daemon_conf
         ):
             self.arg_parser.print_help()
-            exit(EXIT_NO_ERROR)
+            return
 
         if args.daemon_conf:
             self.task_daemon_conf(args)
-        if args.merge_hex:
+        elif args.merge_hex:
             self.task_mereged_hex(args)
         elif args.erase:
             self.task_erase(args)
@@ -638,6 +640,7 @@ class ProgramCommand(GenericDeviceCommand):
         ## Default location to save this config file
         # outfile = "/etc/keyplusd/config.yaml"
         outfile = "/etc/keyplusd/config.bin"
+        lockfile = "/tmp/keyplusd.lock"
 
         if args.outfile:
             outfile = args.outfile
@@ -660,6 +663,23 @@ class ProgramCommand(GenericDeviceCommand):
         }
 
         self.task_mereged_hex(argparse.Namespace(**merge_hex_args));
+
+        pid = -1
+        if os.path.exists(lockfile):
+            try:
+                with open(lockfile) as f:
+                    pid = int(f.readline())
+            except IOError as err:
+                print_error("Couldn't read lockfile: '{}': {}".format(lockfile), err)
+                exit(EXIT_COMMAND_ERROR)
+
+            try:
+                os.kill(pid, signal.SIGHUP)
+            except Exception as err:
+                print_error("Couldn't restart daemon with new config file: {}", err)
+                exit(EXIT_COMMAND_ERROR)
+
+
 
     def task_mereged_hex(self, args):
         if (
@@ -757,7 +777,7 @@ class ProgramCommand(GenericDeviceCommand):
         if args.erase:
             # If the erase flag is given, write the file now and exit
             self.write_hex_file(args, fw_hex)
-            exit(EXIT_NO_ERROR)
+            return
 
         # firmware_info.chip_id =
         device_target = KeyboardDeviceTarget(
@@ -800,8 +820,6 @@ class ProgramCommand(GenericDeviceCommand):
 
         self.write_hex_file(args, fw_hex)
 
-        exit(EXIT_NO_ERROR)
-
     def task_program_device(self, args):
 
         kb = self.find_matching_device(args)
@@ -827,7 +845,7 @@ class ProgramCommand(GenericDeviceCommand):
                 settings = kb.read_settings_section()
                 settings.header.device_id = args.new_id
                 kb.update_settings_section(settings, keep_rf=True)
-                exit(EXIT_NO_ERROR)
+                return
 
 
             kp_layout = self.load_layout_file(args)
