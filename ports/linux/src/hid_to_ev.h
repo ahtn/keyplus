@@ -14,6 +14,13 @@
     #define KEY_ASSISTANT		0x247	/* AL Context-aware desktop assistant */
 #endif
 
+#ifndef REL_WHEEL_HI_RES
+    #define REL_WHEEL_HI_RES	0x0b
+#endif
+#ifndef REL_HWHEEL_HI_RES
+    #define REL_HWHEEL_HI_RES	0x0c
+#endif
+
 #include "debug.h"
 
 #define KB_EVENT_MAP_LEN        256
