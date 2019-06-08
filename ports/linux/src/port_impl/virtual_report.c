@@ -8,7 +8,7 @@
 #include "hid_reports/hid_reports.h"
 #include "debug.h"
 #include "virtual_input.h"
-#include "hid_to_ev.h"
+#include "event_codes.h"
 #include "core/keycode.h"
 
 static hid_report_boot_keyboard_t s_last_boot_report;

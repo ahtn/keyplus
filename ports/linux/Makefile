@@ -54,7 +54,7 @@ C_SRC += \
 	$(SRC_PATH)/device_manager.c \
 	$(SRC_PATH)/settings_loader.c \
 	$(SRC_PATH)/event_mapper.c \
-	$(SRC_PATH)/hid_to_ev.c \
+	$(SRC_PATH)/event_codes.c \
 	$(SRC_PATH)/port_impl/hardware.c \
 	$(SRC_PATH)/port_impl/timer.c \
 	$(SRC_PATH)/port_impl/virtual_report.c \

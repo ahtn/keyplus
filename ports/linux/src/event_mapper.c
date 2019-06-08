@@ -7,7 +7,7 @@
 
 #include <libevdev/libevdev.h>
 
-#include "hid_to_ev.h"
+#include "event_codes.h"
 #include "debug.h"
 
 static struct kb_event_map m_devices[MAX_NUM_DEVICES];

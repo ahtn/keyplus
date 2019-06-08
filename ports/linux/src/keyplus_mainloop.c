@@ -9,7 +9,7 @@
 #include "device_manager.h"
 #include "event_mapper.h"
 #include "settings_loader.h"
-#include "hid_to_ev.h"
+#include "event_codes.h"
 
 #include "core/error.h"
 #include "core/flash.h"

@@ -1,7 +1,7 @@
 // Copyright 2019 jem@seethis.link
 // Licensed under the MIT license (http://opensource.org/licenses/MIT)
 
-#include "hid_to_ev.h"
+#include "event_codes.h"
 
 const uint16_t HID_KB_TO_EV[KB_EVENT_MAP_LEN] = {
     0                      , // 0x00: KC_NONE                   ,

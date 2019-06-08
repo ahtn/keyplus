@@ -15,7 +15,7 @@
 #include <libevdev/libevdev-uinput.h>
 
 #include "debug.h"
-#include "hid_to_ev.h"
+#include "event_codes.h"
 
 struct libevdev_uinput *m_virt_mouse;
 struct libevdev_uinput *m_virt_kb;

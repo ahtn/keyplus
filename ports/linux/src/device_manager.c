@@ -21,6 +21,7 @@
 #include "udev_helpers.h"
 #include "virtual_input.h"
 #include "event_mapper.h"
+#include "event_codes.h"
 #include "debug.h"
 
 #define MAX_EVENT_COUNT (MAX_NUM_DEVICES+1)
