@@ -55,7 +55,8 @@ void load_config(const char* file_name) {
 
     {
         const int per_device_storage_size = KEY_MAP_SIZE + sizeof(virtual_device_header_t);
-        uint32_t section_size, size;
+        uint32_t section_size;
+        uint32_t size = 0;
 
         rc = fread(storage_pos, 1, sizeof(uint32_t), config);
         if (rc != sizeof(uint32_t)) {

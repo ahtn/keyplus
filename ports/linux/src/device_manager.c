@@ -400,6 +400,8 @@ int handle_udev_event(void) {
             KP_DEBUG_PRINT(1, "removing: %s\n", path);
             kp_evdev_array_free_device(rc);
         }
+    } else {
+        rc = 0;
     }
 
 cleanup:

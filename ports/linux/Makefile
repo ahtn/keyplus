@@ -21,6 +21,10 @@ LOCKFILE_PATH ?= /tmp/keyplusd.lock
 TEST_CONFIG_LAYOUT ?= ../../layouts/virtual.yaml
 TEST_CONFIG_BIN ?= ./test_conf.bin
 
+ifeq ($(PREFIX),)
+	PREFIX = /usr/local
+endif
+
 # SETTINGS_ADDR = 0
 # LAYOUT_ADDR = 0
 # LAYOUT_SIZE = 0
@@ -80,11 +84,12 @@ CFLAGS += -MMD -MP
 CFLAGS += -Wall
 CFLAGS += -Werror
 CFLAGS += -Wno-error=unused-variable
+CFLAGS += -Wl,--fatal-warnings
 
 # turn on debugging
 CFLAGS += -DDEBUG=1
 CFLAGS += -DDEBUG_EXIT_KEY=KEY_GRAVE
-# CFLAGS += -g3
+CFLAGS += -Og
 CFLAGS += -ggdb3
 
 CFLAGS += -DCONFIG_FILE_PATH="\"$(CONFIG_FILE_PATH)\""
@@ -143,6 +148,16 @@ clean:
 setup:
 	./setup.sh
 
+install: $(BUILD_TARGET)
+	install -d $(DESTDIR)$(PREFIX)/bin
+	install $(BUILD_TARGET) $(DESTDIR)$(PREFIX)/bin
+	install -d $(DESTDIR)$(PREFIX)/lib/udev/rules.d/
+	install -m 644 ./etc/udev/rules.d/85-keyplusd.rules $(DESTDIR)$(PREFIX)/lib/udev/rules.d/
+
+uninstall:
+	rm $(DESTDIR)$(PREFIX)/bin/$(TARGET)
+	rm $(DESTDIR)$(PREFIX)/lib/udev/rules.d/85-keyplusd.rules
+
 gdb: $(BUILD_TARGET)
 	gdb --args $(BUILD_TARGET) --as-user -c $(TEST_CONFIG_BIN)
 
@@ -161,4 +176,4 @@ layout: $(TEST_CONFIG_BIN)
 $(TEST_CONFIG_BIN): $(TEST_CONFIG_LAYOUT)
 	../../host-software/keyplus-cli program -D "$<" -o "$@"
 
-.PHONY: all run run-user clean setup gdb layout
+.PHONY: all run run-user clean setup gdb layout install uninstall
