@@ -82,10 +82,8 @@ void device_manager_targets_add(virtual_device_header_t *target) {
 
     // if logging stats
     if (target->stats == STATS_DISABLED) {
-        KP_DEBUG_PRINT(1, "stats off\n");
         stats_enable_device(target->dev_id, false);
     } else {
-        KP_DEBUG_PRINT(1, "stats on\n");
         stats_enable_device(target->dev_id, true);
     }
 
