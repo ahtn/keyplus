@@ -25,6 +25,9 @@
 #define HID_MAP_CONSUMER_START   0x101
 #define HID_MAP_CONSUMER_END     0x110
 
+#define HID_CODE_RESERVED 0xfffe
+#define HID_CODE_UNKNOWN 0xffff
+
 #define IS_MOUSE_EVENT(x) (BTN_LEFT <= (x) && (x) <= BTN_TASK)
 #define MOUSE_EVENT_TO_BTN_NUM(x) ((x) - BTN_LEFT)
 #define MOUSE_EVENT_TO_MASK(x) (1 << ((x) - BTN_LEFT))
@@ -39,5 +42,7 @@ struct kb_event_map {
 void mapper_reset(void);
 void mapper_clear_map(int dev_id);
 void mapper_set_map(int dev_id, uint8_t *map);
-
 int mapper_event_to_key_num(int dev_id, int event_code);
+
+uint16_t mapper_hid_to_ev(uint16_t hid);
+uint16_t mapper_ev_to_hid(uint16_t ev);

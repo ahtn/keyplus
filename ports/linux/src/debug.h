@@ -19,12 +19,17 @@
 
 #define KP_LOG_ERROR(fmt, args...) do { \
     fprintf(stderr, "ERROR %s:%d: " fmt "\n", __FILE__, __LINE__, ##args); \
-    syslog(LOG_ERR, "ERROR %s:%d: " fmt "\n", __FILE__, __LINE__, ##args); \
+    syslog(LOG_ERR, fmt "\n", ##args); \
+} while (0)
+
+#define KP_LOG_WARN(fmt, args...) do { \
+    fprintf(stderr, "WARN %s:%d: " fmt "\n", __FILE__, __LINE__, ##args); \
+    syslog(LOG_WARNING, fmt "\n", ##args); \
 } while (0)
 
 #define KP_LOG_INFO(fmt, args...) do { \
     fprintf(stdout, "INFO " fmt "\n", ##args); \
-    syslog(LOG_INFO, "%s:%d: " fmt, __FILE__, __LINE__, ##args); \
+    syslog(LOG_INFO, fmt, ##args); \
 } while (0)
 
 #define KP_LOG_ERRNO(fmt) do {\

@@ -46,8 +46,23 @@ devices:
       ]
     layout: mouse
 
+
+  # For this device we don't remap any keys.  We do this so we can get key
+  # usage statistics but keep the default behaviour of all its keys.
+  logging_only:
+    id: 4
+    scan_mode:
+      mode: virtual
+      vid: "1209"
+      pid: "bb00"
+      # name: Nordic_Keyboard
+      # serial: "123456abcdef"
+      keys: [
+      ]
+    layout: dummy
+
   # this should be ignored because scan_mode.mode != virtual
-  dummy:
+  mcu_device:
     id: 3
     layout: mouse
     layout_offset: 0
@@ -144,6 +159,16 @@ keycodes:
     threshold_tap: 0
 
 layouts:
+  # We redirect the `logging_only` device above to this layout because it
+  # doesn't define any keycodes to remap.
+  dummy:
+    layers: [
+      [
+        [
+        ]
+      ]
+    ]
+
   mouse:
     has_mouse_layers: True
     layers: [

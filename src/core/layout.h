@@ -45,13 +45,19 @@ typedef struct layout_header_t {
     uint8_t reserved0: 7;
 } layout_header_t;
 
+enum vdevice_stats_t {
+    STATS_ENABLED = 1,
+    STATS_DISABLED = 0,
+};
+
 typedef struct virtual_device_header_t {
     char name[64];
     char serial[64];
     uint8_t dev_id;
     uint16_t vid;
     uint16_t pid;
-    uint8_t reserved[123];
+    uint8_t stats;
+    uint8_t reserved[122];
 } ATTR_PACKED virtual_device_header_t;
 
 KP_STATIC_ASSERT(sizeof(virtual_device_header_t)==256, "internal error");

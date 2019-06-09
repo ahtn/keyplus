@@ -164,7 +164,7 @@ int kp_udev_match(struct udev_device *dev, virtual_device_header_t *targets, siz
     }
 
     kp_udev_info_get(dev, &new_dev);
-    KP_DEBUG_PRINT(2, "match against {vid:%x, pid: %x, name:%s, serial%s}\n",
+    KP_DEBUG_PRINT(3, "match against {vid:%x, pid: %x, name:%s, serial%s}\n",
                 new_dev.vid, new_dev.pid, new_dev.name, new_dev.serial);
 
     // Match against each target. If a field is not set, ignore it.
@@ -173,6 +173,9 @@ int kp_udev_match(struct udev_device *dev, virtual_device_header_t *targets, siz
         const char *target_str;
 
         KP_ASSERT(dev != NULL);
+
+        KP_DEBUG_PRINT(3, "  cmp {vid:%x, pid: %x, name:%s, serial%s}\n",
+                    targets[i].vid, targets[i].pid, targets[i].name, targets[i].serial);
 
         vid = targets[i].vid;
         if (vid != 0 && vid != new_dev.vid) {
@@ -185,14 +188,15 @@ int kp_udev_match(struct udev_device *dev, virtual_device_header_t *targets, siz
         }
 
         target_str = targets[i].name;
-        if (target_str[0] != 0xff && strstr(new_dev.name, target_str) == NULL) {
+        if ((uint8_t)target_str[0] != 0xff && strstr(new_dev.name, target_str) == NULL) {
+            KP_DEBUG_PRINT(2, "ignoring %s\n", new_dev.name);
             continue;
         }
 
-        // target_str = targets[i].serial;
-        // if (target_str[0] != 0xff && strstr(new_dev.serial, target_str) == NULL) {
-        //     continue;
-        // }
+        target_str = targets[i].serial;
+        if ((uint8_t)target_str[0] != 0xff && strstr(new_dev.serial, target_str) == NULL) {
+            continue;
+        }
 
         // if we reach here, all fields matched
         return i;

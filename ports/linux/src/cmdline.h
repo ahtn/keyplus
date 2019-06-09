@@ -6,7 +6,10 @@
 struct cmdline_args {
     const char* config;
     const char* lockfile;
+    const char* stats;
     bool daemonize;
+    bool restart;
+    bool kill;
 };
 
 void parse_cmdline_args(struct cmdline_args *args, int argc, char** argv);

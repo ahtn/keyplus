@@ -17,9 +17,11 @@ MCU_STRING = VIRTUAL
 # CONFIG_FILE_PATH ?= /etc/keyplusd/config.yaml
 CONFIG_FILE_PATH ?= /etc/keyplusd/config.bin
 LOCKFILE_PATH ?= /tmp/keyplusd.lock
+STATS_FILE_PATH ?= /var/lib/keyplusd/stats.json
 
 TEST_CONFIG_LAYOUT ?= ../../layouts/virtual.yaml
 TEST_CONFIG_BIN ?= ./test_conf.bin
+TEST_STATS_FILE ?= ./stats.json
 
 ifeq ($(PREFIX),)
 	PREFIX = /usr/local
@@ -49,6 +51,8 @@ C_SRC += \
 	$(SRC_PATH)/keyplusd.c \
 	$(SRC_PATH)/keyplus_mainloop.c \
 	$(SRC_PATH)/cmdline.c \
+	$(SRC_PATH)/stats.c \
+	$(SRC_PATH)/stats_parser.c \
 	$(SRC_PATH)/udev_helpers.c \
 	$(SRC_PATH)/virtual_input.c \
 	$(SRC_PATH)/device_manager.c \
@@ -88,11 +92,11 @@ CFLAGS += -Wl,--fatal-warnings
 
 # turn on debugging
 CFLAGS += -DDEBUG=1
-CFLAGS += -DDEBUG_EXIT_KEY=KEY_GRAVE
 CFLAGS += -Og
 CFLAGS += -ggdb3
 
 CFLAGS += -DCONFIG_FILE_PATH="\"$(CONFIG_FILE_PATH)\""
+CFLAGS += -DSTATS_FILE_PATH="\"$(STATS_FILE_PATH)\""
 CFLAGS += -DLOCKFILE_PATH="\"$(LOCKFILE_PATH)\""
 
 #######################################################################
@@ -134,7 +138,7 @@ $(BUILD_TARGET): $(OBJ_FILES)
 #######################################################################
 
 run: $(BUILD_TARGET) $(TEST_CONFIG_BIN)
-	./$(BUILD_TARGET) --as-user -c $(TEST_CONFIG_BIN)
+	./$(BUILD_TARGET) --as-user -c $(TEST_CONFIG_BIN) -s $(TEST_STATS_FILE)
 
 run-daemon: $(BUILD_TARGET)
 	sudo ../../host-software/keyplus-cli program -D "$(TEST_CONFIG_LAYOUT)"
@@ -172,9 +176,17 @@ valgrind: $(BUILD_TARGET)
 			 --sim-hints=lax-ioctls \
 			 ./$(BUILD_TARGET) --as-user -c $(TEST_CONFIG_BIN)
 
+refresh: $(BUILD_TARGET)
+	./$(BUILD_TARGET) --refresh
+
+kill: $(BUILD_TARGET)
+	./$(BUILD_TARGET) --kill
+
+
 layout: $(TEST_CONFIG_BIN)
 
 $(TEST_CONFIG_BIN): $(TEST_CONFIG_LAYOUT)
 	../../host-software/keyplus-cli program -D "$<" -o "$@"
 
-.PHONY: all run run-user clean setup gdb layout install uninstall
+.PHONY: all run run-daemon clean setup gdb layout install uninstall valgrind \
+	kill refresh

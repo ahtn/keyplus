@@ -10,6 +10,7 @@
 #include "event_mapper.h"
 #include "settings_loader.h"
 #include "event_codes.h"
+#include "stats.h"
 
 #include "core/error.h"
 #include "core/flash.h"
@@ -22,7 +23,13 @@
 #include "key_handlers/key_hold.h"
 #include "key_handlers/key_mouse.h"
 
-volatile bool g_running = false;
+static volatile bool g_running = false;
+static volatile bool m_should_stop = false;
+
+void kp_mainloop_stop(void) {
+    g_running = false;
+    m_should_stop = true;
+}
 
 void kp_init_all(void) {
     hardware_init();
@@ -101,12 +108,13 @@ void load_config(const char* file_name) {
 int kp_mainloop(int argc, const char **argv){
     int rc;
     bool should_sleep;
+    const char *config_file = argv[1];
+    const char *stats_file = argv[2];
 
-    KP_ASSERT(argc == 2);
+    KP_ASSERT(argc == 3);
 
-    printf("%s", argv[1]);
-
-    load_config(argv[1]);
+    load_config(config_file);
+    stats_load(stats_file);
     load_virtual_device_settings();
 
     kp_init_all();
@@ -149,10 +157,16 @@ int kp_mainloop(int argc, const char **argv){
         should_sleep = !busy;
     }
 
+    stats_save(NULL);
+
     device_manager_free();
 
     kp_virtual_keyboard_close();
     kp_virtual_mouse_close();
 
-    return 0;
+    if (m_should_stop) {
+        return 1;
+    } else {
+        return 0;
+    }
 }

@@ -38,7 +38,7 @@ int create_virtual_keyboard(void) {
     }
     // load system keys
     for (int i = 0; i < SYSTEM_EVENT_MAP_LEN; ++i) {
-        int ev_code = hid_system_to_ev(i + SYSTEM_MAP_OFFSET);
+        int ev_code = hid_system_to_ev(i + HID_SYSTEM_MAP_OFFSET);
 
         if (ev_code == 0 || ev_code == KEY_UNKNOWN) {
             continue;

@@ -28,12 +28,17 @@
 #define SYSTEM_EVENT_MAP_LEN    128
 #define CONSUMER_EVENT_MAP_LEN  0x029D
 
-#define SYSTEM_MAP_OFFSET 0x80
+#define HID_SYSTEM_MAP_OFFSET 0x80
 
 extern const uint16_t HID_KB_TO_EV[KB_EVENT_MAP_LEN];
 extern const uint16_t HID_MOUSE_TO_EV[MOUSE_EVENT_MAP_LEN];
 extern const uint16_t HID_SYSTEM_TO_EV_TABLE[SYSTEM_EVENT_MAP_LEN];
 extern const uint16_t HID_CONSUMER_TO_EV_TABLE[CONSUMER_EVENT_MAP_LEN];
+
+static inline int hid_keyboard_to_ev(uint8_t kc) {
+    KP_ASSERT(kc < KB_EVENT_MAP_LEN);
+    return HID_KB_TO_EV[kc];
+}
 
 static inline int hid_mouse_to_ev(uint8_t btn) {
     KP_ASSERT(btn < MOUSE_EVENT_MAP_LEN);
@@ -41,10 +46,10 @@ static inline int hid_mouse_to_ev(uint8_t btn) {
 }
 
 static inline uint16_t hid_system_to_ev(uint8_t code) {
-    if (code < SYSTEM_MAP_OFFSET) {
+    if (code < HID_SYSTEM_MAP_OFFSET) {
         return 0;
     }
-    return HID_SYSTEM_TO_EV_TABLE[code-SYSTEM_MAP_OFFSET];
+    return HID_SYSTEM_TO_EV_TABLE[code-HID_SYSTEM_MAP_OFFSET];
 }
 
 static inline uint16_t hid_consumer_to_ev(uint16_t code) {

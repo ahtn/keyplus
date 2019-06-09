@@ -620,6 +620,12 @@ class ScanMode(object):
                 ignore_case = False
             )
 
+            self.virtual_device["stats"] = parser_info.try_get(
+                field = "stats",
+                field_type=[bool],
+                default = True,
+            )
+
             self.keys  = parser_info.try_get("keys", field_type=[list])
         else:
             raise Exception("Internal error, unexpected value for scan_mode")
@@ -706,8 +712,9 @@ class ScanMode(object):
         result += struct.pack("<B", dev_id)
         result += struct.pack("<H", self.virtual_device["vid"])
         result += struct.pack("<H", self.virtual_device["pid"])
+        result += struct.pack("<B", self.virtual_device["stats"])
 
-        result += bytearray(123)
+        result += bytearray(122)
 
         assert(len(result)==256)
 

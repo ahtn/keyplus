@@ -12,6 +12,7 @@
 
 static const char *m_default_lockfile_path = LOCKFILE_PATH;
 static const char *m_default_config_path = CONFIG_FILE_PATH;
+static const char *m_default_stats_path = STATS_FILE_PATH;
 
 static void print_version(void) {
     printf("keyplus version %d.%d.%d",
@@ -43,7 +44,10 @@ void print_usage(void) {
         "  -i --info                  * Show keyplusd build info\n"
         "  -c --config CONFIG_FILE    * Set the keyplusd configuration file to use\n"
         "  -p --pidfile PID_FILE      * Set the location of the pid lockfile\n"
+        "  -s --statsfile STATS_FILE  * Set the location of the usage statistics file\n"
         "  -u --as-user               * Run as the current user in the shell\n"
+        "  -r --refresh               * Reload the config file and write stats file\n"
+        "  -k --kill                  * Kill the daemon\n"
     );
     printf("%s", usage_str);
 }
@@ -58,16 +62,22 @@ void parse_cmdline_args(struct cmdline_args *args, int argc, char** argv) {
         {"info"      , no_argument       , 0 , 'i' } ,
         {"config"    , required_argument , 0 , 'c' } ,
         {"pidfile"   , required_argument , 0 , 'p' } ,
+        {"statsfile" , required_argument , 0 , 's' } ,
         {"as-user"   , no_argument       , 0 , 'u' } ,
+        {"refresh"   , no_argument       , 0 , 'r' } ,
+        {"kill"      , no_argument       , 0 , 'k' } ,
         {0           , 0                 , 0 , 0   }
     };
 
-    const char* opt_string = "hvic:p:u";
+    const char* opt_string = "hviurk" "c:p:s:";
 
     // set default values
     args->config = m_default_config_path;
     args->lockfile = m_default_lockfile_path;
+    args->stats = m_default_stats_path;
     args->daemonize = true;
+    args->restart = false;
+    args->kill = false;
 
     while (1) {
         int option_index = 0;
@@ -99,8 +109,20 @@ void parse_cmdline_args(struct cmdline_args *args, int argc, char** argv) {
                 args->lockfile = optarg;
             } break;
 
+            case 's': {
+                args->stats = optarg;
+            } break;
+
             case 'u': {
                 args->daemonize = false;
+            } break;
+
+            case 'r': {
+                args->restart = true;
+            } break;
+
+            case 'k': {
+                args->kill = true;
             } break;
 
             case '?': {
@@ -119,6 +141,11 @@ void parse_cmdline_args(struct cmdline_args *args, int argc, char** argv) {
         while (optind < argc)
             printf("%s ", argv[optind++]);
         printf("\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (args->kill && args->restart) {
+        fprintf(stderr, "error: conflicting flags -k (--kill) and -r (--refresh)\n");
         exit(EXIT_FAILURE);
     }
 }

@@ -33,16 +33,64 @@ keyplusd
 
 NOTE: You will need root privileges to run these commands.
 
+
 ## Configuration
 
 TODO
 
+## Key usage statistics
+
+`keyplusd` can track key usage statistics. By default they are saved to
+`/var/lib/keyplusd/stats.json`. For security reasons viewing this file requires
+root permissions, or the user must be added to the `keyplusd` group.
+
+The file is formated as a json file is formated like:
+
+```json
+{
+  "devices": [
+    {
+      "A": 123,
+      ...
+    },
+    ...
+    {
+    }
+  ]
+}
+```
+
+Where element `i` in the `devices` array contains the key press counts for the
+device with `id=i`. The values reflect the keys before they are remapped by the
+keyplus emulator. If a keycode is not present, then it has been pressed 0
+times.
+
+The names of the keycodes are based of their HID usage
+codes . For a list of possible values see
+[`src/stats_parser.c`](ports/linux/src/stats_parser.c).
+
+The stats file is periodically updated by `keyplusd`, however, you can run
+`keyplusd -r` to force an update immediately.
+
+To disable logging for a device, set `scan_mode.stats` to `false` in the
+configuration file.
+
+* TODO: some media keycodes not handled yet
+
 ## Debugging
 
+For debugging, it may be more convenient to run `keyplusd` as the current user.
 To run `keyplusd` as the current user in the shell:
 
 ```
 make run
+```
+
+For this to work, without root permissions added your user to the `keyplusd`
+group and re-login:
+
+```
+usermod -a -G keyplusd <useraccount>
 ```
 
 To change the amount of debug output, change the value of the `DEBUG` flag in
@@ -76,9 +124,10 @@ is located where the `keyplusd` user will have read access.
 To kill the daemon run:
 
 ```
-kill $(cat /tmp/keyplusd.lock)
+keyplusd -k
 ```
 
 If you have built the project in debug mode, you can also use `DEBUG_EXIT_KEY`
-to kill the daemon. By default this value is set to `~`/`KEY_GRAVE`. Note that
-this is the value of the key before it is remapped by keyplus.
+to kill the daemon. By default this value is set to `KEY_F1`. This is the value
+of the key before it is remapped by keyplus. To disable this feature, set
+`DEBUG_EXIT_KEY=0`.

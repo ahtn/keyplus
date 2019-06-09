@@ -89,3 +89,28 @@ void mapper_set_map(int dev_id, uint8_t *map) {
         }
     }
 }
+
+uint16_t mapper_hid_to_ev(uint16_t hid) {
+    if (HID_MAP_KB_START <= hid && hid <= HID_MAP_KB_END) {
+        return hid_keyboard_to_ev(hid);
+    } else if (HID_MAP_MOUSE_START <= hid && hid <= HID_MAP_MOUSE_END) {
+        return hid_mouse_to_ev(hid - HID_MAP_MOUSE_START);
+    } else if (HID_MAP_SYS_START <= hid && hid <= HID_MAP_SYS_END) {
+        // only define hid system codes 0x81 - 0x8f
+        return hid_system_to_ev(hid - HID_MAP_SYS_START + 0x81);
+    // } else if (HID_MAP_CONSUMER_START <= hid && hid <= HID_MAP_CONSUMER_END) {
+    //     return hid_consumer_to_ev[hid];
+    } else {
+        return KEY_UNKNOWN;
+    }
+}
+
+uint16_t mapper_ev_to_hid(uint16_t ev) {
+    // TODO: optimize
+    for (int hid = 0; hid < 0x300; ++hid) {
+        if (mapper_hid_to_ev(hid) == ev) {
+            return hid;
+        }
+    }
+    return HID_CODE_UNKNOWN;
+}

@@ -664,7 +664,9 @@ class ProgramCommand(GenericDeviceCommand):
         self.task_mereged_hex(argparse.Namespace(**merge_hex_args));
 
         pid = -1
-        if os.path.exists(lockfile):
+        # if args.outfile == None, then assume we are reprogramming the default
+        # configuration and signal keyplusd to reload its configuration file.
+        if args.outfile == None and os.path.exists(lockfile):
             try:
                 with open(lockfile) as f:
                     pid = int(f.readline())
@@ -675,7 +677,7 @@ class ProgramCommand(GenericDeviceCommand):
             try:
                 os.kill(pid, signal.SIGHUP)
             except Exception as err:
-                print_error("Couldn't restart daemon with new config file: {}", err)
+                print_error("Couldn't restart daemon with new config file", err)
                 exit(EXIT_COMMAND_ERROR)
 
 

@@ -22,16 +22,12 @@
 #include "virtual_input.h"
 #include "event_mapper.h"
 #include "event_codes.h"
+#include "stats.h"
 #include "debug.h"
+#include "keyplus_mainloop.h"
 
 #define MAX_EVENT_COUNT (MAX_NUM_DEVICES+1)
 #define UNMAPPED_KEY 0xff
-
-// TODO: move exit ability to a key_handler
-#ifndef DEBUG_EXIT_KEY
-    #define DEBUG_EXIT_KEY KEY_GRAVE
-#endif
-extern bool g_running;
 
 static struct udev *m_udev = NULL;
 
@@ -84,8 +80,16 @@ void device_manager_targets_add(virtual_device_header_t *target) {
     hexDump ("virt_header", target, sizeof(virtual_device_header_t));
 #endif
 
-    m_udev_targets_len++;
+    // if logging stats
+    if (target->stats == STATS_DISABLED) {
+        KP_DEBUG_PRINT(1, "stats off\n");
+        stats_enable_device(target->dev_id, false);
+    } else {
+        KP_DEBUG_PRINT(1, "stats on\n");
+        stats_enable_device(target->dev_id, true);
+    }
 
+    m_udev_targets_len++;
 }
 
 /// Create a new `kp_evdev_device` with the given path
@@ -320,21 +324,24 @@ static int enumerate(struct udev *udev, virtual_device_header_t *targets, size_t
         path = udev_device_get_property_value(dev, "DEVNAME");
         KP_DEBUG_PRINT(1, "adding %s\n", path);
         rc = kp_evdev_array_add(path, match_id);
-        KP_ASSERT(rc > 0);
-
-        #if defined(DEBUG) && DEBUG > 2
-        {
-            struct udev_list_entry *props;
-            props = udev_device_get_properties_list_entry(dev);
-            while (props != NULL) {
-                KP_DEBUG_PRINT(3, "B: %s=%s\n",
-                    udev_list_entry_get_name(props),
-                    udev_list_entry_get_value(props));
-                props = udev_list_entry_get_next(props);
+        if (rc < 0) {
+            KP_LOG_ERROR("failed to add device '%s': %s", path, strerror(-rc));
+        } else {
+            #if defined(DEBUG) && DEBUG > 2
+            {
+                struct udev_list_entry *props;
+                props = udev_device_get_properties_list_entry(dev);
+                while (props != NULL) {
+                    KP_DEBUG_PRINT(3, "B: %s=%s\n",
+                        udev_list_entry_get_name(props),
+                        udev_list_entry_get_value(props));
+                    props = udev_list_entry_get_next(props);
+                }
+                KP_DEBUG_PRINT(3, "----------\n");
             }
-            KP_DEBUG_PRINT(3, "----------\n");
+            #endif
         }
-        #endif
+
 
         /* free dev */
         udev_device_unref(dev);
@@ -413,9 +420,9 @@ cleanup:
 static int map_event(int dev_id, struct input_event ev) {
     int rc;
 
-#if DEBUG >= 1
+#if DEBUG >= 1 && DEBUG_EXIT_KEY != 0
     if (ev.type == EV_KEY && ev.code == DEBUG_EXIT_KEY) {
-        g_running = false;
+        kp_mainloop_stop();
     }
 #endif
 
@@ -427,7 +434,11 @@ static int map_event(int dev_id, struct input_event ev) {
         return 0;
     }
 
-    if ( ev.type == EV_REL) {
+    if (ev.type == EV_KEY && ev.value == 1) {
+        stats_add_key(dev_id, ev.code);
+    }
+
+    if (ev.type == EV_REL) {
         const int v = ev.value;
         // rc = kp_virtual_mouse_send(ev.type, ev.code, ev.value);
         // KP_CHECK_ERRNO(rc);
