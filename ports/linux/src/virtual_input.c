@@ -54,6 +54,28 @@ int create_virtual_keyboard(void) {
         }
         libevdev_enable_event_code(dev, EV_KEY, ev_code, NULL);
     }
+
+    {
+        // NOTE: Doesn't see like we can actually set the REP_DELAY and
+        // REP_PERIOD values. Only value that seems to matter here is
+        // enabling EV_REP to get key repeat events on virtual ttys.
+        //
+        // * For virtual tty, you use `kbdrate -r 15 -d 250`
+        // * For X11, xset r rate 250 15
+        int rc;
+        int delay = 250;
+        int period = 33;
+        libevdev_enable_event_type(dev, EV_REP);
+        rc = libevdev_enable_event_code(dev, EV_REP, REP_DELAY, &delay);
+        if (rc < 0) {
+            KP_DEBUG_PRINT(1, "set REP_DELAY: %d\n", rc);
+        }
+        rc = libevdev_enable_event_code(dev, EV_REP, REP_PERIOD, &period);
+        if (rc < 0) {
+            KP_DEBUG_PRINT(1, "set REP_DELAY: %d\n", rc);
+        }
+    }
+
     err = libevdev_uinput_create_from_device(dev,
                                              LIBEVDEV_UINPUT_OPEN_MANAGED,
                                              &m_virt_kb);
