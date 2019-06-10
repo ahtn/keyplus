@@ -164,7 +164,7 @@ install: $(BUILD_TARGET)
 	install -d $(DESTDIR)$(PREFIX)/lib/systemd/system
 	install -m 644 $(BUILD_DIR)/keyplusd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/
 	# make keyplus config/data directories
-	install -d -m 644 $(DESTDIR)/etc/keyplusd
+	install -d $(DESTDIR)/etc/keyplusd
 	install -d -m 750 -o keyplusd -g keyplusd $(DESTDIR)/var/lib/keyplusd
 
 uninstall:
