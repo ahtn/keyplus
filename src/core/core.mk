@@ -25,7 +25,6 @@ GIT_HASH_FULL := $(shell git rev-parse HEAD)
 GIT_HASH := $(shell $(PYTHON_CMD) -c "import datetime;\
 hash = '$(GIT_HASH_FULL)'; \
 b = ['0x'+hash[i*2:(i+1)*2] for i in range(8)]; \
-b.reverse(); \
 res = ','.join(b); \
 print(res); \
 ")
