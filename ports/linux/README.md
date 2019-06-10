@@ -6,6 +6,12 @@ according to your keyplus layout file.
 
 ## Install
 
+### Install for Archlinux
+
+Install [`keyplusd-git`](https://aur.archlinux.org/packages/keyplusd-git/) from the AUR.
+
+### Build and install from source
+
 To install run:
 
 ```
@@ -24,7 +30,7 @@ To load a configuration file for the daemon to use, run:
 ```
 
 For an example configuration file see
-`[layouts/virtual.yaml](../../layouts/virtual.yaml)`.  Then to start the daemon
+[`layouts/virtual.yaml`](../../layouts/virtual.yaml).  Then to start the daemon
 run:
 
 ```
@@ -33,6 +39,13 @@ keyplusd
 
 NOTE: You will need root privileges to run these commands.
 
+## Enable at boot
+
+To start `keyplusd` when the computer is powered, use the system service:
+
+```
+systemctl enable keyplusd
+```
 
 ## Configuration
 
