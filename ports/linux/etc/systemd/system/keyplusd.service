@@ -1,0 +1,11 @@
+[Unit]
+Description=keyplus emulator service
+
+[Service]
+Type=forking
+; PIDFile=/tmp/keyplusd.lock
+ExecStart=/usr/bin/keyplusd
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

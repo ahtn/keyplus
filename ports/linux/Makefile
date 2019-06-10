@@ -103,7 +103,7 @@ CFLAGS += -DLOCKFILE_PATH="\"$(LOCKFILE_PATH)\""
 #                               recipes                               #
 #######################################################################
 
-all : $(BUILD_TARGET) $(TEST_CONFIG_BIN)
+all: $(BUILD_TARGET) $(TEST_CONFIG_BIN) $(BUILD_DIR)/keyplusd.service
 
 include $(KEYPLUS_PATH)/obj_file.mk
 
@@ -152,16 +152,22 @@ clean:
 setup:
 	./setup.sh
 
+$(BUILD_DIR)/keyplusd.service: ./etc/systemd/system/keyplusd.service
+	sed 's|/usr|$(PREFIX)|' ./etc/systemd/system/keyplusd.service > $(BUILD_DIR)/keyplusd.service
+
 install: $(BUILD_TARGET)
 	./setup.sh
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install $(BUILD_TARGET) $(DESTDIR)$(PREFIX)/bin
 	install -d $(DESTDIR)$(PREFIX)/lib/udev/rules.d/
 	install -m 644 ./etc/udev/rules.d/85-keyplusd.rules $(DESTDIR)$(PREFIX)/lib/udev/rules.d/
+	install -d $(DESTDIR)$(PREFIX)/lib/systemd/system
+	install -m 644 $(BUILD_DIR)/keyplusd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/
 
 uninstall:
-	rm $(DESTDIR)$(PREFIX)/bin/$(TARGET)
-	rm $(DESTDIR)$(PREFIX)/lib/udev/rules.d/85-keyplusd.rules
+	rm -f $(DESTDIR)$(PREFIX)/bin/$(TARGET)
+	rm -f $(DESTDIR)$(PREFIX)/lib/udev/rules.d/85-keyplusd.rules
+	rm -f $(DESTDIR)$(PREFIX)/lib/systemd/system/keyplusd.service
 
 gdb: $(BUILD_TARGET)
 	gdb --args $(BUILD_TARGET) --as-user -c $(TEST_CONFIG_BIN)
