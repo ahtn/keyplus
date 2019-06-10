@@ -163,6 +163,9 @@ install: $(BUILD_TARGET)
 	install -m 644 ./etc/udev/rules.d/85-keyplusd.rules $(DESTDIR)$(PREFIX)/lib/udev/rules.d/
 	install -d $(DESTDIR)$(PREFIX)/lib/systemd/system
 	install -m 644 $(BUILD_DIR)/keyplusd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/
+	# make keyplus config/data directories
+	install -d -m 644 $(DESTDIR)/etc/keyplusd
+	install -d -m 750 -o keyplusd -g keyplusd $(DESTDIR)/var/lib/keyplusd
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(TARGET)

@@ -320,7 +320,9 @@ static int enumerate(struct udev *udev, virtual_device_header_t *targets, size_t
         }
 
         path = udev_device_get_property_value(dev, "DEVNAME");
-        KP_DEBUG_PRINT(1, "adding %s\n", path);
+        KP_LOG_INFO("adding for dev id=%d: %s",
+                    targets[match_id].dev_id,
+                    path);
         rc = kp_evdev_array_add(path, match_id);
         if (rc < 0) {
             KP_LOG_ERROR("failed to add device '%s': %s", path, strerror(-rc));

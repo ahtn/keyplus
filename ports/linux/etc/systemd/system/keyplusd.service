@@ -2,9 +2,14 @@
 Description=keyplus emulator service
 
 [Service]
-Type=forking
-; PIDFile=/tmp/keyplusd.lock
-ExecStart=/usr/bin/keyplusd
+Nice=-10
+User=keyplusd
+Group=keyplusd
+PIDFile=/tmp/keyplusd.lock
+StandardOutput=null
+StandardError=null
+StandardInput=null
+ExecStart=/usr/bin/keyplusd --as-user
 Restart=always
 
 [Install]

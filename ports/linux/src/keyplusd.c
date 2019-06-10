@@ -203,8 +203,6 @@ void daemonize(void) {
         exit(EXIT_SUCCESS);
     }
 
-    atexit(exit_message);
-
     set_target_user(); // set which user we will run as (while we are still root)
     open_lockfile();
     rc = create_stats_dir(m_settings.stats);
@@ -359,6 +357,7 @@ int main(int argc, char **argv) {
 
     openlog(proc_name, LOG_PID|LOG_CONS, LOG_DAEMON);
     setup_signal_handlers();
+    atexit(exit_message);
 
     // Verify that we can read these files now before we daemonize so we
     // can notify the user on stderr
@@ -373,6 +372,7 @@ int main(int argc, char **argv) {
 
     KP_LOG_INFO("Starting keyplus daemon");
     m_running = 1;
+
     do {
         int argc = 3;
         const char *kp_argv[3];
