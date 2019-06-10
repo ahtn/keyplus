@@ -345,9 +345,20 @@ static uint16_t tok_get_hid_code(void) {
     struct hid_code_name *hid = hid_code_table;
 
     while (!(hid->code == 0 && hid->name == NULL)) {
-        if (hid->name != NULL && !strncmp(str, hid->name, len)) {
+        int hid_len;
+        if (hid->name == NULL) {
+            goto end;
+        }
+        // `str` is non-null terminated, so need to check the lengths of both
+        // strings match before comparison
+        hid_len = strlen(hid->name);
+        if (hid_len != len) {
+            goto end;
+        }
+        if (!strncmp(hid->name, str, len)) {
             return hid->code;
         }
+end:
         hid++;
     }
 
