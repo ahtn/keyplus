@@ -57,7 +57,7 @@ TODO
 `/var/lib/keyplusd/stats.json`. For security reasons viewing this file requires
 root permissions, or the user must be added to the `keyplusd` group.
 
-The file is formated as a json file is formated like:
+The file is formated as a json:
 
 ```json
 {
@@ -80,7 +80,7 @@ times.
 
 The names of the keycodes are based of their HID usage
 codes . For a list of possible values see
-[`src/stats_parser.c`](ports/linux/src/stats_parser.c).
+[`src/stats_parser.c`](src/stats_parser.c).
 
 The stats file is periodically updated by `keyplusd`, however, you can run
 `keyplusd -r` to force an update immediately.
