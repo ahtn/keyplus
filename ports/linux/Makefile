@@ -156,16 +156,19 @@ $(BUILD_DIR)/keyplusd.service: ./etc/systemd/system/keyplusd.service
 	sed 's|/usr|$(PREFIX)|' ./etc/systemd/system/keyplusd.service > $(BUILD_DIR)/keyplusd.service
 
 install: $(BUILD_TARGET)
-	./setup.sh
+	@# By default create the `keyplusd` user and files owned by them.
+	@# Set NO_USER to skip this step.
+	if [[ -z "$(NO_USER)" ]]; then \
+		./setup.sh; \
+		install -d -m 750 -o keyplusd -g keyplusd $(DESTDIR)/var/lib/keyplusd; \
+	fi
 	install -d $(DESTDIR)$(PREFIX)/bin
 	install $(BUILD_TARGET) $(DESTDIR)$(PREFIX)/bin
 	install -d $(DESTDIR)$(PREFIX)/lib/udev/rules.d/
 	install -m 644 ./etc/udev/rules.d/85-keyplusd.rules $(DESTDIR)$(PREFIX)/lib/udev/rules.d/
 	install -d $(DESTDIR)$(PREFIX)/lib/systemd/system
 	install -m 644 $(BUILD_DIR)/keyplusd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/
-	# make keyplus config/data directories
 	install -d $(DESTDIR)/etc/keyplusd
-	install -d -m 750 -o keyplusd -g keyplusd $(DESTDIR)/var/lib/keyplusd
 
 uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(TARGET)
