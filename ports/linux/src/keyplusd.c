@@ -38,12 +38,12 @@ void set_target_user(void) {
     pwd = getpwnam("keyplusd");
 
     if (pwd == NULL && errno) {
-        perror("error looking up keyplusd user");
+        KP_LOG_ERROR("error looking up keyplusd user: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
     if (pwd == NULL) {
-        fprintf(stderr, "error: couldn't find keyplusd user");
+        KP_LOG_ERROR("error: couldn't find keyplusd user");
         exit(EXIT_FAILURE);
     }
     m_uid = pwd->pw_uid;
@@ -55,12 +55,12 @@ void downgrade_user(void) {
 
     rc = setgid(m_gid);
     if (rc < 0) {
-        perror("error switching to keyplusd group failed");
+        KP_LOG_ERROR("error switching to keyplusd group failed: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
     rc = setuid(m_uid);
     if (rc < 0) {
-        perror("error switching to keyplusd user");
+        KP_LOG_ERROR("error switching to keyplusd user: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 }
@@ -100,7 +100,7 @@ static void open_lockfile(void) {
     // rc = open(m_settings.lockfile, O_CREAT | O_EXCL | O_RDWR, 0664);
     rc = open(m_settings.lockfile, O_CREAT | O_RDWR, 0664);
     if (rc < 0) {
-        perror("failed to create lockfile");
+        KP_LOG_ERROR("failed to create lockfile");
         exit(EXIT_FAILURE);
     }
     m_lockfile_fd = rc;
@@ -115,9 +115,7 @@ static void open_lockfile(void) {
 
     if (rc < 0) {
         if (errno == EWOULDBLOCK) {
-            syslog(LOG_ERR, "couldn't claim lockfile: %s", m_settings.lockfile);
-            // print to stderr too so parent tty can see the message
-            fprintf(stderr, "couldn't claim lockfile: %s\n", m_settings.lockfile);
+            KP_LOG_ERROR("couldn't claim lockfile: %s", m_settings.lockfile);
             exit(EXIT_FAILURE);
         } else {
             KP_CHECK_ERRNO(rc);
@@ -128,8 +126,7 @@ static void open_lockfile(void) {
         sprintf(str, "%d\n", getpid());
         rc = write(m_lockfile_fd, str, strlen(str));
         if (rc < 0) {
-            syslog(LOG_ERR, "writing to lockfile failed: %s\n", m_settings.lockfile);
-            fprintf(stderr, "couldn't claim lockfile: %s\n", m_settings.lockfile);
+            KP_LOG_ERROR("writing to lockfile failed: %s", m_settings.lockfile);
             exit(EXIT_FAILURE);
         }
     }
@@ -304,12 +301,11 @@ static void handle_kill_commands(void) {
     pid = read_lockfile(m_settings.lockfile);
     if (pid < 0) {
         if (pid == -ENOENT) {
-            fprintf(stderr,
-                    "error: keyplusd not running: lockfile '%s' not found\n",
-                    m_settings.lockfile);
+            KP_LOG_ERROR("error: keyplusd not running: lockfile '%s' not found",
+                         m_settings.lockfile);
             exit(EXIT_FAILURE);
         } else {
-            perror("error reading lockfile");
+            KP_LOG_ERROR("error reading lockfile");
             exit(EXIT_FAILURE);
         }
     }
@@ -317,12 +313,12 @@ static void handle_kill_commands(void) {
     if (m_settings.kill) {
         rc = kill(pid, SIGINT);
         if (rc < 0) {
-            perror("failed to kill keyplusd");
+            KP_LOG_ERROR("failed to kill keyplusd");
         }
     } else if (m_settings.restart) {
         rc = kill(pid, SIGHUP);
         if (rc < 0) {
-            perror("failed to restart keyplusd");
+            KP_LOG_ERROR("failed to restart keyplusd");
         }
     }
 }

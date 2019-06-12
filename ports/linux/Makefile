@@ -160,23 +160,22 @@ install: $(BUILD_TARGET)
 	@# Set NO_USER to skip this step.
 	if [[ -z "$(NO_USER)" ]]; then \
 		./setup.sh; \
-		install -d -m 750 -o keyplusd -g keyplusd $(DESTDIR)/var/lib/keyplusd; \
+		install -d -m 750 -o keyplusd -g keyplusd "$(DESTDIR)/var/lib/keyplusd"; \
 	fi
-	install -d $(DESTDIR)$(PREFIX)/bin
-	install $(BUILD_TARGET) $(DESTDIR)$(PREFIX)/bin
-	install -d $(DESTDIR)$(PREFIX)/lib/udev/rules.d/
-	install -m 644 ./etc/udev/rules.d/85-keyplusd.rules $(DESTDIR)$(PREFIX)/lib/udev/rules.d/
-	install -d $(DESTDIR)$(PREFIX)/lib/systemd/system
-	install -m 644 $(BUILD_DIR)/keyplusd.service $(DESTDIR)$(PREFIX)/lib/systemd/system/
-	install -d $(DESTDIR)/etc/keyplusd
+	install -D "$(BUILD_TARGET)" "$(DESTDIR)$(PREFIX)/bin"
+	install -d "$(DESTDIR)/etc/keyplusd"
+	install -Dm 644 ./etc/udev/rules.d/85-keyplusd.rules "$(DESTDIR)$(PREFIX)/lib/udev/rules.d/"
+	install -Dm 644 ./etc/sysusers.d/keyplusd.conf "$(DESTDIR)$(PREFIX)/lib/sysusers.d/keyplusd.conf"
+	install -Dm 644 "$(BUILD_DIR)/keyplusd.service" "$(DESTDIR)$(PREFIX)/lib/systemd/system/"
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/$(TARGET)
-	rm -f $(DESTDIR)$(PREFIX)/lib/udev/rules.d/85-keyplusd.rules
-	rm -f $(DESTDIR)$(PREFIX)/lib/systemd/system/keyplusd.service
+	rm -f "$(DESTDIR)$(PREFIX)/bin/$(TARGET)"
+	rm -f "$(DESTDIR)$(PREFIX)/lib/udev/rules.d/85-keyplusd.rules"
+	rm -f "$(DESTDIR)$(PREFIX)/lib/sysusers.d/keyplusd.conf"
+	rm -f "$(DESTDIR)$(PREFIX)/lib/systemd/system/keyplusd.service"
 
 gdb: $(BUILD_TARGET)
-	gdb --args $(BUILD_TARGET) --as-user -c $(TEST_CONFIG_BIN)
+	gdb --args $(BUILD_TARGET) --as-user -c "$(TEST_CONFIG_BIN)"
 
 valgrind: $(BUILD_TARGET)
 	@# NOTE: lax-ioctls is used to suppress false positives when accessing /dev/uinput
@@ -186,7 +185,7 @@ valgrind: $(BUILD_TARGET)
 			 --track-origins=yes \
 			 --verbose \
 			 --sim-hints=lax-ioctls \
-			 ./$(BUILD_TARGET) --as-user -c $(TEST_CONFIG_BIN)
+			 ./$(BUILD_TARGET) --as-user -c "$(TEST_CONFIG_BIN)"
 
 refresh: $(BUILD_TARGET)
 	./$(BUILD_TARGET) --refresh
