@@ -162,11 +162,15 @@ install: $(BUILD_TARGET)
 		./setup.sh; \
 		install -d -m 750 -o keyplusd -g keyplusd "$(DESTDIR)/var/lib/keyplusd"; \
 	fi
-	install -D "$(BUILD_TARGET)" "$(DESTDIR)$(PREFIX)/bin"
 	install -d "$(DESTDIR)/etc/keyplusd"
-	install -Dm 644 ./etc/udev/rules.d/85-keyplusd.rules "$(DESTDIR)$(PREFIX)/lib/udev/rules.d/"
-	install -Dm 644 ./etc/sysusers.d/keyplusd.conf "$(DESTDIR)$(PREFIX)/lib/sysusers.d/keyplusd.conf"
-	install -Dm 644 "$(BUILD_DIR)/keyplusd.service" "$(DESTDIR)$(PREFIX)/lib/systemd/system/"
+	install -d "$(DESTDIR)$(PREFIX)/bin/"
+	install "$(BUILD_TARGET)" "$(DESTDIR)$(PREFIX)/bin/"
+	install -d "$(DESTDIR)$(PREFIX)/lib/udev/rules.d/"
+	install -m 644 ./etc/udev/rules.d/85-keyplusd.rules "$(DESTDIR)$(PREFIX)/lib/udev/rules.d/"
+	install -d "$(DESTDIR)$(PREFIX)/lib/sysusers.d/"
+	install -m 644 ./etc/sysusers.d/keyplusd.conf "$(DESTDIR)$(PREFIX)/lib/sysusers.d/"
+	install -d "$(DESTDIR)$(PREFIX)/lib/systemd/system/"
+	install -m 644 "$(BUILD_DIR)/keyplusd.service" "$(DESTDIR)$(PREFIX)/lib/systemd/system/"
 
 uninstall:
 	rm -f "$(DESTDIR)$(PREFIX)/bin/$(TARGET)"
