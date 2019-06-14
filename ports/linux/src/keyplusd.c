@@ -259,7 +259,7 @@ static void check_file_readable(const char *name) {
     FILE *f;
     f = fopen(name , "r");
     if (f == NULL) {
-        KP_LOG_ERRNO("Couldn't read file");
+        KP_LOG_ERROR("Couldn't read file '%s': %s", name, strerror(errno));
         exit(EXIT_FAILURE);
     } else {
         fclose(f);
