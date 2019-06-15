@@ -28,6 +28,25 @@ int kp_udev_parse_action(struct udev_device *dev) {
     return -1;
 }
 
+static void parse_product(struct kp_udev_info *info, struct udev_device *dev) {
+    int rc;
+    const char *prop;
+
+    // PRODUCT contains VID and PID e.g:  PRODUCT=5/1209/bb00/0
+    prop = udev_device_get_property_value(dev, "PRODUCT");
+    if (prop != NULL) {
+        unsigned int vid, pid;
+        rc = sscanf(prop, "%*x/%04x/%04x/%*x", &vid, &pid);
+        if (rc <= 0) {
+            info->vid = 0;
+            info->pid = 0;
+        } else {
+            info->vid = vid;
+            info->pid = pid;
+        }
+    }
+}
+
 /* Example struct for bluetooth keyboard device
 ---------- parent
 B: DEVPATH=/devices/virtual/misc/uhid/0005:1209:BB00.0006/input/input15
@@ -66,28 +85,13 @@ B: USEC_INITIALIZED=122348771
 
 static void kp_udev_info_bluetooth_get(struct udev_device *dev,
                                        struct kp_udev_info *info) {
-    int rc;
-    const char *prop;
-
     // Access the parent input device instead, see example output above
     // for the available information.
     //
     // NOTE: no need to unref this, will be unref with the child
     struct udev_device *parent = udev_device_get_parent(dev);
 
-    // PRODUCT contains VID and PID e.g:  PRODUCT=5/1209/bb00/0
-    prop = udev_device_get_property_value(parent, "PRODUCT");
-    if (prop != NULL) {
-        unsigned int vid, pid;
-        rc = sscanf(prop, "%*x/%04x/%04x/%*x", &vid, &pid);
-        if (rc <= 0) {
-            info->vid = 0;
-            info->pid = 0;
-        } else {
-            info->vid = vid;
-            info->pid = pid;
-        }
-    }
+    parse_product(info, parent);
 
     info->name = udev_device_get_property_value(parent, "NAME");
     info->serial = udev_device_get_property_value(parent, "UNIQ");
@@ -128,6 +132,21 @@ static void kp_udev_info_usb_get(struct udev_device *dev, struct kp_udev_info *i
     info->serial = udev_device_get_property_value(parent, "ID_SERIAL_SHORT");
 }
 
+/// Fallback for other types of devices
+static void kp_udev_info_other_get(struct udev_device *dev, struct kp_udev_info *info) {
+    // NOTE: no need to unref this, will be unref with the child
+    struct udev_device *parent = udev_device_get_parent(dev);
+
+    parse_product(info, parent);
+
+    info->name = udev_device_get_property_value(parent, "NAME");
+    info->serial = udev_device_get_property_value(parent, "ID_SERIAL");
+    if (info->serial == NULL) {
+        info->serial = udev_device_get_property_value(parent, "UNIQ");
+    }
+}
+
+
 static void kp_udev_info_get(struct udev_device *dev, struct kp_udev_info *info) {
     const char *prop;
 
@@ -146,8 +165,9 @@ static void kp_udev_info_get(struct udev_device *dev, struct kp_udev_info *info)
         kp_udev_info_usb_get(dev, info);
     } else if (strcmp(prop, "bluetooth") == 0) {
         kp_udev_info_bluetooth_get(dev, info);
+    } else {
+        kp_udev_info_other_get(dev, info);
     }
-    // TODO: handle HID over I2C for laptop keyboards
 }
 
 /// Check if `dev` matches against any of the elements in `targets`
@@ -188,14 +208,19 @@ int kp_udev_match(struct udev_device *dev, virtual_device_header_t *targets, siz
         }
 
         target_str = targets[i].name;
-        if ((uint8_t)target_str[0] != 0xff && strstr(new_dev.name, target_str) == NULL) {
-            KP_DEBUG_PRINT(2, "ignoring %s\n", new_dev.name);
-            continue;
+        if ((uint8_t)target_str[0] != 0xff) {
+            if (new_dev.name == NULL || strstr(new_dev.name, target_str) == NULL) {
+                KP_DEBUG_PRINT(2, "ignoring name:%s\n", new_dev.name);
+                continue;
+            }
         }
 
         target_str = targets[i].serial;
-        if ((uint8_t)target_str[0] != 0xff && strstr(new_dev.serial, target_str) == NULL) {
-            continue;
+        if ((uint8_t)target_str[0] != 0xff) {
+            if (new_dev.serial == NULL || strstr(new_dev.serial, target_str) == NULL) {
+                KP_DEBUG_PRINT(2, "ignoring serial: %s\n", new_dev.serial);
+                continue;
+            }
         }
 
         // if we reach here, all fields matched
