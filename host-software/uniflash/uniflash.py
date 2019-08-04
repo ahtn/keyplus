@@ -435,7 +435,7 @@ if __name__ == "__main__":
             )
             exit(1)
 
-
+        boot_dev.reset()
         detach_kernel_drivers(boot_dev, [0, 1])
 
         boot_writer = BootloaderWriter(boot_dev)
